@@ -3,7 +3,7 @@ use std::{io::Cursor, sync::Arc};
 use crate::{
     app::AppState,
     commands::{Command, CommandReceiver},
-    config::Config,
+    config::{ArticleContentType, Config},
     newsflash_utils::NewsFlashAsyncManager,
 };
 use image::ImageReader;
@@ -14,10 +14,12 @@ use news_flash::{
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    text::Line,
+    text::{Line, Text},
     widgets::{Block, Borders, Paragraph, StatefulWidget, Widget, Wrap},
 };
-use ratatui_image::{StatefulImage, picker::Picker, protocol::StatefulProtocol};
+use ratatui_image::{
+    FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
+};
 
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -31,6 +33,7 @@ pub struct ArticleContent {
     fat_article: Option<FatArticle>,
     thumbnail: Option<Thumbnail>,
     image: Option<StatefulProtocol>,
+    markdown_content: Option<String>,
     picker: Picker,
 
     vertical_scroll: u16,
@@ -54,6 +57,7 @@ impl ArticleContent {
             article: None,
             thumbnail: None,
             image: None,
+            markdown_content: None,
             picker: Picker::from_query_stdio().unwrap(), // gracefully handle errors
 
             vertical_scroll: 0,
@@ -63,7 +67,21 @@ impl ArticleContent {
         }
     }
 
-    async fn build_article_content(&mut self) -> color_eyre::Result<()> {
+    fn scrape_article(&mut self) -> color_eyre::Result<()> {
+        let Some(article) = self.article.as_ref() else {
+            return Ok(());
+        };
+
+        if self.is_focused && self.fat_article.is_none() {
+            let article_id = article.article_id.clone();
+            self.vertical_scroll = 0;
+            self.news_flash_async_manager.fetch_fat_article(article_id);
+        }
+
+        Ok(())
+    }
+
+    fn load_article_thumbnail(&mut self) -> color_eyre::Result<()> {
         let Some(article) = self.article.as_ref() else {
             return Ok(());
         };
@@ -72,13 +90,6 @@ impl ArticleContent {
             let article_id = article.article_id.clone();
             self.news_flash_async_manager.fetch_thumbnail(article_id);
         }
-
-        if self.is_focused && self.fat_article.is_none() {
-            let article_id = article.article_id.clone();
-            self.vertical_scroll = 0;
-            self.news_flash_async_manager.fetch_fat_article(article_id);
-        }
-
         Ok(())
     }
 
@@ -107,20 +118,34 @@ impl ArticleContent {
     fn render_summary(&mut self, area: Rect, buf: &mut Buffer) {
         let inner_area = self.render_block(area, buf);
 
+        let thumbnail_width = if self.config.article_thumbnail_show {
+            self.config.article_thumbnail_width
+        } else {
+            0
+        };
+
         let [thumbnail_chunk, summary_chunk] = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(Constraint::from_percentages([20, 80]))
+            .constraints(Constraint::from_percentages([
+                thumbnail_width,
+                100 - thumbnail_width,
+            ]))
             .margin(1)
             .spacing(1)
             .areas(inner_area);
 
-        if let Some(image) = &mut self.image {
-            let stateful_image = StatefulImage::new();
+        if self.config.article_thumbnail_show
+            && let Some(image) = &mut self.image
+        {
+            let mut stateful_image = StatefulImage::new();
+            if self.config.article_thumbnail_resize {
+                stateful_image = stateful_image.resize(Resize::Scale(Some(FilterType::Lanczos3)))
+            }
             stateful_image.render(thumbnail_chunk, buf, image);
         }
 
         let article = self.article.as_ref().unwrap();
-        let mut summary = article.summary.clone().unwrap_or("".into());
+        let mut summary = article.summary.clone().unwrap_or("no summary".into());
         summary = ArticleContent::clean_string(&mut summary);
 
         let summary = Paragraph::new(summary)
@@ -137,7 +162,7 @@ impl ArticleContent {
             .direction(Direction::Horizontal)
             .flex(ratatui::layout::Flex::Center)
             .constraints([
-                Constraint::Max(66), // Middle content - maximum 80 columns
+                Constraint::Max(self.config.article_content_max_chars_per_line), // Middle content - maximum 80 columns
             ])
             .areas(inner_area);
 
@@ -145,9 +170,21 @@ impl ArticleContent {
             return;
         };
 
-        let html = fat_article.scraped_content.clone().unwrap();
-        let markdown = html2text::html2text(html.as_str());
-        let text = tui_markdown::from_str(markdown.as_str());
+        let text: Text<'_> = if self.config.article_content_preferred_type
+            == ArticleContentType::Markdown
+            // && self.markdown_content.is_none()
+            && let Some(html) = fat_article.scraped_content.clone()
+        {
+            if self.markdown_content.is_none() {
+                self.markdown_content = Some(html2text::html2text(html.as_str()));
+            }
+
+            tui_markdown::from_str(self.markdown_content.as_ref().unwrap())
+        } else if let Some(plain_text) = fat_article.plain_text.clone() {
+            Text::from(plain_text)
+        } else {
+            Text::from("no content available")
+        };
 
         // Calculate the total number of lines the content would take when wrapped
         let content_lines = self.calculate_wrapped_lines(&text, paragraph_area.width);
@@ -235,9 +272,8 @@ impl CommandReceiver for ArticleContent {
                 self.thumbnail = None; // reset thumbnail
                 self.image = None;
                 self.fat_article = None;
+                self.markdown_content = None;
                 self.article = Some(article.clone());
-
-                self.build_article_content().await?;
             }
 
             FatArticleSelected(article) => self.article = Some(article.clone()),
@@ -255,16 +291,24 @@ impl CommandReceiver for ArticleContent {
                 }
             },
 
+            ScrapeArticle if self.is_focused => {
+                self.scrape_article()?;
+            }
+
             AsyncFetchFatArticleFinished(fat_article) => {
                 self.fat_article = Some(fat_article.clone());
-                self.build_article_content().await?;
             }
 
             ApplicationStateChanged(state) => {
                 self.is_focused = *state == AppState::ArticleContent;
 
-                if self.is_focused {
-                    self.build_article_content().await?;
+                if self.config.article_auto_scrape {
+                    self.scrape_article()?;
+                }
+
+                if self.config.article_thumbnail_show {
+                    // TODO debounce
+                    self.load_article_thumbnail()?;
                 }
             }
 
