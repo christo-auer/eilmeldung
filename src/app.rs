@@ -24,6 +24,15 @@ pub enum AppState {
 }
 
 impl AppState {
+    fn previous_cyclic(&mut self) -> AppState {
+        use AppState::*;
+        match self {
+            ArticleSelection => FeedSelection,
+            ArticleContent => ArticleSelection,
+            FeedSelection => ArticleContent,
+        }
+    }
+
     fn next_cyclic(&mut self) -> AppState {
         use AppState::*;
         match self {
@@ -219,6 +228,18 @@ impl CommandReceiver for App {
 
             FocusPrevious => {
                 self.state = self.state.previous();
+                self.command_sender
+                    .send(Command::ApplicationStateChanged(self.state))?;
+            }
+
+            CyclicFocusNext => {
+                self.state = self.state.next_cyclic();
+                self.command_sender
+                    .send(Command::ApplicationStateChanged(self.state))?;
+            }
+
+            CyclicFocusPrevious => {
+                self.state = self.state.previous_cyclic();
                 self.command_sender
                     .send(Command::ApplicationStateChanged(self.state))?;
             }

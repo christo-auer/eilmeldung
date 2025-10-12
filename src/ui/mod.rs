@@ -6,10 +6,9 @@ pub mod tooltip;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    text::Line,
     widgets::{StatefulWidget, Widget},
 };
-use throbber_widgets_tui::{Throbber, symbols::throbber};
+use throbber_widgets_tui::Throbber;
 
 use crate::app::{App, AppState};
 

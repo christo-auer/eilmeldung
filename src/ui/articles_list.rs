@@ -1,16 +1,12 @@
 use std::sync::Arc;
 
-use news_flash::{
-    NewsFlash,
-    models::{Article, ArticleFilter, ArticleID, Marked, Read},
-};
+use news_flash::models::{Article, ArticleFilter, ArticleID, Marked, Read};
 use ratatui::widgets::{Block, Borders, Row, StatefulWidget, Table, TableState, Widget};
 use ratatui::{
     layout::Constraint,
     style::{Style, Stylize},
 };
-use reqwest::Client;
-use tokio::sync::{RwLock, mpsc::UnboundedSender};
+use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     app::AppState,
@@ -119,7 +115,7 @@ impl ArticlesList {
         Ok(())
     }
 
-    fn get_current_article_mut<'a>(&'a mut self) -> Option<&'a mut Article> {
+    fn get_current_article_mut(&mut self) -> Option<&mut Article> {
         if let Some(index) = self.table_state.selected() {
             return self.articles.get_mut(index);
         }
@@ -340,11 +336,10 @@ impl CommandReceiver for ArticlesList {
 
         if selected_before != selected_after
             && let Some(selected) = self.table_state.selected()
+            && let Some(article) = self.articles.get(selected)
         {
-            if let Some(article) = self.articles.get(selected) {
-                self.command_sender
-                    .send(Command::ArticleSelected(article.clone()))?;
-            }
+            self.command_sender
+                .send(Command::ArticleSelected(article.clone()))?;
         }
 
         Ok(())

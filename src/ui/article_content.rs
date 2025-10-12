@@ -25,7 +25,7 @@ pub struct ArticleContent {
     config: Arc<Config>,
 
     news_flash_async_manager: Arc<NewsFlashAsyncManager>,
-    command_sender: UnboundedSender<Command>,
+    _command_sender: UnboundedSender<Command>,
 
     article: Option<Article>,
     fat_article: Option<FatArticle>,
@@ -47,7 +47,7 @@ impl ArticleContent {
     ) -> Self {
         Self {
             config,
-            command_sender,
+            _command_sender: command_sender,
             news_flash_async_manager: news_flash_async_manager.clone(),
 
             fat_article: None,

@@ -20,6 +20,8 @@ pub fn translate_to_commands(_input_config: &InputConfig, key_event: KeyEvent) -
         Char('r') => vec![Sync],
         Char(' ') => vec![FocusNext],
         Backspace => vec![FocusPrevious],
+        Tab => vec![CyclicFocusNext],
+        BackTab => vec![CyclicFocusPrevious],
         Char('o') => vec![OpenInBrowser, SetCurrentAsRead, SelectNextUnread],
         Char('n') => vec![SetCurrentAsRead, SelectNextUnread],
         Char('u') => vec![SetCurrentAsUnread],

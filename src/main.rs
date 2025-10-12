@@ -45,6 +45,7 @@ async fn main() -> color_eyre::Result<()> {
 
     let news_flash_async_manager =
         NewsFlashAsyncManager::new(news_flash, client, command_sender.clone());
+
     let app = crate::app::App::new(config, news_flash_async_manager, command_sender);
 
     let terminal = ratatui::init();

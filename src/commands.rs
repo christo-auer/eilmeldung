@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use news_flash::models::{Article, ArticleFilter, FatArticle, FeedID, Marked, Read, Thumbnail};
+use news_flash::models::{Article, ArticleFilter, FatArticle, FeedID, Thumbnail};
 
 use crate::{
     app::AppState,
@@ -21,6 +21,8 @@ pub enum Command {
     // Panels
     FocusNext,
     FocusPrevious,
+    CyclicFocusNext,
+    CyclicFocusPrevious,
 
     // feeds and articles
     Sync,

@@ -1,7 +1,4 @@
-use ratatui::{
-    style::{Color, Modifier, Style, Stylize},
-    widgets::BorderType,
-};
+use ratatui::style::{Color, Modifier, Style, Stylize};
 
 #[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
 pub struct Theme {
