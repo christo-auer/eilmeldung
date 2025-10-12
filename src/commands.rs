@@ -37,6 +37,7 @@ pub enum Command {
     SetAllRead,
     SetAllUnread,
     SetArticleScope(ArticleScope),
+    ScrapeArticle,
 
     AsyncSyncStarted,
     AsyncSyncFinished(HashMap<FeedID, i64>),

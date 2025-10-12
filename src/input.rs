@@ -18,6 +18,7 @@ pub fn translate_to_commands(_input_config: &InputConfig, key_event: KeyEvent) -
         Char('l') => vec![NavigateRight],
         Char('q') => vec![ApplicationQuit],
         Char('r') => vec![Sync],
+        Char('s') => vec![ScrapeArticle],
         Char(' ') => vec![FocusNext],
         Backspace => vec![FocusPrevious],
         Tab => vec![CyclicFocusNext],
