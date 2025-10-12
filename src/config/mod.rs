@@ -5,6 +5,12 @@ use crate::config::theme::Theme;
 use crate::ui::articles_list::ArticleScope;
 use log::info;
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
+pub enum ArticleContentType {
+    PlainText,
+    Markdown,
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Config {
     pub input_config: InputConfig,
@@ -22,6 +28,13 @@ pub struct Config {
     pub marked_icon: char,
     pub unmarked_icon: char,
     pub article_scope: ArticleScope,
+
+    pub article_auto_scrape: bool,
+    pub article_thumbnail_show: bool,
+    pub article_thumbnail_width: u16,
+    pub article_thumbnail_resize: bool,
+    pub article_content_max_chars_per_line: u16,
+    pub article_content_preferred_type: ArticleContentType,
 }
 
 impl Default for Config {
@@ -40,6 +53,13 @@ impl Default for Config {
             marked_icon: '',
             unmarked_icon: ' ',
             article_scope: ArticleScope::Unread,
+
+            article_auto_scrape: true,
+            article_thumbnail_show: true,
+            article_thumbnail_width: 20,
+            article_thumbnail_resize: false,
+            article_content_max_chars_per_line: 66,
+            article_content_preferred_type: ArticleContentType::PlainText,
         }
     }
 }
