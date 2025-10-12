@@ -1,29 +1,29 @@
 use std::collections::HashMap;
 use std::{cmp::Ordering, sync::Arc};
 
+use crate::app::AppState;
 use crate::config::Config;
-use news_flash::models::TagID;
-use news_flash::{
-    NewsFlash,
-    models::{Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping},
-};
+use crate::newsflash_utils::NewsFlashAsyncManager;
+use crate::ui::tooltip::{Tooltip, TooltipFlavor};
+use news_flash::models::{ArticleFilter, Tag};
+use news_flash::models::{Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping};
+use ratatui::widgets::{Block, Borders};
 use ratatui::{
     style::{Style, Stylize},
     widgets::{StatefulWidget, Widget},
 };
 use ratatui::{text::Text, widgets::Scrollbar};
-use tokio::sync::RwLock;
+use tokio::sync::mpsc::UnboundedSender;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
-use crate::commands::Command;
+use crate::commands::{Command, CommandReceiver};
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub enum FeedListItem {
-    Header(Arc<String>),
     All,
     Feed(Box<Feed>),
     Category(Box<Category>),
-    Tag(Box<TagID>),
+    Tag(Box<Tag>),
     Query(Arc<String>),
 }
 
@@ -42,7 +42,6 @@ impl FeedListItem {
 
         let (label, mut style) = match self {
             All => (config.all_label.to_string(), config.theme.header),
-            Header(header) => (header.as_ref().clone(), config.theme.header),
             Feed(feed) => (
                 config.feed_label.replace("{label}", feed.label.as_str()),
                 config.theme.feed,
@@ -53,7 +52,7 @@ impl FeedListItem {
                     .replace("{label}", category.label.as_str()),
                 config.theme.category,
             ),
-            Tag(tag_id) => (tag_id.to_string(), config.theme.category),
+            Tag(tag) => (tag.label.to_string(), config.theme.tag),
             Query(query) => (query.to_string(), config.theme.category),
         };
 
@@ -70,16 +69,62 @@ impl FeedListItem {
             style,
         )
     }
+
+    fn to_tooltip(&self, _config: &Config) -> String {
+        use FeedListItem::*;
+        match self {
+            All => "all feeds".to_string(),
+            Category(category) => format!("Category: {}", category.label).to_string(),
+            Feed(feed) => {
+                format!(
+                    "Feed: {} ({})",
+                    feed.label,
+                    feed.website
+                        .clone()
+                        .map(|url| url.to_string())
+                        .unwrap_or("no url".into())
+                )
+            }
+            Tag(tag) => format!("Tag: {}", tag.label),
+            Query(query) => format!("Query: {}", query),
+        }
+    }
+}
+
+impl From<FeedListItem> for ArticleFilter {
+    fn from(value: FeedListItem) -> Self {
+        use FeedListItem::*;
+        match value {
+            All => ArticleFilter::default(),
+            Feed(feed) => ArticleFilter {
+                feeds: vec![feed.feed_id].into(),
+                ..Default::default()
+            },
+            Category(category) => ArticleFilter {
+                categories: vec![category.category_id].into(),
+                ..Default::default()
+            },
+            Tag(tag) => ArticleFilter {
+                tags: vec![tag.tag_id].into(),
+                ..Default::default()
+            },
+            Query(query) => ArticleFilter {
+                search_term: Some((*query).clone()),
+                ..Default::default()
+            },
+        }
+    }
 }
 
 pub struct FeedList {
     config: Arc<Config>,
-    news_flash: Arc<RwLock<NewsFlash>>,
+    news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+    command_sender: UnboundedSender<Command>,
 
     tree_state: TreeState<FeedListItem>,
     items: Vec<TreeItem<'static, FeedListItem>>,
 
-    focused: bool,
+    is_focused: bool,
 }
 
 enum FeedOrCategory<'a> {
@@ -89,136 +134,157 @@ enum FeedOrCategory<'a> {
 
 impl Widget for &mut FeedList {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
+        let highlight_style = if self.is_focused {
+            Style::new().reversed()
+        } else {
+            Style::new().underlined()
+        };
+
         let tree = Tree::new(&self.items)
             .unwrap() // TODO error handling
+            .block(
+                Block::default()
+                    .borders(Borders::TOP | Borders::LEFT | Borders::BOTTOM)
+                    .border_type(ratatui::widgets::BorderType::Rounded)
+                    .border_style(self.config.theme.border_style),
+            )
             .experimental_scrollbar(Some(
                 Scrollbar::new(ratatui::widgets::ScrollbarOrientation::VerticalLeft)
                     .begin_symbol(None)
                     .end_symbol(None)
                     .track_symbol(None),
             ))
-            .highlight_style(Style::new().reversed());
+            .highlight_style(highlight_style);
 
         StatefulWidget::render(tree, area, buf, &mut self.tree_state);
     }
 }
 
 impl FeedList {
-    pub fn new(config: Arc<Config>, news_flash: Arc<RwLock<NewsFlash>>) -> Self {
+    pub fn new(
+        config: Arc<Config>,
+        news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+        command_sender: UnboundedSender<Command>,
+    ) -> Self {
         Self {
             config,
-            news_flash,
+            news_flash_async_manager: news_flash_async_manager.clone(),
+            command_sender,
             items: vec![],
             tree_state: TreeState::default(),
-            focused: true,
+            is_focused: true,
         }
     }
 
     pub async fn build_tree(&mut self) -> color_eyre::Result<()> {
-        let news_flash = self.news_flash.read().await;
+        let previously_selected = self.get_selected_path();
 
-        let (feeds, feed_mappings) = news_flash.get_feeds()?;
-
-        let feed_map: HashMap<FeedID, Feed> = feeds
-            .iter()
-            .map(|feed| (feed.feed_id.clone(), feed.clone()))
-            .collect();
-
-        let (categories, category_mappings) = news_flash.get_categories()?;
-
-        let category_map: HashMap<CategoryID, Category> = categories
-            .iter()
-            .map(|category| (category.clone().category_id, category.clone()))
-            .collect();
-
-        let mut tree: HashMap<CategoryID, Vec<FeedOrCategory>> = HashMap::new();
-
-        categories.iter().for_each(|category| {
-            tree.insert(category.category_id.clone(), Vec::new());
-        });
-
-        category_mappings.iter().for_each(|category_mapping| {
-            if let Some(children) = tree.get_mut(&category_mapping.parent_id) {
-                children.push(FeedOrCategory::Category(category_mapping));
-            }
-        });
-
-        feed_mappings.iter().for_each(|feed_mapping| {
-            if let Some(children) = tree.get_mut(&feed_mapping.category_id) {
-                children.push(FeedOrCategory::Feed(feed_mapping));
-            }
-        });
-
-        tree.iter_mut().for_each(|(_, entries)| {
-            entries.sort_by(|a, b| {
-                use FeedOrCategory::*;
-                match (a, b) {
-                    (Category(_), Feed(_)) => Ordering::Less,
-                    (Feed(_), Category(_)) => Ordering::Greater,
-                    (Category(category_a), Category(category_b)) => {
-                        category_a.sort_index.cmp(&category_b.sort_index)
-                    }
-                    (Feed(feed_a), Feed(feed_b)) => feed_a.sort_index.cmp(&feed_b.sort_index),
-                }
-            })
-        });
-
-        let roots: Vec<Category> = categories
-            .iter()
-            .filter(|category| {
-                category_mappings
-                    .iter()
-                    .any(|category_mapping| category.category_id == category_mapping.category_id)
-            })
-            .cloned()
-            .collect();
-
-        // no we can build the tree structure
-        let unread_count_all = news_flash.unread_count_all()?;
-        let unread_feed_map = news_flash.unread_count_feed_map(true)?;
-        let marked_feed_map = news_flash.marked_count_feed_map()?;
-
-        let mut unread_category_map: HashMap<CategoryID, i64> = HashMap::new();
-        let mut marked_category_map: HashMap<CategoryID, i64> = HashMap::new();
-        roots.iter().for_each(|category| {
-            FeedList::count_categories_unread(
-                &category.category_id,
-                &tree,
-                &unread_feed_map,
-                &mut unread_category_map,
-            );
-            FeedList::count_categories_unread(
-                &category.category_id,
-                &tree,
-                &marked_feed_map,
-                &mut marked_category_map,
-            );
-        });
-
-        self.items = vec![TreeItem::new(
-            FeedListItem::All,
-            FeedListItem::All.to_text(&self.config, Some(unread_count_all), None),
-            feeds
+        {
+            let news_flash = self.news_flash_async_manager.news_flash_lock.read().await;
+            let (feeds, feed_mappings) = news_flash.get_feeds()?;
+            let feed_map: HashMap<FeedID, Feed> = feeds
                 .iter()
-                .map(|feed| {
-                    self.map_feed_to_tree_item(feed.clone(), &unread_feed_map, &marked_feed_map)
-                })
-                .collect(),
-        )?];
+                .map(|feed| (feed.feed_id.clone(), feed.clone()))
+                .collect();
 
-        // categories
-        for root in roots.iter() {
-            self.items.push(self.map_category_to_tree_item(
-                root,
-                &tree,
-                &category_map,
-                &feed_map,
-                &unread_feed_map,
-                &unread_category_map,
-                &marked_feed_map,
-                &marked_category_map,
-            ));
+            let (categories, category_mappings) = news_flash.get_categories()?;
+
+            let category_map: HashMap<CategoryID, Category> = categories
+                .iter()
+                .map(|category| (category.clone().category_id, category.clone()))
+                .collect();
+
+            let mut tree: HashMap<CategoryID, Vec<FeedOrCategory>> = HashMap::new();
+
+            categories.iter().for_each(|category| {
+                tree.insert(category.category_id.clone(), Vec::new());
+            });
+
+            category_mappings.iter().for_each(|category_mapping| {
+                if let Some(children) = tree.get_mut(&category_mapping.parent_id) {
+                    children.push(FeedOrCategory::Category(category_mapping));
+                }
+            });
+
+            feed_mappings.iter().for_each(|feed_mapping| {
+                if let Some(children) = tree.get_mut(&feed_mapping.category_id) {
+                    children.push(FeedOrCategory::Feed(feed_mapping));
+                }
+            });
+
+            tree.iter_mut().for_each(|(_, entries)| {
+                entries.sort_by(|a, b| {
+                    use FeedOrCategory::*;
+                    match (a, b) {
+                        (Category(_), Feed(_)) => Ordering::Less,
+                        (Feed(_), Category(_)) => Ordering::Greater,
+                        (Category(category_a), Category(category_b)) => {
+                            category_a.sort_index.cmp(&category_b.sort_index)
+                        }
+                        (Feed(feed_a), Feed(feed_b)) => feed_a.sort_index.cmp(&feed_b.sort_index),
+                    }
+                })
+            });
+
+            let roots: Vec<Category> = categories
+                .iter()
+                .filter(|category| {
+                    category_mappings.iter().any(|category_mapping| {
+                        category.category_id == category_mapping.category_id
+                    })
+                })
+                .cloned()
+                .collect();
+
+            // no we can build the tree structure
+            let unread_count_all = news_flash.unread_count_all()?;
+            let unread_feed_map = news_flash.unread_count_feed_map(true)?;
+            let marked_feed_map = news_flash.marked_count_feed_map()?;
+
+            let mut unread_category_map: HashMap<CategoryID, i64> = HashMap::new();
+            let mut marked_category_map: HashMap<CategoryID, i64> = HashMap::new();
+            roots.iter().for_each(|category| {
+                FeedList::count_categories_unread(
+                    &category.category_id,
+                    &tree,
+                    &unread_feed_map,
+                    &mut unread_category_map,
+                );
+                FeedList::count_categories_unread(
+                    &category.category_id,
+                    &tree,
+                    &marked_feed_map,
+                    &mut marked_category_map,
+                );
+            });
+
+            self.items = vec![TreeItem::new(
+                FeedListItem::All,
+                FeedListItem::All.to_text(&self.config, Some(unread_count_all), None),
+                feeds
+                    .iter()
+                    .map(|feed| {
+                        self.map_feed_to_tree_item(feed.clone(), &unread_feed_map, &marked_feed_map)
+                    })
+                    .collect(),
+            )?];
+
+            // categories
+            for root in roots.iter() {
+                self.items.push(self.map_category_to_tree_item(
+                    root,
+                    &tree,
+                    &category_map,
+                    &feed_map,
+                    &unread_feed_map,
+                    &unread_category_map,
+                    &marked_feed_map,
+                    &marked_category_map,
+                ));
+            }
         }
+
+        self.select_entry(previously_selected)?;
 
         Ok(())
     }
@@ -315,24 +381,99 @@ impl FeedList {
         .unwrap()
     }
 
-    pub fn process_command(&mut self, command: Command) -> Option<Vec<Command>> {
-        use Command::*;
-        match command {
-            NavigateUp if self.focused => self.tree_state.key_up(),
-            NavigateDown if self.focused => self.tree_state.key_down(),
-            NavigateFirst if self.focused => self.tree_state.select_first(),
-            NavigateLast if self.focused => self.tree_state.select_last(),
-            NavigateLeft if self.focused => self.tree_state.key_left(),
-            NavigateRight if self.focused => self.tree_state.key_right(),
-            NavigatePageDown if self.focused => self
-                .tree_state
-                .scroll_down(self.config.input_config.scroll_amount),
-            NavigatePageUp if self.focused => self
-                .tree_state
-                .scroll_up(self.config.input_config.scroll_amount),
-            _ => true,
+    fn update_tooltip(&self, now_selected: Option<FeedListItem>) -> color_eyre::Result<()> {
+        if let Some(item) = now_selected {
+            self.command_sender.send(Command::Tooltip(Tooltip::new(
+                item.to_tooltip(&self.config),
+                TooltipFlavor::Info,
+            )))?;
+        }
+
+        Ok(())
+    }
+
+    fn get_selected(&self) -> Option<FeedListItem> {
+        self.tree_state.selected().last().cloned()
+    }
+
+    fn get_selected_path(&self) -> Vec<FeedListItem> {
+        self.tree_state.selected().to_vec()
+    }
+
+    fn select_entry(&mut self, path: Vec<FeedListItem>) -> color_eyre::Result<()> {
+        if self.tree_state.select(path) {
+            let now_selected = self.tree_state.selected().last().cloned();
+            self.command_sender
+                .send(Command::ArticlesSelected(now_selected.unwrap().into()))?;
+        }
+
+        Ok(())
+    }
+
+    fn generate_articles_selected_command(&self) -> color_eyre::Result<()> {
+        if let Some(selected) = self.get_selected() {
+            self.command_sender
+                .send(Command::ArticlesSelected(selected.into()))?;
         };
 
-        None
+        Ok(())
+    }
+}
+
+impl CommandReceiver for FeedList {
+    async fn process_command(&mut self, command: &Command) -> color_eyre::Result<()> {
+        use Command::*;
+
+        // get selection before
+        let selected_before_item = self.tree_state.selected().last().cloned();
+
+        match command {
+            NavigateUp if self.is_focused => {
+                self.tree_state.key_up();
+            }
+            NavigateDown if self.is_focused => {
+                self.tree_state.key_down();
+            }
+            NavigateFirst if self.is_focused => {
+                self.tree_state.select_first();
+            }
+            NavigateLast if self.is_focused => {
+                self.tree_state.select_last();
+            }
+            NavigateLeft if self.is_focused => {
+                self.tree_state.key_left();
+            }
+            NavigateRight if self.is_focused => {
+                self.tree_state.key_right();
+            }
+            NavigatePageDown if self.is_focused => {
+                self.tree_state
+                    .scroll_down(self.config.input_config.scroll_amount);
+            }
+            NavigatePageUp if self.is_focused => {
+                self.tree_state
+                    .scroll_up(self.config.input_config.scroll_amount);
+            }
+
+            ApplicationStarted | AsyncSyncFinished(_) | AsyncMarkArticlesAsReadFinished => {
+                self.build_tree().await?;
+            }
+
+            ApplicationStateChanged(state) => {
+                self.is_focused = *state == AppState::FeedSelection;
+            }
+
+            _ => (),
+        };
+
+        // get selection after
+        let selected_after_item = self.tree_state.selected().last().cloned();
+
+        if selected_before_item != selected_after_item {
+            self.generate_articles_selected_command()?;
+            self.update_tooltip(selected_after_item)?;
+        }
+
+        Ok(())
     }
 }
