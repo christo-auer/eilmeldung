@@ -8,13 +8,13 @@ use crate::{
 };
 use image::ImageReader;
 use news_flash::{
-    models::{Article, FatArticle, Thumbnail},
+    models::{Article, FatArticle, Feed, Thumbnail},
     util::html2text,
 };
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    text::{Line, Text},
+    text::{Line, Span, Text},
     widgets::{Block, Borders, Paragraph, StatefulWidget, Widget, Wrap},
 };
 use ratatui_image::{
@@ -30,6 +30,7 @@ pub struct ArticleContent {
     _command_sender: UnboundedSender<Command>,
 
     article: Option<Article>,
+    feed: Option<Feed>,
     fat_article: Option<FatArticle>,
     thumbnail: Option<Thumbnail>,
     image: Option<StatefulProtocol>,
@@ -55,16 +56,58 @@ impl ArticleContent {
 
             fat_article: None,
             article: None,
+            feed: None,
             thumbnail: None,
             image: None,
             markdown_content: None,
-            picker: Picker::from_query_stdio().unwrap(), // gracefully handle errors
+            picker: Picker::from_query_stdio().unwrap(), // TODO gracefully handle errors
 
             vertical_scroll: 0,
             max_scroll: 0,
 
             is_focused: false,
         }
+    }
+
+    async fn on_article_selected(&mut self, article: Article) -> color_eyre::Result<()> {
+        self.thumbnail = None;
+        self.image = None;
+        self.fat_article = None;
+        self.markdown_content = None;
+        self.feed = None;
+
+        self.article = Some(article.clone());
+
+        {
+            let news_flash = self.news_flash_async_manager.news_flash_lock.read().await;
+
+            let (feeds, _) = news_flash.get_feeds()?;
+
+            self.feed = feeds
+                .iter()
+                .find(|feed| feed.feed_id == article.feed_id)
+                .cloned();
+        }
+
+        if self.config.article_thumbnail_show {
+            // TODO debounce
+            self.load_article_thumbnail()?;
+        }
+
+        Ok(())
+    }
+
+    fn prepare_thumbnail(&mut self, thumbnail: &Thumbnail) -> color_eyre::Result<()> {
+        if let Some(article) = self.article.clone()
+            && article.article_id == thumbnail.article_id
+            && let Some(data) = thumbnail.data.as_ref()
+        {
+            let cursor = Cursor::new(data);
+            let image = ImageReader::new(cursor).with_guessed_format()?.decode()?;
+            self.image = Some(self.picker.new_resize_protocol(image));
+        }
+
+        Ok(())
     }
 
     fn scrape_article(&mut self) -> color_eyre::Result<()> {
@@ -145,12 +188,21 @@ impl ArticleContent {
         }
 
         let article = self.article.as_ref().unwrap();
+        let title = article.title.clone().unwrap_or("no title".into());
+        let feed_label: String = if let Some(feed) = self.feed.clone() {
+            feed.label.clone()
+        } else {
+            article.feed_id.as_str().into()
+        };
         let mut summary = article.summary.clone().unwrap_or("no summary".into());
         summary = ArticleContent::clean_string(&mut summary);
 
-        let summary = Paragraph::new(summary)
-            .style(self.config.theme.paragraph)
-            .wrap(Wrap { trim: true });
+        let summary = Paragraph::new(vec![
+            Line::from(Span::from(feed_label).style(self.config.theme.feed)),
+            Line::from(Span::from(title).style(self.config.theme.header)),
+            Line::from(Span::from(summary).style(self.config.theme.paragraph)),
+        ])
+        .wrap(Wrap { trim: true });
 
         summary.render(summary_chunk, buf);
     }
@@ -269,22 +321,14 @@ impl CommandReceiver for ArticleContent {
             }
 
             ArticleSelected(article) => {
-                self.thumbnail = None; // reset thumbnail
-                self.image = None;
-                self.fat_article = None;
-                self.markdown_content = None;
-                self.article = Some(article.clone());
+                self.on_article_selected(article.clone()).await?;
             }
 
             FatArticleSelected(article) => self.article = Some(article.clone()),
 
             AsyncFetchThumbnailFinished(thumbnail) => match thumbnail {
                 Some(thumbnail) => {
-                    // TODO error handling
-                    let data = thumbnail.data.as_ref().unwrap();
-                    let cursor = Cursor::new(data);
-                    let image = ImageReader::new(cursor).with_guessed_format()?.decode()?;
-                    self.image = Some(self.picker.new_resize_protocol(image));
+                    self.prepare_thumbnail(thumbnail)?;
                 }
                 None => {
                     self.image = None;
@@ -302,13 +346,8 @@ impl CommandReceiver for ArticleContent {
             ApplicationStateChanged(state) => {
                 self.is_focused = *state == AppState::ArticleContent;
 
-                if self.config.article_auto_scrape {
+                if self.is_focused && self.config.article_auto_scrape {
                     self.scrape_article()?;
-                }
-
-                if self.config.article_thumbnail_show {
-                    // TODO debounce
-                    self.load_article_thumbnail()?;
                 }
             }
 
