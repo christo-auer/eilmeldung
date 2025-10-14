@@ -3,7 +3,7 @@ pub mod theme;
 use crate::config::paths::{CONFIG_FILE, PROJECT_DIRS};
 use crate::config::theme::Theme;
 use crate::ui::articles_list::ArticleScope;
-use log::info;
+use log::{error, info, debug};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub enum ArticleContentType {
@@ -84,19 +84,31 @@ pub fn load_config() -> color_eyre::Result<Config> {
         .unwrap()
         .to_string();
 
-    info!("loading config from {config_path}");
+    info!("Loading config from {}", config_path);
+    debug!("Config directory: {:?}", PROJECT_DIRS.config_dir());
 
     let config = match config::Config::builder()
         .add_source(config::File::with_name(config_path.as_str()))
         .build()
     {
-        Ok(config_loader) => config_loader.try_deserialize::<Config>()?,
-        _ => {
-            info!("no configuration file found. assuming default config");
-            // TODO serialize default config?
+        Ok(config_loader) => {
+            debug!("Configuration file found, deserializing");
+            config_loader.try_deserialize::<Config>()
+                .map_err(|e| {
+                    error!("Failed to deserialize config: {}", e);
+                    e
+                })?
+        },
+        Err(e) => {
+            info!("No configuration file found ({}), using default config", e);
+            debug!("Default config will be used with {} fps refresh rate", Config::default().refresh_fps);
             Config::default()
         }
     };
+
+    info!("Configuration loaded successfully");
+    debug!("Config settings - FPS: {}, Theme: {:?}, Article scope: {:?}", 
+           config.refresh_fps, config.theme, config.article_scope);
 
     Ok(config)
 }

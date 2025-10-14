@@ -1,3 +1,4 @@
+use log::{debug, error, info};
 use news_flash::{
     NewsFlash,
     models::{DirectLogin, LoginData, PluginID},
@@ -5,7 +6,7 @@ use news_flash::{
 use tokio::sync::mpsc::unbounded_channel;
 
 use crate::{
-    commands::Command,
+    commands::Message,
     config::{load_config, paths},
     newsflash_utils::NewsFlashAsyncManager,
 };
@@ -20,16 +21,34 @@ mod ui;
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
+    info!("Starting eilmeldung application");
+
     color_eyre::install()?;
     crate::logging::init_logging()?;
+    debug!("Error handling and logging initialized");
 
+    info!("Loading configuration");
     let config = load_config()?;
+    debug!("Configuration loaded successfully");
 
     let config_dir = paths::PROJECT_DIRS.config_dir();
     let data_dir = paths::PROJECT_DIRS.data_dir();
+    debug!(
+        "Using config dir: {:?}, data dir: {:?}",
+        config_dir, data_dir
+    );
+
     let local_plugin_id = PluginID::new("freshrss");
-    let news_flash = NewsFlash::new(config_dir, data_dir, &local_plugin_id, None)?;
-    let (command_sender, command_receiver) = unbounded_channel::<Command>();
+    info!("Initializing NewsFlash with plugin: {}", local_plugin_id);
+
+    let news_flash = NewsFlash::new(config_dir, data_dir, &local_plugin_id, None).map_err(|e| {
+        error!("Failed to initialize NewsFlash: {}", e);
+        e
+    })?;
+    debug!("NewsFlash instance created successfully");
+
+    let (message_sender, message_receiver) = unbounded_channel::<Message>();
+    debug!("Message channel created");
 
     let login_data = LoginData::Direct(DirectLogin::Password(news_flash::models::PasswordLogin {
         id: local_plugin_id,
@@ -41,18 +60,34 @@ async fn main() -> color_eyre::Result<()> {
 
     let client = reqwest::Client::new();
 
-    news_flash.login(login_data, &client).await?;
+    info!("Attempting to login to NewsFlash");
+    news_flash.login(login_data, &client).await.map_err(|e| {
+        error!("Failed to login to NewsFlash: {}", e);
+        e
+    })?;
+
+    news_flash.set_offline(false, &client).await?;
+
+    // news_flash.initial_sync(&client, Default::default()).await?;
 
     let news_flash_async_manager =
-        NewsFlashAsyncManager::new(news_flash, client, command_sender.clone());
+        NewsFlashAsyncManager::new(news_flash, client, message_sender.clone());
 
-    let app = crate::app::App::new(config, news_flash_async_manager, command_sender);
+    let app = crate::app::App::new(config, news_flash_async_manager, message_sender);
 
+    info!("Initializing terminal");
     let terminal = ratatui::init();
 
-    let result = app.run(command_receiver, terminal).await;
+    info!("Starting application main loop");
+    let result = app.run(message_receiver, terminal).await;
 
+    info!("Application loop ended, restoring terminal");
     ratatui::restore();
+
+    match &result {
+        Ok(_) => info!("Application exited successfully"),
+        Err(e) => error!("Application exited with error: {}", e),
+    }
 
     result
 }
