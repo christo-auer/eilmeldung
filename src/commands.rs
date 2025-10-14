@@ -7,6 +7,7 @@ use crate::{
     ui::{articles_list::ArticleScope, tooltip::Tooltip},
 };
 
+#[derive(Debug)]
 pub enum Command {
     // general navigation
     NavigateUp,
@@ -19,25 +20,33 @@ pub enum Command {
     NavigateRight,
 
     // Panels
-    FocusNext,
-    FocusPrevious,
-    CyclicFocusNext,
-    CyclicFocusPrevious,
+    PanelFocusNext,
+    PanelFocusPrevious,
+    PanelFocusNextCyclic,
+    PanelFocusPreivousCyclic,
+    ToggleDistractionFreeMode,
 
     // feeds and articles
-    Sync,
+    FeedsSync,
+    ArticleOpenInBrowser,
+    ArticleSetCurrentAsRead,
+    ArticleSetCurrentAsUnread,
+    ArticleCurrentToggleRead,
+    ArticleListSelectNextUnread,
+    ArticleListSetAllRead,
+    ArticleListSetAllUnread,
+    ArticleListSetScope(ArticleScope),
+    ArticleScrape,
+
+    // application
+    ApplicationQuit,
+}
+
+#[derive(Debug)]
+pub enum Event {
     ArticlesSelected(ArticleFilter),
     ArticleSelected(Article),
     FatArticleSelected(Article),
-    OpenInBrowser,
-    SetCurrentAsRead,
-    SetCurrentAsUnread,
-    ToggleCurrentRead,
-    SelectNextUnread,
-    SetAllRead,
-    SetAllUnread,
-    SetArticleScope(ArticleScope),
-    ScrapeArticle,
 
     AsyncSyncStarted,
     AsyncSyncFinished(HashMap<FeedID, i64>),
@@ -53,15 +62,20 @@ pub enum Command {
 
     AsyncOperationFailed(String),
 
+    // messaging/status
+    Tooltip(Tooltip),
+
     // application
     ApplicationStarted,
     ApplicationStateChanged(AppState),
-    ApplicationQuit,
-
-    // messaging/status
-    Tooltip(Tooltip),
 }
 
-pub trait CommandReceiver {
-    async fn process_command(&mut self, command: &Command) -> color_eyre::Result<()>;
+#[derive(Debug)]
+pub enum Message {
+    Command(Command),
+    Event(Event),
+}
+
+pub trait MessageReceiver {
+    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()>;
 }
