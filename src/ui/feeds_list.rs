@@ -16,7 +16,7 @@ use ratatui::{text::Text, widgets::Scrollbar};
 use tokio::sync::mpsc::UnboundedSender;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
-use crate::commands::{Command, CommandReceiver};
+use crate::commands::{Command, Event, Message, MessageReceiver};
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub enum FeedListItem {
@@ -119,7 +119,7 @@ impl From<FeedListItem> for ArticleFilter {
 pub struct FeedList {
     config: Arc<Config>,
     news_flash_async_manager: Arc<NewsFlashAsyncManager>,
-    command_sender: UnboundedSender<Command>,
+    message_sender: UnboundedSender<Message>,
 
     tree_state: TreeState<FeedListItem>,
     items: Vec<TreeItem<'static, FeedListItem>>,
@@ -164,12 +164,12 @@ impl FeedList {
     pub fn new(
         config: Arc<Config>,
         news_flash_async_manager: Arc<NewsFlashAsyncManager>,
-        command_sender: UnboundedSender<Command>,
+        message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {
             config,
             news_flash_async_manager: news_flash_async_manager.clone(),
-            command_sender,
+            message_sender,
             items: vec![],
             tree_state: TreeState::default(),
             is_focused: true,
@@ -383,10 +383,11 @@ impl FeedList {
 
     fn update_tooltip(&self, now_selected: Option<FeedListItem>) -> color_eyre::Result<()> {
         if let Some(item) = now_selected {
-            self.command_sender.send(Command::Tooltip(Tooltip::new(
-                item.to_tooltip(&self.config),
-                TooltipFlavor::Info,
-            )))?;
+            self.message_sender
+                .send(Message::Event(Event::Tooltip(Tooltip::new(
+                    item.to_tooltip(&self.config),
+                    TooltipFlavor::Info,
+                ))))?;
         }
 
         Ok(())
@@ -403,8 +404,10 @@ impl FeedList {
     fn select_entry(&mut self, path: Vec<FeedListItem>) -> color_eyre::Result<()> {
         if self.tree_state.select(path) {
             let now_selected = self.tree_state.selected().last().cloned();
-            self.command_sender
-                .send(Command::ArticlesSelected(now_selected.unwrap().into()))?;
+            self.message_sender
+                .send(Message::Event(Event::ArticlesSelected(
+                    now_selected.unwrap().into(),
+                )))?;
         }
 
         Ok(())
@@ -412,54 +415,57 @@ impl FeedList {
 
     fn generate_articles_selected_command(&self) -> color_eyre::Result<()> {
         if let Some(selected) = self.get_selected() {
-            self.command_sender
-                .send(Command::ArticlesSelected(selected.into()))?;
+            self.message_sender
+                .send(Message::Event(Event::ArticlesSelected(selected.into())))?;
         };
 
         Ok(())
     }
 }
 
-impl CommandReceiver for FeedList {
-    async fn process_command(&mut self, command: &Command) -> color_eyre::Result<()> {
+impl MessageReceiver for FeedList {
+    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         use Command::*;
+        use Event::*;
 
         // get selection before
         let selected_before_item = self.tree_state.selected().last().cloned();
 
-        match command {
-            NavigateUp if self.is_focused => {
+        match message {
+            Message::Command(NavigateUp) if self.is_focused => {
                 self.tree_state.key_up();
             }
-            NavigateDown if self.is_focused => {
+            Message::Command(NavigateDown) if self.is_focused => {
                 self.tree_state.key_down();
             }
-            NavigateFirst if self.is_focused => {
+            Message::Command(NavigateFirst) if self.is_focused => {
                 self.tree_state.select_first();
             }
-            NavigateLast if self.is_focused => {
+            Message::Command(NavigateLast) if self.is_focused => {
                 self.tree_state.select_last();
             }
-            NavigateLeft if self.is_focused => {
+            Message::Command(NavigateLeft) if self.is_focused => {
                 self.tree_state.key_left();
             }
-            NavigateRight if self.is_focused => {
+            Message::Command(NavigateRight) if self.is_focused => {
                 self.tree_state.key_right();
             }
-            NavigatePageDown if self.is_focused => {
+            Message::Command(NavigatePageDown) if self.is_focused => {
                 self.tree_state
                     .scroll_down(self.config.input_config.scroll_amount);
             }
-            NavigatePageUp if self.is_focused => {
+            Message::Command(NavigatePageUp) if self.is_focused => {
                 self.tree_state
                     .scroll_up(self.config.input_config.scroll_amount);
             }
 
-            ApplicationStarted | AsyncSyncFinished(_) | AsyncMarkArticlesAsReadFinished => {
+            Message::Event(ApplicationStarted)
+            | Message::Event(AsyncSyncFinished(_))
+            | Message::Event(AsyncMarkArticlesAsReadFinished) => {
                 self.build_tree().await?;
             }
 
-            ApplicationStateChanged(state) => {
+            Message::Event(ApplicationStateChanged(state)) => {
                 self.is_focused = *state == AppState::FeedSelection;
             }
 

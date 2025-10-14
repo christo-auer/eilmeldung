@@ -10,7 +10,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     app::AppState,
-    commands::{Command, CommandReceiver},
+    commands::{Command, Event, Message, MessageReceiver},
     config::Config,
     newsflash_utils::NewsFlashAsyncManager,
 };
@@ -26,7 +26,7 @@ pub struct ArticlesList {
     config: Arc<Config>,
 
     news_flash_async_manager: Arc<NewsFlashAsyncManager>,
-    command_sender: UnboundedSender<Command>,
+    message_sender: UnboundedSender<Message>,
 
     articles: Vec<Article>,
     table: Table<'static>,
@@ -42,14 +42,14 @@ impl ArticlesList {
     pub fn new(
         config: Arc<Config>,
         news_flash_async_manager: Arc<NewsFlashAsyncManager>,
-        command_sender: UnboundedSender<Command>,
+        message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {
             config: config.clone(),
             article_filter: None,
             article_scope: config.clone().article_scope,
             news_flash_async_manager: news_flash_async_manager.clone(),
-            command_sender,
+            message_sender,
             articles: Default::default(),
             table_state: Default::default(),
             table: Default::default(),
@@ -75,6 +75,9 @@ impl ArticlesList {
                 }
             }
 
+            article_filter.order_by = Some(news_flash::models::OrderBy::Published);
+            article_filter.order = Some(news_flash::models::ArticleOrder::NewestFirst);
+
             self.articles = news_flash.get_articles(article_filter)?;
         }
 
@@ -84,8 +87,8 @@ impl ArticlesList {
     fn select_index(&mut self, index: usize) -> color_eyre::Result<()> {
         if let Some(article) = self.articles.get(index) {
             self.table_state.select(Some(index));
-            self.command_sender
-                .send(Command::ArticleSelected(article.clone()))?;
+            self.message_sender
+                .send(Message::Event(Event::ArticleSelected(article.clone())))?;
         }
         Ok(())
     }
@@ -204,6 +207,7 @@ impl Widget for &mut ArticlesList {
                     "{author}" => article.author.clone().unwrap_or("?".into()).to_string(),
                     "{date}" => article
                         .date
+                        .with_timezone(&chrono::Local)
                         .clone()
                         .format(&self.config.date_format)
                         .to_string(),
@@ -264,67 +268,68 @@ impl Widget for &mut ArticlesList {
     }
 }
 
-impl CommandReceiver for ArticlesList {
-    async fn process_command(&mut self, command: &Command) -> color_eyre::Result<()> {
+impl MessageReceiver for ArticlesList {
+    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         use Command::*;
+        use Event::*;
 
         let selected_before = self.table_state.selected();
 
-        match command {
-            NavigateUp if self.is_focused => self.table_state.select_previous(),
-            NavigateDown if self.is_focused => self.table_state.select_next(),
+        match message {
+            Message::Command(NavigateUp) if self.is_focused => self.table_state.select_previous(),
+            Message::Command(NavigateDown) if self.is_focused => self.table_state.select_next(),
 
-            AsyncOperationFailed(_) => {
+            Message::Event(AsyncOperationFailed(_)) => {
                 self.build_list().await?;
                 self.select_first_unread()?;
             }
 
-            ArticlesSelected(article_filter) => {
+            Message::Event(ArticlesSelected(article_filter)) => {
                 self.article_filter = Some(article_filter.clone());
                 self.build_list().await?;
                 self.select_first_unread()?;
             }
 
-            SetArticleScope(scope) => {
+            Message::Command(ArticleListSetScope(scope)) => {
                 self.article_scope = *scope;
                 self.build_list().await?;
                 self.select_first_unread()?;
             }
 
-            ApplicationStateChanged(state) => {
+            Message::Event(ApplicationStateChanged(state)) => {
                 self.is_focused = *state == AppState::ArticleSelection;
             }
 
-            OpenInBrowser => {
+            Message::Command(ArticleOpenInBrowser) => {
                 self.open_in_browser()?;
             }
 
-            SetCurrentAsRead => {
+            Message::Command(ArticleSetCurrentAsRead) => {
                 self.set_current_read_status(Some(Read::Read)).await?;
                 self.build_list().await?;
             }
 
-            SetCurrentAsUnread => {
+            Message::Command(ArticleSetCurrentAsUnread) => {
                 self.set_current_read_status(Some(Read::Unread)).await?;
             }
 
-            ToggleCurrentRead => {
+            Message::Command(ArticleCurrentToggleRead) => {
                 self.set_current_read_status(None).await?;
             }
 
-            SetAllRead => {
+            Message::Command(ArticleListSetAllRead) => {
                 self.set_all_read_status(Read::Read).await?;
             }
 
-            SetAllUnread => {
+            Message::Command(ArticleListSetAllUnread) => {
                 self.set_all_read_status(Read::Unread).await?;
             }
 
-            AsyncMarkArticlesAsReadFinished => {
+            Message::Event(AsyncMarkArticlesAsReadFinished) => {
                 self.build_list().await?;
             }
 
-            SelectNextUnread => {
+            Message::Command(ArticleListSelectNextUnread) => {
                 // TODO select NEXT unread
                 self.select_first_unread()?;
             }
@@ -338,8 +343,8 @@ impl CommandReceiver for ArticlesList {
             && let Some(selected) = self.table_state.selected()
             && let Some(article) = self.articles.get(selected)
         {
-            self.command_sender
-                .send(Command::ArticleSelected(article.clone()))?;
+            self.message_sender
+                .send(Message::Event(Event::ArticleSelected(article.clone())))?;
         }
 
         Ok(())

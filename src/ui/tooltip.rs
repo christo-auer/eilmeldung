@@ -2,14 +2,14 @@ use ratatui::text::Text;
 
 use crate::config::Config;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum TooltipFlavor {
     Info,
     Warning,
     Error,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Tooltip {
     pub contents: String,
     pub flavor: TooltipFlavor,

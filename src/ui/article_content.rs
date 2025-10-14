@@ -2,7 +2,7 @@ use std::{io::Cursor, sync::Arc};
 
 use crate::{
     app::AppState,
-    commands::{Command, CommandReceiver},
+    commands::{Command, Event, Message, MessageReceiver},
     config::{ArticleContentType, Config},
     newsflash_utils::NewsFlashAsyncManager,
 };
@@ -27,7 +27,7 @@ pub struct ArticleContent {
     config: Arc<Config>,
 
     news_flash_async_manager: Arc<NewsFlashAsyncManager>,
-    _command_sender: UnboundedSender<Command>,
+    message_sender: UnboundedSender<Message>,
 
     article: Option<Article>,
     feed: Option<Feed>,
@@ -47,11 +47,11 @@ impl ArticleContent {
     pub fn new(
         config: Arc<Config>,
         news_flash_async_manager: Arc<NewsFlashAsyncManager>,
-        command_sender: UnboundedSender<Command>,
+        message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {
             config,
-            _command_sender: command_sender,
+            message_sender,
             news_flash_async_manager: news_flash_async_manager.clone(),
 
             fat_article: None,
@@ -92,6 +92,11 @@ impl ArticleContent {
         if self.config.article_thumbnail_show {
             // TODO debounce
             self.load_article_thumbnail()?;
+        }
+
+        if self.is_focused {
+            self.message_sender
+                .send(Message::Event(Event::FatArticleSelected(article.clone())))?;
         }
 
         Ok(())
@@ -303,30 +308,41 @@ impl Widget for &mut ArticleContent {
     }
 }
 
-impl CommandReceiver for ArticleContent {
-    async fn process_command(&mut self, command: &Command) -> color_eyre::Result<()> {
+impl MessageReceiver for ArticleContent {
+    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         use Command::*;
-        match command {
-            NavigateDown => self.vertical_scroll = (self.vertical_scroll + 1).min(self.max_scroll),
-            NavigateUp => self.vertical_scroll = self.vertical_scroll.saturating_sub(1),
-            NavigatePageUp => {
+        use Event::*;
+        match message {
+            Message::Command(NavigateDown) => {
+                self.vertical_scroll = (self.vertical_scroll + 1).min(self.max_scroll)
+            }
+            Message::Command(NavigateUp) => {
+                self.vertical_scroll = self.vertical_scroll.saturating_sub(1)
+            }
+            Message::Command(NavigatePageUp) => {
                 self.vertical_scroll = self
                     .vertical_scroll
                     .saturating_sub(self.config.input_config.scroll_amount as u16)
             }
-            NavigatePageDown => {
+            Message::Command(NavigatePageDown) => {
                 self.vertical_scroll = (self.vertical_scroll
                     + self.config.input_config.scroll_amount as u16)
                     .min(self.max_scroll)
             }
 
-            ArticleSelected(article) => {
+            Message::Event(ArticleSelected(article)) => {
                 self.on_article_selected(article.clone()).await?;
             }
 
-            FatArticleSelected(article) => self.article = Some(article.clone()),
+            Message::Event(FatArticleSelected(article)) => {
+                self.article = Some(article.clone());
 
-            AsyncFetchThumbnailFinished(thumbnail) => match thumbnail {
+                if self.is_focused && self.config.article_auto_scrape {
+                    self.scrape_article()?;
+                }
+            }
+
+            Message::Event(AsyncFetchThumbnailFinished(thumbnail)) => match thumbnail {
                 Some(thumbnail) => {
                     self.prepare_thumbnail(thumbnail)?;
                 }
@@ -335,16 +351,17 @@ impl CommandReceiver for ArticleContent {
                 }
             },
 
-            ScrapeArticle if self.is_focused => {
+            Message::Command(Command::ArticleScrape) if self.is_focused => {
                 self.scrape_article()?;
             }
 
-            AsyncFetchFatArticleFinished(fat_article) => {
+            Message::Event(AsyncFetchFatArticleFinished(fat_article)) => {
                 self.fat_article = Some(fat_article.clone());
             }
 
-            ApplicationStateChanged(state) => {
-                self.is_focused = *state == AppState::ArticleContent;
+            Message::Event(ApplicationStateChanged(state)) => {
+                self.is_focused = *state == AppState::ArticleContent
+                    || *state == AppState::ArticleContentDistractionFree;
 
                 if self.is_focused && self.config.article_auto_scrape {
                     self.scrape_article()?;

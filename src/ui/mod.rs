@@ -14,6 +14,11 @@ use crate::app::{App, AppState};
 
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        if self.state == AppState::ArticleContentDistractionFree {
+            self.article_content.render(area, buf);
+            return;
+        }
+
         let feeds_width = match self.state {
             AppState::FeedSelection => self.config.theme.feeds_focused_width,
             _ => 100 - self.config.theme.articles_focused_width,
@@ -64,7 +69,7 @@ impl Widget for &mut App {
         };
 
         let top_line = Throbber::default()
-            .label("eilmeldung")
+            .label("+++ eilmeldung +++")
             .throbber_style(self.config.theme.statusbar)
             .style(self.config.theme.statusbar)
             .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
