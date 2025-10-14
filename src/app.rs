@@ -1,10 +1,11 @@
+use log::{debug, error, info, trace};
 use ratatui::DefaultTerminal;
 use std::{sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 use crate::{
-    commands::{Command, CommandReceiver},
+    commands::{Command, Event, Message, MessageReceiver},
     config::Config,
     input::translate_to_commands,
     newsflash_utils::NewsFlashAsyncManager,
@@ -16,11 +17,12 @@ use crate::{
     },
 };
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum AppState {
     FeedSelection,
     ArticleSelection,
     ArticleContent,
+    ArticleContentDistractionFree,
 }
 
 impl AppState {
@@ -30,6 +32,7 @@ impl AppState {
             ArticleSelection => FeedSelection,
             ArticleContent => ArticleSelection,
             FeedSelection => ArticleContent,
+            ArticleContentDistractionFree => ArticleContentDistractionFree,
         }
     }
 
@@ -39,6 +42,7 @@ impl AppState {
             FeedSelection => ArticleSelection,
             ArticleSelection => ArticleContent,
             ArticleContent => FeedSelection,
+            ArticleContentDistractionFree => ArticleContentDistractionFree,
         }
     }
 
@@ -48,6 +52,7 @@ impl AppState {
             FeedSelection => ArticleSelection,
             ArticleSelection => ArticleContent,
             ArticleContent => ArticleContent,
+            ArticleContentDistractionFree => ArticleContentDistractionFree,
         }
     }
 
@@ -57,6 +62,7 @@ impl AppState {
             FeedSelection => FeedSelection,
             ArticleSelection => FeedSelection,
             ArticleContent => ArticleSelection,
+            ArticleContentDistractionFree => ArticleContentDistractionFree,
         }
     }
 }
@@ -66,7 +72,7 @@ pub struct App {
 
     pub config: Arc<Config>,
     pub news_flash_async_manager: Arc<NewsFlashAsyncManager>,
-    pub command_sender: UnboundedSender<Command>,
+    pub message_sender: UnboundedSender<Message>,
 
     pub tooltip: Tooltip,
 
@@ -82,169 +88,281 @@ impl App {
     pub fn new(
         config: Config,
         news_flash_async_manager: NewsFlashAsyncManager,
-        command_sender: UnboundedSender<Command>,
+        message_sender: UnboundedSender<Message>,
     ) -> Self {
+        debug!("Creating new App instance");
         let config_arc = Arc::new(config);
         let news_flash_async_manager_arc = Arc::new(news_flash_async_manager);
-        Self {
+
+        debug!("Initializing UI components");
+        let app = Self {
             state: AppState::FeedSelection,
             config: Arc::clone(&config_arc),
             news_flash_async_manager: news_flash_async_manager_arc.clone(),
             is_running: true,
-            command_sender: command_sender.clone(),
+            message_sender: message_sender.clone(),
             feed_list: FeedList::new(
                 Arc::clone(&config_arc),
                 news_flash_async_manager_arc.clone(),
-                command_sender.clone(),
+                message_sender.clone(),
             ),
             articles_list: ArticlesList::new(
                 Arc::clone(&config_arc),
                 news_flash_async_manager_arc.clone(),
-                command_sender.clone(),
+                message_sender.clone(),
             ),
             article_content: ArticleContent::new(
                 Arc::clone(&config_arc),
                 news_flash_async_manager_arc.clone(),
-                command_sender.clone(),
+                message_sender.clone(),
             ),
             tooltip: Tooltip::new(
                 "Welcome to eilmeldung".into(),
                 crate::ui::tooltip::TooltipFlavor::Info,
             ),
             async_operation_throbber: ThrobberState::default(),
-        }
+        };
+
+        info!("App instance created with initial state: FeedSelection");
+        app
     }
 
     pub async fn run(
         mut self,
-        command_receiver: UnboundedReceiver<Command>,
+        message_receiver: UnboundedReceiver<Message>,
         terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
-        self.feed_list.build_tree().await?;
+        info!("Starting application run loop");
+
+        debug!("Building feed tree");
+        self.feed_list.build_tree().await.map_err(|e| {
+            error!("Failed to build feed tree: {}", e);
+            e
+        })?;
+        info!("Feed tree built successfully");
 
         let input_config = self.config.clone();
-        let input_tx = self.command_sender.clone();
-        tokio::spawn(async move { App::process_input(input_config.clone(), input_tx).await });
+        let input_tx = self.message_sender.clone();
+        debug!("Spawning input processing task");
+        tokio::spawn(async move {
+            if let Err(e) = App::process_input(input_config.clone(), input_tx).await {
+                error!("Input processing task failed: {}", e);
+            }
+        });
 
-        self.command_sender.send(Command::ApplicationStarted)?;
-        self.process_commands(command_receiver, terminal).await?;
+        debug!("Sending ApplicationStarted command");
+        self.message_sender
+            .send(Message::Event(Event::ApplicationStarted))?;
 
+        info!("Starting command processing loop");
+        self.process_commands(message_receiver, terminal).await?;
+
+        info!("Application run loop completed");
         Ok(())
     }
 
     async fn process_input(
         config: Arc<Config>,
-        tx: UnboundedSender<Command>,
+        tx: UnboundedSender<Message>,
     ) -> color_eyre::Result<()> {
+        debug!("Input processing loop started");
         loop {
             match crossterm::event::read()? {
                 crossterm::event::Event::Key(key_event) => {
+                    trace!("Key event received: {:?}", key_event);
                     let commands = translate_to_commands(&config.input_config, key_event);
+                    debug!("Translated to {} commands", commands.len());
                     for command in commands {
-                        tx.send(command)?
+                        // Don't log commands with large binary data
+                        tx.send(command).map_err(|e| {
+                            error!("Failed to send command: {}", e);
+                            e
+                        })?;
                     }
                 }
-                _ => { /* ignore */ }
+                _ => {
+                    trace!("Non-key event ignored");
+                }
             }
         }
     }
 
     async fn process_commands(
         mut self,
-        mut rx: UnboundedReceiver<Command>,
+        mut rx: UnboundedReceiver<Message>,
         mut terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
         let mut render_interval =
             tokio::time::interval(Duration::from_millis(1000 / self.config.refresh_fps));
+        debug!(
+            "Command processing loop started with {}fps refresh rate",
+            self.config.refresh_fps
+        );
 
         while self.is_running {
             tokio::select! {
                 _ = render_interval.tick() => {
                     if self.news_flash_async_manager.is_async_operation_running() {
+                        trace!("Async operation running, updating throbber");
                         self.async_operation_throbber.calc_next();
                         terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
                     }
                 }
 
-                command = rx.recv() =>  {
-                    if let Some(command) = command {
-                        self.process_command(&command).await?;
-                        self.feed_list.process_command(&command).await?;
-                        self.articles_list.process_command(&command).await?;
-                        self.article_content.process_command(&command).await?;
+                message = rx.recv() =>  {
+                    if let Some(message) = message {
+                        // Don't log messages with large binary data
+                        match &message {
+                            Message::Event(Event::AsyncFetchThumbnailFinished(_)) => {
+                                trace!("Processing message: AsyncFetchThumbnailFinished");
+                            }
+                            _ => {
+                                trace!("Processing message: {:?}", message);
+                            }
+                        }
+
+                        if let Err(e) = self.process_command(&message).await {
+                            error!("Failed to process app message: {}", e);
+                        }
+
+                        if let Err(e) = self.feed_list.process_command(&message).await {
+                            error!("Failed to process feed list message: {}", e);
+                        }
+
+                        if let Err(e) = self.articles_list.process_command(&message).await {
+                            error!("Failed to process articles list message: {}", e);
+                        }
+
+                        if let Err(e) = self.article_content.process_command(&message).await {
+                            error!("Failed to process article content message: {}", e);
+                        }
+                    } else {
+                        debug!("Message channel closed, stopping message processing");
+                        break;
                     }
-                    terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
 
+                    if let Err(e) = terminal.draw(|frame| frame.render_widget(&mut self, frame.area())) {
+                        error!("Failed to render terminal: {}", e);
+                    }
                 }
-
             }
         }
 
+        info!("Message processing loop ended");
         Ok(())
     }
 }
 
-impl CommandReceiver for App {
-    async fn process_command(&mut self, command: &Command) -> color_eyre::Result<()> {
+impl MessageReceiver for App {
+    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         use Command::*;
-        match command {
-            ApplicationQuit => self.is_running = false,
-            Sync => {
+        use Event::*;
+        match message {
+            Message::Command(ApplicationQuit) => {
+                info!("Application quit requested");
+                self.is_running = false;
+            }
+            Message::Command(FeedsSync) => {
+                info!("Sync operation initiated");
                 self.news_flash_async_manager.sync_feeds();
             }
 
-            Tooltip(tooltip) => self.tooltip = tooltip.clone(),
+            Message::Event(Tooltip(tooltip)) => {
+                trace!("Tooltip updated");
+                self.tooltip = tooltip.clone();
+            }
 
-            AsyncSyncFinished(_)
-            | AsyncFetchThumbnailFinished(_)
-            | AsyncFetchFatArticleFinished(_)
-            | AsyncMarkArticlesAsReadFinished => {
+            Message::Event(AsyncSyncFinished(_))
+            | Message::Event(AsyncFetchThumbnailFinished(_))
+            | Message::Event(AsyncFetchFatArticleFinished(_))
+            | Message::Event(AsyncMarkArticlesAsReadFinished) => {
+                info!("Async operation completed successfully");
                 self.tooltip = crate::ui::tooltip::Tooltip::new(
                     "async operation finished".to_string(),
                     TooltipFlavor::Info,
                 );
             }
 
-            AsyncSyncStarted
-            | AsyncFetchThumbnailStarted
-            | AsyncFetchFatArticleStarted
-            | AsyncMarkArticlesAsReadStarted => {
+            Message::Event(AsyncSyncStarted)
+            | Message::Event(AsyncFetchThumbnailStarted)
+            | Message::Event(AsyncFetchFatArticleStarted)
+            | Message::Event(AsyncMarkArticlesAsReadStarted) => {
+                info!("Async operation started");
                 self.tooltip = crate::ui::tooltip::Tooltip::new(
                     "async operation started".to_string(),
                     TooltipFlavor::Info,
                 );
             }
 
-            AsyncOperationFailed(error) => {
+            Message::Event(AsyncOperationFailed(error)) => {
+                error!("Async operation failed: {}", error);
                 self.tooltip =
                     crate::ui::tooltip::Tooltip::new(error.clone(), TooltipFlavor::Error);
             }
 
-            FocusNext => {
+            Message::Command(PanelFocusNext) => {
+                let old_state = self.state;
                 self.state = self.state.next();
-                self.command_sender
-                    .send(Command::ApplicationStateChanged(self.state))?;
+                debug!("Focus moved from {:?} to {:?}", old_state, self.state);
+                self.message_sender
+                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
             }
 
-            FocusPrevious => {
+            Message::Command(PanelFocusPrevious) => {
+                let old_state = self.state;
                 self.state = self.state.previous();
-                self.command_sender
-                    .send(Command::ApplicationStateChanged(self.state))?;
+                debug!("Focus moved from {:?} to {:?}", old_state, self.state);
+                self.message_sender
+                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
             }
 
-            CyclicFocusNext => {
+            Message::Command(PanelFocusNextCyclic) => {
+                let old_state = self.state;
                 self.state = self.state.next_cyclic();
-                self.command_sender
-                    .send(Command::ApplicationStateChanged(self.state))?;
+                debug!(
+                    "Cyclic focus moved from {:?} to {:?}",
+                    old_state, self.state
+                );
+                self.message_sender
+                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
             }
 
-            CyclicFocusPrevious => {
+            Message::Command(PanelFocusPreivousCyclic) => {
+                let old_state = self.state;
                 self.state = self.state.previous_cyclic();
-                self.command_sender
-                    .send(Command::ApplicationStateChanged(self.state))?;
+                debug!(
+                    "Cyclic focus moved from {:?} to {:?}",
+                    old_state, self.state
+                );
+                self.message_sender
+                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
             }
 
-            _ => {}
+            Message::Command(ToggleDistractionFreeMode) => {
+                let old_state = self.state;
+                self.state = match old_state {
+                    AppState::ArticleContentDistractionFree => AppState::ArticleContent,
+                    _ => AppState::ArticleContentDistractionFree,
+                };
+                debug!(
+                    "Toggling distraction free state from {:?} to {:?}",
+                    old_state, self.state
+                );
+                self.message_sender
+                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
+            }
+
+            _ => {
+                // Don't log commands with large binary data
+                match message {
+                    Message::Event(AsyncFetchThumbnailFinished(_)) => {
+                        trace!("Unhandled message in App: AsyncFetchThumbnailFinished");
+                    }
+                    _ => {
+                        trace!("Unhandled message in App: {:?}", message);
+                    }
+                }
+            }
         }
 
         Ok(())
