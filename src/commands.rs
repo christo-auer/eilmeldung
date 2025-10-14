@@ -62,6 +62,8 @@ pub enum Event {
 
     AsyncOperationFailed(String),
 
+    Tick, // general tick for animations and regular updates
+
     // messaging/status
     Tooltip(Tooltip),
 

@@ -161,6 +161,13 @@ impl App {
         Ok(())
     }
 
+    fn tick(&mut self) {
+        if self.news_flash_async_manager.is_async_operation_running() {
+            trace!("Async operation running, updating throbber");
+            self.async_operation_throbber.calc_next();
+        }
+    }
+
     async fn process_input(
         config: Arc<Config>,
         tx: UnboundedSender<Message>,
@@ -202,11 +209,8 @@ impl App {
         while self.is_running {
             tokio::select! {
                 _ = render_interval.tick() => {
-                    if self.news_flash_async_manager.is_async_operation_running() {
-                        trace!("Async operation running, updating throbber");
-                        self.async_operation_throbber.calc_next();
-                        terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
-                    }
+                    self.message_sender.send(Message::Event(Event::Tick))?;
+
                 }
 
                 message = rx.recv() =>  {
@@ -272,26 +276,8 @@ impl MessageReceiver for App {
                 self.tooltip = tooltip.clone();
             }
 
-            Message::Event(AsyncSyncFinished(_))
-            | Message::Event(AsyncFetchThumbnailFinished(_))
-            | Message::Event(AsyncFetchFatArticleFinished(_))
-            | Message::Event(AsyncMarkArticlesAsReadFinished) => {
-                info!("Async operation completed successfully");
-                self.tooltip = crate::ui::tooltip::Tooltip::new(
-                    "async operation finished".to_string(),
-                    TooltipFlavor::Info,
-                );
-            }
-
-            Message::Event(AsyncSyncStarted)
-            | Message::Event(AsyncFetchThumbnailStarted)
-            | Message::Event(AsyncFetchFatArticleStarted)
-            | Message::Event(AsyncMarkArticlesAsReadStarted) => {
-                info!("Async operation started");
-                self.tooltip = crate::ui::tooltip::Tooltip::new(
-                    "async operation started".to_string(),
-                    TooltipFlavor::Info,
-                );
+            Message::Event(Tick) => {
+                self.tick();
             }
 
             Message::Event(AsyncOperationFailed(error)) => {
