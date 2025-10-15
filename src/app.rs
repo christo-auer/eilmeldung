@@ -215,8 +215,8 @@ impl App {
 
                 message = rx.recv() =>  {
                     if let Some(message) = message {
-                        // Don't log messages with large binary data
                         match &message {
+                            Message::Event(Event::Tick) => { /* don't spam the log */ },
                             Message::Event(Event::AsyncFetchThumbnailFinished(_)) => {
                                 trace!("Processing message: AsyncFetchThumbnailFinished");
                             }

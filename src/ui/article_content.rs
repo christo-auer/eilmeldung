@@ -1,4 +1,8 @@
-use std::{io::Cursor, sync::Arc};
+use std::{
+    io::Cursor,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use crate::{
     app::AppState,
@@ -41,6 +45,9 @@ pub struct ArticleContent {
     max_scroll: u16,
 
     is_focused: bool,
+
+    instant_since_article_selected: Option<Instant>,
+    duration_since_last_article_change: Option<Duration>,
 }
 
 impl ArticleContent {
@@ -66,10 +73,19 @@ impl ArticleContent {
             max_scroll: 0,
 
             is_focused: false,
+
+            instant_since_article_selected: None,
+            duration_since_last_article_change: None,
         }
     }
 
     async fn on_article_selected(&mut self, article: Article) -> color_eyre::Result<()> {
+        let current_instant = Instant::now();
+        if let Some(last_article_selected) = self.instant_since_article_selected {
+            self.duration_since_last_article_change =
+                Some(current_instant.duration_since(last_article_selected));
+        }
+        self.instant_since_article_selected = Some(current_instant);
         self.thumbnail = None;
         self.image = None;
         self.fat_article = None;
@@ -87,11 +103,6 @@ impl ArticleContent {
                 .iter()
                 .find(|feed| feed.feed_id == article.feed_id)
                 .cloned();
-        }
-
-        if self.config.article_thumbnail_show {
-            // TODO debounce
-            self.load_article_thumbnail()?;
         }
 
         if self.is_focused {
@@ -126,18 +137,6 @@ impl ArticleContent {
             self.news_flash_async_manager.fetch_fat_article(article_id);
         }
 
-        Ok(())
-    }
-
-    fn load_article_thumbnail(&mut self) -> color_eyre::Result<()> {
-        let Some(article) = self.article.as_ref() else {
-            return Ok(());
-        };
-
-        if self.image.is_none() {
-            let article_id = article.article_id.clone();
-            self.news_flash_async_manager.fetch_thumbnail(article_id);
-        }
         Ok(())
     }
 
@@ -290,6 +289,49 @@ impl ArticleContent {
 
         total_lines
     }
+
+    fn tick(&mut self) -> color_eyre::Result<()> {
+        if self.config.article_thumbnail_show {
+            self.fetch_thumbnail()?;
+        }
+        Ok(())
+    }
+
+    fn fetch_thumbnail(&mut self) -> color_eyre::Result<()> {
+        let Some(article) = self.article.as_ref() else {
+            return Ok(());
+        };
+
+        let current_instant = Instant::now();
+        let long_enough_current_article = match self.instant_since_article_selected {
+            Some(article_selected_instant) => {
+                let duration = current_instant.duration_since(article_selected_instant);
+                duration
+                    >= Duration::from_millis(self.config.article_thumbnail_fetch_debounce_millis)
+            }
+            None => true,
+        };
+
+        let long_enough = match self.duration_since_last_article_change {
+            None => true,
+            Some(duration) => {
+                duration
+                    > Duration::from_millis(self.config.article_thumbnail_fetch_debounce_millis)
+                    || long_enough_current_article
+            }
+        };
+
+        if !long_enough {
+            return Ok(());
+        }
+
+        if self.image.is_none() {
+            let article_id = article.article_id.clone();
+            self.news_flash_async_manager.fetch_thumbnail(article_id);
+        }
+
+        Ok(())
+    }
 }
 
 impl Widget for &mut ArticleContent {
@@ -366,6 +408,10 @@ impl MessageReceiver for ArticleContent {
                 if self.is_focused && self.config.article_auto_scrape {
                     self.scrape_article()?;
                 }
+            }
+
+            Message::Event(Tick) => {
+                self.tick()?;
             }
 
             _ => {}

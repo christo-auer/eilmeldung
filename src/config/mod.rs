@@ -3,7 +3,7 @@ pub mod theme;
 use crate::config::paths::{CONFIG_FILE, PROJECT_DIRS};
 use crate::config::theme::Theme;
 use crate::ui::articles_list::ArticleScope;
-use log::{error, info, debug};
+use log::{debug, error, info};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub enum ArticleContentType {
@@ -33,6 +33,7 @@ pub struct Config {
     pub article_thumbnail_show: bool,
     pub article_thumbnail_width: u16,
     pub article_thumbnail_resize: bool,
+    pub article_thumbnail_fetch_debounce_millis: u64,
     pub article_content_max_chars_per_line: u16,
     pub article_content_preferred_type: ArticleContentType,
 }
@@ -58,6 +59,7 @@ impl Default for Config {
             article_thumbnail_show: true,
             article_thumbnail_width: 20,
             article_thumbnail_resize: false,
+            article_thumbnail_fetch_debounce_millis: 500,
             article_content_max_chars_per_line: 66,
             article_content_preferred_type: ArticleContentType::Markdown,
         }
@@ -93,22 +95,26 @@ pub fn load_config() -> color_eyre::Result<Config> {
     {
         Ok(config_loader) => {
             debug!("Configuration file found, deserializing");
-            config_loader.try_deserialize::<Config>()
-                .map_err(|e| {
-                    error!("Failed to deserialize config: {}", e);
-                    e
-                })?
-        },
+            config_loader.try_deserialize::<Config>().map_err(|e| {
+                error!("Failed to deserialize config: {}", e);
+                e
+            })?
+        }
         Err(e) => {
             info!("No configuration file found ({}), using default config", e);
-            debug!("Default config will be used with {} fps refresh rate", Config::default().refresh_fps);
+            debug!(
+                "Default config will be used with {} fps refresh rate",
+                Config::default().refresh_fps
+            );
             Config::default()
         }
     };
 
     info!("Configuration loaded successfully");
-    debug!("Config settings - FPS: {}, Theme: {:?}, Article scope: {:?}", 
-           config.refresh_fps, config.theme, config.article_scope);
+    debug!(
+        "Config settings - FPS: {}, Theme: {:?}, Article scope: {:?}",
+        config.refresh_fps, config.theme, config.article_scope
+    );
 
     Ok(config)
 }
