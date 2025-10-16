@@ -1,12 +1,15 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::{cmp::Ordering, sync::Arc};
 
 use crate::app::AppState;
 use crate::config::Config;
 use crate::newsflash_utils::NewsFlashAsyncManager;
 use crate::ui::tooltip::{Tooltip, TooltipFlavor};
-use news_flash::models::{ArticleFilter, Tag};
+use log::info;
+use news_flash::models::{ArticleFilter, ArticleID, Marked, Read, Tag, TagID};
 use news_flash::models::{Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping};
+use ratatui::style::Color;
 use ratatui::widgets::{Block, Borders};
 use ratatui::{
     style::{Style, Stylize},
@@ -23,6 +26,7 @@ pub enum FeedListItem {
     All,
     Feed(Box<Feed>),
     Category(Box<Category>),
+    Tags(Vec<TagID>),
     Tag(Box<Tag>),
     Query(Arc<String>),
 }
@@ -52,7 +56,20 @@ impl FeedListItem {
                     .replace("{label}", category.label.as_str()),
                 config.theme.category,
             ),
-            Tag(tag) => (tag.label.to_string(), config.theme.tag),
+            Tags(_) => (config.tags_label.to_string(), config.theme.header),
+            Tag(tag) => {
+                let mut style = config.theme.tag;
+                if let Some(color_str) = tag.color.clone()
+                    && let Ok(tag_color) = Color::from_str(color_str.as_str())
+                {
+                    style = style.fg(tag_color)
+                }
+                (
+                    config.tag_label.replace("{label}", tag.label.as_str()),
+                    style,
+                )
+            }
+
             Query(query) => (query.to_string(), config.theme.category),
         };
 
@@ -85,6 +102,7 @@ impl FeedListItem {
                         .unwrap_or("no url".into())
                 )
             }
+            Tags(_) => "all tagged articles".to_string(),
             Tag(tag) => format!("Tag: {}", tag.label),
             Query(query) => format!("Query: {}", query),
         }
@@ -102,6 +120,10 @@ impl From<FeedListItem> for ArticleFilter {
             },
             Category(category) => ArticleFilter {
                 categories: vec![category.category_id].into(),
+                ..Default::default()
+            },
+            Tags(tag_ids) => ArticleFilter {
+                tags: Some(tag_ids),
                 ..Default::default()
             },
             Tag(tag) => ArticleFilter {
@@ -181,12 +203,15 @@ impl FeedList {
 
         {
             let news_flash = self.news_flash_async_manager.news_flash_lock.read().await;
+
+            // feeds
             let (feeds, feed_mappings) = news_flash.get_feeds()?;
             let feed_map: HashMap<FeedID, Feed> = feeds
                 .iter()
                 .map(|feed| (feed.feed_id.clone(), feed.clone()))
                 .collect();
 
+            // categories
             let (categories, category_mappings) = news_flash.get_categories()?;
 
             let category_map: HashMap<CategoryID, Category> = categories
@@ -194,6 +219,20 @@ impl FeedList {
                 .map(|category| (category.clone().category_id, category.clone()))
                 .collect();
 
+            // tags
+            let (tags, taggings) = news_flash.get_tags()?;
+
+            let articles_for_tag: HashMap<TagID, Vec<ArticleID>> =
+                taggings
+                    .into_iter()
+                    .fold(HashMap::new(), |mut acc, tagging| {
+                        acc.entry(tagging.tag_id.clone())
+                            .or_default()
+                            .push(tagging.article_id.clone());
+                        acc
+                    });
+
+            // build category/feed tree
             let mut tree: HashMap<CategoryID, Vec<FeedOrCategory>> = HashMap::new();
 
             categories.iter().for_each(|category| {
@@ -258,6 +297,7 @@ impl FeedList {
                 );
             });
 
+            // feeds under all
             self.items = vec![TreeItem::new(
                 FeedListItem::All,
                 FeedListItem::All.to_text(&self.config, Some(unread_count_all), None),
@@ -282,6 +322,57 @@ impl FeedList {
                     &marked_category_map,
                 ));
             }
+
+            // tags
+            let tag_ids: Vec<TagID> = tags.iter().map(|tag| tag.tag_id.clone()).collect();
+            let tags_item = FeedListItem::Tags(tag_ids);
+
+            self.items.push(TreeItem::new(
+                tags_item.clone(),
+                tags_item.to_text(&self.config, None, None),
+                tags.iter()
+                    .map(|tag| {
+                        let tag_item = FeedListItem::Tag(Box::new(tag.clone()));
+
+                        // TODO this is ugly => refactor
+                        let (unread_count, marked_count) = match articles_for_tag.get(&tag.tag_id) {
+                            None => (None, None),
+                            Some(articles) => (
+                                Some(
+                                    articles
+                                        .iter()
+                                        .filter(|article_id| {
+                                            news_flash
+                                                .get_article(article_id)
+                                                .map(|article| article.unread)
+                                                .unwrap_or(Read::Read)
+                                                == Read::Unread
+                                        })
+                                        .count() as i64,
+                                ),
+                                Some(
+                                    articles
+                                        .iter()
+                                        .filter(|article_id| {
+                                            news_flash
+                                                .get_article(article_id)
+                                                .map(|article| article.marked)
+                                                .unwrap_or(Marked::Unmarked)
+                                                == Marked::Marked
+                                        })
+                                        .count() as i64,
+                                ),
+                            ),
+                        };
+                        TreeItem::new(
+                            tag_item.clone(),
+                            tag_item.to_text(&self.config, unread_count, marked_count),
+                            [].into(),
+                        )
+                        .unwrap()
+                    })
+                    .collect(),
+            )?);
         }
 
         self.select_entry(previously_selected)?;
