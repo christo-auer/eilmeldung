@@ -15,8 +15,13 @@
  - [ ] toggle of mode
  - [ ] auto offline if provider not available
 
+- [ ] article list
+ - [ ] scroll bar or counter
+ - [ ] keep cursor in the middle/at the top
+
 
 # Issues
 
 - [ ] gracefully handle errors (unwraps)
 - [ ] handle empty feed lists
+- [ ] jump to next unread jumps to first unread
