@@ -162,6 +162,24 @@ impl ArticleContent {
         inner_area
     }
 
+    fn generate_summary<'a>(&'a self) -> Vec<Line<'a>> {
+        let article = self.article.as_ref().unwrap();
+        let title = article.title.clone().unwrap_or("no title".into());
+        let feed_label: String = if let Some(feed) = self.feed.clone() {
+            feed.label.clone()
+        } else {
+            article.feed_id.as_str().into()
+        };
+        let mut summary = article.summary.clone().unwrap_or("no summary".into());
+        summary = ArticleContent::clean_string(&mut summary);
+
+        vec![
+            Line::from(Span::from(feed_label).style(self.config.theme.feed)),
+            Line::from(Span::from(title).style(self.config.theme.header)),
+            Line::from(Span::from(summary).style(self.config.theme.paragraph)),
+        ]
+    }
+
     fn render_summary(&mut self, area: Rect, buf: &mut Buffer) {
         let inner_area = self.render_block(area, buf);
 
@@ -191,24 +209,9 @@ impl ArticleContent {
             stateful_image.render(thumbnail_chunk, buf, image);
         }
 
-        let article = self.article.as_ref().unwrap();
-        let title = article.title.clone().unwrap_or("no title".into());
-        let feed_label: String = if let Some(feed) = self.feed.clone() {
-            feed.label.clone()
-        } else {
-            article.feed_id.as_str().into()
-        };
-        let mut summary = article.summary.clone().unwrap_or("no summary".into());
-        summary = ArticleContent::clean_string(&mut summary);
+        let paragraph = Paragraph::new(self.generate_summary()).wrap(Wrap { trim: true });
 
-        let summary = Paragraph::new(vec![
-            Line::from(Span::from(feed_label).style(self.config.theme.feed)),
-            Line::from(Span::from(title).style(self.config.theme.header)),
-            Line::from(Span::from(summary).style(self.config.theme.paragraph)),
-        ])
-        .wrap(Wrap { trim: true });
-
-        summary.render(summary_chunk, buf);
+        paragraph.render(summary_chunk, buf);
     }
 
     fn render_fat_article(&mut self, area: Rect, buf: &mut Buffer) {
@@ -301,6 +304,10 @@ impl ArticleContent {
         let Some(article) = self.article.as_ref() else {
             return Ok(());
         };
+
+        if article.thumbnail_url.is_none() {
+            return Ok(());
+        }
 
         let current_instant = Instant::now();
         let long_enough_current_article = match self.instant_since_article_selected {
