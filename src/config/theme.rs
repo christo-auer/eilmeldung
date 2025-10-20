@@ -38,7 +38,7 @@ impl Default for Theme {
             tag: Style::default().fg(Blue),
             query: Style::default().fg(Yellow),
             statusbar: Style::default().fg(Black).bg(Magenta).bold(),
-            tooltip_info: Style::default().fg(Black).bg(Magenta).bold(),
+            tooltip_info: Style::default().fg(Black).bg(Magenta),
             tooltip_warning: Style::default().fg(Black).bg(Yellow).bold(),
             tooltip_error: Style::default().fg(Black).bg(Red).bold(),
 
