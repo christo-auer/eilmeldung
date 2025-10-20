@@ -7,7 +7,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use crate::{
     commands::{Command, Event, Message, MessageReceiver},
     config::Config,
-    input::translate_to_commands,
+    input::InputCommandHandler,
     newsflash_utils::NewsFlashAsyncManager,
     ui::{
         article_content::ArticleContent,
@@ -73,8 +73,9 @@ pub struct App {
     pub config: Arc<Config>,
     pub news_flash_async_manager: Arc<NewsFlashAsyncManager>,
     pub message_sender: UnboundedSender<Message>,
+    pub input_command_handler: InputCommandHandler,
 
-    pub tooltip: Tooltip,
+    pub tooltip: Tooltip<'static>,
 
     pub feed_list: FeedList,
     pub articles_list: ArticlesList,
@@ -101,6 +102,10 @@ impl App {
             news_flash_async_manager: news_flash_async_manager_arc.clone(),
             is_running: true,
             message_sender: message_sender.clone(),
+            input_command_handler: InputCommandHandler::new(
+                Arc::clone(&config_arc),
+                message_sender.clone(),
+            ),
             feed_list: FeedList::new(
                 Arc::clone(&config_arc),
                 news_flash_async_manager_arc.clone(),
@@ -141,14 +146,10 @@ impl App {
         })?;
         info!("Feed tree built successfully");
 
-        let input_config = self.config.clone();
-        let input_tx = self.message_sender.clone();
+        let config_arc = self.config.clone();
+        let message_sender = self.message_sender.clone();
         debug!("Spawning input processing task");
-        tokio::spawn(async move {
-            if let Err(e) = App::process_input(input_config.clone(), input_tx).await {
-                error!("Input processing task failed: {}", e);
-            }
-        });
+        InputCommandHandler::spawn_input_command_handler(config_arc, message_sender);
 
         debug!("Sending ApplicationStarted command");
         self.message_sender
@@ -168,31 +169,31 @@ impl App {
         }
     }
 
-    async fn process_input(
-        config: Arc<Config>,
-        tx: UnboundedSender<Message>,
-    ) -> color_eyre::Result<()> {
-        debug!("Input processing loop started");
-        loop {
-            match crossterm::event::read()? {
-                crossterm::event::Event::Key(key_event) => {
-                    trace!("Key event received: {:?}", key_event);
-                    let commands = translate_to_commands(&config.input_config, key_event);
-                    debug!("Translated to {} commands", commands.len());
-                    for command in commands {
-                        // Don't log commands with large binary data
-                        tx.send(command).map_err(|e| {
-                            error!("Failed to send command: {}", e);
-                            e
-                        })?;
-                    }
-                }
-                _ => {
-                    trace!("Non-key event ignored");
-                }
-            }
-        }
-    }
+    // async fn process_input(
+    //     config: Arc<Config>,
+    //     tx: UnboundedSender<Message>,
+    // ) -> color_eyre::Result<()> {
+    //     debug!("Input processing loop started");
+    //     loop {
+    //         match crossterm::event::read()? {
+    //             crossterm::event::Event::Key(key_event) => {
+    //                 trace!("Key event received: {:?}", key_event);
+    //                 let commands = translate_to_commands(&config.input_config, key_event);
+    //                 debug!("Translated to {} commands", commands.len());
+    //                 for command in commands {
+    //                     // Don't log commands with large binary data
+    //                     tx.send(command).map_err(|e| {
+    //                         error!("Failed to send command: {}", e);
+    //                         e
+    //                     })?;
+    //                 }
+    //             }
+    //             _ => {
+    //                 trace!("Non-key event ignored");
+    //             }
+    //         }
+    //     }
+    // }
 
     async fn process_commands(
         mut self,
@@ -282,8 +283,35 @@ impl MessageReceiver for App {
 
             Message::Event(AsyncOperationFailed(error)) => {
                 error!("Async operation failed: {}", error);
-                self.tooltip =
-                    crate::ui::tooltip::Tooltip::new(error.clone(), TooltipFlavor::Error);
+                self.tooltip = crate::ui::tooltip::Tooltip::from_str(
+                    error.clone().as_str(),
+                    TooltipFlavor::Error,
+                );
+            }
+
+            // TODO refactor redundant code!
+            Message::Command(PanelFocusFeeds) => {
+                let old_state = self.state;
+                self.state = AppState::FeedSelection;
+                debug!("Focus moved from {:?} to {:?}", old_state, self.state);
+                self.message_sender
+                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
+            }
+
+            Message::Command(PanelFocusArticleSelection) => {
+                let old_state = self.state;
+                self.state = AppState::ArticleSelection;
+                debug!("Focus moved from {:?} to {:?}", old_state, self.state);
+                self.message_sender
+                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
+            }
+
+            Message::Command(PanelFocusArticleContent) => {
+                let old_state = self.state;
+                self.state = AppState::ArticleContent;
+                debug!("Focus moved from {:?} to {:?}", old_state, self.state);
+                self.message_sender
+                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
             }
 
             Message::Command(PanelFocusNext) => {
@@ -313,7 +341,7 @@ impl MessageReceiver for App {
                     .send(Message::Event(ApplicationStateChanged(self.state)))?;
             }
 
-            Message::Command(PanelFocusPreivousCyclic) => {
+            Message::Command(PanelFocusPreviousCyclic) => {
                 let old_state = self.state;
                 self.state = self.state.previous_cyclic();
                 debug!(

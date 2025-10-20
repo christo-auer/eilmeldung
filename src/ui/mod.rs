@@ -77,7 +77,7 @@ impl Widget for &mut App {
 
         StatefulWidget::render(top_line, top, buf, &mut self.async_operation_throbber);
 
-        let bottom_line = self.tooltip.to_text(&self.config);
+        let bottom_line = self.tooltip.to_line(&self.config);
 
         bottom_line.render(bottom, buf);
     }

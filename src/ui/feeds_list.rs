@@ -6,7 +6,6 @@ use crate::app::AppState;
 use crate::config::Config;
 use crate::newsflash_utils::NewsFlashAsyncManager;
 use crate::ui::tooltip::{Tooltip, TooltipFlavor};
-use log::info;
 use news_flash::models::{ArticleFilter, ArticleID, Marked, Read, Tag, TagID};
 use news_flash::models::{Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping};
 use ratatui::style::Color;
@@ -475,8 +474,8 @@ impl FeedList {
     fn update_tooltip(&self, now_selected: Option<FeedListItem>) -> color_eyre::Result<()> {
         if let Some(item) = now_selected {
             self.message_sender
-                .send(Message::Event(Event::Tooltip(Tooltip::new(
-                    item.to_tooltip(&self.config),
+                .send(Message::Event(Event::Tooltip(Tooltip::from_str(
+                    item.to_tooltip(&self.config).as_str(),
                     TooltipFlavor::Info,
                 ))))?;
         }

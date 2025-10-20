@@ -278,6 +278,14 @@ impl MessageReceiver for ArticlesList {
         match message {
             Message::Command(NavigateUp) if self.is_focused => self.table_state.select_previous(),
             Message::Command(NavigateDown) if self.is_focused => self.table_state.select_next(),
+            Message::Command(NavigatePageUp) if self.is_focused => self
+                .table_state
+                .scroll_up_by(self.config.input_config.scroll_amount as u16),
+            Message::Command(NavigatePageDown) if self.is_focused => self
+                .table_state
+                .scroll_down_by(self.config.input_config.scroll_amount as u16),
+            Message::Command(NavigateFirst) if self.is_focused => self.table_state.select_first(),
+            Message::Command(NavigateLast) if self.is_focused => self.table_state.select_last(),
 
             Message::Event(AsyncOperationFailed(_)) => {
                 self.build_list().await?;
@@ -300,16 +308,16 @@ impl MessageReceiver for ArticlesList {
                 self.is_focused = *state == AppState::ArticleSelection;
             }
 
-            Message::Command(ArticleOpenInBrowser) => {
+            Message::Command(ArticleCurrentOpenInBrowser) => {
                 self.open_in_browser()?;
             }
 
-            Message::Command(ArticleSetCurrentAsRead) => {
+            Message::Command(ArticleCurrentSetRead) => {
                 self.set_current_read_status(Some(Read::Read)).await?;
                 self.build_list().await?;
             }
 
-            Message::Command(ArticleSetCurrentAsUnread) => {
+            Message::Command(ArticleCurrentSetUnread) => {
                 self.set_current_read_status(Some(Read::Unread)).await?;
             }
 

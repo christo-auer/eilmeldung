@@ -362,21 +362,29 @@ impl MessageReceiver for ArticleContent {
         use Command::*;
         use Event::*;
         match message {
-            Message::Command(NavigateDown) => {
+            Message::Command(NavigateDown) if self.is_focused => {
                 self.vertical_scroll = (self.vertical_scroll + 1).min(self.max_scroll)
             }
-            Message::Command(NavigateUp) => {
+            Message::Command(NavigateUp) if self.is_focused => {
                 self.vertical_scroll = self.vertical_scroll.saturating_sub(1)
             }
-            Message::Command(NavigatePageUp) => {
+            Message::Command(NavigatePageUp) if self.is_focused => {
                 self.vertical_scroll = self
                     .vertical_scroll
                     .saturating_sub(self.config.input_config.scroll_amount as u16)
             }
-            Message::Command(NavigatePageDown) => {
+            Message::Command(NavigatePageDown) if self.is_focused => {
                 self.vertical_scroll = (self.vertical_scroll
                     + self.config.input_config.scroll_amount as u16)
                     .min(self.max_scroll)
+            }
+
+            Message::Command(NavigateFirst) if self.is_focused => {
+                self.vertical_scroll = 0;
+            }
+
+            Message::Command(NavigateLast) if self.is_focused => {
+                self.vertical_scroll = self.max_scroll;
             }
 
             Message::Event(ArticleSelected(article)) => {
@@ -400,7 +408,7 @@ impl MessageReceiver for ArticleContent {
                 }
             },
 
-            Message::Command(Command::ArticleScrape) if self.is_focused => {
+            Message::Command(Command::ArticleCurrentScrape) if self.is_focused => {
                 self.scrape_article()?;
             }
 

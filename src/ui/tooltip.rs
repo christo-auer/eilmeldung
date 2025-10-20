@@ -1,4 +1,4 @@
-use ratatui::text::Text;
+use ratatui::text::Line;
 
 use crate::config::Config;
 
@@ -10,22 +10,29 @@ pub enum TooltipFlavor {
 }
 
 #[derive(Clone, Debug)]
-pub struct Tooltip {
-    pub contents: String,
+pub struct Tooltip<'a> {
+    pub contents: Line<'a>,
     pub flavor: TooltipFlavor,
 }
 
-impl Tooltip {
-    pub fn new(contents: String, flavor: TooltipFlavor) -> Self {
+impl<'a> Tooltip<'a> {
+    pub fn new(contents: Line<'a>, flavor: TooltipFlavor) -> Self {
         Self { contents, flavor }
     }
 
-    pub fn to_text<'a>(&self, config: &Config) -> Text<'a> {
+    pub fn from_str(content: &str, flavor: TooltipFlavor) -> Self {
+        Self {
+            contents: Line::from(content.to_string()),
+            flavor,
+        }
+    }
+
+    pub fn to_line(&self, config: &Config) -> Line<'a> {
         let style = match self.flavor {
             TooltipFlavor::Info => config.theme.tooltip_info,
             TooltipFlavor::Warning => config.theme.tooltip_warning,
             TooltipFlavor::Error => config.theme.tooltip_error,
         };
-        Text::from(self.contents.clone()).style(style)
+        Line::from(self.contents.clone()).style(style)
     }
 }
