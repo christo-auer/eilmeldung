@@ -1,91 +1,405 @@
-use crossterm::event::{KeyCode, KeyEvent};
-use log::{debug, info, trace};
+use std::collections::HashMap;
+use std::fmt::Display;
+use std::str::FromStr;
+use std::sync::Arc;
+use std::time::Duration;
 
-use crate::commands::{Command, Message};
-use crate::config::InputConfig;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use log::{debug, info, trace, warn};
+use ratatui::style::Modifier;
+use ratatui::text::{Line, Span};
+use tokio::sync::mpsc::UnboundedSender;
+
+use crate::commands::{Command, CommandSequence, Message};
+use crate::config::{Config, InputConfig};
 use crate::ui::articles_list::ArticleScope;
+use crate::ui::tooltip::{Tooltip, TooltipFlavor};
 
-// TODO make configurable
-// TODO support key sequences
-// TODO modifiers
-pub fn translate_to_commands(_input_config: &InputConfig, key_event: KeyEvent) -> Vec<Message> {
-    use Command::*;
-    use KeyCode::*;
+// this is heavily inspired by spotify-player's key.rs
 
-    let commands = match key_event.code {
-        Char('j') => vec![Message::Command(NavigateDown)],
-        Char('k') => vec![Message::Command(NavigateUp)],
-        Char('h') => vec![Message::Command(NavigateLeft)],
-        Char('l') => vec![Message::Command(NavigateRight)],
-        Char('q') => {
-            info!("Quit command triggered by user");
-            vec![Message::Command(ApplicationQuit)]
+pub struct InputCommandHandler {
+    config: Arc<Config>,
+    message_sender: UnboundedSender<Message>,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
+pub enum Key {
+    Ctrl(KeyCode),
+    Alt(KeyCode),
+    Just(KeyCode),
+    Unknown,
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default)]
+pub struct KeySequence {
+    keys: Vec<Key>,
+}
+
+impl Key {
+    fn parse_key_code(s: &str) -> color_eyre::Result<KeyCode> {
+        Ok(match s {
+            "enter" => KeyCode::Enter,
+            "space" => KeyCode::Char(' '),
+            "tab" => KeyCode::Tab,
+            "backtab" => KeyCode::BackTab,
+            "backspace" => KeyCode::Backspace,
+            "esc" => KeyCode::Esc,
+
+            "left" => KeyCode::Left,
+            "right" => KeyCode::Right,
+            "up" => KeyCode::Up,
+            "down" => KeyCode::Down,
+
+            "insert" => KeyCode::Insert,
+            "delete" => KeyCode::Delete,
+            "home" => KeyCode::Home,
+            "end" => KeyCode::End,
+            "page_up" => KeyCode::PageUp,
+            "page_down" => KeyCode::PageDown,
+
+            "f1" => KeyCode::F(1),
+            "f2" => KeyCode::F(2),
+            "f3" => KeyCode::F(3),
+            "f4" => KeyCode::F(4),
+            "f5" => KeyCode::F(5),
+            "f6" => KeyCode::F(6),
+            "f7" => KeyCode::F(7),
+            "f8" => KeyCode::F(8),
+            "f9" => KeyCode::F(9),
+            "f10" => KeyCode::F(10),
+            "f11" => KeyCode::F(11),
+            "f12" => KeyCode::F(12),
+
+            _ => {
+                if let Some(first_char) = s.chars().next()
+                    && first_char != ' '
+                {
+                    KeyCode::Char(first_char)
+                } else {
+                    return Err(color_eyre::Report::msg(format!("unable to parse key {s}")));
+                }
+            }
+        })
+    }
+}
+
+impl FromStr for Key {
+    type Err = color_eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let chars = s.chars().collect::<Vec<_>>();
+        if s.len() > 2 && chars[1] == '-' && chars[2] != ' ' {
+            let mut chars = chars.into_iter();
+            let prefix = chars.next().unwrap(); // <- safe as s.len()>2
+            chars.next(); // skip -
+
+            let key = Key::parse_key_code(&chars.collect::<String>());
+
+            match prefix {
+                'C' => Ok(key.map(Key::Ctrl)?),
+                'M' => Ok(key.map(Key::Alt)?),
+                _ => Err(color_eyre::Report::msg(format!(
+                    "unable to parse key from `{s}``"
+                ))),
+            }
+        } else {
+            Ok(Self::parse_key_code(s).map(Key::Just)?)
         }
-        Char('r') => {
-            info!("Sync command triggered by user");
-            vec![Message::Command(FeedsSync)]
+    }
+}
+
+fn key_code_to_string(key_code: KeyCode) -> Option<String> {
+    Some(match key_code {
+        KeyCode::Char(char) => {
+            if char == ' ' {
+                "space".to_string()
+            } else {
+                char.to_string()
+            }
         }
-        Char('s') => {
-            debug!("Scrape article command triggered");
-            vec![Message::Command(ArticleScrape)]
-        }
-        Char(' ') => vec![Message::Command(PanelFocusNext)],
-        Backspace => vec![Message::Command(PanelFocusPrevious)],
-        Tab => vec![Message::Command(PanelFocusNextCyclic)],
-        BackTab => vec![Message::Command(PanelFocusPreivousCyclic)],
-        Char('o') => {
-            debug!("Open in browser and mark as read");
-            vec![Message::Command(ArticleOpenInBrowser), Message::Command(ArticleSetCurrentAsRead), Message::Command(ArticleListSelectNextUnread)]
-        }
-        Char('n') => {
-            debug!("Mark as read and select next unread");
-            vec![Message::Command(ArticleSetCurrentAsRead), Message::Command(ArticleListSelectNextUnread)]
-        }
-        Char('u') => {
-            debug!("Mark current as unread");
-            vec![Message::Command(ArticleSetCurrentAsUnread)]
-        }
-        Char('U') => {
-            debug!("Toggle current read status");
-            vec![Message::Command(ArticleCurrentToggleRead)]
-        }
-        Char('a') => {
-            info!("Mark all as read");
-            vec![Message::Command(ArticleListSetAllRead)]
-        }
-        Char('A') => {
-            info!("Mark all as unread");
-            vec![Message::Command(ArticleListSetAllUnread)]
-        }
-        Char('1') => {
-            debug!("Switch to All articles scope");
-            vec![Message::Command(ArticleListSetScope(ArticleScope::All))]
-        }
-        Char('2') => {
-            debug!("Switch to Unread articles scope");
-            vec![Message::Command(ArticleListSetScope(ArticleScope::Unread))]
-        }
-        Char('3') => {
-            debug!("Switch to Marked articles scope");
-            vec![Message::Command(ArticleListSetScope(ArticleScope::Marked))]
-        }
-        Char('z') => {
-            debug!("Switch distraction free mode");
-            vec![Message::Command(ToggleDistractionFreeMode)]
-        }
+        KeyCode::Enter => "enter".to_string(),
+        KeyCode::Tab => "tab".to_string(),
+        KeyCode::BackTab => "backtab".to_string(),
+        KeyCode::Backspace => "backspace".to_string(),
+        KeyCode::Esc => "esc".to_string(),
+
+        KeyCode::Left => "left".to_string(),
+        KeyCode::Right => "right".to_string(),
+        KeyCode::Up => "up".to_string(),
+        KeyCode::Down => "down".to_string(),
+
+        KeyCode::Insert => "insert".to_string(),
+        KeyCode::Delete => "delete".to_string(),
+        KeyCode::Home => "home".to_string(),
+        KeyCode::End => "end".to_string(),
+        KeyCode::PageUp => "page_up".to_string(),
+        KeyCode::PageDown => "page_down".to_string(),
+
+        KeyCode::F(1) => "f1".to_string(),
+        KeyCode::F(2) => "f2".to_string(),
+        KeyCode::F(3) => "f3".to_string(),
+        KeyCode::F(4) => "f4".to_string(),
+        KeyCode::F(5) => "f5".to_string(),
+        KeyCode::F(6) => "f6".to_string(),
+        KeyCode::F(7) => "f7".to_string(),
+        KeyCode::F(8) => "f8".to_string(),
+        KeyCode::F(9) => "f9".to_string(),
+        KeyCode::F(10) => "f10".to_string(),
+        KeyCode::F(11) => "f11".to_string(),
+        KeyCode::F(12) => "f12".to_string(),
+
         _ => {
-            trace!("Unhandled key event: {:?}", key_event);
-            vec![]
+            return None;
         }
-    };
+    })
+}
 
-    if !commands.is_empty() {
-        trace!(
-            "Key {:?} translated to {} commands",
-            key_event.code,
-            commands.len()
-        );
+impl Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Key::*;
+        match *self {
+            Ctrl(key_code) => write!(
+                f,
+                "C-{}",
+                key_code_to_string(key_code).unwrap_or("unknown key".into())
+            ),
+            Alt(key_code) => write!(
+                f,
+                "M-{}",
+                key_code_to_string(key_code).unwrap_or("unknown key".into())
+            ),
+            Just(key_code) => write!(
+                f,
+                "{}",
+                key_code_to_string(key_code).unwrap_or("unknown key".into())
+            ),
+            Unknown => write!(f, "unknown key"),
+        }
+    }
+}
+
+impl<'de> serde::de::Deserialize<'de> for Key {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+
+        Self::from_str(&s).map_err(|err| serde::de::Error::custom(err.to_string()))
+    }
+}
+
+impl FromStr for KeySequence {
+    type Err = color_eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let keys = s.split(' ').collect::<Vec<_>>();
+
+        keys.into_iter()
+            .map(Key::from_str)
+            .map(|key| key.ok())
+            .collect::<Option<Vec<Key>>>()
+            .map(|keys| Self { keys })
+            .ok_or(color_eyre::Report::msg(format!(
+                "unable to parse sequence {s}"
+            )))
+    }
+}
+
+// silently fails! use only if completely sure this does not fail!
+impl From<&str> for KeySequence {
+    fn from(value: &str) -> Self {
+        Self::from_str(value).unwrap_or_default()
+    }
+}
+
+impl From<KeyEvent> for Key {
+    fn from(key_event: KeyEvent) -> Self {
+        let mut modifiers = key_event.modifiers;
+        modifiers &= !KeyModifiers::SHIFT; // remove SHIFT bit
+
+        match modifiers {
+            KeyModifiers::NONE => Key::Just(key_event.code),
+            KeyModifiers::ALT => Key::Alt(key_event.code),
+            KeyModifiers::CONTROL => Key::Ctrl(key_event.code),
+            _ => Key::Unknown,
+        }
+    }
+}
+
+impl std::fmt::Display for KeySequence {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.keys
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect::<Vec<_>>()
+                .join(" ")
+        )
+    }
+}
+
+impl KeySequence {
+    pub fn is_prefix_of(&self, other: &KeySequence) -> bool {
+        if self.keys.len() > other.keys.len() {
+            return false;
+        }
+
+        other
+            .keys
+            .iter()
+            .zip(self.keys.iter())
+            .all(|(key_a, key_b)| *key_a == *key_b)
+    }
+}
+
+impl<'de> serde::de::Deserialize<'de> for KeySequence {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+
+        KeySequence::from_str(&s).map_err(|err| serde::de::Error::custom(err.to_string()))
+    }
+}
+
+impl InputCommandHandler {
+    pub fn new(config: Arc<Config>, message_sender: UnboundedSender<Message>) -> Self {
+        Self {
+            config,
+            message_sender,
+        }
     }
 
-    commands
+    pub fn spawn_input_command_handler(
+        config: Arc<Config>,
+        message_sender: UnboundedSender<Message>,
+    ) {
+        tokio::spawn(async move {
+            let handler = Self::new(config, message_sender);
+            if let Err(error) = handler.handle_input_commands().await {
+                warn!("error handling input {error}");
+            }
+        });
+    }
+
+    pub async fn handle_input_commands(&self) -> color_eyre::Result<()> {
+        debug!("Input processing loop started");
+        let mut key_sequence = KeySequence::default();
+        loop {
+            let mut timeout = false;
+            let mut aborted = false;
+
+            if let Ok(event_available) = crossterm::event::poll(Duration::from_millis(5000)) {
+                if event_available {
+                    match crossterm::event::read()? {
+                        crossterm::event::Event::Key(key_event) => {
+                            let key: Key = key_event.into();
+
+                            if key == Key::Just(KeyCode::Esc) {
+                                aborted = true;
+                            } else {
+                                key_sequence.keys.push(key);
+                                trace!("current key_sequence: {:?}", key_sequence);
+                            }
+                        }
+                        _ => {
+                            trace!("Non-key event ignored");
+                        }
+                    }
+                } else {
+                    trace!("input timout");
+                    timeout = true;
+                }
+            }
+
+            // get key sequences which have a matching prefix
+            // TODO: this is the spot for showing a popup with possible commands
+            // TODO escape
+            // TODO immediately ignore wrong keysequences with warning
+            let mut prefix_matches = self
+                .config
+                .input_config
+                .input_commands
+                .iter()
+                .filter(|(other_key_sequence, _)| key_sequence.is_prefix_of(other_key_sequence))
+                .collect::<Vec<_>>();
+            prefix_matches.sort_by(|(ks_1, _), (ks_2, _)| ks_1.keys.len().cmp(&ks_2.keys.len()));
+
+            trace!("prefix matches of input: {}", prefix_matches.len());
+
+            if let Some(command_sequence) =
+                self.config.input_config.input_commands.get(&key_sequence) // direct match
+                    && (prefix_matches.len() == 1 || timeout)
+            {
+                for command in command_sequence.commands.iter() {
+                    self.message_sender.send(Message::Command(*command))?;
+                }
+                key_sequence.keys.clear();
+                let _ = self
+                    .message_sender
+                    .send(Message::Event(crate::commands::Event::Tooltip(
+                        Tooltip::from_str(" ", TooltipFlavor::Info),
+                    )));
+            } else if !key_sequence.keys.is_empty()
+                && (aborted || timeout || prefix_matches.is_empty())
+            {
+                let tooltip = if aborted {
+                    Tooltip::from_str("Aborted", crate::ui::tooltip::TooltipFlavor::Info)
+                } else {
+                    Tooltip::from_str(
+                        format!("Unknown key sequence: {key_sequence}").as_str(),
+                        crate::ui::tooltip::TooltipFlavor::Warning,
+                    )
+                };
+
+                key_sequence.keys.clear();
+
+                let _ = self
+                    .message_sender
+                    .send(Message::Event(crate::commands::Event::Tooltip(tooltip)));
+            }
+
+            self.generate_input_tooltip(&key_sequence, &prefix_matches);
+        }
+    }
+
+    fn generate_input_tooltip(
+        &self,
+        key_sequence: &KeySequence,
+        prefix_matches: &Vec<(&KeySequence, &CommandSequence)>,
+    ) {
+        if key_sequence.keys.is_empty() {
+            return;
+        }
+
+        let spans: Vec<Span> = prefix_matches
+            .iter()
+            .flat_map(|(ks, cs)| {
+                let mut keys_reduced = ks.keys.clone();
+                keys_reduced.drain(0..key_sequence.keys.len());
+
+                vec![
+                    Span::styled(
+                        KeySequence { keys: keys_reduced }
+                            .to_string()
+                            .replace(" ", ""),
+                        self.config.theme.tooltip_info.add_modifier(Modifier::BOLD),
+                    ),
+                    Span::styled("", self.config.theme.tooltip_info),
+                    Span::styled(cs.to_string(), self.config.theme.tooltip_info),
+                    Span::styled("  ", self.config.theme.tooltip_info),
+                ]
+            })
+            .collect();
+
+        let tooltip = Tooltip::new(Line::from(spans), crate::ui::tooltip::TooltipFlavor::Info);
+
+        let _ = self
+            .message_sender
+            .send(Message::Event(crate::commands::Event::Tooltip(tooltip)));
+    }
 }
