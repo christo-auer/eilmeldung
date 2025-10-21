@@ -1,18 +1,16 @@
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use log::{debug, info, trace, warn};
+use log::{debug, trace, warn};
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::commands::{Command, CommandSequence, Message};
-use crate::config::{Config, InputConfig};
-use crate::ui::articles_list::ArticleScope;
+use crate::commands::{CommandSequence, Message};
+use crate::config::Config;
 use crate::ui::tooltip::{Tooltip, TooltipFlavor};
 
 // this is heavily inspired by spotify-player's key.rs
