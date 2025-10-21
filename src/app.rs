@@ -8,7 +8,7 @@ use crate::{
     commands::{Command, Event, Message, MessageReceiver},
     config::Config,
     input::InputCommandHandler,
-    newsflash_utils::NewsFlashAsyncManager,
+    newsflash_utils::NewsFlashUtils,
     ui::{
         article_content::ArticleContent,
         articles_list::ArticlesList,
@@ -71,7 +71,7 @@ pub struct App {
     pub state: AppState,
 
     pub config: Arc<Config>,
-    pub news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+    pub news_flash_utils: Arc<NewsFlashUtils>,
     pub message_sender: UnboundedSender<Message>,
     pub input_command_handler: InputCommandHandler,
 
@@ -88,18 +88,18 @@ pub struct App {
 impl App {
     pub fn new(
         config: Config,
-        news_flash_async_manager: NewsFlashAsyncManager,
+        news_flash_utils: NewsFlashUtils,
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         debug!("Creating new App instance");
         let config_arc = Arc::new(config);
-        let news_flash_async_manager_arc = Arc::new(news_flash_async_manager);
+        let news_flash_utils_arc = Arc::new(news_flash_utils);
 
         debug!("Initializing UI components");
         let app = Self {
             state: AppState::FeedSelection,
             config: Arc::clone(&config_arc),
-            news_flash_async_manager: news_flash_async_manager_arc.clone(),
+            news_flash_utils: news_flash_utils_arc.clone(),
             is_running: true,
             message_sender: message_sender.clone(),
             input_command_handler: InputCommandHandler::new(
@@ -108,17 +108,17 @@ impl App {
             ),
             feed_list: FeedList::new(
                 Arc::clone(&config_arc),
-                news_flash_async_manager_arc.clone(),
+                news_flash_utils_arc.clone(),
                 message_sender.clone(),
             ),
             articles_list: ArticlesList::new(
                 Arc::clone(&config_arc),
-                news_flash_async_manager_arc.clone(),
+                news_flash_utils_arc.clone(),
                 message_sender.clone(),
             ),
             article_content: ArticleContent::new(
                 Arc::clone(&config_arc),
-                news_flash_async_manager_arc.clone(),
+                news_flash_utils_arc.clone(),
                 message_sender.clone(),
             ),
             tooltip: Tooltip::new(
@@ -163,7 +163,7 @@ impl App {
     }
 
     fn tick(&mut self) {
-        if self.news_flash_async_manager.is_async_operation_running() {
+        if self.news_flash_utils.is_async_operation_running() {
             trace!("Async operation running, updating throbber");
             self.async_operation_throbber.calc_next();
         }
@@ -269,7 +269,7 @@ impl MessageReceiver for App {
             }
             Message::Command(FeedsSync) => {
                 info!("Sync operation initiated");
-                self.news_flash_async_manager.sync_feeds();
+                self.news_flash_utils.sync_feeds();
             }
 
             Message::Event(Tooltip(tooltip)) => {

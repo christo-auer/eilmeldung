@@ -12,7 +12,7 @@ use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
 use crate::commands::{Message, Event};
 
 #[derive(Clone)]
-pub struct NewsFlashAsyncManager {
+pub struct NewsFlashUtils {
     pub news_flash_lock: Arc<RwLock<NewsFlash>>,
     client_lock: Arc<RwLock<Client>>,
         command_sender: UnboundedSender<Message>,
@@ -20,13 +20,13 @@ pub struct NewsFlashAsyncManager {
     async_operation_mutex: Arc<Mutex<()>>,
 }
 
-impl NewsFlashAsyncManager {
+impl NewsFlashUtils {
     pub fn new(
         news_flash: NewsFlash,
         client: Client,
     command_sender: UnboundedSender<Message>,
     ) -> Self {
-        debug!("Creating NewsFlashAsyncManager");
+        debug!("Creating NewsFlashUtils");
         Self {
             news_flash_lock: Arc::new(RwLock::new(news_flash)),
             client_lock: Arc::new(RwLock::new(client)),

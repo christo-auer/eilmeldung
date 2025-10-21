@@ -12,7 +12,7 @@ use crate::{
     app::AppState,
     commands::{Command, Event, Message, MessageReceiver},
     config::Config,
-    newsflash_utils::NewsFlashAsyncManager,
+    newsflash_utils::NewsFlashUtils,
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
@@ -25,7 +25,7 @@ pub enum ArticleScope {
 pub struct ArticlesList {
     config: Arc<Config>,
 
-    news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+        news_flash_async_manager: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
 
     articles: Vec<Article>,
@@ -41,7 +41,7 @@ pub struct ArticlesList {
 impl ArticlesList {
     pub fn new(
         config: Arc<Config>,
-        news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+    news_flash_async_manager: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {

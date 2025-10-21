@@ -8,7 +8,7 @@ use crate::{
     app::AppState,
     commands::{Command, Event, Message, MessageReceiver},
     config::{ArticleContentType, Config},
-    newsflash_utils::NewsFlashAsyncManager,
+    newsflash_utils::NewsFlashUtils,
 };
 use image::ImageReader;
 use news_flash::{
@@ -30,7 +30,7 @@ use tokio::sync::mpsc::UnboundedSender;
 pub struct ArticleContent {
     config: Arc<Config>,
 
-    news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+        news_flash_async_manager: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
 
     article: Option<Article>,
@@ -53,7 +53,7 @@ pub struct ArticleContent {
 impl ArticleContent {
     pub fn new(
         config: Arc<Config>,
-        news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+    news_flash_async_manager: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {

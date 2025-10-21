@@ -62,7 +62,7 @@ impl Widget for &mut App {
         self.articles_list.render(articles_list_chunk, buf);
         self.article_content.render(article_content_chunk, buf);
 
-        let use_type = if self.news_flash_async_manager.is_async_operation_running() {
+        let use_type = if self.news_flash_utils.is_async_operation_running() {
             throbber_widgets_tui::WhichUse::Spin
         } else {
             throbber_widgets_tui::WhichUse::Full

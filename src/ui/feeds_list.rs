@@ -4,7 +4,7 @@ use std::{cmp::Ordering, sync::Arc};
 
 use crate::app::AppState;
 use crate::config::Config;
-use crate::newsflash_utils::NewsFlashAsyncManager;
+use crate::newsflash_utils::NewsFlashUtils;
 use crate::ui::tooltip::{Tooltip, TooltipFlavor};
 use news_flash::models::{ArticleFilter, ArticleID, Marked, Read, Tag, TagID};
 use news_flash::models::{Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping};
@@ -139,7 +139,7 @@ impl From<FeedListItem> for ArticleFilter {
 
 pub struct FeedList {
     config: Arc<Config>,
-    news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+        news_flash_async_manager: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
 
     tree_state: TreeState<FeedListItem>,
@@ -184,7 +184,7 @@ impl Widget for &mut FeedList {
 impl FeedList {
     pub fn new(
         config: Arc<Config>,
-        news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+    news_flash_async_manager: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {

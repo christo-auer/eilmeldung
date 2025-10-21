@@ -8,7 +8,7 @@ use tokio::sync::mpsc::unbounded_channel;
 use crate::{
     commands::Message,
     config::{load_config, paths},
-    newsflash_utils::NewsFlashAsyncManager,
+    newsflash_utils::NewsFlashUtils,
 };
 
 mod app;
@@ -70,10 +70,10 @@ async fn main() -> color_eyre::Result<()> {
 
     // news_flash.initial_sync(&client, Default::default()).await?;
 
-    let news_flash_async_manager =
-        NewsFlashAsyncManager::new(news_flash, client, message_sender.clone());
+    let news_flash_utils =
+        NewsFlashUtils::new(news_flash, client, message_sender.clone());
 
-    let app = crate::app::App::new(config, news_flash_async_manager, message_sender);
+    let app = crate::app::App::new(config, news_flash_utils, message_sender);
 
     info!("Initializing terminal");
     let terminal = ratatui::init();
