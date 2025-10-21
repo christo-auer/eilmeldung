@@ -207,6 +207,60 @@ impl NewsFlashUtils {
                 );
                 let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
             }
-        });
+         });
+    }
+
+    /// Get icon for a tag based on its label
+    pub fn get_tag_icon(tag_label: &str) -> &'static str {
+        match tag_label.to_lowercase().as_str() {
+            "important" | "urgent" | "priority" => "🔥",
+            "tech" | "technology" | "programming" => "💻",
+            "news" | "breaking" => "📰",
+            "science" | "research" => "🔬",
+            "business" | "finance" => "💼",
+            "sports" => "⚽",
+            "entertainment" | "media" => "🎬",
+            "health" | "medical" => "🏥",
+            "travel" => "✈️",
+            "food" | "cooking" => "🍽️",
+            "politics" => "🏛️",
+            "environment" | "climate" => "🌍",
+            "education" | "learning" => "📚",
+            "art" | "design" => "🎨",
+            "music" => "🎵",
+            "gaming" | "games" => "🎮",
+            "crypto" | "blockchain" | "bitcoin" => "₿",
+            "ai" | "ml" | "artificial intelligence" | "machine learning" => "🤖",
+            "security" | "cybersecurity" => "🔒",
+            "open source" | "oss" => "🔓",
+            _ => "🏷️",
+        }
+    }
+
+    /// Get color for a tag based on its label  
+    pub fn get_tag_color(tag_label: &str) -> &'static str {
+        match tag_label.to_lowercase().as_str() {
+            "important" | "urgent" | "priority" => "#ff4444", // red
+            "tech" | "technology" | "programming" => "#0066cc", // blue
+            "news" | "breaking" => "#ff6600", // orange
+            "science" | "research" => "#9933cc", // purple
+            "business" | "finance" => "#006600", // green
+            "sports" => "#ffaa00", // amber
+            "entertainment" | "media" => "#cc3399", // magenta
+            "health" | "medical" => "#00aa55", // teal
+            "travel" => "#3366ff", // light blue
+            "food" | "cooking" => "#ff9900", // orange
+            "politics" => "#666666", // gray
+            "environment" | "climate" => "#228833", // forest green
+            "education" | "learning" => "#4455aa", // indigo
+            "art" | "design" => "#aa4488", // pink
+            "music" => "#8844aa", // violet
+            "gaming" | "games" => "#aa2222", // dark red
+            "crypto" | "blockchain" | "bitcoin" => "#f7931a", // bitcoin orange
+            "ai" | "ml" | "artificial intelligence" | "machine learning" => "#00cccc", // cyan
+            "security" | "cybersecurity" => "#aa0000", // dark red
+            "open source" | "oss" => "#228b22", // forest green
+            _ => "#888888", // default gray
+        }
     }
 }
