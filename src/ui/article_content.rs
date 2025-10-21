@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     io::Cursor,
     sync::Arc,
     time::{Duration, Instant},
@@ -8,21 +9,25 @@ use crate::{
     app::AppState,
     commands::{Command, Event, Message, MessageReceiver},
     config::{ArticleContentType, Config},
-    newsflash_utils::NewsFlashAsyncManager,
+    newsflash_utils::NewsFlashUtils,
 };
 use image::ImageReader;
 use news_flash::{
-    models::{Article, FatArticle, Feed, Thumbnail},
+    models::{Article, FatArticle, Feed, Tag, TagID, Thumbnail},
     util::html2text,
 };
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Stylize},
     text::{Line, Span, Text},
     widgets::{Block, Borders, Paragraph, StatefulWidget, Widget, Wrap},
 };
 use ratatui_image::{
-    FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
+    FilterType::{self, Triangle},
+    Resize, StatefulImage,
+    picker::Picker,
+    protocol::StatefulProtocol,
 };
 
 use tokio::sync::mpsc::UnboundedSender;
@@ -30,11 +35,12 @@ use tokio::sync::mpsc::UnboundedSender;
 pub struct ArticleContent {
     config: Arc<Config>,
 
-    news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+    news_flash_utils: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
 
     article: Option<Article>,
     feed: Option<Feed>,
+    tags: Option<Vec<Tag>>,
     fat_article: Option<FatArticle>,
     thumbnail: Option<Thumbnail>,
     image: Option<StatefulProtocol>,
@@ -53,17 +59,18 @@ pub struct ArticleContent {
 impl ArticleContent {
     pub fn new(
         config: Arc<Config>,
-        news_flash_async_manager: Arc<NewsFlashAsyncManager>,
+        news_flash_utils: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {
             config,
             message_sender,
-            news_flash_async_manager: news_flash_async_manager.clone(),
+            news_flash_utils: news_flash_utils.clone(),
 
             fat_article: None,
             article: None,
             feed: None,
+            tags: None,
             thumbnail: None,
             image: None,
             markdown_content: None,
@@ -91,11 +98,12 @@ impl ArticleContent {
         self.fat_article = None;
         self.markdown_content = None;
         self.feed = None;
+        self.tags = None;
 
         self.article = Some(article.clone());
 
         {
-            let news_flash = self.news_flash_async_manager.news_flash_lock.read().await;
+            let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
             let (feeds, _) = news_flash.get_feeds()?;
 
@@ -103,6 +111,20 @@ impl ArticleContent {
                 .iter()
                 .find(|feed| feed.feed_id == article.feed_id)
                 .cloned();
+
+            let (tags, taggings) = news_flash.get_tags()?;
+            let tag_ids = taggings
+                .iter()
+                .filter(|taggings| taggings.article_id == article.article_id)
+                .map(|tagging| tagging.tag_id.clone())
+                .collect::<HashSet<TagID>>();
+
+            self.tags = Some(
+                tags.iter()
+                    .filter(|tag| tag_ids.contains(&tag.tag_id))
+                    .cloned()
+                    .collect::<Vec<Tag>>(),
+            );
         }
 
         if self.is_focused {
@@ -134,7 +156,7 @@ impl ArticleContent {
         if self.is_focused && self.fat_article.is_none() {
             let article_id = article.article_id.clone();
             self.vertical_scroll = 0;
-            self.news_flash_async_manager.fetch_fat_article(article_id);
+            self.news_flash_utils.fetch_fat_article(article_id);
         }
 
         Ok(())
@@ -173,9 +195,28 @@ impl ArticleContent {
         let mut summary = article.summary.clone().unwrap_or("no summary".into());
         summary = ArticleContent::clean_string(&mut summary);
 
+        let tag_texts = self
+            .tags
+            .clone()
+            .unwrap()
+            .iter()
+            .flat_map(|tag| {
+                let color = NewsFlashUtils::tag_color(tag)
+                    .unwrap_or(self.config.theme.tag.fg.unwrap_or(Color::Gray));
+                let style = self.config.theme.tag.fg(color);
+
+                vec![
+                    Span::styled(" ", style),
+                    Span::styled(tag.label.clone(), style.reversed()),
+                    Span::styled("", style),
+                ]
+            })
+            .collect::<Vec<Span>>();
+
         vec![
             Line::from(Span::from(feed_label).style(self.config.theme.feed)),
             Line::from(Span::from(title).style(self.config.theme.header)),
+            Line::from(tag_texts),
             Line::from(Span::from(summary).style(self.config.theme.paragraph)),
         ]
     }
@@ -334,7 +375,7 @@ impl ArticleContent {
 
         if self.image.is_none() {
             let article_id = article.article_id.clone();
-            self.news_flash_async_manager.fetch_thumbnail(article_id);
+            self.news_flash_utils.fetch_thumbnail(article_id);
         }
 
         Ok(())
