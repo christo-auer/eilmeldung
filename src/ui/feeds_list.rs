@@ -58,15 +58,27 @@ impl FeedListItem {
             Tags(_) => (config.tags_label.to_string(), config.theme.header),
             Tag(tag) => {
                 let mut style = config.theme.tag;
-                if let Some(color_str) = tag.color.clone()
-                    && let Ok(tag_color) = Color::from_str(color_str.as_str())
+                
+                // Use our utility function for color if tag doesn't have a custom color
+                let tag_color = if let Some(color_str) = tag.color.clone()
+                    && let Ok(custom_color) = Color::from_str(color_str.as_str())
                 {
-                    style = style.fg(tag_color)
-                }
-                (
-                    config.tag_label.replace("{label}", tag.label.as_str()),
-                    style,
-                )
+                    custom_color
+                } else {
+                    // Use our utility function for semantic colors
+                    let color_str = NewsFlashUtils::get_tag_color(&tag.label);
+                    Color::from_str(color_str).unwrap_or(Color::Gray)
+                };
+                style = style.fg(tag_color);
+                
+                // Get semantic icon for the tag
+                let icon = NewsFlashUtils::get_tag_icon(&tag.label);
+                
+                // Replace the icon in the label format
+                let label_with_icon = config.tag_label
+                    .replace("{label}", &format!("{} {}", icon, tag.label));
+                
+                (label_with_icon, style)
             }
 
             Query(query) => (query.to_string(), config.theme.category),
