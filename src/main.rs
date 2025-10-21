@@ -32,9 +32,10 @@ async fn main() -> color_eyre::Result<()> {
     debug!("Configuration loaded successfully");
 
     let config_dir = paths::PROJECT_DIRS.config_dir();
-    let data_dir = paths::PROJECT_DIRS.data_dir();
+    let data_dir = paths::PROJECT_DIRS.state_dir()
+        .ok_or_else(|| color_eyre::eyre::eyre!("Could not determine state directory"))?;
     debug!(
-        "Using config dir: {:?}, data dir: {:?}",
+        "Using config dir: {:?}, state dir: {:?}",
         config_dir, data_dir
     );
 
