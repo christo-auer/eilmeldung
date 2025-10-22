@@ -1,21 +1,23 @@
-use std::sync::Arc;
+use std::{collections::HashMap, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
     NewsFlash,
-    models::{ArticleID, Read},
+    models::{ArticleID, Category, CategoryID, Feed, FeedID, Read, Tag, TagID, Tagging},
 };
 
 use log::{debug, error, info};
+use ratatui::style::{Color, Style};
+use ratatui_image::FilterType::Triangle;
 use reqwest::Client;
 use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
 
-use crate::commands::{Message, Event};
+use crate::commands::{Event, Message};
 
 #[derive(Clone)]
 pub struct NewsFlashUtils {
     pub news_flash_lock: Arc<RwLock<NewsFlash>>,
     client_lock: Arc<RwLock<Client>>,
-        command_sender: UnboundedSender<Message>,
+    command_sender: UnboundedSender<Message>,
 
     async_operation_mutex: Arc<Mutex<()>>,
 }
@@ -24,7 +26,7 @@ impl NewsFlashUtils {
     pub fn new(
         news_flash: NewsFlash,
         client: Client,
-    command_sender: UnboundedSender<Message>,
+        command_sender: UnboundedSender<Message>,
     ) -> Self {
         debug!("Creating NewsFlashUtils");
         Self {
@@ -70,7 +72,8 @@ impl NewsFlashUtils {
             .await
             {
                 error!("Feed sync failed: {}", e);
-                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
+                let _ =
+                    command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
             }
         });
     }
@@ -108,13 +111,16 @@ impl NewsFlashUtils {
                 }
 
                 debug!("Sending AsyncFetchThumbnailFinished command");
-                command_sender.send(Message::Event(Event::AsyncFetchThumbnailFinished(thumbnail)))?;
+                command_sender.send(Message::Event(Event::AsyncFetchThumbnailFinished(
+                    thumbnail,
+                )))?;
                 Ok::<_, color_eyre::Report>(())
             }
             .await
             {
                 error!("Thumbnail fetch failed for article {:?}: {}", article_id, e);
-                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
+                let _ =
+                    command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
             }
         });
     }
@@ -148,7 +154,9 @@ impl NewsFlashUtils {
                     article_id
                 );
                 debug!("Sending AsyncFetchFatArticleFinished command");
-                command_sender.send(Message::Event(Event::AsyncFetchFatArticleFinished(fat_article)))?;
+                command_sender.send(Message::Event(Event::AsyncFetchFatArticleFinished(
+                    fat_article,
+                )))?;
                 Ok::<_, color_eyre::Report>(())
             }
             .await
@@ -157,7 +165,8 @@ impl NewsFlashUtils {
                     "Fat article fetch failed for article {:?}: {}",
                     article_id, e
                 );
-                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
+                let _ =
+                    command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
             }
         });
     }
@@ -205,7 +214,8 @@ impl NewsFlashUtils {
                     article_ids.len(),
                     e
                 );
-                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
+                let _ =
+                    command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
             }
          });
     }
@@ -262,5 +272,46 @@ impl NewsFlashUtils {
             "open source" | "oss" => "#228b22", // forest green
             _ => "#888888", // default gray
         }
+    }
+
+    pub fn generate_id_map<V, I: Hash + Eq + Clone>(
+        items: &Vec<V>,
+        id_extractor: impl Fn(&V) -> I,
+    ) -> HashMap<I, V>
+    where
+        V: Clone,
+    {
+        items
+            .iter()
+            .map(|item| (id_extractor(item), item.clone()))
+            .collect()
+    }
+
+    pub fn generate_one_to_many<E, I: Hash + Eq + Clone, V>(
+        mappings: &Vec<E>,
+        id_extractor: impl Fn(&E) -> I,
+        value_extractor: impl Fn(&E) -> V,
+    ) -> HashMap<I, Vec<V>>
+    where
+        V: Clone,
+    {
+        mappings
+            .into_iter()
+            .fold(HashMap::new(), |mut acc, mapping| {
+                acc.entry(id_extractor(mapping).clone())
+                    .or_default()
+                    .push(value_extractor(mapping).clone());
+                acc
+            })
+    }
+
+    pub fn tag_color(tag: &Tag) -> Option<Color> {
+        if let Some(color_str) = tag.color.clone()
+            && let Ok(tag_color) = Color::from_str(color_str.as_str())
+        {
+            return Some(tag_color);
+        }
+
+        None
     }
 }

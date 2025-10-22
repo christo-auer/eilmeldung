@@ -42,10 +42,11 @@ async fn main() -> color_eyre::Result<()> {
     let local_plugin_id = PluginID::new("freshrss");
     info!("Initializing NewsFlash with plugin: {}", local_plugin_id);
 
-    let news_flash = NewsFlash::new(config_dir, data_dir, &local_plugin_id, None).map_err(|e| {
-        error!("Failed to initialize NewsFlash: {}", e);
-        e
-    })?;
+    let news_flash =
+        NewsFlash::new(config_dir, state_dir, &local_plugin_id, None).map_err(|e| {
+            error!("Failed to initialize NewsFlash: {}", e);
+            e
+        })?;
     debug!("NewsFlash instance created successfully");
 
     let (message_sender, message_receiver) = unbounded_channel::<Message>();
@@ -71,8 +72,7 @@ async fn main() -> color_eyre::Result<()> {
 
     // news_flash.initial_sync(&client, Default::default()).await?;
 
-    let news_flash_utils =
-        NewsFlashUtils::new(news_flash, client, message_sender.clone());
+    let news_flash_utils = NewsFlashUtils::new(news_flash, client, message_sender.clone());
 
     let app = crate::app::App::new(config, news_flash_utils, message_sender);
 

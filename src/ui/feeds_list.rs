@@ -151,7 +151,7 @@ impl From<FeedListItem> for ArticleFilter {
 
 pub struct FeedList {
     config: Arc<Config>,
-        news_flash_async_manager: Arc<NewsFlashUtils>,
+    news_flash_utils: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
 
     tree_state: TreeState<FeedListItem>,
@@ -196,12 +196,12 @@ impl Widget for &mut FeedList {
 impl FeedList {
     pub fn new(
         config: Arc<Config>,
-    news_flash_async_manager: Arc<NewsFlashUtils>,
+        news_flash_utils: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {
             config,
-            news_flash_async_manager: news_flash_async_manager.clone(),
+            news_flash_utils: news_flash_utils.clone(),
             message_sender,
             items: vec![],
             tree_state: TreeState::default(),
@@ -213,35 +213,27 @@ impl FeedList {
         let previously_selected = self.get_selected_path();
 
         {
-            let news_flash = self.news_flash_async_manager.news_flash_lock.read().await;
+            let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
             // feeds
             let (feeds, feed_mappings) = news_flash.get_feeds()?;
-            let feed_map: HashMap<FeedID, Feed> = feeds
-                .iter()
-                .map(|feed| (feed.feed_id.clone(), feed.clone()))
-                .collect();
+            let feed_map = NewsFlashUtils::generate_id_map(&feeds, |f| f.feed_id.clone());
 
             // categories
             let (categories, category_mappings) = news_flash.get_categories()?;
 
-            let category_map: HashMap<CategoryID, Category> = categories
-                .iter()
-                .map(|category| (category.clone().category_id, category.clone()))
-                .collect();
+            let category_map =
+                NewsFlashUtils::generate_id_map(&categories, |c| c.category_id.clone());
 
             // tags
             let (tags, taggings) = news_flash.get_tags()?;
 
             let articles_for_tag: HashMap<TagID, Vec<ArticleID>> =
-                taggings
-                    .into_iter()
-                    .fold(HashMap::new(), |mut acc, tagging| {
-                        acc.entry(tagging.tag_id.clone())
-                            .or_default()
-                            .push(tagging.article_id.clone());
-                        acc
-                    });
+                NewsFlashUtils::generate_one_to_many(
+                    &taggings,
+                    |t| t.tag_id.clone(),
+                    |a| a.article_id.clone(),
+                );
 
             // build category/feed tree
             let mut tree: HashMap<CategoryID, Vec<FeedOrCategory>> = HashMap::new();
