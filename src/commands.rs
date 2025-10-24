@@ -4,6 +4,7 @@ use news_flash::models::{Article, ArticleFilter, FatArticle, FeedID, Thumbnail};
 
 use crate::{
     app::AppState,
+    query::AugmentedArticleFilter,
     ui::{articles_list::ArticleScope, tooltip::Tooltip},
 };
 
@@ -120,7 +121,7 @@ impl Display for CommandSequence {
 
 #[derive(Clone, Debug)]
 pub enum Event {
-    ArticlesSelected(ArticleFilter),
+    ArticlesSelected(AugmentedArticleFilter),
     ArticleSelected(Article),
     FatArticleSelected(Article),
 

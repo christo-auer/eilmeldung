@@ -1,16 +1,18 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use news_flash::models::{Article, ArticleFilter, ArticleID, Marked, Read, Tag, TagID};
-use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::{Block, Borders, Cell, Row, StatefulWidget, Table, TableState, Widget};
+use news_flash::models::{
+    Article, ArticleFilter, ArticleID, Feed, FeedID, Marked, Read, Tag, TagID,
+};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Borders, Row, StatefulWidget, Table, TableState, Widget};
 use ratatui::{
     layout::Constraint,
     style::{Style, Stylize},
 };
-use ratatui_image::FilterType::Triangle;
 use tokio::sync::mpsc::UnboundedSender;
 
+use crate::query::AugmentedArticleFilter;
 use crate::{
     app::AppState,
     commands::{Command, Event, Message, MessageReceiver},
@@ -32,14 +34,16 @@ pub struct ArticlesList {
     message_sender: UnboundedSender<Message>,
 
     articles: Vec<Article>,
+    table: Table<'static>,
+
+    feed_map: HashMap<FeedID, Feed>,
     tags_for_article: HashMap<ArticleID, Vec<TagID>>,
     tag_map: HashMap<TagID, Tag>,
-    table: Table<'static>,
 
     article_scope: ArticleScope,
 
     table_state: TableState,
-    article_filter: Option<ArticleFilter>,
+    article_filter: Option<AugmentedArticleFilter>,
     is_focused: bool,
 }
 
@@ -58,6 +62,7 @@ impl ArticlesList {
             articles: Default::default(),
             tags_for_article: Default::default(),
             tag_map: Default::default(),
+            feed_map: Default::default(),
             table_state: Default::default(),
             table: Default::default(),
             is_focused: false,
@@ -75,21 +80,27 @@ impl ArticlesList {
             match self.article_scope {
                 ArticleScope::All => {}
                 ArticleScope::Unread => {
-                    article_filter.unread = Some(Read::Unread);
+                    article_filter.article_filter.unread = Some(Read::Unread);
                 }
                 ArticleScope::Marked => {
-                    article_filter.marked = Some(Marked::Marked);
+                    article_filter.article_filter.marked = Some(Marked::Marked);
                 }
             }
 
-            article_filter.order_by = Some(news_flash::models::OrderBy::Published);
-            article_filter.order = Some(news_flash::models::ArticleOrder::NewestFirst);
+            article_filter.article_filter.order_by = Some(news_flash::models::OrderBy::Published);
+            article_filter.article_filter.order =
+                Some(news_flash::models::ArticleOrder::NewestFirst);
 
-            self.articles = news_flash.get_articles(article_filter)?;
+            self.articles = news_flash.get_articles(article_filter.article_filter)?;
+
+            let (feeds, _) = news_flash.get_feeds()?;
+
+            self.feed_map = NewsFlashUtils::generate_id_map(&feeds, |f| f.feed_id.clone());
 
             let (tags, taggings) = news_flash.get_tags()?;
 
             self.tag_map = NewsFlashUtils::generate_id_map(&tags, |t| t.tag_id.clone());
+
             self.tags_for_article = NewsFlashUtils::generate_one_to_many(
                 &taggings,
                 |a| a.article_id.clone(),
@@ -110,6 +121,16 @@ impl ArticlesList {
                         .cmp(position_for_tag.get(tag_b).unwrap())
                 })
             });
+
+            let article_filter = self.article_filter.as_ref().unwrap();
+            if article_filter.is_augmented() {
+                self.articles = article_filter.filter(
+                    &self.articles,
+                    &self.feed_map,
+                    &self.tags_for_article,
+                    &self.tag_map,
+                );
+            }
         }
 
         Ok(())
@@ -272,13 +293,42 @@ impl Widget for &mut ArticlesList {
                             .unwrap_or("?".into())
                             .to_string()
                             .into(),
+                        "{feed}" => self
+                            .feed_map
+                            .get(&article.feed_id)
+                            .map(|feed| feed.label.clone())
+                            .unwrap_or("?".into())
+                            .to_string()
+                            .into(),
                         "{date}" => article
                             .date
                             .with_timezone(&chrono::Local)
-                            .clone()
                             .format(&self.config.date_format)
                             .to_string()
                             .into(),
+                        "{age}" => {
+                            let now = chrono::Utc::now();
+                            let duration = now.signed_duration_since(article.date);
+
+                            let weeks = duration.num_weeks();
+                            let days = duration.num_days();
+                            let hours = duration.num_hours();
+                            let minutes = duration.num_minutes();
+                            let seconds = duration.num_seconds();
+
+                            if weeks > 0 {
+                                format!("{:>2}w", weeks)
+                            } else if days > 0 {
+                                format!("{:>2}d", days)
+                            } else if hours > 0 {
+                                format!("{:>2}h  ", hours)
+                            } else if minutes > 0 {
+                                format!("{:>2}m", minutes)
+                            } else {
+                                format!("{:>2}s", seconds)
+                            }
+                        }
+                        .into(),
                         "{read}" => if article.unread == Read::Read {
                             format!(" {} ", read_icon)
                         } else {
@@ -307,6 +357,8 @@ impl Widget for &mut ArticlesList {
 
         let constraint_for_placeholder = |placeholder: &str| {
             if placeholder == "{read}" || placeholder == "{marked}" {
+                Constraint::Length(3)
+            } else if placeholder == "{age}" {
                 Constraint::Length(3)
             } else if placeholder == "{date}" {
                 Constraint::Length(self.config.date_format.len() as u16)
@@ -362,8 +414,8 @@ impl MessageReceiver for ArticlesList {
                 self.select_first_unread()?;
             }
 
-            Message::Event(ArticlesSelected(article_filter)) => {
-                self.article_filter = Some(article_filter.clone());
+            Message::Event(ArticlesSelected(augmented_article_filter)) => {
+                self.article_filter = Some(augmented_article_filter.clone());
                 self.build_list().await?;
                 self.select_first_unread()?;
             }

@@ -1,10 +1,10 @@
 # Features
 
 - [ ] filter
-  - [ ] filter syntax -> `ArticleFilter`
+  - [x] filter syntax -> `ArticleFilter`
   - [ ] ad-hoc filtering (ala = in vifm)
-  - [ ] fixed filters (via config file, available in tree)
-  - [ ] always-on filters for filtering out ads (e.g., `-title="^Anzeige:.*`")
+  - [X] fixed filters (via config file, available in tree)
+  - [ ] actions
 
 - [ ] RIG LLM integration
  - [ ] research: MCP integration?
@@ -18,6 +18,8 @@
 - [ ] article list
  - [ ] scroll bar or counter
  - [ ] keep cursor in the middle/at the top
+
+- [ ] share functionality
 
 
 # Issues

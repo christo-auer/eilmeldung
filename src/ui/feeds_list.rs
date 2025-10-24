@@ -3,8 +3,9 @@ use std::str::FromStr;
 use std::{cmp::Ordering, sync::Arc};
 
 use crate::app::AppState;
-use crate::config::Config;
+use crate::config::{Config, LabeledQuery};
 use crate::newsflash_utils::NewsFlashUtils;
+use crate::query::AugmentedArticleFilter;
 use crate::ui::tooltip::{Tooltip, TooltipFlavor};
 use news_flash::models::{ArticleFilter, ArticleID, Marked, Read, Tag, TagID};
 use news_flash::models::{Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping};
@@ -27,7 +28,7 @@ pub enum FeedListItem {
     Category(Box<Category>),
     Tags(Vec<TagID>),
     Tag(Box<Tag>),
-    Query(Arc<String>),
+    Query(Box<LabeledQuery>),
 }
 
 impl FeedListItem {
@@ -58,30 +59,19 @@ impl FeedListItem {
             Tags(_) => (config.tags_label.to_string(), config.theme.header),
             Tag(tag) => {
                 let mut style = config.theme.tag;
-                
-                // Use our utility function for color if tag doesn't have a custom color
-                let tag_color = if let Some(color_str) = tag.color.clone()
-                    && let Ok(custom_color) = Color::from_str(color_str.as_str())
-                {
-                    custom_color
-                } else {
-                    // Use our utility function for semantic colors
-                    let color_str = NewsFlashUtils::get_tag_color(&tag.label);
-                    Color::from_str(color_str).unwrap_or(Color::Gray)
-                };
-                style = style.fg(tag_color);
-                
-                // Get semantic icon for the tag
-                let icon = NewsFlashUtils::get_tag_icon(&tag.label);
-                
-                // Replace the icon in the label format
-                let label_with_icon = config.tag_label
-                    .replace("{label}", &format!("{} {}", icon, tag.label));
-                
-                (label_with_icon, style)
+
+                let color = NewsFlashUtils::tag_color(tag).unwrap_or(style.fg.unwrap());
+                style = style.fg(color);
+
+                let label = config.tag_label.replace("{label}", &tag.label);
+
+                (label, style)
             }
 
-            Query(query) => (query.to_string(), config.theme.category),
+            Query(query) => (
+                config.query_label.replace("{label}", &query.label),
+                config.theme.query,
+            ),
         };
 
         if let Some(unread_count) = unread_count
@@ -115,37 +105,40 @@ impl FeedListItem {
             }
             Tags(_) => "all tagged articles".to_string(),
             Tag(tag) => format!("Tag: {}", tag.label),
-            Query(query) => format!("Query: {}", query),
+            Query(labeled_query) => format!("Query: {}", labeled_query.query),
         }
     }
 }
 
-impl From<FeedListItem> for ArticleFilter {
-    fn from(value: FeedListItem) -> Self {
+impl TryFrom<FeedListItem> for AugmentedArticleFilter {
+    type Error = color_eyre::Report;
+
+    fn try_from(value: FeedListItem) -> Result<Self, Self::Error> {
         use FeedListItem::*;
-        match value {
-            All => ArticleFilter::default(),
+        Ok(match value {
+            All => ArticleFilter::default().into(),
             Feed(feed) => ArticleFilter {
                 feeds: vec![feed.feed_id].into(),
                 ..Default::default()
-            },
+            }
+            .into(),
             Category(category) => ArticleFilter {
                 categories: vec![category.category_id].into(),
                 ..Default::default()
-            },
+            }
+            .into(),
             Tags(tag_ids) => ArticleFilter {
                 tags: Some(tag_ids),
                 ..Default::default()
-            },
+            }
+            .into(),
             Tag(tag) => ArticleFilter {
                 tags: vec![tag.tag_id].into(),
                 ..Default::default()
-            },
-            Query(query) => ArticleFilter {
-                search_term: Some((*query).clone()),
-                ..Default::default()
-            },
-        }
+            }
+            .into(),
+            Query(query) => AugmentedArticleFilter::from_str(&query.query)?,
+        })
     }
 }
 
@@ -367,15 +360,22 @@ impl FeedList {
                                 ),
                             ),
                         };
-                        TreeItem::new(
+                        TreeItem::new_leaf(
                             tag_item.clone(),
                             tag_item.to_text(&self.config, unread_count, marked_count),
-                            [].into(),
                         )
-                        .unwrap()
                     })
                     .collect(),
             )?);
+
+            // queries
+            self.config.queries.iter().for_each(|labeled_query| {
+                let query_item = FeedListItem::Query(Box::new(labeled_query.clone()));
+                self.items.push(TreeItem::new_leaf(
+                    query_item.clone(),
+                    query_item.to_text(&self.config, None, None),
+                ))
+            });
         }
 
         self.select_entry(previously_selected)?;
@@ -497,11 +497,7 @@ impl FeedList {
 
     fn select_entry(&mut self, path: Vec<FeedListItem>) -> color_eyre::Result<()> {
         if self.tree_state.select(path) {
-            let now_selected = self.tree_state.selected().last().cloned();
-            self.message_sender
-                .send(Message::Event(Event::ArticlesSelected(
-                    now_selected.unwrap().into(),
-                )))?;
+            self.generate_articles_selected_command()?;
         }
 
         Ok(())
@@ -509,8 +505,19 @@ impl FeedList {
 
     fn generate_articles_selected_command(&self) -> color_eyre::Result<()> {
         if let Some(selected) = self.get_selected() {
-            self.message_sender
-                .send(Message::Event(Event::ArticlesSelected(selected.into())))?;
+            match selected.try_into() {
+                Ok(article_filter) => {
+                    self.message_sender
+                        .send(Message::Event(Event::ArticlesSelected(article_filter)))?;
+                }
+                Err(err) => {
+                    self.message_sender
+                        .send(Message::Event(Event::Tooltip(Tooltip::from_str(
+                            err.to_string().as_str(),
+                            TooltipFlavor::Warning,
+                        ))))?;
+                }
+            }
         };
 
         Ok(())
@@ -570,8 +577,8 @@ impl MessageReceiver for FeedList {
         let selected_after_item = self.tree_state.selected().last().cloned();
 
         if selected_before_item != selected_after_item {
-            self.generate_articles_selected_command()?;
             self.update_tooltip(selected_after_item)?;
+            self.generate_articles_selected_command()?;
         }
 
         Ok(())

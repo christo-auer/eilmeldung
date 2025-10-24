@@ -17,6 +17,7 @@ mod config;
 mod input;
 mod logging;
 mod newsflash_utils;
+mod query;
 mod ui;
 
 #[tokio::main]
@@ -32,18 +33,13 @@ async fn main() -> color_eyre::Result<()> {
     debug!("Configuration loaded successfully");
 
     let config_dir = paths::PROJECT_DIRS.config_dir();
-    let data_dir = paths::PROJECT_DIRS.state_dir()
-        .ok_or_else(|| color_eyre::eyre::eyre!("Could not determine state directory"))?;
-    debug!(
-        "Using config dir: {:?}, state dir: {:?}",
-        config_dir, data_dir
-    );
+    let state_dir = paths::PROJECT_DIRS.state_dir();
 
     let local_plugin_id = PluginID::new("freshrss");
     info!("Initializing NewsFlash with plugin: {}", local_plugin_id);
 
-    let news_flash =
-        NewsFlash::new(config_dir, state_dir, &local_plugin_id, None).map_err(|e| {
+    let news_flash = NewsFlash::new(config_dir, state_dir.unwrap(), &local_plugin_id, None)
+        .map_err(|e| {
             error!("Failed to initialize NewsFlash: {}", e);
             e
         })?;

@@ -15,6 +15,18 @@ pub enum ArticleContentType {
     Markdown,
 }
 
+#[derive(Clone, Hash, Eq, PartialEq, Debug, serde::Deserialize)]
+pub struct LabeledQuery {
+    pub query: String,
+    pub label: String,
+}
+
+impl From<(String, String)> for LabeledQuery {
+    fn from((label, query): (String, String)) -> Self {
+        Self { label, query }
+    }
+}
+
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct Config {
     pub input_config: InputConfig,
@@ -27,6 +39,7 @@ pub struct Config {
     pub category_label: String,
     pub tags_label: String,
     pub tag_label: String,
+    pub query_label: String,
     pub tag_icon: char,
     pub article_table: String,
     pub date_format: String,
@@ -43,6 +56,8 @@ pub struct Config {
     pub article_thumbnail_fetch_debounce_millis: u64,
     pub article_content_max_chars_per_line: u16,
     pub article_content_preferred_type: ArticleContentType,
+
+    pub queries: Vec<LabeledQuery>,
 }
 
 impl Default for Config {
@@ -53,7 +68,8 @@ impl Default for Config {
             category_label: "󰉋 {label} {unread_count}".into(),
             tags_label: "󰓻 Tags {unread_count}".into(),
             tag_label: "󰓹 {label} {unread_count}".into(),
-            article_table: "{read},{marked},{tag_icons},{date},{title}".into(),
+            query_label: " {label}".into(),
+            article_table: "{read},{marked},{tag_icons},{age},{title}".into(),
             date_format: "%m/%d %H:%M".into(),
             theme: Default::default(),
             input_config: Default::default(),
@@ -72,6 +88,18 @@ impl Default for Config {
             article_thumbnail_fetch_debounce_millis: 500,
             article_content_max_chars_per_line: 66,
             article_content_preferred_type: ArticleContentType::Markdown,
+
+            queries: vec![
+                // ("Heise".into(), "unread feed:heise".into()).into(),
+                ("Apple News".into(), "title:/(?i).*apple:.*/".into()).into(),
+                ("Tag test ".into(), "tag:#test feedurl:\"pitchfork\"".into()).into(),
+                ("Tag test 2".into(), "tag:#test,#abc ~tag:#abcd".into()).into(),
+                (
+                    "alle ungelesenen von heute auf heise".into(),
+                    "newer:\"1 day ago\" unread feed:/(?i)heise/".into(),
+                )
+                    .into(),
+            ],
         }
     }
 }
