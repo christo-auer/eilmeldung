@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use news_flash::models::{
-    Article, ArticleFilter, ArticleID, Feed, FeedID, Marked, Read, Tag, TagID,
-};
+use news_flash::models::{Article, ArticleID, Feed, FeedID, Marked, Read, Tag, TagID};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Row, StatefulWidget, Table, TableState, Widget};
 use ratatui::{
@@ -74,63 +72,63 @@ impl ArticlesList {
             return Ok(());
         };
 
-        {
-            let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+        let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
+        // read/unread/marked etc comes from query
+        if !article_filter.is_augmented() {
             match self.article_scope {
                 ArticleScope::All => {}
                 ArticleScope::Unread => {
                     article_filter.article_filter.unread = Some(Read::Unread);
+                    article_filter.article_filter.marked = None;
                 }
                 ArticleScope::Marked => {
                     article_filter.article_filter.marked = Some(Marked::Marked);
+                    article_filter.article_filter.unread = None;
                 }
             }
+        }
 
-            article_filter.article_filter.order_by = Some(news_flash::models::OrderBy::Published);
-            article_filter.article_filter.order =
-                Some(news_flash::models::ArticleOrder::NewestFirst);
+        article_filter.article_filter.order_by = Some(news_flash::models::OrderBy::Published);
+        article_filter.article_filter.order = Some(news_flash::models::ArticleOrder::NewestFirst);
 
-            self.articles = news_flash.get_articles(article_filter.article_filter)?;
+        self.articles = news_flash.get_articles(article_filter.article_filter.clone())?;
 
-            let (feeds, _) = news_flash.get_feeds()?;
+        let (feeds, _) = news_flash.get_feeds()?;
+        self.feed_map = NewsFlashUtils::generate_id_map(&feeds, |f| f.feed_id.clone());
 
-            self.feed_map = NewsFlashUtils::generate_id_map(&feeds, |f| f.feed_id.clone());
+        let (tags, taggings) = news_flash.get_tags()?;
+        self.tag_map = NewsFlashUtils::generate_id_map(&tags, |t| t.tag_id.clone());
 
-            let (tags, taggings) = news_flash.get_tags()?;
+        self.tags_for_article = NewsFlashUtils::generate_one_to_many(
+            &taggings,
+            |a| a.article_id.clone(),
+            |t| t.tag_id.clone(),
+        );
 
-            self.tag_map = NewsFlashUtils::generate_id_map(&tags, |t| t.tag_id.clone());
+        let position_for_tag = tags
+            .iter()
+            .enumerate()
+            .map(|(pos, tag)| (&tag.tag_id, pos))
+            .collect::<HashMap<&TagID, usize>>();
 
-            self.tags_for_article = NewsFlashUtils::generate_one_to_many(
-                &taggings,
-                |a| a.article_id.clone(),
-                |t| t.tag_id.clone(),
+        self.tags_for_article.iter_mut().for_each(|(_, tag_ids)| {
+            tag_ids.sort_by(|tag_a, tag_b| {
+                position_for_tag
+                    .get(tag_a)
+                    .unwrap()
+                    .cmp(position_for_tag.get(tag_b).unwrap())
+            })
+        });
+
+        // apply additional query-based filter
+        if article_filter.is_augmented() {
+            self.articles = article_filter.filter(
+                &self.articles,
+                &self.feed_map,
+                &self.tags_for_article,
+                &self.tag_map,
             );
-
-            let position_for_tag = tags
-                .iter()
-                .enumerate()
-                .map(|(pos, tag)| (&tag.tag_id, pos))
-                .collect::<HashMap<&TagID, usize>>();
-
-            self.tags_for_article.iter_mut().for_each(|(_, tag_ids)| {
-                tag_ids.sort_by(|tag_a, tag_b| {
-                    position_for_tag
-                        .get(tag_a)
-                        .unwrap()
-                        .cmp(position_for_tag.get(tag_b).unwrap())
-                })
-            });
-
-            let article_filter = self.article_filter.as_ref().unwrap();
-            if article_filter.is_augmented() {
-                self.articles = article_filter.filter(
-                    &self.articles,
-                    &self.feed_map,
-                    &self.tags_for_article,
-                    &self.tag_map,
-                );
-            }
         }
 
         Ok(())
@@ -213,6 +211,12 @@ impl ArticlesList {
     }
 
     fn build_scope_title(&self) -> String {
+        if let Some(article_filter) = self.article_filter.clone()
+            && article_filter.is_augmented()
+        {
+            return "".to_string();
+        }
+
         let to_icon = |scope: ArticleScope| -> char {
             if scope == self.article_scope {
                 '󰐾'

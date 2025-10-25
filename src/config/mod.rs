@@ -96,7 +96,7 @@ impl Default for Config {
                 ("Tag test 2".into(), "tag:#test,#abc ~tag:#abcd".into()).into(),
                 (
                     "alle ungelesenen von heute auf heise".into(),
-                    "newer:\"1 day ago\" unread feed:/(?i)heise/".into(),
+                    "newer:\"1 day ago\" ~newer:\"5 hours ago\" unread feed:/(?i)heise/".into(),
                 )
                     .into(),
             ],

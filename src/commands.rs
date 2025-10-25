@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Display};
 
-use news_flash::models::{Article, ArticleFilter, FatArticle, FeedID, Thumbnail};
+use news_flash::models::{Article, FatArticle, FeedID, Thumbnail};
 
 use crate::{
     app::AppState,

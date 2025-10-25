@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
 };
 
-use chrono::{DateTime, Duration, NaiveTime};
+use chrono::DateTime;
 use log::trace;
 use logos::Logos;
 use news_flash::models::{
@@ -282,12 +282,12 @@ impl FromStr for AugmentedArticleFilter {
             if let Some(query_atom) = match token {
                 KeyRead => {
                     filter.article_filter.unread =
-                        Some(if negate { Read::Read } else { Read::Unread });
+                        Some(if negate { Read::Unread } else { Read::Read });
                     None
                 }
                 KeyUnread => {
                     filter.article_filter.unread =
-                        Some(if negate { Read::Unread } else { Read::Read });
+                        Some(if negate { Read::Read } else { Read::Unread });
                     None
                 }
                 KeyMarked => {
@@ -408,7 +408,7 @@ impl FromStr for AugmentedArticleFilter {
                     }
                 },
 
-                time_key @ (KeyNewer | KeyOlder | KeySyncedBefore | KeySyncedAfter) => {
+                mut time_key @ (KeyNewer | KeyOlder | KeySyncedBefore | KeySyncedAfter) => {
                     let time = match query_lexer.next() {
                         Some(Ok(QuotedString)) => {
                             let mut time_string = query_lexer.slice().to_string();
@@ -424,6 +424,7 @@ impl FromStr for AugmentedArticleFilter {
                                 zoned.timestamp().as_second(),
                                 zoned.timestamp().subsec_nanosecond() as u32,
                             )
+                            .unwrap()
                         }
 
                         _ => {
@@ -434,11 +435,48 @@ impl FromStr for AugmentedArticleFilter {
                             ));
                         }
                     };
+
+                    if negate {
+                        time_key = match time_key {
+                            QueryToken::KeyNewer => QueryToken::KeyOlder,
+                            QueryToken::KeyOlder => QueryToken::KeyNewer,
+                            QueryToken::KeySyncedBefore => QueryToken::KeySyncedAfter,
+                            QueryToken::KeySyncedAfter => QueryToken::KeySyncedBefore,
+                            _ => unreachable!(),
+                        };
+                    }
+
                     match time_key {
-                        QueryToken::KeyNewer => filter.article_filter.newer_than = time,
-                        QueryToken::KeyOlder => filter.article_filter.older_than = time,
-                        QueryToken::KeySyncedBefore => filter.article_filter.synced_before = time,
-                        QueryToken::KeySyncedAfter => filter.article_filter.synced_after = time,
+                        QueryToken::KeyNewer => {
+                            filter.article_filter.newer_than =
+                                match filter.article_filter.newer_than {
+                                    Some(other_time) => Some(other_time.max(time)),
+                                    None => Some(time),
+                                }
+                        }
+
+                        QueryToken::KeyOlder => {
+                            filter.article_filter.older_than =
+                                match filter.article_filter.older_than {
+                                    Some(other_time) => Some(other_time.min(time)),
+                                    None => Some(time),
+                                }
+                        }
+                        QueryToken::KeySyncedBefore => {
+                            filter.article_filter.synced_before =
+                                match filter.article_filter.synced_before {
+                                    Some(other_time) => Some(other_time.min(time)),
+                                    None => Some(time),
+                                }
+                        }
+
+                        QueryToken::KeySyncedAfter => {
+                            filter.article_filter.synced_after =
+                                match filter.article_filter.synced_after {
+                                    Some(other_time) => Some(other_time.max(time)),
+                                    None => Some(time),
+                                }
+                        }
 
                         _ => unreachable!(),
                     }
@@ -502,20 +540,4 @@ fn to_search_term(query_token: QueryToken, slice: &str) -> color_eyre::Result<Se
             "expected regular expression or quoted string",
         )),
     }
-}
-
-fn to_duration(number: &str, unit: &str) -> color_eyre::Result<Duration> {
-    let amount: i64 = i64::from_str(number)
-        .map_err(|_| color_eyre::Report::msg(format!("unable to parse number: {}", number)))?;
-
-    Ok(match unit {
-        "s" | "seconds" | "second" => Duration::seconds(amount),
-        "h" | "hours" | "hour" => Duration::hours(amount),
-        "m" | "min" | "minutes" => Duration::minutes(amount),
-        "d" | "days" | "day" => Duration::days(amount),
-        "w" | "weeks" | "week" => Duration::weeks(amount),
-        "M" | "months" | "month" => Duration::days((30.5 * amount as f32) as i64),
-        "Y" | "years" | "y" | "year" => Duration::days((365.25 * amount as f32) as i64),
-        _ => unreachable!(),
-    })
 }

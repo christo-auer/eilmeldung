@@ -9,7 +9,6 @@ use crate::query::AugmentedArticleFilter;
 use crate::ui::tooltip::{Tooltip, TooltipFlavor};
 use news_flash::models::{ArticleFilter, ArticleID, Marked, Read, Tag, TagID};
 use news_flash::models::{Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping};
-use ratatui::style::Color;
 use ratatui::widgets::{Block, Borders};
 use ratatui::{
     style::{Style, Stylize},

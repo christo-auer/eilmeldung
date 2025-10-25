@@ -24,7 +24,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, StatefulWidget, Widget, Wrap},
 };
 use ratatui_image::{
-    FilterType::{self, Triangle},
+    FilterType::{self},
     Resize, StatefulImage,
     picker::Picker,
     protocol::StatefulProtocol,

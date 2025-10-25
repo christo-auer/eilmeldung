@@ -2,12 +2,11 @@ use std::{collections::HashMap, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
     NewsFlash,
-    models::{ArticleID, Category, CategoryID, Feed, FeedID, Read, Tag, TagID, Tagging},
+    models::{ArticleID, Read, Tag},
 };
 
 use log::{debug, error, info};
-use ratatui::style::{Color, Style};
-use ratatui_image::FilterType::Triangle;
+use ratatui::style::Color;
 use reqwest::Client;
 use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
 
