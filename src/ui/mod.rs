@@ -1,5 +1,6 @@
 pub mod article_content;
 pub mod articles_list;
+pub mod command_input;
 pub mod feeds_list;
 pub mod tooltip;
 
@@ -32,11 +33,16 @@ impl Widget for &mut App {
         let articles_width = 100 - feeds_width;
         let article_list_height = 100 - article_content_height;
 
-        let [top, middle, bottom] = Layout::default()
+        let [top, middle, command_line, bottom] = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(1), // Top: fixed 1 line
                 Constraint::Min(0),    // Middle: takes remaining space
+                Constraint::Length(if self.state == AppState::CommandInput {
+                    2
+                } else {
+                    0
+                }),
                 Constraint::Length(1), // Bottom: fixed 1 line
             ])
             .areas(area);
@@ -76,6 +82,10 @@ impl Widget for &mut App {
             .use_type(use_type);
 
         StatefulWidget::render(top_line, top, buf, &mut self.async_operation_throbber);
+
+        if self.state == AppState::CommandInput {
+            self.command_line.render(command_line, buf);
+        }
 
         let bottom_line = self.tooltip.to_line(&self.config);
 

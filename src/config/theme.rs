@@ -18,6 +18,7 @@ pub struct Theme {
     pub tooltip_error: Style,
 
     pub border_style: Style,
+    pub focused_border_style: Style,
 
     pub unread_modifier: Modifier,
 }
@@ -43,6 +44,7 @@ impl Default for Theme {
             tooltip_error: Style::default().fg(Black).bg(Red).bold(),
 
             border_style: Style::default().fg(Magenta),
+            focused_border_style: Style::default().fg(Yellow).bold(),
 
             unread_modifier: Modifier::BOLD,
         }

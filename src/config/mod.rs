@@ -2,6 +2,7 @@ pub mod paths;
 pub mod theme;
 use std::collections::HashMap;
 
+use crate::app::AppState;
 use crate::commands::{Command, CommandSequence};
 use crate::config::paths::{CONFIG_FILE, PROJECT_DIRS};
 use crate::config::theme::Theme;
@@ -126,9 +127,10 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         ("q".into(), ApplicationQuit.into()),
         ("r".into(), FeedsSync.into()),
         ("s".into(), ArticleCurrentScrape.into()),
-        ("g f".into(), PanelFocusFeeds.into()),
-        ("g a".into(), PanelFocusArticleSelection.into()),
-        ("g c".into(), PanelFocusArticleContent.into()),
+        ("g f".into(), PanelFocus(AppState::FeedSelection).into()),
+        ("g a".into(), PanelFocus(AppState::ArticleSelection).into()),
+        ("g c".into(), PanelFocus(AppState::ArticleContent).into()),
+        (":".into(), PanelFocus(AppState::CommandInput).into()),
         ("space".into(), PanelFocusNext.into()),
         ("backspace".into(), PanelFocusPrevious.into()),
         ("tab".into(), PanelFocusNextCyclic.into()),

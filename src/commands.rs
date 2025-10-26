@@ -1,6 +1,7 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use news_flash::models::{Article, FatArticle, FeedID, Thumbnail};
+use ratatui::crossterm::event::KeyEvent;
 
 use crate::{
     app::AppState,
@@ -8,7 +9,7 @@ use crate::{
     ui::{articles_list::ArticleScope, tooltip::Tooltip},
 };
 
-#[derive(Copy, Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Command {
     // general navigation
@@ -23,9 +24,7 @@ pub enum Command {
 
     // Panels
     PanelFocusNext,
-    PanelFocusFeeds,
-    PanelFocusArticleSelection,
-    PanelFocusArticleContent,
+    PanelFocus(AppState),
     PanelFocusPrevious,
     PanelFocusNextCyclic,
     PanelFocusPreviousCyclic,
@@ -45,12 +44,15 @@ pub enum Command {
 
     // application
     ApplicationQuit,
+
+    // command line
+    CommandLineOpen(String),
 }
 
 impl Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use Command::*;
-        match *self {
+        match self.clone() {
             NavigateUp => write!(f, "up"),
             NavigateDown => write!(f, "down"),
             NavigatePageUp => write!(f, "page up"),
@@ -60,9 +62,7 @@ impl Display for Command {
             NavigateLeft => write!(f, "left"),
             NavigateRight => write!(f, "right"),
             PanelFocusNext => write!(f, "focus next"),
-            PanelFocusFeeds => write!(f, "focus feeds"),
-            PanelFocusArticleSelection => write!(f, "focus articles"),
-            PanelFocusArticleContent => write!(f, "focus content"),
+            PanelFocus(app_state) => write!(f, "focus {}", app_state),
             PanelFocusPrevious => write!(f, "focus previous"),
             PanelFocusNextCyclic => write!(f, "focus next"),
             PanelFocusPreviousCyclic => write!(f, "focus next"),
@@ -80,6 +80,7 @@ impl Display for Command {
             ArticleListSetScope(ArticleScope::All) => write!(f, "show all"),
             ArticleCurrentScrape => write!(f, "scrape content"),
             ApplicationQuit => write!(f, "quit"),
+            CommandLineOpen(input) => write!(f, "command line {}", input),
         }
     }
 }
@@ -147,12 +148,16 @@ pub enum Event {
     // application
     ApplicationStarted,
     ApplicationStateChanged(AppState),
+
+    // raw key event
+    Key(KeyEvent),
 }
 
 #[derive(Debug)]
 pub enum Message {
     Command(Command),
     Event(Event),
+    SetRawInput(bool),
 }
 
 pub trait MessageReceiver {

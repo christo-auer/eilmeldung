@@ -3,13 +3,14 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use log::{debug, trace, warn};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
+use tokio::sync::Mutex;
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::commands::{CommandSequence, Message};
+use crate::commands::{CommandSequence, Event, Message};
 use crate::config::Config;
 use crate::ui::tooltip::{Tooltip, TooltipFlavor};
 
@@ -18,6 +19,7 @@ use crate::ui::tooltip::{Tooltip, TooltipFlavor};
 pub struct InputCommandHandler {
     config: Arc<Config>,
     message_sender: UnboundedSender<Message>,
+    raw_input: Arc<Mutex<bool>>,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
@@ -265,36 +267,54 @@ impl<'de> serde::de::Deserialize<'de> for KeySequence {
 }
 
 impl InputCommandHandler {
-    pub fn new(config: Arc<Config>, message_sender: UnboundedSender<Message>) -> Self {
+    fn new(
+        config: Arc<Config>,
+        message_sender: UnboundedSender<Message>,
+        raw_input: Arc<Mutex<bool>>,
+    ) -> Self {
         Self {
             config,
             message_sender,
+            raw_input: raw_input.clone(),
         }
     }
 
     pub fn spawn_input_command_handler(
         config: Arc<Config>,
         message_sender: UnboundedSender<Message>,
+        raw_input: Arc<Mutex<bool>>,
     ) {
         tokio::spawn(async move {
-            let handler = Self::new(config, message_sender);
+            let mut handler = Self::new(config, message_sender, raw_input);
             if let Err(error) = handler.handle_input_commands().await {
                 warn!("error handling input {error}");
             }
         });
     }
 
-    pub async fn handle_input_commands(&self) -> color_eyre::Result<()> {
+    pub async fn handle_input_commands(&mut self) -> color_eyre::Result<()> {
         debug!("Input processing loop started");
         let mut key_sequence = KeySequence::default();
         loop {
             let mut timeout = false;
             let mut aborted = false;
 
-            if let Ok(event_available) = crossterm::event::poll(Duration::from_millis(5000)) {
+            if let Ok(event_available) =
+                ratatui::crossterm::event::poll(Duration::from_millis(5000))
+            {
                 if event_available {
-                    match crossterm::event::read()? {
-                        crossterm::event::Event::Key(key_event) => {
+                    match ratatui::crossterm::event::read()? {
+                        ratatui::crossterm::event::Event::Key(key_event) => {
+                            {
+                                let raw_input = self.raw_input.lock().await;
+                                if *raw_input {
+                                    trace!("sending raw key event: {:?}", key_event);
+                                    self.message_sender
+                                        .send(Message::Event(Event::Key(key_event)))?;
+                                    continue;
+                                }
+                            }
+
                             let key: Key = key_event.into();
 
                             if key == Key::Just(KeyCode::Esc) {
@@ -309,15 +329,19 @@ impl InputCommandHandler {
                         }
                     }
                 } else {
-                    trace!("input timout");
+                    trace!("input timeout");
                     timeout = true;
                 }
             }
 
+            {
+                let raw_input = self.raw_input.lock().await;
+                if *raw_input {
+                    continue;
+                }
+            }
+
             // get key sequences which have a matching prefix
-            // TODO: this is the spot for showing a popup with possible commands
-            // TODO escape
-            // TODO immediately ignore wrong keysequences with warning
             let mut prefix_matches = self
                 .config
                 .input_config
@@ -334,7 +358,8 @@ impl InputCommandHandler {
                     && (prefix_matches.len() == 1 || timeout)
             {
                 for command in command_sequence.commands.iter() {
-                    self.message_sender.send(Message::Command(*command))?;
+                    self.message_sender
+                        .send(Message::Command(command.clone()))?;
                 }
                 key_sequence.keys.clear();
                 let _ = self

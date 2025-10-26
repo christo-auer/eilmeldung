@@ -1,8 +1,11 @@
 use log::{debug, error, info, trace};
 use ratatui::DefaultTerminal;
-use std::{sync::Arc, time::Duration};
+use std::{fmt::Display, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::{
+    Mutex,
+    mpsc::{UnboundedReceiver, UnboundedSender},
+};
 
 use crate::{
     commands::{Command, Event, Message, MessageReceiver},
@@ -12,17 +15,33 @@ use crate::{
     ui::{
         article_content::ArticleContent,
         articles_list::ArticlesList,
+        command_input::CommandInput,
         feeds_list::FeedList,
         tooltip::{Tooltip, TooltipFlavor},
     },
 };
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 pub enum AppState {
     FeedSelection,
     ArticleSelection,
     ArticleContent,
     ArticleContentDistractionFree,
+    CommandInput,
+}
+
+impl Display for AppState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AppState::FeedSelection => write!(f, "feed selection"),
+            AppState::ArticleSelection => write!(f, "article selection"),
+            AppState::ArticleContent => write!(f, "article content"),
+            AppState::ArticleContentDistractionFree => {
+                write!(f, "article content distraction free")
+            }
+            AppState::CommandInput => write!(f, "command input"),
+        }
+    }
 }
 
 impl AppState {
@@ -32,7 +51,7 @@ impl AppState {
             ArticleSelection => FeedSelection,
             ArticleContent => ArticleSelection,
             FeedSelection => ArticleContent,
-            ArticleContentDistractionFree => ArticleContentDistractionFree,
+            _ => *self,
         }
     }
 
@@ -42,7 +61,7 @@ impl AppState {
             FeedSelection => ArticleSelection,
             ArticleSelection => ArticleContent,
             ArticleContent => FeedSelection,
-            ArticleContentDistractionFree => ArticleContentDistractionFree,
+            _ => *self,
         }
     }
 
@@ -52,7 +71,7 @@ impl AppState {
             FeedSelection => ArticleSelection,
             ArticleSelection => ArticleContent,
             ArticleContent => ArticleContent,
-            ArticleContentDistractionFree => ArticleContentDistractionFree,
+            _ => *self,
         }
     }
 
@@ -62,7 +81,7 @@ impl AppState {
             FeedSelection => FeedSelection,
             ArticleSelection => FeedSelection,
             ArticleContent => ArticleSelection,
-            ArticleContentDistractionFree => ArticleContentDistractionFree,
+            _ => *self,
         }
     }
 }
@@ -73,16 +92,18 @@ pub struct App {
     pub config: Arc<Config>,
     pub news_flash_utils: Arc<NewsFlashUtils>,
     pub message_sender: UnboundedSender<Message>,
-    pub input_command_handler: InputCommandHandler,
 
     pub tooltip: Tooltip<'static>,
 
     pub feed_list: FeedList,
     pub articles_list: ArticlesList,
     pub article_content: ArticleContent,
+    pub command_line: CommandInput,
     pub async_operation_throbber: ThrobberState,
 
     pub is_running: bool,
+
+    raw_input: Arc<Mutex<bool>>,
 }
 
 impl App {
@@ -102,10 +123,6 @@ impl App {
             news_flash_utils: news_flash_utils_arc.clone(),
             is_running: true,
             message_sender: message_sender.clone(),
-            input_command_handler: InputCommandHandler::new(
-                Arc::clone(&config_arc),
-                message_sender.clone(),
-            ),
             feed_list: FeedList::new(
                 Arc::clone(&config_arc),
                 news_flash_utils_arc.clone(),
@@ -121,11 +138,17 @@ impl App {
                 news_flash_utils_arc.clone(),
                 message_sender.clone(),
             ),
+            command_line: CommandInput::new(
+                Arc::clone(&config_arc),
+                news_flash_utils_arc.clone(),
+                message_sender.clone(),
+            ),
             tooltip: Tooltip::new(
                 "Welcome to eilmeldung".into(),
                 crate::ui::tooltip::TooltipFlavor::Info,
             ),
             async_operation_throbber: ThrobberState::default(),
+            raw_input: Arc::new(Mutex::new(false)),
         };
 
         info!("App instance created with initial state: FeedSelection");
@@ -149,7 +172,12 @@ impl App {
         let config_arc = self.config.clone();
         let message_sender = self.message_sender.clone();
         debug!("Spawning input processing task");
-        InputCommandHandler::spawn_input_command_handler(config_arc, message_sender);
+
+        InputCommandHandler::spawn_input_command_handler(
+            config_arc,
+            message_sender,
+            self.raw_input.clone(),
+        );
 
         debug!("Sending ApplicationStarted command");
         self.message_sender
@@ -168,32 +196,6 @@ impl App {
             self.async_operation_throbber.calc_next();
         }
     }
-
-    // async fn process_input(
-    //     config: Arc<Config>,
-    //     tx: UnboundedSender<Message>,
-    // ) -> color_eyre::Result<()> {
-    //     debug!("Input processing loop started");
-    //     loop {
-    //         match crossterm::event::read()? {
-    //             crossterm::event::Event::Key(key_event) => {
-    //                 trace!("Key event received: {:?}", key_event);
-    //                 let commands = translate_to_commands(&config.input_config, key_event);
-    //                 debug!("Translated to {} commands", commands.len());
-    //                 for command in commands {
-    //                     // Don't log commands with large binary data
-    //                     tx.send(command).map_err(|e| {
-    //                         error!("Failed to send command: {}", e);
-    //                         e
-    //                     })?;
-    //                 }
-    //             }
-    //             _ => {
-    //                 trace!("Non-key event ignored");
-    //             }
-    //         }
-    //     }
-    // }
 
     async fn process_commands(
         mut self,
@@ -221,10 +223,18 @@ impl App {
                             Message::Event(Event::AsyncFetchThumbnailFinished(_)) => {
                                 trace!("Processing message: AsyncFetchThumbnailFinished");
                             }
+
+                            Message::SetRawInput(raw_input_value) => {
+                                let mut raw_input = self.raw_input.lock().await;
+                                *raw_input = *raw_input_value;
+                            }
+
                             _ => {
                                 trace!("Processing message: {:?}", message);
                             }
+
                         }
+
 
                         if let Err(e) = self.process_command(&message).await {
                             error!("Failed to process app message: {}", e);
@@ -241,6 +251,11 @@ impl App {
                         if let Err(e) = self.article_content.process_command(&message).await {
                             error!("Failed to process article content message: {}", e);
                         }
+
+                        if let Err(e) = self.command_line.process_command(&message).await {
+                            error!("Failed to process command line message: {}", e);
+                        }
+
                     } else {
                         debug!("Message channel closed, stopping message processing");
                         break;
@@ -290,25 +305,9 @@ impl MessageReceiver for App {
             }
 
             // TODO refactor redundant code!
-            Message::Command(PanelFocusFeeds) => {
+            Message::Command(PanelFocus(next_state)) => {
                 let old_state = self.state;
-                self.state = AppState::FeedSelection;
-                debug!("Focus moved from {:?} to {:?}", old_state, self.state);
-                self.message_sender
-                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
-            }
-
-            Message::Command(PanelFocusArticleSelection) => {
-                let old_state = self.state;
-                self.state = AppState::ArticleSelection;
-                debug!("Focus moved from {:?} to {:?}", old_state, self.state);
-                self.message_sender
-                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
-            }
-
-            Message::Command(PanelFocusArticleContent) => {
-                let old_state = self.state;
-                self.state = AppState::ArticleContent;
+                self.state = *next_state;
                 debug!("Focus moved from {:?} to {:?}", old_state, self.state);
                 self.message_sender
                     .send(Message::Event(ApplicationStateChanged(self.state)))?;

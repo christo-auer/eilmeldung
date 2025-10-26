@@ -171,7 +171,11 @@ impl Widget for &mut FeedList {
                 Block::default()
                     .borders(Borders::TOP | Borders::LEFT | Borders::BOTTOM)
                     .border_type(ratatui::widgets::BorderType::Rounded)
-                    .border_style(self.config.theme.border_style),
+                    .border_style(if self.is_focused {
+                        self.config.theme.focused_border_style
+                    } else {
+                        self.config.theme.border_style
+                    }),
             )
             .experimental_scrollbar(Some(
                 Scrollbar::new(ratatui::widgets::ScrollbarOrientation::VerticalLeft)

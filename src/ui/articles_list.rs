@@ -363,7 +363,7 @@ impl Widget for &mut ArticlesList {
             if placeholder == "{read}" || placeholder == "{marked}" {
                 Constraint::Length(3)
             } else if placeholder == "{age}" {
-                Constraint::Length(3)
+                Constraint::Length(4)
             } else if placeholder == "{date}" {
                 Constraint::Length(self.config.date_format.len() as u16)
             } else if placeholder == "{tag_icons}" {
@@ -387,7 +387,11 @@ impl Widget for &mut ArticlesList {
                 .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
                 .title_top(self.build_scope_title())
                 .border_type(ratatui::widgets::BorderType::Rounded)
-                .border_style(self.config.theme.border_style),
+                .border_style(if self.is_focused {
+                    self.config.theme.focused_border_style
+                } else {
+                    self.config.theme.border_style
+                }),
         );
 
         StatefulWidget::render(&self.table, area, buf, &mut self.table_state);

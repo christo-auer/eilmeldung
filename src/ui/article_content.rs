@@ -166,7 +166,11 @@ impl ArticleContent {
         let mut block = Block::default()
             .borders(Borders::all())
             .border_type(ratatui::widgets::BorderType::Rounded)
-            .border_style(self.config.theme.border_style);
+            .border_style(if self.is_focused {
+                self.config.theme.focused_border_style
+            } else {
+                self.config.theme.border_style
+            });
 
         if self.is_focused {
             block = block.title_bottom(
