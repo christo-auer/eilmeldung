@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -9,21 +10,6 @@ use ratatui::{
     style::{Style, Stylize},
 };
 use tokio::sync::mpsc::UnboundedSender;
-
-use crate::query::AugmentedArticleFilter;
-use crate::{
-    app::AppState,
-    commands::{Command, Event, Message, MessageReceiver},
-    config::Config,
-    newsflash_utils::NewsFlashUtils,
-};
-
-#[derive(Copy, Clone, Eq, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
-pub enum ArticleScope {
-    All,
-    Unread,
-    Marked,
-}
 
 pub struct ArticlesList {
     config: Arc<Config>,
@@ -398,7 +384,7 @@ impl Widget for &mut ArticlesList {
     }
 }
 
-impl MessageReceiver for ArticlesList {
+impl crate::messages::MessageReceiver for ArticlesList {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         use Command::*;
         use Event::*;

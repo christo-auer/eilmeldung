@@ -4,14 +4,22 @@ pub mod command_input;
 pub mod feeds_list;
 pub mod tooltip;
 
+use crate::prelude::*;
+
+pub mod prelude {
+    pub use super::article_content::ArticleContent;
+    pub use super::articles_list::ArticlesList;
+    pub use super::command_input::CommandInput;
+    pub use super::feeds_list::FeedList;
+    pub use super::tooltip::{Tooltip, TooltipFlavor};
+}
+
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     widgets::{StatefulWidget, Widget},
 };
 use throbber_widgets_tui::Throbber;
-
-use crate::app::{App, AppState};
 
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer) {

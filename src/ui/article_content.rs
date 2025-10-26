@@ -1,3 +1,5 @@
+use crate::prelude::*;
+
 use std::{
     collections::HashSet,
     io::Cursor,
@@ -5,12 +7,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{
-    app::AppState,
-    commands::{Command, Event, Message, MessageReceiver},
-    config::{ArticleContentType, Config},
-    newsflash_utils::NewsFlashUtils,
-};
 use image::ImageReader;
 use news_flash::{
     models::{Article, FatArticle, Feed, Tag, TagID, Thumbnail},
@@ -402,7 +398,7 @@ impl Widget for &mut ArticleContent {
     }
 }
 
-impl MessageReceiver for ArticleContent {
+impl crate::messages::MessageReceiver for ArticleContent {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         use Command::*;
         use Event::*;

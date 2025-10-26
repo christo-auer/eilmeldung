@@ -1,3 +1,5 @@
+use crate::prelude::*;
+
 use log::{debug, error, info, trace};
 use ratatui::DefaultTerminal;
 use std::{fmt::Display, sync::Arc, time::Duration};
@@ -5,20 +7,6 @@ use throbber_widgets_tui::ThrobberState;
 use tokio::sync::{
     Mutex,
     mpsc::{UnboundedReceiver, UnboundedSender},
-};
-
-use crate::{
-    commands::{Command, Event, Message, MessageReceiver},
-    config::Config,
-    input::InputCommandHandler,
-    newsflash_utils::NewsFlashUtils,
-    ui::{
-        article_content::ArticleContent,
-        articles_list::ArticlesList,
-        command_input::CommandInput,
-        feeds_list::FeedList,
-        tooltip::{Tooltip, TooltipFlavor},
-    },
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, serde::Serialize, serde::Deserialize)]

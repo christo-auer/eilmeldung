@@ -1,13 +1,6 @@
-use std::{collections::HashMap, fmt::Display, str::FromStr};
+use std::fmt::Display;
 
-use news_flash::models::{Article, FatArticle, FeedID, Thumbnail};
-use ratatui::crossterm::event::KeyEvent;
-
-use crate::{
-    app::AppState,
-    query::AugmentedArticleFilter,
-    ui::{articles_list::ArticleScope, tooltip::Tooltip},
-};
+use crate::prelude::*;
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -118,48 +111,4 @@ impl Display for CommandSequence {
 
         Ok(())
     }
-}
-
-#[derive(Clone, Debug)]
-pub enum Event {
-    ArticlesSelected(AugmentedArticleFilter),
-    ArticleSelected(Article),
-    FatArticleSelected(Article),
-
-    AsyncSyncStarted,
-    AsyncSyncFinished(HashMap<FeedID, i64>),
-
-    AsyncFetchThumbnailStarted,
-    AsyncFetchThumbnailFinished(Option<Thumbnail>),
-
-    AsyncFetchFatArticleStarted,
-    AsyncFetchFatArticleFinished(FatArticle),
-
-    AsyncMarkArticlesAsReadStarted,
-    AsyncMarkArticlesAsReadFinished,
-
-    AsyncOperationFailed(String),
-
-    Tick, // general tick for animations and regular updates
-
-    // messaging/status
-    Tooltip(Tooltip<'static>),
-
-    // application
-    ApplicationStarted,
-    ApplicationStateChanged(AppState),
-
-    // raw key event
-    Key(KeyEvent),
-}
-
-#[derive(Debug)]
-pub enum Message {
-    Command(Command),
-    Event(Event),
-    SetRawInput(bool),
-}
-
-pub trait MessageReceiver {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()>;
 }

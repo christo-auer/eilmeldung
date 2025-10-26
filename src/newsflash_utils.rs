@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use std::{collections::HashMap, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
@@ -9,8 +10,6 @@ use log::{debug, error, info};
 use ratatui::style::Color;
 use reqwest::Client;
 use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
-
-use crate::commands::{Event, Message};
 
 #[derive(Clone)]
 pub struct NewsFlashUtils {
@@ -229,20 +228,6 @@ impl NewsFlashUtils {
         items
             .iter()
             .map(|item| (id_extractor(item), item.clone()))
-            .collect()
-    }
-
-    pub fn generate_one_to_one<E, I: Hash + Eq + Clone, V>(
-        items: &Vec<E>,
-        id_extractor: impl Fn(&E) -> I,
-        value_extractor: impl Fn(&E) -> V,
-    ) -> HashMap<I, V>
-    where
-        V: Clone,
-    {
-        items
-            .iter()
-            .map(|item| (id_extractor(item), value_extractor(item)))
             .collect()
     }
 

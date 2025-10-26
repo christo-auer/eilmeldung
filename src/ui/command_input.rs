@@ -1,3 +1,5 @@
+use crate::prelude::*;
+
 use std::sync::Arc;
 
 use log::info;
@@ -5,15 +7,8 @@ use ratatui::{
     crossterm::event::KeyCode,
     widgets::{Block, BorderType, Borders, Widget},
 };
-use tokio::sync::{Mutex, mpsc::UnboundedSender};
+use tokio::sync::mpsc::UnboundedSender;
 use tui_textarea::TextArea;
-
-use crate::{
-    app::AppState,
-    commands::{Command, Event, Message, MessageReceiver},
-    config::Config,
-    newsflash_utils::NewsFlashUtils,
-};
 
 pub struct CommandInput {
     config: Arc<Config>,
@@ -66,7 +61,7 @@ impl Widget for &mut CommandInput {
     }
 }
 
-impl MessageReceiver for CommandInput {
+impl crate::messages::MessageReceiver for CommandInput {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         info!("input_command processing {:?}", message);
         match message {

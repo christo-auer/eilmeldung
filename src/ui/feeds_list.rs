@@ -1,12 +1,8 @@
+use crate::prelude::*;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::{cmp::Ordering, sync::Arc};
 
-use crate::app::AppState;
-use crate::config::{Config, LabeledQuery};
-use crate::newsflash_utils::NewsFlashUtils;
-use crate::query::AugmentedArticleFilter;
-use crate::ui::tooltip::{Tooltip, TooltipFlavor};
 use news_flash::models::{ArticleFilter, ArticleID, Marked, Read, Tag, TagID};
 use news_flash::models::{Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping};
 use ratatui::widgets::{Block, Borders};
@@ -17,8 +13,6 @@ use ratatui::{
 use ratatui::{text::Text, widgets::Scrollbar};
 use tokio::sync::mpsc::UnboundedSender;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
-
-use crate::commands::{Command, Event, Message, MessageReceiver};
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub enum FeedListItem {
@@ -527,7 +521,7 @@ impl FeedList {
     }
 }
 
-impl MessageReceiver for FeedList {
+impl crate::messages::MessageReceiver for FeedList {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         use Command::*;
         use Event::*;

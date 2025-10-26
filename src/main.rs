@@ -5,17 +5,24 @@ use news_flash::{
 };
 use tokio::sync::mpsc::unbounded_channel;
 
-use crate::{
-    commands::Message,
-    config::{load_config, paths},
-    newsflash_utils::NewsFlashUtils,
-};
+pub mod prelude {
+    pub use super::app::{App, AppState};
+    pub use super::config::prelude::*;
+    pub use super::input::prelude::*;
+    pub use super::logging::init_logging;
+    pub use super::messages::prelude::*;
+    pub use super::newsflash_utils::NewsFlashUtils;
+    pub use super::query::AugmentedArticleFilter;
+    pub use super::ui::prelude::*;
+}
+
+use crate::prelude::*;
 
 mod app;
-mod commands;
 mod config;
 mod input;
 mod logging;
+mod messages;
 mod newsflash_utils;
 mod query;
 mod ui;
@@ -32,8 +39,8 @@ async fn main() -> color_eyre::Result<()> {
     let config = load_config()?;
     debug!("Configuration loaded successfully");
 
-    let config_dir = paths::PROJECT_DIRS.config_dir();
-    let state_dir = paths::PROJECT_DIRS.state_dir();
+    let config_dir = PROJECT_DIRS.config_dir();
+    let state_dir = PROJECT_DIRS.state_dir();
 
     let local_plugin_id = PluginID::new("freshrss");
     info!("Initializing NewsFlash with plugin: {}", local_plugin_id);
