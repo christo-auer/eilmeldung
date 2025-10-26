@@ -375,7 +375,11 @@ impl FeedList {
             });
         }
 
-        self.select_entry(previously_selected)?;
+        if !previously_selected.is_empty() {
+            self.select_entry(previously_selected)?;
+        } else {
+            self.select_entry(vec![FeedListItem::All])?;
+        }
 
         Ok(())
     }

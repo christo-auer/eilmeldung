@@ -13,7 +13,7 @@ use tui_textarea::TextArea;
 pub struct CommandInput {
     config: Arc<Config>,
 
-    news_flash_utils: Arc<NewsFlashUtils>,
+    _news_flash_utils: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
 
     text_input: TextArea<'static>,
@@ -31,7 +31,7 @@ impl CommandInput {
     ) -> Self {
         Self {
             config: config.clone(),
-            news_flash_utils: news_flash_utils.clone(),
+            _news_flash_utils: news_flash_utils.clone(),
             message_sender,
             text_input: TextArea::default(),
             is_focused: false,
