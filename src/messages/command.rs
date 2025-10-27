@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use crate::prelude::*;
 
@@ -39,7 +39,7 @@ pub enum Command {
     ApplicationQuit,
 
     // command line
-    CommandLineOpen(String),
+    CommandLineOpen(Option<String>),
 }
 
 impl Display for Command {
@@ -73,7 +73,7 @@ impl Display for Command {
             ArticleListSetScope(ArticleScope::All) => write!(f, "show all"),
             ArticleCurrentScrape => write!(f, "scrape content"),
             ApplicationQuit => write!(f, "quit"),
-            CommandLineOpen(input) => write!(f, "command line {}", input),
+            CommandLineOpen(input) => write!(f, "command line {}", input.unwrap_or_default()),
         }
     }
 }
@@ -110,5 +110,49 @@ impl Display for CommandSequence {
         }
 
         Ok(())
+    }
+}
+
+impl FromStr for Command {
+    type Err = color_eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let command_str: String = String::from_str(s).unwrap();
+
+        use Command::*;
+        Ok(match command_str.trim() {
+            "up" => NavigateUp,
+            "down" => NavigateDown,
+            "page_up" => NavigatePageUp,
+            "page_down" => NavigatePageDown,
+            "goto_first" => NavigateFirst,
+            "goto_last" => NavigateLast,
+            "left" => NavigateLeft,
+            "right" => NavigateRight,
+
+            "next" => PanelFocusNext,
+            // "xxx" => PanelFocus(AppState),
+            "prev" => PanelFocusPrevious,
+            "nextc" => PanelFocusNextCyclic,
+            "prevc" => PanelFocusPreviousCyclic,
+            "zen" => ToggleDistractionFreeMode,
+
+            "sync" => FeedsSync,
+            "open" => ArticleCurrentOpenInBrowser,
+            "read" => ArticleCurrentSetRead,
+            "unread" => ArticleCurrentSetUnread,
+            "toggle" => ArticleCurrentToggleRead,
+            "next_unread" => ArticleListSelectNextUnread,
+            "all_read" => ArticleListSetAllRead,
+            "all_unread" => ArticleListSetAllUnread,
+            // "xxx" => ArticleListSetScope(ArticleScope),
+            "scrape" => ArticleCurrentScrape,
+
+            "quit" | "q" => ApplicationQuit,
+
+            _ => {
+                return Err(color_eyre::eyre::eyre!("Invalid command: {}", command_str));
+            }
+        })
     }
 }

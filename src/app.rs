@@ -15,7 +15,6 @@ pub enum AppState {
     ArticleSelection,
     ArticleContent,
     ArticleContentDistractionFree,
-    CommandInput,
 }
 
 impl Display for AppState {
@@ -27,7 +26,6 @@ impl Display for AppState {
             AppState::ArticleContentDistractionFree => {
                 write!(f, "article content distraction free")
             }
-            AppState::CommandInput => write!(f, "command input"),
         }
     }
 }

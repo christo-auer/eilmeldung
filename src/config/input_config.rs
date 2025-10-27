@@ -26,7 +26,7 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         ("g f".into(), PanelFocus(AppState::FeedSelection).into()),
         ("g a".into(), PanelFocus(AppState::ArticleSelection).into()),
         ("g c".into(), PanelFocus(AppState::ArticleContent).into()),
-        (":".into(), PanelFocus(AppState::CommandInput).into()),
+        (":".into(), CommandLineOpen(None).into()),
         ("space".into(), PanelFocusNext.into()),
         ("backspace".into(), PanelFocusPrevious.into()),
         ("tab".into(), PanelFocusNextCyclic.into()),

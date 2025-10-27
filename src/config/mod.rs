@@ -58,6 +58,7 @@ pub struct Config {
     pub unread_icon: char,
     pub marked_icon: char,
     pub unmarked_icon: char,
+    pub command_line_prompt_icon: char,
     pub article_scope: ArticleScope,
 
     pub article_auto_scrape: bool,
@@ -90,6 +91,7 @@ impl Default for Config {
             marked_icon: '',
             unmarked_icon: ' ',
             tag_icon: '󰓹',
+            command_line_prompt_icon: '',
             article_scope: ArticleScope::Unread,
 
             article_auto_scrape: true,

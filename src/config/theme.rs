@@ -16,6 +16,7 @@ pub struct Theme {
     pub tooltip_info: Style,
     pub tooltip_warning: Style,
     pub tooltip_error: Style,
+    pub command_line: Style,
 
     pub border_style: Style,
     pub focused_border_style: Style,
@@ -42,9 +43,10 @@ impl Default for Theme {
             tooltip_info: Style::default().fg(Black).bg(Magenta),
             tooltip_warning: Style::default().fg(Black).bg(Yellow).bold(),
             tooltip_error: Style::default().fg(Black).bg(Red).bold(),
+            command_line: Style::default().bg(DarkGray).fg(Magenta),
 
             border_style: Style::default().fg(Magenta),
-            focused_border_style: Style::default().fg(Yellow).bold(),
+            focused_border_style: Style::default().fg(Gray),
 
             unread_modifier: Modifier::BOLD,
         }

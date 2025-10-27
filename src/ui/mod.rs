@@ -46,11 +46,7 @@ impl Widget for &mut App {
             .constraints([
                 Constraint::Length(1), // Top: fixed 1 line
                 Constraint::Min(0),    // Middle: takes remaining space
-                Constraint::Length(if self.state == AppState::CommandInput {
-                    2
-                } else {
-                    0
-                }),
+                Constraint::Length(if self.command_line.is_active() { 3 } else { 0 }),
                 Constraint::Length(1), // Bottom: fixed 1 line
             ])
             .areas(area);
@@ -91,7 +87,7 @@ impl Widget for &mut App {
 
         StatefulWidget::render(top_line, top, buf, &mut self.async_operation_throbber);
 
-        if self.state == AppState::CommandInput {
+        if self.command_line.is_active() {
             self.command_line.render(command_line, buf);
         }
 
