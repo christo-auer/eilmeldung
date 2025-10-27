@@ -28,6 +28,7 @@
             rustfmt
             llvmPackages_19.libclang
             llvmPackages_19.clang
+            perf
           ];
 
           buildInputs = [
