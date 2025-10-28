@@ -58,64 +58,93 @@ impl ArticlesList {
             return Ok(());
         };
 
-        let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+        // get the currently selected article
+        let prev_article_id = self.get_current_article_id().cloned();
 
-        // read/unread/marked etc comes from query
-        if !article_filter.is_augmented() {
-            match self.article_scope {
-                ArticleScope::All => {}
-                ArticleScope::Unread => {
-                    article_filter.article_filter.unread = Some(Read::Unread);
-                    article_filter.article_filter.marked = None;
+        {
+            let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+            // read/unread/marked etc comes from query
+            if !article_filter.is_augmented() {
+                match self.article_scope {
+                    ArticleScope::All => {}
+                    ArticleScope::Unread => {
+                        article_filter.article_filter.unread = Some(Read::Unread);
+                        article_filter.article_filter.marked = None;
+                    }
+                    ArticleScope::Marked => {
+                        article_filter.article_filter.marked = Some(Marked::Marked);
+                        article_filter.article_filter.unread = None;
+                    }
                 }
-                ArticleScope::Marked => {
-                    article_filter.article_filter.marked = Some(Marked::Marked);
-                    article_filter.article_filter.unread = None;
-                }
+            }
+
+            article_filter.article_filter.order_by = Some(news_flash::models::OrderBy::Published);
+            article_filter.article_filter.order =
+                Some(news_flash::models::ArticleOrder::NewestFirst);
+
+            self.articles = news_flash.get_articles(article_filter.article_filter.clone())?;
+
+            let (feeds, _) = news_flash.get_feeds()?;
+            self.feed_map = NewsFlashUtils::generate_id_map(&feeds, |f| f.feed_id.clone());
+
+            let (tags, taggings) = news_flash.get_tags()?;
+            self.tag_map = NewsFlashUtils::generate_id_map(&tags, |t| t.tag_id.clone());
+
+            self.tags_for_article = NewsFlashUtils::generate_one_to_many(
+                &taggings,
+                |a| a.article_id.clone(),
+                |t| t.tag_id.clone(),
+            );
+
+            let position_for_tag = tags
+                .iter()
+                .enumerate()
+                .map(|(pos, tag)| (&tag.tag_id, pos))
+                .collect::<HashMap<&TagID, usize>>();
+
+            self.tags_for_article.iter_mut().for_each(|(_, tag_ids)| {
+                tag_ids.sort_by(|tag_a, tag_b| {
+                    position_for_tag
+                        .get(tag_a)
+                        .unwrap()
+                        .cmp(position_for_tag.get(tag_b).unwrap())
+                })
+            });
+
+            // apply additional query-based filter
+            if article_filter.is_augmented() {
+                self.articles = article_filter.filter(
+                    &self.articles,
+                    &self.feed_map,
+                    &self.tags_for_article,
+                    &self.tag_map,
+                );
             }
         }
 
-        article_filter.article_filter.order_by = Some(news_flash::models::OrderBy::Published);
-        article_filter.article_filter.order = Some(news_flash::models::ArticleOrder::NewestFirst);
+        // now, make a sensible choice for selection
+        self.restore_sensible_selection(prev_article_id)?;
 
-        self.articles = news_flash.get_articles(article_filter.article_filter.clone())?;
+        Ok(())
+    }
 
-        let (feeds, _) = news_flash.get_feeds()?;
-        self.feed_map = NewsFlashUtils::generate_id_map(&feeds, |f| f.feed_id.clone());
-
-        let (tags, taggings) = news_flash.get_tags()?;
-        self.tag_map = NewsFlashUtils::generate_id_map(&tags, |t| t.tag_id.clone());
-
-        self.tags_for_article = NewsFlashUtils::generate_one_to_many(
-            &taggings,
-            |a| a.article_id.clone(),
-            |t| t.tag_id.clone(),
-        );
-
-        let position_for_tag = tags
-            .iter()
-            .enumerate()
-            .map(|(pos, tag)| (&tag.tag_id, pos))
-            .collect::<HashMap<&TagID, usize>>();
-
-        self.tags_for_article.iter_mut().for_each(|(_, tag_ids)| {
-            tag_ids.sort_by(|tag_a, tag_b| {
-                position_for_tag
-                    .get(tag_a)
-                    .unwrap()
-                    .cmp(position_for_tag.get(tag_b).unwrap())
-            })
-        });
-
-        // apply additional query-based filter
-        if article_filter.is_augmented() {
-            self.articles = article_filter.filter(
-                &self.articles,
-                &self.feed_map,
-                &self.tags_for_article,
-                &self.tag_map,
-            );
+    fn restore_sensible_selection(
+        &mut self,
+        article_id: Option<ArticleID>,
+    ) -> color_eyre::Result<()> {
+        // first, we try to select the article with article_id
+        if let Some(article_id) = article_id
+            && let Some(index) = self
+                .articles
+                .iter()
+                .position(|article| article.article_id == article_id)
+        {
+            return self.select_index(index);
         }
+
+        // the previous article is not there, next we select the first unread article
+        self.table_state.select(Some(0));
+        self.select_next_unread()?;
 
         Ok(())
     }
@@ -124,21 +153,36 @@ impl ArticlesList {
         if let Some(article) = self.articles.get(index) {
             self.table_state.select(Some(index));
             self.message_sender
-                .send(Message::Event(Event::ArticleSelected(article.clone())))?;
+                .send(Message::Event(Event::ArticleSelected(
+                    article.clone(),
+                    self.feed_map.get(&article.feed_id).cloned(),
+                    self.tags_for_article
+                        .get(&article.article_id)
+                        .map(|tag_ids| {
+                            tag_ids
+                                .iter()
+                                .filter_map(|tag_id| self.tag_map.get(tag_id))
+                                .cloned()
+                                .collect()
+                        })
+                        .clone(),
+                )))?;
         }
         Ok(())
     }
 
-    fn select_first_unread(&mut self) -> color_eyre::Result<()> {
+    fn select_next_unread(&mut self) -> color_eyre::Result<()> {
         let select = self.first_unread().unwrap_or(0);
         self.select_index(select)
     }
 
     fn first_unread(&self) -> Option<usize> {
+        let current_index = self.table_state.selected().unwrap_or(0);
+
         self.articles
             .iter()
             .enumerate()
-            .find(|(_, article)| article.unread == Read::Unread)
+            .find(|(index, article)| *index >= current_index && article.unread == Read::Unread)
             .map(|(index, _)| index)
     }
 
@@ -161,6 +205,22 @@ impl ArticlesList {
 
         None
     }
+
+    fn get_current_article_id(&self) -> Option<&ArticleID> {
+        if let Some(index) = self.table_state.selected() {
+            return self.articles.get(index).map(|article| &article.article_id);
+        }
+
+        None
+    }
+
+    // fn select_by_article_id(&mut self) -> Option<&ArticleID> {
+    //     if let Some(index) = self.table_state.selected() {
+    //         return self.articles.get(index).map(|article| &article.article_id);
+    //     }
+    //
+    //     None
+    // }
 
     async fn set_all_read_status(&mut self, read: Read) -> color_eyre::Result<()> {
         let article_ids: Vec<ArticleID> = self
@@ -190,6 +250,7 @@ impl ArticlesList {
 
             news_flash_utils.set_article_status(vec![article_id], new_state);
 
+            // update locally
             article.unread = new_state;
         }
 
@@ -389,7 +450,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
         use Command::*;
         use Event::*;
 
-        let selected_before = self.table_state.selected();
+        let prev_selected_index = self.table_state.selected();
 
         match message {
             Message::Command(NavigateUp) if self.is_focused => self.table_state.select_previous(),
@@ -405,19 +466,20 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
             Message::Event(AsyncOperationFailed(_)) => {
                 self.build_list().await?;
-                self.select_first_unread()?;
+                self.select_next_unread()?;
             }
 
             Message::Event(ArticlesSelected(augmented_article_filter)) => {
                 self.article_filter = Some(augmented_article_filter.clone());
                 self.build_list().await?;
-                self.select_first_unread()?;
+                self.table_state.select(Some(0));
+                self.select_next_unread()?;
             }
 
             Message::Command(ArticleListSetScope(scope)) => {
                 self.article_scope = *scope;
                 self.build_list().await?;
-                self.select_first_unread()?;
+                self.select_next_unread()?;
             }
 
             Message::Event(ApplicationStateChanged(state)) => {
@@ -430,7 +492,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
             Message::Command(ArticleCurrentSetRead) => {
                 self.set_current_read_status(Some(Read::Read)).await?;
-                self.build_list().await?;
+                // self.build_list().await?;
             }
 
             Message::Command(ArticleCurrentSetUnread) => {
@@ -454,21 +516,22 @@ impl crate::messages::MessageReceiver for ArticlesList {
             }
 
             Message::Command(ArticleListSelectNextUnread) => {
-                // TODO select NEXT unread
-                self.select_first_unread()?;
+                self.select_next_unread()?;
             }
 
             _ => {}
         }
 
-        let selected_after = self.table_state.selected();
-
-        if selected_before != selected_after
-            && let Some(selected) = self.table_state.selected()
-            && let Some(article) = self.articles.get(selected)
-        {
-            self.message_sender
-                .send(Message::Event(Event::ArticleSelected(article.clone())))?;
+        let now_selected_index = self.table_state.selected();
+        if prev_selected_index != now_selected_index {
+            match now_selected_index {
+                Some(index) => {
+                    self.select_index(index)?;
+                }
+                None => {
+                    self.select_next_unread()?;
+                }
+            }
         }
 
         Ok(())

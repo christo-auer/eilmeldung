@@ -8,13 +8,14 @@ use std::{
 };
 
 use image::ImageReader;
+use log::trace;
 use news_flash::{
     models::{Article, FatArticle, Feed, Tag, TagID, Thumbnail},
     util::html2text,
 };
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Flex, Layout, Rect},
     style::{Color, Stylize},
     text::{Line, Span, Text},
     widgets::{Block, Borders, Paragraph, StatefulWidget, Widget, Wrap},
@@ -82,7 +83,18 @@ impl ArticleContent {
         }
     }
 
-    async fn on_article_selected(&mut self, article: Article) -> color_eyre::Result<()> {
+    async fn on_article_selected(
+        &mut self,
+        article: Article,
+        feed: Option<Feed>,
+        tags: Option<Vec<Tag>>,
+    ) -> color_eyre::Result<()> {
+        if let Some(current_article) = self.article.clone()
+            && current_article.article_id == article.article_id
+        {
+            return Ok(());
+        }
+
         let current_instant = Instant::now();
         if let Some(last_article_selected) = self.instant_since_article_selected {
             self.duration_since_last_article_change =
@@ -97,35 +109,16 @@ impl ArticleContent {
         self.tags = None;
 
         self.article = Some(article.clone());
-
-        {
-            let news_flash = self.news_flash_utils.news_flash_lock.read().await;
-
-            let (feeds, _) = news_flash.get_feeds()?;
-
-            self.feed = feeds
-                .iter()
-                .find(|feed| feed.feed_id == article.feed_id)
-                .cloned();
-
-            let (tags, taggings) = news_flash.get_tags()?;
-            let tag_ids = taggings
-                .iter()
-                .filter(|taggings| taggings.article_id == article.article_id)
-                .map(|tagging| tagging.tag_id.clone())
-                .collect::<HashSet<TagID>>();
-
-            self.tags = Some(
-                tags.iter()
-                    .filter(|tag| tag_ids.contains(&tag.tag_id))
-                    .cloned()
-                    .collect::<Vec<Tag>>(),
-            );
-        }
+        self.feed = feed;
+        self.tags = tags;
 
         if self.is_focused {
             self.message_sender
-                .send(Message::Event(Event::FatArticleSelected(article.clone())))?;
+                .send(Message::Event(Event::FatArticleSelected(
+                    article.clone(),
+                    self.feed.clone(),
+                    self.tags.clone(),
+                )))?;
         }
 
         Ok(())
@@ -184,7 +177,7 @@ impl ArticleContent {
         inner_area
     }
 
-    fn generate_summary<'a>(&'a self) -> Vec<Line<'a>> {
+    fn generate_summary<'a>(&'a self, render_summary_content: bool) -> Vec<Line<'a>> {
         let article = self.article.as_ref().unwrap();
         let title = article.title.clone().unwrap_or("no title".into());
         let feed_label: String = if let Some(feed) = self.feed.clone() {
@@ -198,7 +191,7 @@ impl ArticleContent {
         let tag_texts = self
             .tags
             .clone()
-            .unwrap()
+            .unwrap_or_default()
             .iter()
             .flat_map(|tag| {
                 let color = NewsFlashUtils::tag_color(tag)
@@ -213,17 +206,32 @@ impl ArticleContent {
             })
             .collect::<Vec<Span>>();
 
-        vec![
-            Line::from(Span::from(feed_label).style(self.config.theme.feed)),
+        let date_string: String = article
+            .date
+            .with_timezone(&chrono::Local)
+            .format(&self.config.date_format)
+            .to_string();
+
+        let mut summary_lines = vec![
+            Line::from(vec![
+                Span::from(date_string).style(self.config.theme.feed),
+                Span::from(" --- ").style(self.config.theme.feed),
+                Span::from(feed_label).style(self.config.theme.feed),
+            ]),
             Line::from(Span::from(title).style(self.config.theme.header)),
             Line::from(tag_texts),
-            Line::from(Span::from(summary).style(self.config.theme.paragraph)),
-        ]
+        ];
+
+        if render_summary_content {
+            summary_lines.push(Line::from(
+                Span::from(summary).style(self.config.theme.paragraph),
+            ));
+        }
+
+        summary_lines
     }
 
-    fn render_summary(&mut self, area: Rect, buf: &mut Buffer) {
-        let inner_area = self.render_block(area, buf);
-
+    fn render_summary(&mut self, render_summary_content: bool, inner_area: Rect, buf: &mut Buffer) {
         let thumbnail_width = if self.config.article_thumbnail_show {
             self.config.article_thumbnail_width
         } else {
@@ -232,10 +240,11 @@ impl ArticleContent {
 
         let [thumbnail_chunk, summary_chunk] = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(Constraint::from_percentages([
-                thumbnail_width,
-                100 - thumbnail_width,
-            ]))
+            .flex(ratatui::layout::Flex::Start)
+            .constraints(vec![
+                Constraint::Length(thumbnail_width),
+                Constraint::Min(1),
+            ])
             .margin(1)
             .spacing(1)
             .areas(inner_area);
@@ -245,26 +254,33 @@ impl ArticleContent {
         {
             let mut stateful_image = StatefulImage::new();
             if self.config.article_thumbnail_resize {
-                stateful_image = stateful_image.resize(Resize::Scale(Some(FilterType::Lanczos3)))
+                stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Nearest)))
             }
             stateful_image.render(thumbnail_chunk, buf, image);
         }
 
-        let paragraph = Paragraph::new(self.generate_summary()).wrap(Wrap { trim: true });
+        let paragraph =
+            Paragraph::new(self.generate_summary(render_summary_content)).wrap(Wrap { trim: true });
 
         paragraph.render(summary_chunk, buf);
     }
 
-    fn render_fat_article(&mut self, area: Rect, buf: &mut Buffer) {
-        let inner_area = self.render_block(area, buf);
+    fn render_fat_article(&mut self, inner_area: Rect, buf: &mut Buffer) {
+        let [summary_area, content_area] = Layout::default()
+            .direction(Direction::Vertical)
+            .flex(Flex::Start)
+            .constraints([Constraint::Max(6), Constraint::Fill(1)])
+            .areas(inner_area);
+
+        self.render_summary(false, summary_area, buf);
 
         let [paragraph_area] = Layout::default()
             .direction(Direction::Horizontal)
             .flex(ratatui::layout::Flex::Center)
             .constraints([
-                Constraint::Max(self.config.article_content_max_chars_per_line), // Middle content - maximum 80 columns
+                Constraint::Max(self.config.article_content_max_chars_per_line), // Middle content
             ])
-            .areas(inner_area);
+            .areas(content_area);
 
         let Some(fat_article) = self.fat_article.as_ref() else {
             return;
@@ -384,15 +400,14 @@ impl ArticleContent {
 
 impl Widget for &mut ArticleContent {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
+        let inner_area = self.render_block(area, buf);
         if !self.is_focused && self.article.is_some() {
-            self.render_summary(area, buf);
-        }
-
-        if self.is_focused {
+            self.render_summary(true, inner_area, buf);
+        } else {
             if self.fat_article.is_some() {
-                self.render_fat_article(area, buf);
+                self.render_fat_article(inner_area, buf);
             } else if self.article.is_some() {
-                self.render_summary(area, buf);
+                self.render_summary(true, inner_area, buf);
             }
         }
     }
@@ -428,12 +443,15 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 self.vertical_scroll = self.max_scroll;
             }
 
-            Message::Event(ArticleSelected(article)) => {
-                self.on_article_selected(article.clone()).await?;
+            Message::Event(ArticleSelected(article, feed, tags)) => {
+                self.on_article_selected(article.clone(), feed.clone(), tags.clone())
+                    .await?;
             }
 
-            Message::Event(FatArticleSelected(article)) => {
+            Message::Event(FatArticleSelected(article, feed, tags)) => {
                 self.article = Some(article.clone());
+                self.feed = feed.clone();
+                self.tags = tags.clone();
 
                 if self.is_focused && self.config.article_auto_scrape {
                     self.scrape_article()?;

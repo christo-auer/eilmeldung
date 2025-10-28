@@ -97,7 +97,7 @@ impl Default for Config {
             article_auto_scrape: true,
             article_thumbnail_show: true,
             article_thumbnail_width: 20,
-            article_thumbnail_resize: false,
+            article_thumbnail_resize: true,
             article_thumbnail_fetch_debounce_millis: 500,
             article_content_max_chars_per_line: 66,
             article_content_preferred_type: ArticleContentType::Markdown,

@@ -41,7 +41,7 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
             .into(),
         ),
         (
-            "n".into(),
+            "J".into(),
             vec![ArticleCurrentSetRead, ArticleListSelectNextUnread].into(),
         ),
         ("u".into(), ArticleCurrentSetUnread.into()),

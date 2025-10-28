@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use news_flash::models::{Article, FatArticle, FeedID, Thumbnail};
+use news_flash::models::{Article, FatArticle, Feed, FeedID, Tag, Thumbnail};
 use ratatui::crossterm::event::KeyEvent;
 
 use crate::prelude::*;
@@ -8,8 +8,8 @@ use crate::prelude::*;
 #[derive(Clone, Debug)]
 pub enum Event {
     ArticlesSelected(AugmentedArticleFilter),
-    ArticleSelected(Article),
-    FatArticleSelected(Article),
+    ArticleSelected(Article, Option<Feed>, Option<Vec<Tag>>),
+    FatArticleSelected(Article, Option<Feed>, Option<Vec<Tag>>),
 
     AsyncSyncStarted,
     AsyncSyncFinished(HashMap<FeedID, i64>),

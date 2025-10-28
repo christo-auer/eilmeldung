@@ -9,7 +9,7 @@ pub fn init_logging() -> color_eyre::Result<()> {
 
     let mut log_file = std::env::temp_dir();
 
-    log_file.push("eilmeldung.log"); // TODO make configurable
+    log_file.push("/tmp/eilmeldung.log"); // TODO make configurable
 
     let file_options = TuiLoggerFile::new(log_file.to_str().unwrap())
         .output_level(Some(TuiLoggerLevelOutput::Abbreviated))
