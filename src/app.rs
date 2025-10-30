@@ -195,6 +195,11 @@ impl App {
             self.config.refresh_fps
         );
 
+        let mut max_duration_fl = tokio::time::Duration::new(0, 0);
+        let mut max_duration_al = tokio::time::Duration::new(0, 0);
+        let mut max_duration_ac = tokio::time::Duration::new(0, 0);
+        let mut max_duration_cl = tokio::time::Duration::new(0, 0);
+
         while self.is_running {
             tokio::select! {
                 _ = render_interval.tick() => {
@@ -226,20 +231,44 @@ impl App {
                             error!("Failed to process app message: {}", e);
                         }
 
+                        let mut start = tokio::time::Instant::now();
                         if let Err(e) = self.feed_list.process_command(&message).await {
                             error!("Failed to process feed list message: {}", e);
                         }
+                        if start.elapsed() > max_duration_fl
+                        {
+                            max_duration_fl = start.elapsed();
+                            trace!("max TIME feed list: {:?}", max_duration_fl);
+                        }
 
+                        start = tokio::time::Instant::now();
                         if let Err(e) = self.articles_list.process_command(&message).await {
                             error!("Failed to process articles list message: {}", e);
                         }
+                        if start.elapsed() > max_duration_al
+                        {
+                            max_duration_al = start.elapsed();
+                            trace!("max TIME article list: {:?}", max_duration_al);
+                        }
 
+                        start = tokio::time::Instant::now();
                         if let Err(e) = self.article_content.process_command(&message).await {
                             error!("Failed to process article content message: {}", e);
                         }
+                        if start.elapsed() > max_duration_ac
+                        {
+                            max_duration_ac = start.elapsed();
+                            trace!("max TIME article content list: {:?}", max_duration_ac);
+                        }
 
+                        start = tokio::time::Instant::now();
                         if let Err(e) = self.command_line.process_command(&message).await {
                             error!("Failed to process command line message: {}", e);
+                        }
+                        if start.elapsed() > max_duration_cl
+                        {
+                            max_duration_cl = start.elapsed();
+                            trace!("max TIME command line: {:?}", max_duration_cl);
                         }
 
                     } else {
@@ -282,8 +311,8 @@ impl MessageReceiver for App {
                 self.tick();
             }
 
-            Message::Event(AsyncOperationFailed(error)) => {
-                error!("Async operation failed: {}", error);
+            Message::Event(AsyncOperationFailed(error, starting_event)) => {
+                error!("Async operation {} failed: {:?}", error, starting_event);
                 self.tooltip = crate::ui::tooltip::Tooltip::from_str(
                     error.clone().as_str(),
                     TooltipFlavor::Error,
@@ -351,17 +380,7 @@ impl MessageReceiver for App {
                     .send(Message::Event(ApplicationStateChanged(self.state)))?;
             }
 
-            _ => {
-                // Don't log commands with large binary data
-                match message {
-                    Message::Event(AsyncFetchThumbnailFinished(_)) => {
-                        trace!("Unhandled message in App: AsyncFetchThumbnailFinished");
-                    }
-                    _ => {
-                        trace!("Unhandled message in App: {:?}", message);
-                    }
-                }
-            }
+            _ => {}
         }
 
         Ok(())
