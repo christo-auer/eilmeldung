@@ -12,7 +12,7 @@ pub mod prelude {
     pub use super::logging::init_logging;
     pub use super::messages::prelude::*;
     pub use super::newsflash_utils::NewsFlashUtils;
-    pub use super::query::AugmentedArticleFilter;
+    pub use super::query::{AugmentedArticleFilter, ParsedQuery};
     pub use super::ui::prelude::*;
 }
 

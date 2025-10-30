@@ -61,6 +61,7 @@ pub struct Config {
     pub command_line_prompt_icon: char,
     pub article_scope: ArticleScope,
 
+    pub articles_list_visible_articles_after_selection: usize,
     pub article_auto_scrape: bool,
     pub article_thumbnail_show: bool,
     pub article_thumbnail_width: u16,
@@ -94,6 +95,7 @@ impl Default for Config {
             command_line_prompt_icon: '',
             article_scope: ArticleScope::Unread,
 
+            articles_list_visible_articles_after_selection: 3,
             article_auto_scrape: true,
             article_thumbnail_show: true,
             article_thumbnail_width: 20,

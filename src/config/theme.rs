@@ -2,9 +2,9 @@ use ratatui::style::{Color, Modifier, Style, Stylize};
 
 #[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
 pub struct Theme {
-    pub feeds_focused_width: u16,
-    pub articles_focused_width: u16,
-    pub article_content_focused_height: u16,
+    pub feeds_list_focus_width_percent: u16,
+    pub articles_list_focused_width_percent: u16,
+    pub articles_list_height_lines: u16,
     pub category: Style,
     pub feed: Style,
     pub header: Style,
@@ -17,6 +17,7 @@ pub struct Theme {
     pub tooltip_warning: Style,
     pub tooltip_error: Style,
     pub command_line: Style,
+    pub inactive: Style,
 
     pub border_style: Style,
     pub focused_border_style: Style,
@@ -28,9 +29,9 @@ impl Default for Theme {
     fn default() -> Self {
         use Color::*;
         Self {
-            feeds_focused_width: 33,
-            articles_focused_width: 67,
-            article_content_focused_height: 66,
+            feeds_list_focus_width_percent: 33,
+            articles_list_focused_width_percent: 67,
+            articles_list_height_lines: 6,
 
             category: Style::default().fg(Blue),
             feed: Style::default().fg(White),
@@ -44,6 +45,7 @@ impl Default for Theme {
             tooltip_warning: Style::default().fg(Black).bg(Yellow).bold(),
             tooltip_error: Style::default().fg(Black).bg(Red).bold(),
             command_line: Style::default().bg(DarkGray).fg(Magenta),
+            inactive: Style::default().fg(DarkGray),
 
             border_style: Style::default().fg(Magenta),
             focused_border_style: Style::default().fg(Gray),
