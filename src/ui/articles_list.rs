@@ -132,6 +132,14 @@ impl ArticlesList {
         &mut self,
         article_id: Option<ArticleID>,
     ) -> color_eyre::Result<()> {
+        // save offset distance
+        let offset = *self.table_state.offset_mut();
+        let offset_distance = self
+            .table_state
+            .selected()
+            .unwrap_or(0)
+            .saturating_sub(offset);
+
         // first, we try to select the article with article_id
         if let Some(article_id) = article_id
             && let Some(index) = self
@@ -139,6 +147,7 @@ impl ArticlesList {
                 .iter()
                 .position(|article| article.article_id == article_id)
         {
+            *self.table_state.offset_mut() = index.saturating_sub(offset_distance);
             return self.select_index(index);
         }
 
@@ -168,6 +177,8 @@ impl ArticlesList {
                         .clone(),
                 )))?;
         }
+
+        self.adjust_offset();
         Ok(())
     }
 
@@ -278,6 +289,19 @@ impl ArticlesList {
             to_icon(ArticleScope::Unread),
             to_icon(ArticleScope::Marked),
         )
+    }
+
+    fn adjust_offset(&mut self) {
+        let Some(index) = self.table_state.selected() else {
+            return;
+        };
+        let offset = self.table_state.offset_mut();
+        let max_lines_above = self.config.theme.articles_list_height_lines as usize
+            - (self.config.articles_list_visible_articles_after_selection + 1);
+
+        if index.saturating_sub(*offset) > max_lines_above {
+            *offset = index.saturating_sub(max_lines_above);
+        }
     }
 }
 
@@ -451,20 +475,25 @@ impl crate::messages::MessageReceiver for ArticlesList {
         use Event::*;
 
         let prev_selected_index = self.table_state.selected();
+        let mut now_selected_index: Option<usize> = None;
 
         match message {
             Message::Command(NavigateUp) if self.is_focused => self.table_state.select_previous(),
             Message::Command(NavigateDown) if self.is_focused => self.table_state.select_next(),
             Message::Command(NavigatePageUp) if self.is_focused => self
                 .table_state
-                .scroll_up_by(self.config.input_config.scroll_amount as u16),
+                .scroll_up_by(self.config.theme.articles_list_height_lines - 1),
             Message::Command(NavigatePageDown) if self.is_focused => self
                 .table_state
-                .scroll_down_by(self.config.input_config.scroll_amount as u16),
+                .scroll_down_by(self.config.theme.articles_list_height_lines - 1),
             Message::Command(NavigateFirst) if self.is_focused => self.table_state.select_first(),
-            Message::Command(NavigateLast) if self.is_focused => self.table_state.select_last(),
+            Message::Command(NavigateLast) if self.is_focused => {
+                self.table_state.select_last();
+                // manually "select" as select_last does not now the number of rows
+                now_selected_index = Some(self.articles.len() - 1);
+            }
 
-            Message::Event(AsyncOperationFailed(_)) => {
+            Message::Event(AsyncOperationFailed(_, _)) => {
                 self.build_list().await?;
                 self.select_next_unread()?;
             }
@@ -522,8 +551,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
             _ => {}
         }
 
-        let now_selected_index = self.table_state.selected();
+        if now_selected_index.is_none() {
+            now_selected_index = self.table_state.selected();
+        }
         if prev_selected_index != now_selected_index {
+            log::trace!("selecting {:?}", now_selected_index);
             match now_selected_index {
                 Some(index) => {
                     self.select_index(index)?;

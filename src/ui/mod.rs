@@ -29,17 +29,11 @@ impl Widget for &mut App {
         }
 
         let feeds_width = match self.state {
-            AppState::FeedSelection => self.config.theme.feeds_focused_width,
-            _ => 100 - self.config.theme.articles_focused_width,
-        };
-
-        let article_content_height = match self.state {
-            AppState::ArticleContent => self.config.theme.article_content_focused_height,
-            _ => 100 - self.config.theme.article_content_focused_height,
+            AppState::FeedSelection => self.config.theme.feeds_list_focus_width_percent,
+            _ => 100 - self.config.theme.articles_list_focused_width_percent,
         };
 
         let articles_width = 100 - feeds_width;
-        let article_list_height = 100 - article_content_height;
 
         let [top, middle, command_line, bottom] = Layout::default()
             .direction(Direction::Vertical)
@@ -61,10 +55,10 @@ impl Widget for &mut App {
 
         let [articles_list_chunk, article_content_chunk] = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(Constraint::from_percentages(vec![
-                article_list_height,
-                article_content_height,
-            ]))
+            .constraints([
+                Constraint::Length(self.config.theme.articles_list_height_lines+1),
+                Constraint::Fill(1),
+            ])
             .areas(articles_chunk);
 
         // render stuff
