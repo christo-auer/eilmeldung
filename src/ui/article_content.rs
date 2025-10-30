@@ -1,16 +1,14 @@
 use crate::prelude::*;
 
 use std::{
-    collections::HashSet,
     io::Cursor,
     sync::Arc,
     time::{Duration, Instant},
 };
 
 use image::ImageReader;
-use log::trace;
 use news_flash::{
-    models::{Article, FatArticle, Feed, Tag, TagID, Thumbnail},
+    models::{Article, FatArticle, Feed, Tag, Thumbnail},
     util::html2text,
 };
 use ratatui::{
@@ -27,6 +25,7 @@ use ratatui_image::{
     protocol::StatefulProtocol,
 };
 
+use throbber_widgets_tui::{Throbber, ThrobberState, WhichUse};
 use tokio::sync::mpsc::UnboundedSender;
 
 pub struct ArticleContent {
@@ -39,10 +38,12 @@ pub struct ArticleContent {
     feed: Option<Feed>,
     tags: Option<Vec<Tag>>,
     fat_article: Option<FatArticle>,
-    thumbnail: Option<Thumbnail>,
     image: Option<StatefulProtocol>,
+    thumbnail_fetch_successful: Option<bool>,
+    thumbnail_fetch_running: bool,
     markdown_content: Option<String>,
     picker: Picker,
+    thumbnail_fetching_throbber: ThrobberState,
 
     vertical_scroll: u16,
     max_scroll: u16,
@@ -68,10 +69,12 @@ impl ArticleContent {
             article: None,
             feed: None,
             tags: None,
-            thumbnail: None,
             image: None,
+            thumbnail_fetch_successful: None,
+            thumbnail_fetch_running: false,
             markdown_content: None,
             picker: Picker::from_query_stdio().unwrap(), // TODO gracefully handle errors
+            thumbnail_fetching_throbber: ThrobberState::default(),
 
             vertical_scroll: 0,
             max_scroll: 0,
@@ -101,7 +104,7 @@ impl ArticleContent {
                 Some(current_instant.duration_since(last_article_selected));
         }
         self.instant_since_article_selected = Some(current_instant);
-        self.thumbnail = None;
+        self.thumbnail_fetch_successful = None;
         self.image = None;
         self.fat_article = None;
         self.markdown_content = None;
@@ -246,17 +249,11 @@ impl ArticleContent {
                 Constraint::Min(1),
             ])
             .margin(1)
-            .spacing(1)
+            .spacing(2)
             .areas(inner_area);
 
-        if self.config.article_thumbnail_show
-            && let Some(image) = &mut self.image
-        {
-            let mut stateful_image = StatefulImage::new();
-            if self.config.article_thumbnail_resize {
-                stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Nearest)))
-            }
-            stateful_image.render(thumbnail_chunk, buf, image);
+        if self.config.article_thumbnail_show {
+            self.render_thumbnail(thumbnail_chunk, buf);
         }
 
         let paragraph =
@@ -265,11 +262,70 @@ impl ArticleContent {
         paragraph.render(summary_chunk, buf);
     }
 
+    fn render_thumbnail(&mut self, thumbnail_chunk: Rect, buf: &mut Buffer) {
+        let centered_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .flex(Flex::Start);
+
+        match &mut self.image {
+            Some(image) => {
+                let mut stateful_image = StatefulImage::new();
+                if self.config.article_thumbnail_resize {
+                    stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Nearest)))
+                }
+                let [centered_chunk] = centered_layout
+                    .constraints([Constraint::Min(1)])
+                    .areas(thumbnail_chunk);
+                stateful_image.render(centered_chunk, buf, image);
+            }
+            None if self.thumbnail_fetch_running => {
+                let throbber = Throbber::default()
+                    .throbber_style(self.config.theme.feed)
+                    .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
+                    .use_type(WhichUse::Spin);
+                let [centered_chunk] = centered_layout
+                    .constraints([Constraint::Length(1)])
+                    .areas(thumbnail_chunk);
+                StatefulWidget::render(
+                    throbber,
+                    centered_chunk,
+                    buf,
+                    &mut self.thumbnail_fetching_throbber,
+                );
+            }
+            None if !self.thumbnail_fetch_successful.unwrap_or(true) => {
+                let [centered_chunk] = centered_layout
+                    .constraints([Constraint::Length(8)])
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Length(8)])
+                    .flex(Flex::Start)
+                    .areas(thumbnail_chunk);
+                let block = Block::default()
+                    .borders(Borders::all())
+                    .border_type(ratatui::widgets::BorderType::Plain)
+                    .border_style(self.config.theme.inactive);
+
+                let question_mark = Text::from(vec![
+                    " ___  ".into(),
+                    "|__ \\".into(),
+                    "  / / ".into(),
+                    " |_|  ".into(),
+                    " (_)  ".into(),
+                ])
+                .style(self.config.theme.inactive)
+                .alignment(ratatui::layout::Alignment::Center);
+                Widget::render(question_mark, block.inner(centered_chunk), buf);
+                block.render(centered_chunk, buf);
+            }
+            _ => {}
+        }
+    }
+
     fn render_fat_article(&mut self, inner_area: Rect, buf: &mut Buffer) {
         let [summary_area, content_area] = Layout::default()
             .direction(Direction::Vertical)
             .flex(Flex::Start)
-            .constraints([Constraint::Max(6), Constraint::Fill(1)])
+            .constraints([Constraint::Length(10), Constraint::Fill(1)])
             .areas(inner_area);
 
         self.render_summary(false, summary_area, buf);
@@ -351,7 +407,8 @@ impl ArticleContent {
     }
 
     fn tick(&mut self) -> color_eyre::Result<()> {
-        if self.config.article_thumbnail_show {
+        self.thumbnail_fetching_throbber.calc_next();
+        if self.config.article_thumbnail_show && !self.thumbnail_fetch_running {
             self.fetch_thumbnail()?;
         }
         Ok(())
@@ -363,6 +420,11 @@ impl ArticleContent {
         };
 
         if article.thumbnail_url.is_none() {
+            self.thumbnail_fetch_successful = Some(false);
+            return Ok(());
+        }
+
+        if !self.thumbnail_fetch_successful.unwrap_or(true) {
             return Ok(());
         }
 
@@ -392,6 +454,8 @@ impl ArticleContent {
         if self.image.is_none() {
             let article_id = article.article_id.clone();
             self.news_flash_utils.fetch_thumbnail(article_id);
+            self.thumbnail_fetch_running = true;
+            self.thumbnail_fetching_throbber = ThrobberState::default();
         }
 
         Ok(())
@@ -403,12 +467,11 @@ impl Widget for &mut ArticleContent {
         let inner_area = self.render_block(area, buf);
         if !self.is_focused && self.article.is_some() {
             self.render_summary(true, inner_area, buf);
-        } else {
-            if self.fat_article.is_some() {
-                self.render_fat_article(inner_area, buf);
-            } else if self.article.is_some() {
-                self.render_summary(true, inner_area, buf);
-            }
+        }
+        if self.fat_article.is_some() {
+            self.render_fat_article(inner_area, buf);
+        } else if self.article.is_some() {
+            self.render_summary(true, inner_area, buf);
         }
     }
 }
@@ -458,14 +521,29 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 }
             }
 
-            Message::Event(AsyncFetchThumbnailFinished(thumbnail)) => match thumbnail {
-                Some(thumbnail) => {
-                    self.prepare_thumbnail(thumbnail)?;
+            Message::Event(AsyncFetchThumbnailFinished(thumbnail)) => {
+                self.thumbnail_fetch_running = false;
+                match thumbnail {
+                    Some(thumbnail) => {
+                        self.thumbnail_fetch_successful = Some(true);
+                        self.prepare_thumbnail(thumbnail)?;
+                    }
+                    None => {
+                        log::debug!("fetching thumbnail not successful");
+                        self.thumbnail_fetch_successful = Some(false);
+                        self.image = None;
+                    }
                 }
-                None => {
+            }
+
+            Message::Event(AsyncOperationFailed(err, reason)) => {
+                if let Event::AsyncFetchThumbnail = *reason.as_ref() {
+                    log::debug!("fetching thumbnail not successful: {err}");
                     self.image = None;
+                    self.thumbnail_fetch_successful = Some(false);
+                    self.thumbnail_fetch_running = false;
                 }
-            },
+            }
 
             Message::Command(Command::ArticleCurrentScrape) if self.is_focused => {
                 self.scrape_article()?;
