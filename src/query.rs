@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
 };
 
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 use log::trace;
 use logos::Logos;
 use news_flash::models::{
@@ -20,6 +20,8 @@ enum SearchTerm {
 
 #[derive(Clone, Debug)]
 enum QueryAtom {
+    Read(Read),
+    Marked(Marked),
     Feed(SearchTerm),
     Title(SearchTerm),
     Summary(SearchTerm),
@@ -27,6 +29,10 @@ enum QueryAtom {
     FeedUrl(SearchTerm),
     FeedWebUrl(SearchTerm),
     Tag(Vec<String>),
+    Newer(DateTime<Utc>),
+    Older(DateTime<Utc>),
+    SyncedBefore(DateTime<Utc>),
+    SyncedAfter(DateTime<Utc>),
 }
 
 #[derive(Clone, Debug)]
@@ -48,10 +54,17 @@ impl QueryClause {
             QueryClause::Not(query_atom) => !query_atom.test(article, feed, tags),
         }
     }
+
+    pub fn from_atom(negate: bool, atom: QueryAtom) -> QueryClause {
+        match negate {
+            true => Self::Not(atom),
+            false => Self::Id(atom),
+        }
+    }
 }
 
 #[derive(Default, Clone, Debug)]
-pub struct ParsedQuery {
+pub struct ArticleQuery {
     query: Vec<QueryClause>,
 }
 
@@ -63,21 +76,29 @@ impl QueryAtom {
         feed: Option<&Feed>,
         tags: Option<&HashSet<String>>,
     ) -> bool {
+        use QueryAtom::*;
         match self {
-            QueryAtom::Feed(search_term)
-            | QueryAtom::Title(search_term)
-            | QueryAtom::Summary(search_term)
-            | QueryAtom::Author(search_term)
-            | QueryAtom::FeedUrl(search_term)
-            | QueryAtom::FeedWebUrl(search_term) => {
-                self.test_string_match(search_term, article, feed)
-            }
-            QueryAtom::Tag(search_tags) => {
+            Read(read) => article.unread == *read,
+            Marked(marked) => article.marked == *marked,
+
+            Feed(search_term)
+            | Title(search_term)
+            | Summary(search_term)
+            | Author(search_term)
+            | FeedUrl(search_term)
+            | FeedWebUrl(search_term) => self.test_string_match(search_term, article, feed),
+
+            Tag(search_tags) => {
                 let Some(tags) = tags else {
                     return false;
                 };
                 search_tags.iter().any(|tag| tags.contains(tag))
             }
+
+            Older(date_time) => article.date < *date_time,
+            Newer(date_time) => article.date > *date_time,
+            SyncedAfter(date_time) => article.synced > *date_time,
+            SyncedBefore(date_time) => article.synced < *date_time,
         }
     }
 
@@ -188,7 +209,7 @@ enum QueryToken {
 #[derive(Default, Clone, Debug)]
 pub struct AugmentedArticleFilter {
     pub article_filter: ArticleFilter,
-    pub parsed_query: ParsedQuery,
+    pub article_query: ArticleQuery,
 }
 
 impl From<ArticleFilter> for AugmentedArticleFilter {
@@ -201,15 +222,15 @@ impl From<ArticleFilter> for AugmentedArticleFilter {
 }
 
 impl AugmentedArticleFilter {
-    pub fn new(article_filter: ArticleFilter) -> Self {
+    pub fn new(article_filter: ArticleFilter, article_query: ArticleQuery) -> Self {
         Self {
             article_filter,
-            ..Self::default()
+            article_query,
         }
     }
 
     pub fn is_augmented(&self) -> bool {
-        !self.parsed_query.query.is_empty()
+        !self.article_query.query.is_empty()
     }
 
     #[inline(always)]
@@ -232,7 +253,7 @@ impl AugmentedArticleFilter {
                         .collect::<HashSet<String>>()
                 });
 
-                self.parsed_query
+                self.article_query
                     .query
                     .iter()
                     .all(|query_clause| query_clause.test(article, feed, tags.as_ref()))
@@ -246,267 +267,298 @@ impl FromStr for AugmentedArticleFilter {
     type Err = color_eyre::Report;
 
     fn from_str(query: &str) -> Result<Self, Self::Err> {
-        let mut filter: AugmentedArticleFilter = Self::default();
-        let mut query_lexer = QueryToken::lexer(query);
-        let mut negate = false;
+        let mut article_filter = ArticleFilter::default();
 
-        let to_error = |msg: &str, slice: &str, pos: usize| -> color_eyre::eyre::Report {
-            color_eyre::Report::msg(format!("Invalid query: {msg} but got {} at {}", slice, pos,))
-        };
+        let article_query = parse_query(query, &mut Some(&mut article_filter))?;
+        Ok(Self::new(article_filter, article_query))
+    }
+}
 
-        while let Some(token_result) = query_lexer.next() {
-            let token = token_result.map_err(|_| {
-                to_error(
-                    "expected negation or key",
+fn parse_query(
+    query: &str,
+    article_filter: &mut Option<&mut ArticleFilter>,
+) -> Result<ArticleQuery, color_eyre::Report> {
+    let mut article_query: ArticleQuery = ArticleQuery::default();
+    let mut query_lexer = QueryToken::lexer(query);
+    let mut negate = false;
+
+    let to_error = |msg: &str, slice: &str, pos: usize| -> color_eyre::eyre::Report {
+        color_eyre::Report::msg(format!("Invalid query: {msg} but got {} at {}", slice, pos,))
+    };
+
+    while let Some(token_result) = query_lexer.next() {
+        let token = token_result.map_err(|_| {
+            to_error(
+                "expected negation or key",
+                query_lexer.slice(),
+                query_lexer.span().start,
+            )
+        })?;
+
+        use QueryToken::*;
+
+        // check for negation
+        if token == Negate {
+            if negate {
+                return Err(to_error(
+                    "expected key after negation but got {} at {}",
                     query_lexer.slice(),
                     query_lexer.span().start,
-                )
-            })?;
+                ));
+            } else {
+                negate = true;
+                continue;
+            }
+        }
 
-            use QueryToken::*;
+        if let Some(query_atom) = match token {
+            KeyRead => match article_filter.as_mut() {
+                Some(article_filter) => {
+                    article_filter.unread = Some(if negate { Read::Unread } else { Read::Read });
+                    None
+                }
+                None => Some(QueryAtom::Read(Read::Read)),
+            },
+            KeyUnread => match article_filter.as_mut() {
+                Some(article_filter) => {
+                    article_filter.unread = Some(if negate { Read::Read } else { Read::Unread });
+                    None
+                }
+                None => Some(QueryAtom::Read(Read::Unread)),
+            },
+            KeyMarked => match article_filter.as_mut() {
+                Some(article_filter) => {
+                    article_filter.marked = Some(if negate {
+                        Marked::Unmarked
+                    } else {
+                        Marked::Marked
+                    });
+                    None
+                }
 
-            // check for negation
-            if token == Negate {
-                if negate {
+                None => Some(QueryAtom::Marked(Marked::Marked)),
+            },
+            KeyUnmarked => match article_filter.as_mut() {
+                Some(article_filter) => {
+                    article_filter.marked = Some(if negate {
+                        Marked::Marked
+                    } else {
+                        Marked::Unmarked
+                    });
+                    None
+                }
+                None => Some(QueryAtom::Marked(Marked::Unmarked)),
+            },
+            KeyTitle => match query_lexer.next() {
+                Some(Ok(search_term)) => Some(QueryAtom::Title(to_search_term(
+                    search_term,
+                    query_lexer.slice(),
+                )?)),
+                _ => {
                     return Err(to_error(
-                        "expected key after negation but got {} at {}",
+                        "expected regular expression or quoted string",
                         query_lexer.slice(),
                         query_lexer.span().start,
                     ));
-                } else {
-                    negate = true;
-                    continue;
                 }
-            }
-
-            if let Some(query_atom) = match token {
-                KeyRead => {
-                    filter.article_filter.unread =
-                        Some(if negate { Read::Unread } else { Read::Read });
-                    None
+            },
+            KeySummary => match query_lexer.next() {
+                Some(Ok(search_term)) => Some(QueryAtom::Summary(to_search_term(
+                    search_term,
+                    query_lexer.slice(),
+                )?)),
+                _ => {
+                    return Err(to_error(
+                        "expected regular expression or quoted string",
+                        query_lexer.slice(),
+                        query_lexer.span().start,
+                    ));
                 }
-                KeyUnread => {
-                    filter.article_filter.unread =
-                        Some(if negate { Read::Read } else { Read::Unread });
-                    None
+            },
+            KeyAuthor => match query_lexer.next() {
+                Some(Ok(search_term)) => Some(QueryAtom::Author(to_search_term(
+                    search_term,
+                    query_lexer.slice(),
+                )?)),
+                _ => {
+                    return Err(to_error(
+                        "expected regular expression or quoted string",
+                        query_lexer.slice(),
+                        query_lexer.span().start,
+                    ));
                 }
-                KeyMarked => {
-                    filter.article_filter.marked = Some(if negate {
-                        Marked::Unmarked
-                    } else {
-                        Marked::Marked
-                    });
-                    None
+            },
+            KeyFeed => match query_lexer.next() {
+                Some(Ok(search_term)) => Some(QueryAtom::Feed(to_search_term(
+                    search_term,
+                    query_lexer.slice(),
+                )?)),
+                _ => {
+                    return Err(to_error(
+                        "expected regular expression or quoted string",
+                        query_lexer.slice(),
+                        query_lexer.span().start,
+                    ));
                 }
-                KeyUnmarked => {
-                    filter.article_filter.marked = Some(if negate {
-                        Marked::Marked
-                    } else {
-                        Marked::Unmarked
-                    });
-                    None
+            },
+            KeyFeedUrl => match query_lexer.next() {
+                Some(Ok(search_term)) => Some(QueryAtom::FeedUrl(to_search_term(
+                    search_term,
+                    query_lexer.slice(),
+                )?)),
+                _ => {
+                    return Err(to_error(
+                        "expected regular expression or quoted string",
+                        query_lexer.slice(),
+                        query_lexer.span().start,
+                    ));
                 }
-                KeyTitle => match query_lexer.next() {
-                    Some(Ok(search_term)) => Some(QueryAtom::Title(to_search_term(
-                        search_term,
+            },
+            KeyFeedWebUrl => match query_lexer.next() {
+                Some(Ok(search_term)) => Some(QueryAtom::FeedWebUrl(to_search_term(
+                    search_term,
+                    query_lexer.slice(),
+                )?)),
+                _ => {
+                    return Err(to_error(
+                        "expected regular expression or quoted string",
                         query_lexer.slice(),
-                    )?)),
-                    _ => {
-                        return Err(to_error(
-                            "expected regular expression or quoted string",
-                            query_lexer.slice(),
-                            query_lexer.span().start,
-                        ));
-                    }
-                },
-                KeySummary => match query_lexer.next() {
-                    Some(Ok(search_term)) => Some(QueryAtom::Summary(to_search_term(
-                        search_term,
-                        query_lexer.slice(),
-                    )?)),
-                    _ => {
-                        return Err(to_error(
-                            "expected regular expression or quoted string",
-                            query_lexer.slice(),
-                            query_lexer.span().start,
-                        ));
-                    }
-                },
-                KeyAuthor => match query_lexer.next() {
-                    Some(Ok(search_term)) => Some(QueryAtom::Author(to_search_term(
-                        search_term,
-                        query_lexer.slice(),
-                    )?)),
-                    _ => {
-                        return Err(to_error(
-                            "expected regular expression or quoted string",
-                            query_lexer.slice(),
-                            query_lexer.span().start,
-                        ));
-                    }
-                },
-                KeyFeed => match query_lexer.next() {
-                    Some(Ok(search_term)) => Some(QueryAtom::Feed(to_search_term(
-                        search_term,
-                        query_lexer.slice(),
-                    )?)),
-                    _ => {
-                        return Err(to_error(
-                            "expected regular expression or quoted string",
-                            query_lexer.slice(),
-                            query_lexer.span().start,
-                        ));
-                    }
-                },
-                KeyFeedUrl => match query_lexer.next() {
-                    Some(Ok(search_term)) => Some(QueryAtom::FeedUrl(to_search_term(
-                        search_term,
-                        query_lexer.slice(),
-                    )?)),
-                    _ => {
-                        return Err(to_error(
-                            "expected regular expression or quoted string",
-                            query_lexer.slice(),
-                            query_lexer.span().start,
-                        ));
-                    }
-                },
-                KeyFeedWebUrl => match query_lexer.next() {
-                    Some(Ok(search_term)) => Some(QueryAtom::FeedWebUrl(to_search_term(
-                        search_term,
-                        query_lexer.slice(),
-                    )?)),
-                    _ => {
-                        return Err(to_error(
-                            "expected regular expression or quoted string",
-                            query_lexer.slice(),
-                            query_lexer.span().start,
-                        ));
-                    }
-                },
+                        query_lexer.span().start,
+                    ));
+                }
+            },
 
-                KeyTag => match query_lexer.next() {
-                    Some(Ok(TagList)) => {
-                        let tag_list: Vec<String> = query_lexer
-                            .slice()
-                            .split(",")
-                            .map(&str::to_string)
-                            .map(|mut tag| {
-                                tag.remove(0);
-                                tag
-                            })
-                            .collect();
+            KeyTag => match query_lexer.next() {
+                Some(Ok(TagList)) => {
+                    let tag_list: Vec<String> = query_lexer
+                        .slice()
+                        .split(",")
+                        .map(&str::to_string)
+                        .map(|mut tag| {
+                            tag.remove(0);
+                            tag
+                        })
+                        .collect();
 
-                        Some(QueryAtom::Tag(tag_list))
-                    }
-                    _ => {
-                        return Err(to_error(
-                            "expected regular expression or quoted string",
-                            query_lexer.slice(),
-                            query_lexer.span().start,
-                        ));
-                    }
-                },
+                    Some(QueryAtom::Tag(tag_list))
+                }
+                _ => {
+                    return Err(to_error(
+                        "expected regular expression or quoted string",
+                        query_lexer.slice(),
+                        query_lexer.span().start,
+                    ));
+                }
+            },
 
-                mut time_key @ (KeyNewer | KeyOlder | KeySyncedBefore | KeySyncedAfter) => {
-                    let time = match query_lexer.next() {
-                        Some(Ok(QuotedString)) => {
-                            let mut time_string = query_lexer.slice().to_string();
-                            strip_first_and_last(&mut time_string);
-                            let zoned = parse_datetime(&time_string).map_err(|_| {
-                                to_error(
-                                    "expected time string or relative time",
-                                    query_lexer.slice(),
-                                    query_lexer.span().start,
-                                )
-                            })?;
-                            DateTime::from_timestamp(
-                                zoned.timestamp().as_second(),
-                                zoned.timestamp().subsec_nanosecond() as u32,
-                            )
-                            .unwrap()
-                        }
-
-                        _ => {
-                            return Err(to_error(
+            mut time_key @ (KeyNewer | KeyOlder | KeySyncedBefore | KeySyncedAfter) => {
+                let time = match query_lexer.next() {
+                    Some(Ok(QuotedString)) => {
+                        let mut time_string = query_lexer.slice().to_string();
+                        strip_first_and_last(&mut time_string);
+                        let zoned = parse_datetime(&time_string).map_err(|_| {
+                            to_error(
                                 "expected time string or relative time",
                                 query_lexer.slice(),
                                 query_lexer.span().start,
-                            ));
-                        }
-                    };
-
-                    if negate {
-                        time_key = match time_key {
-                            QueryToken::KeyNewer => QueryToken::KeyOlder,
-                            QueryToken::KeyOlder => QueryToken::KeyNewer,
-                            QueryToken::KeySyncedBefore => QueryToken::KeySyncedAfter,
-                            QueryToken::KeySyncedAfter => QueryToken::KeySyncedBefore,
-                            _ => unreachable!(),
-                        };
+                            )
+                        })?;
+                        DateTime::from_timestamp(
+                            zoned.timestamp().as_second(),
+                            zoned.timestamp().subsec_nanosecond() as u32,
+                        )
+                        .unwrap()
                     }
 
-                    match time_key {
-                        QueryToken::KeyNewer => {
-                            filter.article_filter.newer_than =
-                                match filter.article_filter.newer_than {
-                                    Some(other_time) => Some(other_time.max(time)),
-                                    None => Some(time),
-                                }
-                        }
+                    _ => {
+                        return Err(to_error(
+                            "expected time string or relative time",
+                            query_lexer.slice(),
+                            query_lexer.span().start,
+                        ));
+                    }
+                };
 
-                        QueryToken::KeyOlder => {
-                            filter.article_filter.older_than =
-                                match filter.article_filter.older_than {
-                                    Some(other_time) => Some(other_time.min(time)),
-                                    None => Some(time),
-                                }
-                        }
-                        QueryToken::KeySyncedBefore => {
-                            filter.article_filter.synced_before =
-                                match filter.article_filter.synced_before {
-                                    Some(other_time) => Some(other_time.min(time)),
-                                    None => Some(time),
-                                }
-                        }
-
-                        QueryToken::KeySyncedAfter => {
-                            filter.article_filter.synced_after =
-                                match filter.article_filter.synced_after {
-                                    Some(other_time) => Some(other_time.max(time)),
-                                    None => Some(time),
-                                }
-                        }
-
+                if negate {
+                    time_key = match time_key {
+                        QueryToken::KeyNewer => QueryToken::KeyOlder,
+                        QueryToken::KeyOlder => QueryToken::KeyNewer,
+                        QueryToken::KeySyncedBefore => QueryToken::KeySyncedAfter,
+                        QueryToken::KeySyncedAfter => QueryToken::KeySyncedBefore,
                         _ => unreachable!(),
-                    }
-
-                    None
+                    };
                 }
 
-                _ => {
-                    return Err(to_error(
-                        "expected key but got",
-                        query_lexer.source(),
-                        query_lexer.span().start,
-                    ));
+                match time_key {
+                    QueryToken::KeyNewer => match article_filter.as_mut() {
+                        Some(article_filter) => {
+                            article_filter.newer_than = match article_filter.newer_than {
+                                Some(other_time) => Some(other_time.max(time)),
+                                None => Some(time),
+                            };
+                            None
+                        }
+                        None => Some(QueryAtom::Newer(time)),
+                    },
+
+                    QueryToken::KeyOlder => match article_filter.as_mut() {
+                        Some(article_filter) => {
+                            article_filter.older_than = match article_filter.older_than {
+                                Some(other_time) => Some(other_time.min(time)),
+                                None => Some(time),
+                            };
+                            None
+                        }
+                        None => Some(QueryAtom::Older(time)),
+                    },
+                    QueryToken::KeySyncedBefore => match article_filter.as_mut() {
+                        Some(article_filter) => {
+                            article_filter.synced_before = match article_filter.synced_before {
+                                Some(other_time) => Some(other_time.min(time)),
+                                None => Some(time),
+                            };
+                            None
+                        }
+                        None => Some(QueryAtom::SyncedBefore(time)),
+                    },
+
+                    QueryToken::KeySyncedAfter => match article_filter.as_mut() {
+                        Some(article_filter) => {
+                            article_filter.synced_after = match article_filter.synced_after {
+                                Some(other_time) => Some(other_time.max(time)),
+                                None => Some(time),
+                            };
+                            None
+                        }
+                        None => Some(QueryAtom::SyncedAfter(time)),
+                    },
+
+                    _ => unreachable!(),
                 }
-            } {
-                filter.parsed_query.query.push(if negate {
-                    QueryClause::Not(query_atom)
-                } else {
-                    QueryClause::Id(query_atom)
-                });
             }
 
-            // reset negate flag
-            negate = false;
+            _ => {
+                return Err(to_error(
+                    "expected key but got",
+                    query_lexer.source(),
+                    query_lexer.span().start,
+                ));
+            }
+        } {
+            article_query.query.push(if negate {
+                QueryClause::Not(query_atom)
+            } else {
+                QueryClause::Id(query_atom)
+            });
         }
 
-        trace!("query parsed: {:?}", filter);
-
-        Ok(filter)
+        // reset negate flag
+        negate = false;
     }
+
+    trace!("query parsed: {:?}", article_query);
+
+    Ok(article_query)
 }
 
 fn strip_first_and_last(s: &mut String) {
