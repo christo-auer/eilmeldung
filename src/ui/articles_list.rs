@@ -483,9 +483,12 @@ impl crate::messages::MessageReceiver for ArticlesList {
             Message::Command(NavigatePageUp) if self.is_focused => self
                 .table_state
                 .scroll_up_by(self.config.theme.articles_list_height_lines - 1),
-            Message::Command(NavigatePageDown) if self.is_focused => self
-                .table_state
-                .scroll_down_by(self.config.theme.articles_list_height_lines - 1),
+            Message::Command(NavigatePageDown) if self.is_focused => {
+                self.table_state.scroll_down_by(
+                    self.config.theme.articles_list_height_lines
+                        - self.config.articles_list_visible_articles_after_selection as u16,
+                )
+            }
             Message::Command(NavigateFirst) if self.is_focused => self.table_state.select_first(),
             Message::Command(NavigateLast) if self.is_focused => {
                 self.table_state.select_last();
