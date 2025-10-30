@@ -11,19 +11,19 @@ pub enum Event {
     ArticleSelected(Article, Option<Feed>, Option<Vec<Tag>>),
     FatArticleSelected(Article, Option<Feed>, Option<Vec<Tag>>),
 
-    AsyncSyncStarted,
+    AsyncSync,
     AsyncSyncFinished(HashMap<FeedID, i64>),
 
-    AsyncFetchThumbnailStarted,
+    AsyncFetchThumbnail,
     AsyncFetchThumbnailFinished(Option<Thumbnail>),
 
-    AsyncFetchFatArticleStarted,
+    AsyncFetchFatArticle,
     AsyncFetchFatArticleFinished(FatArticle),
 
-    AsyncMarkArticlesAsReadStarted,
+    AsyncMarkArticlesAsRead,
     AsyncMarkArticlesAsReadFinished,
 
-    AsyncOperationFailed(String),
+    AsyncOperationFailed(String, Box<Event>),
 
     Tick, // general tick for animations and regular updates
 

@@ -1,9 +1,10 @@
 use std::{fmt::Display, str::FromStr};
 
+use serde::Deserialize;
+
 use crate::prelude::*;
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Clone, Debug)]
 pub enum Command {
     // general navigation
     NavigateUp,
@@ -33,6 +34,7 @@ pub enum Command {
     ArticleListSetAllRead,
     ArticleListSetAllUnread,
     ArticleListSetScope(ArticleScope),
+    // ArticleListStartSearch(ParsedQuery),
     ArticleCurrentScrape,
 
     // application
@@ -154,5 +156,16 @@ impl FromStr for Command {
                 return Err(color_eyre::eyre::eyre!("Invalid command: {}", command_str));
             }
         })
+    }
+}
+
+impl<'de> Deserialize<'de> for Command {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+
+        Command::from_str(&s).map_err(|err| serde::de::Error::custom(err.to_string()))
     }
 }

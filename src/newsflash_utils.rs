@@ -53,7 +53,7 @@ impl NewsFlashUtils {
 
             if let Err(e) = async {
                 debug!("Sending AsyncSyncStarted command");
-                command_sender.send(Message::Event(Event::AsyncSyncStarted))?;
+                command_sender.send(Message::Event(Event::AsyncSync))?;
 
                 debug!("Acquiring NewsFlash and client locks");
                 let news_flash = news_flash_lock.read().await;
@@ -70,8 +70,10 @@ impl NewsFlashUtils {
             .await
             {
                 error!("Feed sync failed: {}", e);
-                let _ =
-                    command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
+                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
+                    e.to_string(),
+                    Box::new(Event::AsyncSync),
+                )));
             }
         });
     }
@@ -89,7 +91,7 @@ impl NewsFlashUtils {
 
             if let Err(e) = async {
                 debug!("Sending AsyncFetchThumbnailStarted command");
-                command_sender.send(Message::Event(Event::AsyncFetchThumbnailStarted))?;
+                command_sender.send(Message::Event(Event::AsyncFetchThumbnail))?;
 
                 debug!("Acquiring NewsFlash and client locks for thumbnail");
                 let news_flash = news_flash_lock.read().await;
@@ -117,8 +119,10 @@ impl NewsFlashUtils {
             .await
             {
                 error!("Thumbnail fetch failed for article {:?}: {}", article_id, e);
-                let _ =
-                    command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
+                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
+                    e.to_string(),
+                    Box::new(Event::AsyncFetchThumbnail),
+                )));
             }
         });
     }
@@ -136,7 +140,7 @@ impl NewsFlashUtils {
 
             if let Err(e) = async {
                 debug!("Sending AsyncFetchFatArticleStarted command");
-                command_sender.send(Message::Event(Event::AsyncFetchFatArticleStarted))?;
+                command_sender.send(Message::Event(Event::AsyncFetchFatArticle))?;
 
                 debug!("Acquiring NewsFlash and client locks for fat article");
                 let news_flash = news_flash_lock.read().await;
@@ -163,8 +167,10 @@ impl NewsFlashUtils {
                     "Fat article fetch failed for article {:?}: {}",
                     article_id, e
                 );
-                let _ =
-                    command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
+                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
+                    e.to_string(),
+                    Box::new(Event::AsyncFetchFatArticle),
+                )));
             }
         });
     }
@@ -186,7 +192,7 @@ impl NewsFlashUtils {
 
             if let Err(e) = async {
                 debug!("Sending AsyncMarkArticlesAsReadStarted command");
-                command_sender.send(Message::Event(Event::AsyncMarkArticlesAsReadStarted))?;
+                command_sender.send(Message::Event(Event::AsyncMarkArticlesAsRead))?;
 
                 debug!("Acquiring NewsFlash and client locks for article status");
                 let news_flash = news_flash_lock.read().await;
@@ -212,8 +218,10 @@ impl NewsFlashUtils {
                     article_ids.len(),
                     e
                 );
-                let _ =
-                    command_sender.send(Message::Event(Event::AsyncOperationFailed(e.to_string())));
+                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
+                    e.to_string(),
+                    Box::new(Event::AsyncMarkArticlesAsRead),
+                )));
             }
         });
     }
