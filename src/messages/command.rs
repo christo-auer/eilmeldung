@@ -34,8 +34,11 @@ pub enum Command {
     ArticleListSetAllRead,
     ArticleListSetAllUnread,
     ArticleListSetScope(ArticleScope),
-    // ArticleListStartSearch(ParsedQuery),
     ArticleCurrentScrape,
+
+    // searching
+    ArticleListSearch(ArticleQuery),
+    ArticleListSearchNext,
 
     // application
     ApplicationQuit,
@@ -76,6 +79,8 @@ impl Display for Command {
             ArticleCurrentScrape => write!(f, "scrape content"),
             ApplicationQuit => write!(f, "quit"),
             CommandLineOpen(input) => write!(f, "command line {}", input.unwrap_or_default()),
+            ArticleListSearch(query) => write!(f, "article search {}", query.query_string()),
+            ArticleListSearchNext => write!(f, "article search next"),
         }
     }
 }
@@ -151,6 +156,9 @@ impl FromStr for Command {
             "scrape" => ArticleCurrentScrape,
 
             "quit" | "q" => ApplicationQuit,
+
+            "search" => ArticleListSearch(ArticleQuery::from_str("unread older:\"2 days ago\"")?),
+            "search_next" => ArticleListSearchNext,
 
             _ => {
                 return Err(color_eyre::eyre::eyre!("Invalid command: {}", command_str));

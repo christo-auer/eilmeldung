@@ -2,6 +2,7 @@ use crate::prelude::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use log::info;
 use news_flash::models::{Article, ArticleID, Feed, FeedID, Marked, Read, Tag, TagID};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Row, StatefulWidget, Table, TableState, Widget};
@@ -26,6 +27,8 @@ pub struct ArticlesList {
 
     article_scope: ArticleScope,
 
+    article_search_query: Option<ArticleQuery>,
+
     table_state: TableState,
     article_filter: Option<AugmentedArticleFilter>,
     is_focused: bool,
@@ -44,6 +47,7 @@ impl ArticlesList {
             news_flash_utils: news_flash_utils.clone(),
             message_sender,
             articles: Default::default(),
+            article_search_query: None,
             tags_for_article: Default::default(),
             tag_map: Default::default(),
             feed_map: Default::default(),
@@ -113,7 +117,7 @@ impl ArticlesList {
 
             // apply additional query-based filter
             if article_filter.is_augmented() {
-                self.articles = article_filter.filter(
+                self.articles = article_filter.article_query.filter(
                     &self.articles,
                     &self.feed_map,
                     &self.tags_for_article,
@@ -121,6 +125,8 @@ impl ArticlesList {
                 );
             }
         }
+
+        self.build_table();
 
         // now, make a sensible choice for selection
         self.restore_sensible_selection(prev_article_id)?;
@@ -303,11 +309,31 @@ impl ArticlesList {
             *offset = index.saturating_sub(max_lines_above);
         }
     }
-}
 
-impl Widget for &mut ArticlesList {
-    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        let highlight_style = if self.is_focused {
+    fn search_next(&mut self, skip_current: bool) -> color_eyre::Result<()> {
+        let offset = if skip_current { 1 } else { 0 };
+        if let Some(selected) = self.table_state.selected()
+            && let Some(article_query) = self.article_search_query.as_ref()
+            && let Some(next_index) =
+                self.articles[selected + offset..]
+                    .iter()
+                    .position(|article| {
+                        article_query.test(
+                            article,
+                            &self.feed_map,
+                            &self.tags_for_article,
+                            &self.tag_map,
+                        )
+                    })
+        {
+            return self.select_index(next_index + selected + 1);
+        }
+
+        Ok(())
+    }
+
+    fn build_table(&mut self) {
+        let selected_style = if self.is_focused {
             Style::new().reversed()
         } else {
             Style::new().underlined()
@@ -426,7 +452,22 @@ impl Widget for &mut ArticlesList {
                     })
                     .collect();
 
-                Row::new(row_vec)
+                let style = match self.article_search_query.as_ref() {
+                    Some(query)
+                        if query.test(
+                            article,
+                            &self.feed_map,
+                            &self.tags_for_article,
+                            &self.tag_map,
+                        ) =>
+                    {
+                        info!("article MATCHES");
+                        self.config.theme.article_highlighted
+                    }
+                    _ => self.config.theme.article,
+                };
+
+                Row::new(row_vec).style(style)
             })
             .collect();
 
@@ -451,8 +492,7 @@ impl Widget for &mut ArticlesList {
                 .map(|placeholder| constraint_for_placeholder(placeholder))
                 .collect::<Vec<Constraint>>(),
         )
-        .style(self.config.theme.article)
-        .row_highlight_style(highlight_style)
+        .row_highlight_style(selected_style)
         .block(
             Block::default()
                 .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
@@ -464,7 +504,11 @@ impl Widget for &mut ArticlesList {
                     self.config.theme.border_style
                 }),
         );
+    }
+}
 
+impl Widget for &mut ArticlesList {
+    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
         StatefulWidget::render(&self.table, area, buf, &mut self.table_state);
     }
 }
@@ -524,23 +568,28 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
             Message::Command(ArticleCurrentSetRead) => {
                 self.set_current_read_status(Some(Read::Read)).await?;
+                self.build_table();
                 // self.build_list().await?;
             }
 
             Message::Command(ArticleCurrentSetUnread) => {
                 self.set_current_read_status(Some(Read::Unread)).await?;
+                self.build_table();
             }
 
             Message::Command(ArticleCurrentToggleRead) => {
                 self.set_current_read_status(None).await?;
+                self.build_table();
             }
 
             Message::Command(ArticleListSetAllRead) => {
                 self.set_all_read_status(Read::Read).await?;
+                self.build_table();
             }
 
             Message::Command(ArticleListSetAllUnread) => {
                 self.set_all_read_status(Read::Unread).await?;
+                self.build_table();
             }
 
             Message::Event(AsyncMarkArticlesAsReadFinished) => {
@@ -549,6 +598,16 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
             Message::Command(ArticleListSelectNextUnread) => {
                 self.select_next_unread()?;
+            }
+
+            Message::Command(ArticleListSearch(query)) => {
+                self.article_search_query = Some(query.clone());
+                self.build_table();
+                self.search_next(false)?;
+            }
+
+            Message::Command(ArticleListSearchNext) => {
+                self.search_next(true)?;
             }
 
             _ => {}

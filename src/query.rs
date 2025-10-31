@@ -65,7 +65,59 @@ impl QueryClause {
 
 #[derive(Default, Clone, Debug)]
 pub struct ArticleQuery {
+    query_string: String,
     query: Vec<QueryClause>,
+}
+
+impl ArticleQuery {
+    pub fn query_string(&self) -> &str {
+        self.query_string.as_str()
+    }
+
+    #[inline(always)]
+    pub fn filter(
+        &self,
+        articles: &[Article],
+        feed_map: &HashMap<FeedID, Feed>,
+        tags_for_article: &HashMap<ArticleID, Vec<TagID>>,
+        tag_map: &HashMap<TagID, Tag>,
+    ) -> Vec<Article> {
+        articles
+            .iter()
+            .filter(|article| self.test(article, feed_map, tags_for_article, tag_map))
+            .cloned()
+            .collect::<Vec<Article>>()
+    }
+
+    #[inline(always)]
+    pub fn test(
+        &self,
+        article: &Article,
+        feed_map: &HashMap<FeedID, Feed>,
+        tags_for_article: &HashMap<ArticleID, Vec<TagID>>,
+        tag_map: &HashMap<TagID, Tag>,
+    ) -> bool {
+        let feed = feed_map.get(&article.feed_id);
+
+        let tags = tags_for_article.get(&article.article_id).map(|tag_ids| {
+            tag_ids
+                .iter()
+                .filter_map(|tag_id| tag_map.get(tag_id).map(|tag| tag.label.to_string()))
+                .collect::<HashSet<String>>()
+        });
+
+        self.query
+            .iter()
+            .all(|query_clause| query_clause.test(article, feed, tags.as_ref()))
+    }
+}
+
+impl FromStr for ArticleQuery {
+    type Err = color_eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        parse_query(s, &mut None)
+    }
 }
 
 impl QueryAtom {
@@ -232,35 +284,6 @@ impl AugmentedArticleFilter {
     pub fn is_augmented(&self) -> bool {
         !self.article_query.query.is_empty()
     }
-
-    #[inline(always)]
-    pub fn filter(
-        &self,
-        articles: &[Article],
-        feed_map: &HashMap<FeedID, Feed>,
-        tags_for_article: &HashMap<ArticleID, Vec<TagID>>,
-        tag_map: &HashMap<TagID, Tag>,
-    ) -> Vec<Article> {
-        articles
-            .iter()
-            .filter(|article| {
-                let feed = feed_map.get(&article.feed_id);
-
-                let tags = tags_for_article.get(&article.article_id).map(|tag_ids| {
-                    tag_ids
-                        .iter()
-                        .filter_map(|tag_id| tag_map.get(tag_id).map(|tag| tag.label.to_string()))
-                        .collect::<HashSet<String>>()
-                });
-
-                self.article_query
-                    .query
-                    .iter()
-                    .all(|query_clause| query_clause.test(article, feed, tags.as_ref()))
-            })
-            .cloned()
-            .collect::<Vec<Article>>()
-    }
 }
 
 impl FromStr for AugmentedArticleFilter {
@@ -279,6 +302,8 @@ fn parse_query(
     article_filter: &mut Option<&mut ArticleFilter>,
 ) -> Result<ArticleQuery, color_eyre::Report> {
     let mut article_query: ArticleQuery = ArticleQuery::default();
+    article_query.query_string = query.to_string();
+
     let mut query_lexer = QueryToken::lexer(query);
     let mut negate = false;
 

@@ -5,6 +5,7 @@ pub struct Theme {
     pub feeds_list_focus_width_percent: u16,
     pub articles_list_focused_width_percent: u16,
     pub articles_list_height_lines: u16,
+
     pub category: Style,
     pub feed: Style,
     pub header: Style,
@@ -12,6 +13,7 @@ pub struct Theme {
     pub tag: Style,
     pub query: Style,
     pub article: Style,
+    pub article_highlighted: Style,
     pub statusbar: Style,
     pub tooltip_info: Style,
     pub tooltip_warning: Style,
@@ -38,6 +40,7 @@ impl Default for Theme {
             header: Style::default().fg(Magenta),
             paragraph: Style::default().fg(Gray),
             article: Style::default().fg(Gray),
+            article_highlighted: Style::default().fg(Yellow),
             tag: Style::default().fg(Blue),
             query: Style::default().fg(Yellow),
             statusbar: Style::default().fg(Black).bg(Magenta).bold(),
