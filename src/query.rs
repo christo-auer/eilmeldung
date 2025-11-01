@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
+    fmt::UpperExp,
     str::FromStr,
 };
 
@@ -15,6 +16,7 @@ use regex::Regex;
 #[derive(Clone, Debug)]
 enum SearchTerm {
     Verbatim(String),
+    Word(String),
     Regex(Regex),
 }
 
@@ -28,6 +30,7 @@ enum QueryAtom {
     Author(SearchTerm),
     FeedUrl(SearchTerm),
     FeedWebUrl(SearchTerm),
+    All(SearchTerm),
     Tag(Vec<String>),
     Newer(DateTime<Utc>),
     Older(DateTime<Utc>),
@@ -52,13 +55,6 @@ impl QueryClause {
         match self {
             QueryClause::Id(query_atom) => query_atom.test(article, feed, tags),
             QueryClause::Not(query_atom) => !query_atom.test(article, feed, tags),
-        }
-    }
-
-    pub fn from_atom(negate: bool, atom: QueryAtom) -> QueryClause {
-        match negate {
-            true => Self::Not(atom),
-            false => Self::Id(atom),
         }
     }
 }
@@ -138,7 +134,8 @@ impl QueryAtom {
             | Summary(search_term)
             | Author(search_term)
             | FeedUrl(search_term)
-            | FeedWebUrl(search_term) => self.test_string_match(search_term, article, feed),
+            | FeedWebUrl(search_term)
+            | All(search_term) => self.test_string_match(search_term, article, feed),
 
             Tag(search_tags) => {
                 let Some(tags) = tags else {
@@ -183,6 +180,31 @@ impl QueryAtom {
             QueryAtom::Title(_) => article.title.clone(),
             QueryAtom::Summary(_) => article.summary.clone(),
             QueryAtom::Author(_) => article.author.clone(),
+            QueryAtom::All(_) => Some(format!(
+                "{} {} {} {} {} {}",
+                article.title.as_deref().unwrap_or_default(),
+                article.summary.as_deref().unwrap_or_default(),
+                article.author.as_deref().unwrap_or_default(),
+                feed.as_ref()
+                    .map(|feed| feed.label.as_str())
+                    .unwrap_or_default(),
+                feed.as_ref()
+                    .map(|feed| feed
+                        .feed_url
+                        .as_ref()
+                        .map(|url| url.to_string())
+                        .unwrap_or_default())
+                    .unwrap_or_default()
+                    .as_str(),
+                feed.as_ref()
+                    .map(|feed| feed
+                        .website
+                        .as_ref()
+                        .map(|url| url.to_string())
+                        .unwrap_or_default())
+                    .unwrap_or_default()
+                    .as_str(),
+            )),
             _ => unreachable!(),
         };
 
@@ -193,6 +215,7 @@ impl QueryAtom {
         match search_term {
             SearchTerm::Regex(regex) => regex.is_match(&content_string),
             SearchTerm::Verbatim(term) => content_string.contains(term),
+            SearchTerm::Word(word) => content_string.to_lowercase().contains(&word.to_lowercase()),
         }
     }
 }
@@ -200,19 +223,19 @@ impl QueryAtom {
 #[derive(Logos, Debug, PartialEq)]
 #[logos(skip r"[ \t\n\f]+")]
 enum QueryToken {
-    #[token("~")]
+    #[token("~", priority = 2)]
     Negate,
 
-    #[token("read")]
+    #[token("read", priority = 2)]
     KeyRead,
 
-    #[token("unread")]
+    #[token("unread", priority = 2)]
     KeyUnread,
 
-    #[token("marked")]
+    #[token("marked", priority = 2)]
     KeyMarked,
 
-    #[token("unmarked")]
+    #[token("unmarked", priority = 2)]
     KeyUnmarked,
 
     #[token("newer:")]
@@ -239,6 +262,9 @@ enum QueryToken {
     #[token("author:")]
     KeyAuthor,
 
+    #[token("all:")]
+    KeyAll,
+
     #[token("feedurl:")]
     KeyFeedUrl,
 
@@ -250,6 +276,9 @@ enum QueryToken {
 
     #[regex(r#""[^"\n\r\\]*(?:\\.[^"\n\r\\]*)*""#)]
     QuotedString,
+
+    #[regex(r#"[\w]+"#, priority = 1)]
+    Word,
 
     #[regex(r"/[^/\\]*(?:\\.[^/\\]*)*/")]
     Regex,
@@ -301,8 +330,10 @@ fn parse_query(
     query: &str,
     article_filter: &mut Option<&mut ArticleFilter>,
 ) -> Result<ArticleQuery, color_eyre::Report> {
-    let mut article_query: ArticleQuery = ArticleQuery::default();
-    article_query.query_string = query.to_string();
+    let mut article_query = ArticleQuery {
+        query_string: query.to_string(),
+        ..Default::default()
+    };
 
     let mut query_lexer = QueryToken::lexer(query);
     let mut negate = false;
@@ -374,76 +405,21 @@ fn parse_query(
                 }
                 None => Some(QueryAtom::Marked(Marked::Unmarked)),
             },
-            KeyTitle => match query_lexer.next() {
-                Some(Ok(search_term)) => Some(QueryAtom::Title(to_search_term(
-                    search_term,
-                    query_lexer.slice(),
-                )?)),
-                _ => {
-                    return Err(to_error(
-                        "expected regular expression or quoted string",
-                        query_lexer.slice(),
-                        query_lexer.span().start,
-                    ));
+
+            key @ (KeyTitle | KeySummary | KeyAuthor | KeyFeed | KeyFeedUrl | KeyFeedWebUrl
+            | KeyAll) => match query_lexer.next() {
+                Some(Ok(search_term)) => {
+                    let search_term = to_search_term(search_term, query_lexer.slice())?;
+                    Some(match key {
+                        KeyTitle => QueryAtom::Title(search_term),
+                        KeyAuthor => QueryAtom::Author(search_term),
+                        KeyFeed => QueryAtom::Feed(search_term),
+                        KeyFeedUrl => QueryAtom::FeedUrl(search_term),
+                        KeyFeedWebUrl => QueryAtom::FeedWebUrl(search_term),
+                        KeyAll => QueryAtom::All(search_term),
+                        _ => unreachable!(),
+                    })
                 }
-            },
-            KeySummary => match query_lexer.next() {
-                Some(Ok(search_term)) => Some(QueryAtom::Summary(to_search_term(
-                    search_term,
-                    query_lexer.slice(),
-                )?)),
-                _ => {
-                    return Err(to_error(
-                        "expected regular expression or quoted string",
-                        query_lexer.slice(),
-                        query_lexer.span().start,
-                    ));
-                }
-            },
-            KeyAuthor => match query_lexer.next() {
-                Some(Ok(search_term)) => Some(QueryAtom::Author(to_search_term(
-                    search_term,
-                    query_lexer.slice(),
-                )?)),
-                _ => {
-                    return Err(to_error(
-                        "expected regular expression or quoted string",
-                        query_lexer.slice(),
-                        query_lexer.span().start,
-                    ));
-                }
-            },
-            KeyFeed => match query_lexer.next() {
-                Some(Ok(search_term)) => Some(QueryAtom::Feed(to_search_term(
-                    search_term,
-                    query_lexer.slice(),
-                )?)),
-                _ => {
-                    return Err(to_error(
-                        "expected regular expression or quoted string",
-                        query_lexer.slice(),
-                        query_lexer.span().start,
-                    ));
-                }
-            },
-            KeyFeedUrl => match query_lexer.next() {
-                Some(Ok(search_term)) => Some(QueryAtom::FeedUrl(to_search_term(
-                    search_term,
-                    query_lexer.slice(),
-                )?)),
-                _ => {
-                    return Err(to_error(
-                        "expected regular expression or quoted string",
-                        query_lexer.slice(),
-                        query_lexer.span().start,
-                    ));
-                }
-            },
-            KeyFeedWebUrl => match query_lexer.next() {
-                Some(Ok(search_term)) => Some(QueryAtom::FeedWebUrl(to_search_term(
-                    search_term,
-                    query_lexer.slice(),
-                )?)),
                 _ => {
                     return Err(to_error(
                         "expected regular expression or quoted string",
@@ -562,6 +538,10 @@ fn parse_query(
                 }
             }
 
+            QueryToken::Word => Some(QueryAtom::All(SearchTerm::Word(
+                query_lexer.slice().to_string(),
+            ))),
+
             _ => {
                 return Err(to_error(
                     "expected key but got",
@@ -611,6 +591,11 @@ fn to_search_term(query_token: QueryToken, slice: &str) -> color_eyre::Result<Se
             let mut search_term = slice.to_string();
             strip_first_and_last(&mut search_term);
             Ok(SearchTerm::Verbatim(search_term))
+        }
+
+        QueryToken::Word => {
+            let search_term = slice.to_string();
+            Ok(SearchTerm::Word(search_term))
         }
 
         _ => Err(color_eyre::Report::msg(
