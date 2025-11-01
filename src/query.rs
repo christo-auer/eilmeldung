@@ -412,6 +412,7 @@ fn parse_query(
                     let search_term = to_search_term(search_term, query_lexer.slice())?;
                     Some(match key {
                         KeyTitle => QueryAtom::Title(search_term),
+                        KeySummary => QueryAtom::Summary(search_term),
                         KeyAuthor => QueryAtom::Author(search_term),
                         KeyFeed => QueryAtom::Feed(search_term),
                         KeyFeedUrl => QueryAtom::FeedUrl(search_term),
