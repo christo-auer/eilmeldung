@@ -52,6 +52,9 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         ("2".into(), ArticleListSetScope(ArticleScope::Unread).into()),
         ("3".into(), ArticleListSetScope(ArticleScope::Marked).into()),
         ("z".into(), ToggleDistractionFreeMode.into()),
+        ("/".into(), CommandLineOpen(Some("/".into())).into()),
+        ("n".into(), ArticleListSearchNext.into()),
+        ("N".into(), ArticleListSearchPrevious.into()),
     ]
     .into_iter()
     .collect()

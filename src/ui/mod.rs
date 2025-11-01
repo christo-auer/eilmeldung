@@ -11,7 +11,7 @@ pub mod prelude {
     pub use super::articles_list::ArticlesList;
     pub use super::command_input::CommandInput;
     pub use super::feeds_list::FeedList;
-    pub use super::tooltip::{Tooltip, TooltipFlavor};
+    pub use super::tooltip::{Tooltip, TooltipFlavor, tooltip};
 }
 
 use ratatui::{

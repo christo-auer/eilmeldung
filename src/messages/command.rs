@@ -1,4 +1,5 @@
-use std::{fmt::Display, str::FromStr};
+use std::fmt::Display;
+use std::str::FromStr;
 
 use serde::Deserialize;
 
@@ -39,6 +40,7 @@ pub enum Command {
     // searching
     ArticleListSearch(ArticleQuery),
     ArticleListSearchNext,
+    ArticleListSearchPrevious,
 
     // application
     ApplicationQuit,
@@ -81,6 +83,7 @@ impl Display for Command {
             CommandLineOpen(input) => write!(f, "command line {}", input.unwrap_or_default()),
             ArticleListSearch(query) => write!(f, "article search {}", query.query_string()),
             ArticleListSearchNext => write!(f, "article search next"),
+            ArticleListSearchPrevious => write!(f, "article search previous"),
         }
     }
 }
@@ -124,10 +127,21 @@ impl FromStr for Command {
     type Err = color_eyre::Report;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let command_str: String = String::from_str(s).unwrap();
+        let trimmed_command = s.trim();
+        let command_end_pos = trimmed_command.find(" ");
+
+        let command = match command_end_pos {
+            Some(pos) => &trimmed_command[..pos],
+            None => trimmed_command,
+        };
+
+        let args = match command_end_pos {
+            Some(pos) => Some(&trimmed_command[pos + 1..]),
+            None => None,
+        };
 
         use Command::*;
-        Ok(match command_str.trim() {
+        Ok(match command {
             "up" => NavigateUp,
             "down" => NavigateDown,
             "page_up" => NavigatePageUp,
@@ -157,11 +171,15 @@ impl FromStr for Command {
 
             "quit" | "q" => ApplicationQuit,
 
-            "search" => ArticleListSearch(ArticleQuery::from_str("unread older:\"2 days ago\"")?),
-            "search_next" => ArticleListSearchNext,
+            "/" => match args {
+                Some(args) => ArticleListSearch(ArticleQuery::from_str(args)?),
+                None => return Err(color_eyre::eyre::eyre!("Search pattern expected")),
+            },
+            "/next" => ArticleListSearchNext,
+            "/prev" => ArticleListSearchPrevious,
 
             _ => {
-                return Err(color_eyre::eyre::eyre!("Invalid command: {}", command_str));
+                return Err(color_eyre::eyre::eyre!("Invalid command: {}", command));
             }
         })
     }

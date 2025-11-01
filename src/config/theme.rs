@@ -40,7 +40,7 @@ impl Default for Theme {
             header: Style::default().fg(Magenta),
             paragraph: Style::default().fg(Gray),
             article: Style::default().fg(Gray),
-            article_highlighted: Style::default().fg(Yellow),
+            article_highlighted: Style::default().fg(Yellow).bold(),
             tag: Style::default().fg(Blue),
             query: Style::default().fg(Yellow),
             statusbar: Style::default().fg(Black).bg(Magenta).bold(),

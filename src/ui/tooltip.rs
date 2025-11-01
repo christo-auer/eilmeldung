@@ -1,6 +1,7 @@
 use ratatui::text::Line;
+use tokio::sync::mpsc::UnboundedSender;
 
-use crate::config::Config;
+use crate::prelude::*;
 
 #[derive(Clone, Debug)]
 pub enum TooltipFlavor {
@@ -35,4 +36,16 @@ impl<'a> Tooltip<'a> {
         };
         Line::from(self.contents.clone()).style(style)
     }
+}
+
+pub fn tooltip<'a, T: Into<&'a str>>(
+    message_sender: &UnboundedSender<Message>,
+    content: T,
+    flavor: TooltipFlavor,
+) -> color_eyre::Result<()> {
+    message_sender.send(Message::Event(Event::Tooltip(Tooltip::from_str(
+        content.into(),
+        flavor,
+    ))))?;
+    Ok(())
 }

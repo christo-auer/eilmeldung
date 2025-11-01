@@ -43,7 +43,7 @@ impl ArticlesList {
         Self {
             config: config.clone(),
             article_filter: None,
-            article_scope: config.clone().article_scope,
+            article_scope: config.article_scope,
             news_flash_utils: news_flash_utils.clone(),
             message_sender,
             articles: Default::default(),
@@ -129,14 +129,14 @@ impl ArticlesList {
         self.build_table();
 
         // now, make a sensible choice for selection
-        self.restore_sensible_selection(prev_article_id)?;
+        self.restore_sensible_selection(prev_article_id.as_ref())?;
 
         Ok(())
     }
 
     fn restore_sensible_selection(
         &mut self,
-        article_id: Option<ArticleID>,
+        article_id: Option<&ArticleID>,
     ) -> color_eyre::Result<()> {
         // save offset distance
         let offset = *self.table_state.offset_mut();
@@ -151,7 +151,7 @@ impl ArticlesList {
             && let Some(index) = self
                 .articles
                 .iter()
-                .position(|article| article.article_id == article_id)
+                .position(|article| article.article_id == *article_id)
         {
             *self.table_state.offset_mut() = index.saturating_sub(offset_distance);
             return self.select_index(index);
@@ -206,9 +206,9 @@ impl ArticlesList {
     fn open_in_browser(&self) -> color_eyre::Result<()> {
         if let Some(index) = self.table_state.selected()
             && let Some(article) = self.articles.get(index)
-            && let Some(url) = article.url.clone()
+            && let Some(url) = article.url.as_ref()
         {
-            webbrowser::open(url.to_string().as_str())?;
+            webbrowser::open(url.as_ref())?;
         }
 
         // TODO error handling
@@ -310,24 +310,83 @@ impl ArticlesList {
         }
     }
 
-    fn search_next(&mut self, skip_current: bool) -> color_eyre::Result<()> {
-        let offset = if skip_current { 1 } else { 0 };
-        if let Some(selected) = self.table_state.selected()
-            && let Some(article_query) = self.article_search_query.as_ref()
-            && let Some(next_index) =
-                self.articles[selected + offset..]
-                    .iter()
-                    .position(|article| {
-                        article_query.test(
-                            article,
-                            &self.feed_map,
-                            &self.tags_for_article,
-                            &self.tag_map,
-                        )
-                    })
-        {
-            return self.select_index(next_index + selected + 1);
+    fn search(
+        &self,
+        articles: &[Article],
+        article_query: &ArticleQuery,
+        reversed: bool,
+    ) -> Option<usize> {
+        let predicate = |article: &Article| {
+            article_query.test(
+                article,
+                &self.feed_map,
+                &self.tags_for_article,
+                &self.tag_map,
+            )
+        };
+
+        if !reversed {
+            articles.iter().position(predicate)
+        } else {
+            articles.iter().rposition(predicate)
         }
+    }
+
+    fn search_next(&mut self, skip_current: bool, reversed: bool) -> color_eyre::Result<()> {
+        let offset = if skip_current { 1 } else { 0 };
+        let Some(article_query) = self.article_search_query.as_ref() else {
+            return Err(color_eyre::eyre::eyre!("no search query"));
+        };
+
+        if let Some(selected) = self.table_state.selected() {
+            let split_index = if !reversed {
+                selected + offset
+            } else {
+                selected.saturating_sub(offset)
+            };
+
+            let slices = self.articles.split_at(split_index);
+
+            let (first_range, second_range) = if reversed {
+                slices
+            } else {
+                (slices.1, slices.0)
+            };
+
+            let (first_offset, second_offset) = if !reversed {
+                (split_index, 0)
+            } else {
+                (0, split_index)
+            };
+
+            match self.search(first_range, article_query, reversed) {
+                Some(index) => {
+                    return self.select_index(index + first_offset);
+                }
+                None => match self.search(second_range, article_query, reversed) {
+                    Some(index) => {
+                        tooltip(
+                            &self.message_sender,
+                            if !reversed {
+                                "end reached, starting from beginning"
+                            } else {
+                                "beginning reached, starting from end"
+                            },
+                            TooltipFlavor::Warning,
+                        )?;
+                        return self.select_index(index + second_offset);
+                    }
+                    None => {
+                        tooltip(
+                            &self.message_sender,
+                            "no match found",
+                            TooltipFlavor::Warning,
+                        )?;
+                    }
+                },
+            }
+        }
+        {}
 
         Ok(())
     }
@@ -560,6 +619,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
             Message::Event(ApplicationStateChanged(state)) => {
                 self.is_focused = *state == AppState::ArticleSelection;
+                self.build_list().await?;
             }
 
             Message::Command(ArticleCurrentOpenInBrowser) => {
@@ -603,13 +663,16 @@ impl crate::messages::MessageReceiver for ArticlesList {
             Message::Command(ArticleListSearch(query)) => {
                 self.article_search_query = Some(query.clone());
                 self.build_table();
-                self.search_next(false)?;
+                self.search_next(false, false)?;
             }
 
             Message::Command(ArticleListSearchNext) => {
-                self.search_next(true)?;
+                self.search_next(true, false)?;
             }
 
+            Message::Command(ArticleListSearchPrevious) => {
+                self.search_next(true, true)?;
+            }
             _ => {}
         }
 

@@ -88,11 +88,11 @@ impl ArticleContent {
 
     async fn on_article_selected(
         &mut self,
-        article: Article,
-        feed: Option<Feed>,
-        tags: Option<Vec<Tag>>,
+        article: &Article,
+        feed: &Option<Feed>,
+        tags: &Option<Vec<Tag>>,
     ) -> color_eyre::Result<()> {
-        if let Some(current_article) = self.article.clone()
+        if let Some(current_article) = self.article.as_ref()
             && current_article.article_id == article.article_id
         {
             return Ok(());
@@ -112,8 +112,8 @@ impl ArticleContent {
         self.tags = None;
 
         self.article = Some(article.clone());
-        self.feed = feed;
-        self.tags = tags;
+        self.feed = feed.clone();
+        self.tags = tags.clone();
 
         if self.is_focused {
             self.message_sender
@@ -128,7 +128,7 @@ impl ArticleContent {
     }
 
     fn prepare_thumbnail(&mut self, thumbnail: &Thumbnail) -> color_eyre::Result<()> {
-        if let Some(article) = self.article.clone()
+        if let Some(article) = self.article.as_ref()
             && article.article_id == thumbnail.article_id
             && let Some(data) = thumbnail.data.as_ref()
         {
@@ -182,8 +182,8 @@ impl ArticleContent {
 
     fn generate_summary<'a>(&'a self, render_summary_content: bool) -> Vec<Line<'a>> {
         let article = self.article.as_ref().unwrap();
-        let title = article.title.clone().unwrap_or("no title".into());
-        let feed_label: String = if let Some(feed) = self.feed.clone() {
+        let title = article.title.as_deref().unwrap_or("no title");
+        let feed_label: String = if let Some(feed) = self.feed.as_ref() {
             feed.label.clone()
         } else {
             article.feed_id.as_str().into()
@@ -193,7 +193,7 @@ impl ArticleContent {
 
         let tag_texts = self
             .tags
-            .clone()
+            .as_deref()
             .unwrap_or_default()
             .iter()
             .flat_map(|tag| {
@@ -203,7 +203,7 @@ impl ArticleContent {
 
                 vec![
                     Span::styled(" ", style),
-                    Span::styled(tag.label.clone(), style.reversed()),
+                    Span::styled(&tag.label, style.reversed()),
                     Span::styled("", style),
                 ]
             })
@@ -345,14 +345,14 @@ impl ArticleContent {
         let text: Text<'_> = if self.config.article_content_preferred_type
             == ArticleContentType::Markdown
             // && self.markdown_content.is_none()
-            && let Some(html) = fat_article.scraped_content.clone()
+            && let Some(html) = fat_article.scraped_content.as_deref()
         {
             if self.markdown_content.is_none() {
-                self.markdown_content = Some(html2text::html2text(html.as_str()));
+                self.markdown_content = Some(html2text::html2text(html));
             }
 
             tui_markdown::from_str(self.markdown_content.as_ref().unwrap())
-        } else if let Some(plain_text) = fat_article.plain_text.clone() {
+        } else if let Some(plain_text) = fat_article.plain_text.as_deref() {
             Text::from(plain_text)
         } else {
             Text::from("no content available")
@@ -507,8 +507,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
             }
 
             Message::Event(ArticleSelected(article, feed, tags)) => {
-                self.on_article_selected(article.clone(), feed.clone(), tags.clone())
-                    .await?;
+                self.on_article_selected(article, feed, tags).await?;
             }
 
             Message::Event(FatArticleSelected(article, feed, tags)) => {

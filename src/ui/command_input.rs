@@ -102,7 +102,11 @@ impl crate::messages::MessageReceiver for CommandInput {
             Message::Event(Event::Key(key_event))
                 if self.is_active && key_event.code == KeyCode::Enter =>
             {
-                let input = self.text_input.lines()[0].to_string();
+                let manual_input = self.text_input.lines()[0].to_string();
+                let input = match self.preset_command.as_deref() {
+                    Some(preset_command) => format!("{} {}", preset_command, manual_input),
+                    None => manual_input,
+                };
 
                 match <Command>::from_str(&input) {
                     Ok(command) => {

@@ -91,7 +91,7 @@ impl FeedListItem {
                     "Feed: {} ({})",
                     feed.label,
                     feed.website
-                        .clone()
+                        .as_deref()
                         .map(|url| url.to_string())
                         .unwrap_or("no url".into())
                 )
@@ -297,7 +297,7 @@ impl FeedList {
                 feeds
                     .iter()
                     .map(|feed| {
-                        self.map_feed_to_tree_item(feed.clone(), &unread_feed_map, &marked_feed_map)
+                        self.map_feed_to_tree_item(feed, &unread_feed_map, &marked_feed_map)
                     })
                     .collect(),
             )?];
@@ -319,10 +319,11 @@ impl FeedList {
             // tags
             let tag_ids: Vec<TagID> = tags.iter().map(|tag| tag.tag_id.clone()).collect();
             let tags_item = FeedListItem::Tags(tag_ids);
+            let tag_item_text = tags_item.to_text(&self.config, None, None);
 
             self.items.push(TreeItem::new(
-                tags_item.clone(),
-                tags_item.to_text(&self.config, None, None),
+                tags_item,
+                tag_item_text,
                 tags.iter()
                     .map(|tag| {
                         let tag_item = FeedListItem::Tag(Box::new(tag.clone()));
@@ -357,10 +358,9 @@ impl FeedList {
                                 ),
                             ),
                         };
-                        TreeItem::new_leaf(
-                            tag_item.clone(),
-                            tag_item.to_text(&self.config, unread_count, marked_count),
-                        )
+                        let tag_item_text =
+                            tag_item.to_text(&self.config, unread_count, marked_count);
+                        TreeItem::new_leaf(tag_item, tag_item_text)
                     })
                     .collect(),
             )?);
@@ -368,10 +368,9 @@ impl FeedList {
             // queries
             self.config.queries.iter().for_each(|labeled_query| {
                 let query_item = FeedListItem::Query(Box::new(labeled_query.clone()));
-                self.items.push(TreeItem::new_leaf(
-                    query_item.clone(),
-                    query_item.to_text(&self.config, None, None),
-                ))
+                let query_item_text = query_item.to_text(&self.config, None, None);
+                self.items
+                    .push(TreeItem::new_leaf(query_item, query_item_text))
             });
         }
 
@@ -386,20 +385,18 @@ impl FeedList {
 
     fn map_feed_to_tree_item<'a>(
         &self,
-        feed: Feed,
+        feed: &Feed,
         unread_map: &HashMap<FeedID, i64>,
         marked_map: &HashMap<FeedID, i64>,
     ) -> TreeItem<'a, FeedListItem> {
         let identifier = FeedListItem::Feed(Box::new(feed.clone()));
+        let identifier_text = identifier.to_text(
+            &self.config,
+            unread_map.get(&feed.feed_id).copied(),
+            marked_map.get(&feed.feed_id).copied(),
+        );
 
-        TreeItem::new_leaf(
-            identifier.clone(),
-            identifier.to_text(
-                &self.config,
-                unread_map.get(&feed.feed_id).copied(),
-                marked_map.get(&feed.feed_id).copied(),
-            ),
-        )
+        TreeItem::new_leaf(identifier, identifier_text)
     }
 
     fn count_categories_unread(
@@ -460,7 +457,7 @@ impl FeedList {
 
                 FeedOrCategory::Feed(feed_mapping) => {
                     let feed = feed_map.get(&feed_mapping.feed_id).unwrap();
-                    self.map_feed_to_tree_item((*feed).clone(), unread_feed_map, marked_feed_map)
+                    self.map_feed_to_tree_item(feed, unread_feed_map, marked_feed_map)
                 }
             });
         }
@@ -468,15 +465,11 @@ impl FeedList {
         let identifier = FeedListItem::Category(Box::new(category.clone()));
         let unread_category = unread_category_map.get(&category.category_id).copied();
         let marked_category = marked_category_map.get(&category.category_id).copied();
-        TreeItem::new(
-            identifier.clone(),
-            identifier.to_text(&self.config, unread_category, marked_category),
-            children,
-        )
-        .unwrap()
+        let text = identifier.to_text(&self.config, unread_category, marked_category);
+        TreeItem::new(identifier, text, children).unwrap()
     }
 
-    fn update_tooltip(&self, now_selected: Option<FeedListItem>) -> color_eyre::Result<()> {
+    fn update_tooltip(&self, now_selected: Option<&FeedListItem>) -> color_eyre::Result<()> {
         if let Some(item) = now_selected {
             self.message_sender
                 .send(Message::Event(Event::Tooltip(Tooltip::from_str(
@@ -530,7 +523,7 @@ impl crate::messages::MessageReceiver for FeedList {
         use Command::*;
         use Event::*;
 
-        // get selection before
+        // get selection befor
         let selected_before_item = self.tree_state.selected().last().cloned();
 
         match message {
@@ -575,9 +568,9 @@ impl crate::messages::MessageReceiver for FeedList {
         };
 
         // get selection after
-        let selected_after_item = self.tree_state.selected().last().cloned();
+        let selected_after_item = self.tree_state.selected().last();
 
-        if selected_before_item != selected_after_item {
+        if selected_before_item.as_ref() != selected_after_item {
             self.update_tooltip(selected_after_item)?;
             self.generate_articles_selected_command()?;
         }
