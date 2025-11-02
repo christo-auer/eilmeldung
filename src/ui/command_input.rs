@@ -81,12 +81,6 @@ impl CommandInput {
     fn on_history_previous(&mut self) {
         if let Some(index) = self.history[0..self.history_index]
             .iter()
-            .inspect(|entry| {
-                log::trace!(
-                    "{entry} starts with {}?",
-                    self.history.last().map(String::as_str).unwrap_or_default()
-                )
-            })
             .rposition(|entry| {
                 entry.starts_with(self.history.last().map(String::as_str).unwrap_or_default())
             })
@@ -98,12 +92,6 @@ impl CommandInput {
     fn on_history_next(&mut self) {
         if let Some(index) = self.history[self.history_index + 1..]
             .iter()
-            .inspect(|entry| {
-                log::trace!(
-                    "{entry} starts with {}?",
-                    self.history.last().map(String::as_str).unwrap_or_default()
-                )
-            })
             .position(|entry| {
                 entry.starts_with(self.history.last().map(String::as_str).unwrap_or_default())
             })
