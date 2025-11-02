@@ -163,10 +163,13 @@ impl crate::messages::MessageReceiver for CommandInput {
                 log::trace!("history: {:?}", self.history);
 
                 self.is_active = true;
-                self.text_input.select_all();
-                self.text_input.delete_char();
+                self.clear("");
 
-                let preset_command = format!("{} ", preset_command.as_deref().unwrap_or_default());
+                let preset_command = preset_command
+                    .as_deref()
+                    .map(|preset_command| format!("{} ", preset_command))
+                    .unwrap_or_default();
+
                 self.history.push(preset_command.to_string());
                 self.history_index = self.history.len() - 1;
                 self.text_input.insert_str(preset_command);
