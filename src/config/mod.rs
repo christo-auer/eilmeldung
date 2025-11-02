@@ -2,6 +2,8 @@ pub mod input_config;
 pub mod paths;
 pub mod theme;
 
+use std::str::FromStr;
+
 use crate::prelude::*;
 
 pub mod prelude {
@@ -36,6 +38,21 @@ pub enum ArticleScope {
     All,
     Unread,
     Marked,
+}
+
+impl FromStr for ArticleScope {
+    type Err = color_eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
+            "all" => Self::All,
+            "unread" => Self::Unread,
+            "marked" => Self::Marked,
+            _ => {
+                return Err(color_eyre::eyre::eyre!("expected all, unread or marked"));
+            }
+        })
+    }
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]

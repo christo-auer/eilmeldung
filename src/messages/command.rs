@@ -41,6 +41,8 @@ pub enum Command {
     ArticleListSearch(ArticleQuery),
     ArticleListSearchNext,
     ArticleListSearchPrevious,
+    ArticleListFilter(ArticleQuery),
+    ArticleListFilterClear,
 
     // application
     ApplicationQuit,
@@ -67,7 +69,7 @@ impl Display for Command {
             PanelFocusNextCyclic => write!(f, "focus next"),
             PanelFocusPreviousCyclic => write!(f, "focus next"),
             ToggleDistractionFreeMode => write!(f, "distraction free mode"),
-            FeedsSync => write!(f, ""),
+            FeedsSync => write!(f, "sync feeds"),
             ArticleCurrentOpenInBrowser => write!(f, "open in browser"),
             ArticleCurrentSetRead => write!(f, "mark read"),
             ArticleCurrentSetUnread => write!(f, "mark unread"),
@@ -81,9 +83,11 @@ impl Display for Command {
             ArticleCurrentScrape => write!(f, "scrape content"),
             ApplicationQuit => write!(f, "quit"),
             CommandLineOpen(input) => write!(f, "command line {}", input.unwrap_or_default()),
-            ArticleListSearch(query) => write!(f, "article search {}", query.query_string()),
+            ArticleListSearch(query) => write!(f, "search article {}", query.query_string()),
             ArticleListSearchNext => write!(f, "article search next"),
             ArticleListSearchPrevious => write!(f, "article search previous"),
+            ArticleListFilter(query) => write!(f, "filter article list {}", query.query_string()),
+            ArticleListFilterClear => write!(f, "clear article filter"),
         }
     }
 }
@@ -135,10 +139,7 @@ impl FromStr for Command {
             None => trimmed_command,
         };
 
-        let args = match command_end_pos {
-            Some(pos) => Some(&trimmed_command[pos + 1..]),
-            None => None,
-        };
+        let args = command_end_pos.map(|pos| &trimmed_command[pos + 1..]);
 
         use Command::*;
         Ok(match command {
@@ -152,7 +153,14 @@ impl FromStr for Command {
             "right" => NavigateRight,
 
             "next" => PanelFocusNext,
-            // "xxx" => PanelFocus(AppState),
+            "focus" => match args {
+                Some(args) => PanelFocus(AppState::from_str(args)?),
+                None => {
+                    return Err(color_eyre::eyre::eyre!(
+                        "expected panel: feeds, articles, content or zen"
+                    ));
+                }
+            },
             "prev" => PanelFocusPrevious,
             "nextc" => PanelFocusNextCyclic,
             "prevc" => PanelFocusPreviousCyclic,
@@ -166,17 +174,31 @@ impl FromStr for Command {
             "next_unread" => ArticleListSelectNextUnread,
             "all_read" => ArticleListSetAllRead,
             "all_unread" => ArticleListSetAllUnread,
-            // "xxx" => ArticleListSetScope(ArticleScope),
+            "scope" => match args {
+                Some(args) => ArticleListSetScope(ArticleScope::from_str(args)?),
+                None => {
+                    return Err(color_eyre::eyre::eyre!(
+                        "expected scope: all, unread or marked"
+                    ));
+                }
+            },
             "scrape" => ArticleCurrentScrape,
 
             "quit" | "q" => ApplicationQuit,
 
             "/" => match args {
                 Some(args) => ArticleListSearch(ArticleQuery::from_str(args)?),
-                None => return Err(color_eyre::eyre::eyre!("Search pattern expected")),
+                None => return Err(color_eyre::eyre::eyre!("Search query expected")),
             },
             "/next" => ArticleListSearchNext,
             "/prev" => ArticleListSearchPrevious,
+
+            "=" => match args {
+                Some(args) => ArticleListFilter(ArticleQuery::from_str(args)?),
+                None => return Err(color_eyre::eyre::eyre!("Search query expected")),
+            },
+
+            "=clear" => ArticleListFilterClear,
 
             _ => {
                 return Err(color_eyre::eyre::eyre!("Invalid command: {}", command));

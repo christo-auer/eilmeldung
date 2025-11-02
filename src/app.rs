@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use log::{debug, error, info, trace};
 use ratatui::DefaultTerminal;
-use std::{fmt::Display, sync::Arc, time::Duration};
+use std::{fmt::Display, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
 use tokio::sync::{
     Mutex,
@@ -15,6 +15,24 @@ pub enum AppState {
     ArticleSelection,
     ArticleContent,
     ArticleContentDistractionFree,
+}
+
+impl FromStr for AppState {
+    type Err = color_eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
+            "feeds" => Self::FeedSelection,
+            "articles" => Self::ArticleSelection,
+            "content" => Self::ArticleContent,
+            "zen" => Self::ArticleContentDistractionFree,
+            _ => {
+                return Err(color_eyre::eyre::eyre!(
+                    "expected feeds, articles, content or zen"
+                ));
+            }
+        })
+    }
 }
 
 impl Display for AppState {
