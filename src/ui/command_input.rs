@@ -2,7 +2,6 @@ use crate::prelude::*;
 
 use std::{str::FromStr, sync::Arc};
 
-use log::info;
 use ratatui::{
     prelude::*,
     widgets::{Block, BorderType, Borders},

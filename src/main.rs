@@ -65,13 +65,13 @@ async fn main() -> color_eyre::Result<()> {
 
     let client = reqwest::Client::new();
 
-    // info!("Attempting to login to NewsFlash");
-    // news_flash.login(login_data, &client).await.map_err(|e| {
-    //     error!("Failed to login to NewsFlash: {}", e);
-    //     e
-    // })?;
+    info!("Attempting to login to NewsFlash");
+    news_flash.login(login_data, &client).await.map_err(|e| {
+        error!("Failed to login to NewsFlash: {}", e);
+        e
+    })?;
 
-    // news_flash.set_offline(false, &client).await?;
+    news_flash.set_offline(false, &client).await?;
 
     // news_flash.initial_sync(&client, Default::default()).await?;
 

@@ -195,11 +195,6 @@ impl App {
             self.config.refresh_fps
         );
 
-        let mut max_duration_fl = tokio::time::Duration::new(0, 0);
-        let mut max_duration_al = tokio::time::Duration::new(0, 0);
-        let mut max_duration_ac = tokio::time::Duration::new(0, 0);
-        let mut max_duration_cl = tokio::time::Duration::new(0, 0);
-
         while self.is_running {
             tokio::select! {
                 _ = render_interval.tick() => {
