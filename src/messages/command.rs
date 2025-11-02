@@ -41,7 +41,8 @@ pub enum Command {
     ArticleListSearch(ArticleQuery),
     ArticleListSearchNext,
     ArticleListSearchPrevious,
-    ArticleListFilter(ArticleQuery),
+    ArticleListFilterSet(ArticleQuery),
+    ArticleListFilterApply,
     ArticleListFilterClear,
 
     // application
@@ -86,7 +87,10 @@ impl Display for Command {
             ArticleListSearch(query) => write!(f, "search article {}", query.query_string()),
             ArticleListSearchNext => write!(f, "article search next"),
             ArticleListSearchPrevious => write!(f, "article search previous"),
-            ArticleListFilter(query) => write!(f, "filter article list {}", query.query_string()),
+            ArticleListFilterSet(query) => {
+                write!(f, "filter article list {}", query.query_string())
+            }
+            ArticleListFilterApply => write!(f, "apply current article filter"),
             ArticleListFilterClear => write!(f, "clear article filter"),
         }
     }
@@ -194,11 +198,13 @@ impl FromStr for Command {
             "/prev" => ArticleListSearchPrevious,
 
             "=" => match args {
-                Some(args) => ArticleListFilter(ArticleQuery::from_str(args)?),
+                Some(args) => ArticleListFilterSet(ArticleQuery::from_str(args)?),
                 None => return Err(color_eyre::eyre::eyre!("Search query expected")),
             },
 
             "=clear" => ArticleListFilterClear,
+
+            "=apply" => ArticleListFilterApply,
 
             _ => {
                 return Err(color_eyre::eyre::eyre!("Invalid command: {}", command));

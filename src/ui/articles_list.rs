@@ -31,6 +31,8 @@ pub struct ArticlesList {
 
     table_state: TableState,
     article_filter: Option<AugmentedArticleFilter>,
+    article_adhoc_filter: Option<ArticleQuery>,
+    article_adhoc_filter_applied: bool,
     is_focused: bool,
 }
 
@@ -48,6 +50,8 @@ impl ArticlesList {
             message_sender,
             articles: Default::default(),
             article_search_query: None,
+            article_adhoc_filter: None,
+            article_adhoc_filter_applied: false,
             tags_for_article: Default::default(),
             tag_map: Default::default(),
             feed_map: Default::default(),
@@ -132,6 +136,28 @@ impl ArticlesList {
         self.restore_sensible_selection(prev_article_id.as_ref())?;
 
         Ok(())
+    }
+
+    async fn apply_current_adhoc_article_filter(&mut self) -> color_eyre::Result<()> {
+        match self.article_adhoc_filter.as_ref() {
+            Some(article_adhoc_filter) => {
+                self.articles = article_adhoc_filter.filter(
+                    &self.articles,
+                    &self.feed_map,
+                    &self.tags_for_article,
+                    &self.tag_map,
+                );
+                self.build_table();
+                log::trace!("filter applied");
+                Ok(())
+            }
+            None => {
+                self.build_list().await?;
+                self.build_table();
+                log::trace!("filter not applied");
+                Ok(())
+            }
+        }
     }
 
     fn restore_sensible_selection(
@@ -274,7 +300,7 @@ impl ArticlesList {
         Ok(())
     }
 
-    fn build_scope_title(&self) -> String {
+    fn build_title(&self) -> String {
         if let Some(article_filter) = self.article_filter.clone()
             && article_filter.is_augmented()
         {
@@ -289,8 +315,14 @@ impl ArticlesList {
             }
         };
 
+        let filter_info = match self.article_adhoc_filter {
+            Some(_) if self.article_adhoc_filter_applied => " ",
+            Some(_) if !self.article_adhoc_filter_applied => " ",
+            _ => "",
+        };
+
         format!(
-            "{} All {} Unread {} Marked",
+            "{} All {} Unread {} Marked {filter_info}",
             to_icon(ArticleScope::All),
             to_icon(ArticleScope::Unread),
             to_icon(ArticleScope::Marked),
@@ -555,7 +587,7 @@ impl ArticlesList {
         .block(
             Block::default()
                 .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
-                .title_top(self.build_scope_title())
+                .title_top(self.build_title())
                 .border_type(ratatui::widgets::BorderType::Rounded)
                 .border_style(if self.is_focused {
                     self.config.theme.focused_border_style
@@ -580,6 +612,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
         let prev_selected_index = self.table_state.selected();
         let mut now_selected_index: Option<usize> = None;
 
+        // TODO refactor state mgmt
         match message {
             Message::Command(NavigateUp) if self.is_focused => self.table_state.select_previous(),
             Message::Command(NavigateDown) if self.is_focused => self.table_state.select_next(),
@@ -605,6 +638,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
             }
 
             Message::Event(ArticlesSelected(augmented_article_filter)) => {
+                self.article_adhoc_filter_applied = false;
                 self.article_filter = Some(augmented_article_filter.clone());
                 self.build_list().await?;
                 self.table_state.select(Some(0));
@@ -619,7 +653,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
             Message::Event(ApplicationStateChanged(state)) => {
                 self.is_focused = *state == AppState::ArticleSelection;
-                self.build_list().await?;
+                // self.build_list().await?;
             }
 
             Message::Command(ArticleCurrentOpenInBrowser) => {
@@ -672,6 +706,29 @@ impl crate::messages::MessageReceiver for ArticlesList {
             Message::Command(ArticleListSearchPrevious) => {
                 self.search_next(true, true)?;
             }
+
+            Message::Command(ArticleListFilterSet(article_adhoc_filter)) => {
+                self.article_adhoc_filter_applied = true;
+                self.article_adhoc_filter = Some(article_adhoc_filter.clone());
+                self.build_list().await?;
+                self.apply_current_adhoc_article_filter().await?;
+                self.table_state.select(Some(0));
+                self.select_next_unread()?;
+            }
+
+            Message::Command(ArticleListFilterApply) => {
+                self.article_adhoc_filter_applied = true;
+                self.apply_current_adhoc_article_filter().await?;
+                self.select_next_unread()?;
+            }
+
+            Message::Command(ArticleListFilterClear) => {
+                self.article_adhoc_filter_applied = false;
+                self.build_list().await?;
+                // self.table_state.select(Some(0));
+                // self.select_next_unread()?;
+            }
+
             _ => {}
         }
 
