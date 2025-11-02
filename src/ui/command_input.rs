@@ -73,23 +73,44 @@ impl CommandInput {
         self.text_input.insert_str(s);
     }
 
-    fn on_history(&mut self) {
-        let index = self.history_index;
+    fn on_history(&mut self, index: usize) {
+        self.history_index = index;
         let history_entry = self.history.get(index).unwrap().to_string();
         self.clear(&history_entry);
     }
 
     fn on_history_previous(&mut self) {
-        self.history_index = self.history_index.saturating_sub(1);
-        self.on_history();
+        if let Some(index) = self.history[0..self.history_index]
+            .iter()
+            .inspect(|entry| {
+                log::trace!(
+                    "{entry} starts with {}?",
+                    self.history.last().map(String::as_str).unwrap_or_default()
+                )
+            })
+            .rposition(|entry| {
+                entry.starts_with(self.history.last().map(String::as_str).unwrap_or_default())
+            })
+        {
+            self.on_history(index);
+        }
     }
 
     fn on_history_next(&mut self) {
-        self.history_index = self
-            .history_index
-            .saturating_add(1)
-            .min(self.history.len() - 1);
-        self.on_history();
+        if let Some(index) = self.history[self.history_index + 1..]
+            .iter()
+            .inspect(|entry| {
+                log::trace!(
+                    "{entry} starts with {}?",
+                    self.history.last().map(String::as_str).unwrap_or_default()
+                )
+            })
+            .position(|entry| {
+                entry.starts_with(self.history.last().map(String::as_str).unwrap_or_default())
+            })
+        {
+            self.on_history(index + self.history_index + 1);
+        }
     }
 }
 
@@ -134,6 +155,7 @@ impl crate::messages::MessageReceiver for CommandInput {
                 let key: Key = (*key_event).into();
 
                 if config.abort.contains(&key) {
+                    self.history.remove(self.history.len() - 1);
                     self.is_active = false;
                     self.message_sender.send(Message::SetRawInput(false))?;
                 } else if config.submit.contains(&key) {
@@ -151,6 +173,8 @@ impl crate::messages::MessageReceiver for CommandInput {
             }
 
             Message::Command(Command::CommandLineOpen(preset_command)) => {
+                log::trace!("history: {:?}", self.history);
+
                 self.is_active = true;
                 self.text_input.select_all();
                 self.text_input.delete_char();
