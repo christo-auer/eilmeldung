@@ -595,7 +595,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
             Message::Command(NavigateFirst) if self.is_focused => self.table_state.select_first(),
             Message::Command(NavigateLast) if self.is_focused => {
                 self.table_state.select_last();
-                // manually "select" as select_last does not now the number of rows
+                // manually "select" as select_last does not know the number of rows
                 now_selected_index = Some(self.articles.len() - 1);
             }
 
@@ -629,7 +629,6 @@ impl crate::messages::MessageReceiver for ArticlesList {
             Message::Command(ArticleCurrentSetRead) => {
                 self.set_current_read_status(Some(Read::Read)).await?;
                 self.build_table();
-                // self.build_list().await?;
             }
 
             Message::Command(ArticleCurrentSetUnread) => {
