@@ -8,7 +8,7 @@ use crate::prelude::*;
 
 pub mod prelude {
     pub use super::article_content::ArticleContent;
-    pub use super::articles_list::ArticlesList;
+    pub use super::articles_list::prelude::*;
     pub use super::command_input::CommandInput;
     pub use super::feeds_list::FeedList;
     pub use super::tooltip::{Tooltip, TooltipFlavor, tooltip};
@@ -56,7 +56,7 @@ impl Widget for &mut App {
         let [articles_list_chunk, article_content_chunk] = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(self.config.theme.articles_list_height_lines+1),
+                Constraint::Length(self.config.theme.articles_list_height_lines + 1),
                 Constraint::Fill(1),
             ])
             .areas(articles_chunk);

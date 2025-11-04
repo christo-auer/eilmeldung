@@ -1,6 +1,7 @@
 use log::{debug, error, info};
 use news_flash::{
     NewsFlash,
+    models::{DirectLogin, LoginData, PluginID},
 };
 use tokio::sync::mpsc::unbounded_channel;
 
@@ -11,7 +12,6 @@ mod app;
 mod config;
 mod input;
 mod logging;
-mod login;
 mod messages;
 mod newsflash_utils;
 mod query;
@@ -32,22 +32,22 @@ async fn main() -> color_eyre::Result<()> {
     let config_dir = PROJECT_DIRS.config_dir();
     let state_dir = PROJECT_DIRS.state_dir();
 
-    // let local_plugin_id = PluginID::new("freshrss");
-    // info!("Initializing NewsFlash with plugin: {}", local_plugin_id);
+    let local_plugin_id = PluginID::new("freshrss");
+    info!("Initializing NewsFlash with plugin: {}", local_plugin_id);
 
-    let news_flash = match NewsFlash::try_load(state_dir.unwrap(), config_dir) {
-        Ok(news_flash) => news_flash,
-        Err(_error) => login(&config)?,
-    };
+    // let news_flash = match NewsFlash::try_load(state_dir.unwrap(), config_dir) {
+    //     Ok(news_flash) => news_flash,
+    //     Err(_error) => login(&config)?,
+    // };
 
-    // let news_flash = NewsFlash::new(config_dir, state_dir.unwrap(), &local_plugin_id, None)
-    //     .map_err(|e| {
-    //         error!("Failed to initialize NewsFlash: {}", e);
-    //         e
-    //     })?;
-    // debug!("NewsFlash instance created successfully");
-    //
-    // debug!("Message channel created");
+    let news_flash = NewsFlash::new(config_dir, state_dir.unwrap(), &local_plugin_id, None)
+        .map_err(|e| {
+            error!("Failed to initialize NewsFlash: {}", e);
+            e
+        })?;
+    debug!("NewsFlash instance created successfully");
+
+    debug!("Message channel created");
 
     // let login_data = LoginData::Direct(DirectLogin::Password(news_flash::models::PasswordLogin {
     //     id: local_plugin_id,
@@ -59,12 +59,11 @@ async fn main() -> color_eyre::Result<()> {
 
     let client = reqwest::Client::new();
 
-    info!("Attempting to login to NewsFlash");
+    // info!("Attempting to login to NewsFlash");
     // news_flash.login(login_data, &client).await.map_err(|e| {
     //     error!("Failed to login to NewsFlash: {}", e);
     //     e
     // })?;
-    //
 
     news_flash.set_offline(false, &client).await?;
 

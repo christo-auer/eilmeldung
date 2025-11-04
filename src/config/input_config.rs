@@ -58,9 +58,9 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         ("/".into(), CommandLineOpen(Some("/".into())).into()),
         ("n".into(), ArticleListSearchNext.into()),
         ("N".into(), ArticleListSearchPrevious.into()),
-        ("= enter".into(), CommandLineOpen(Some("=".into())).into()),
-        ("= r".into(), ArticleListFilterClear.into()),
-        ("= =".into(), ArticleListFilterApply.into()),
+        ("=".into(), CommandLineOpen(Some("=".into())).into()),
+        ("+ r".into(), ArticleListFilterClear.into()),
+        ("+ +".into(), ArticleListFilterApply.into()),
     ]
     .into_iter()
     .collect()
