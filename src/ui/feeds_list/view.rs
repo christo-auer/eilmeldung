@@ -1,150 +1,18 @@
 use crate::prelude::*;
+use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::str::FromStr;
-use std::{cmp::Ordering, sync::Arc};
 
-use news_flash::models::{ArticleFilter, ArticleID, Marked, Read, Tag, TagID};
+use news_flash::models::{ArticleID, Marked, Read, TagID};
 use news_flash::models::{Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping};
+use ratatui::widgets::Scrollbar;
 use ratatui::widgets::{Block, Borders};
 use ratatui::{
     style::{Style, Stylize},
     widgets::{StatefulWidget, Widget},
 };
-use ratatui::{text::Text, widgets::Scrollbar};
-use tokio::sync::mpsc::UnboundedSender;
-use tui_tree_widget::{Tree, TreeItem, TreeState};
+use tui_tree_widget::{Tree, TreeItem};
 
-#[derive(Clone, Eq, PartialEq, Hash)]
-pub enum FeedListItem {
-    All,
-    Feed(Box<Feed>),
-    Category(Box<Category>),
-    Tags(Vec<TagID>),
-    Tag(Box<Tag>),
-    Query(Box<LabeledQuery>),
-}
-
-impl FeedListItem {
-    fn to_text<'a>(
-        &self,
-        config: &Config,
-        unread_count: Option<i64>,
-        marked_count: Option<i64>,
-    ) -> Text<'a> {
-        use FeedListItem::*;
-
-        let unread_count_str = unread_count.map(|c| c.to_string()).unwrap_or_default();
-
-        let marked_count_str = marked_count.map(|c| c.to_string()).unwrap_or_default();
-
-        let (label, mut style) = match self {
-            All => (config.all_label.to_string(), config.theme.header),
-            Feed(feed) => (
-                config.feed_label.replace("{label}", feed.label.as_str()),
-                config.theme.feed,
-            ),
-            Category(category) => (
-                config
-                    .category_label
-                    .replace("{label}", category.label.as_str()),
-                config.theme.category,
-            ),
-            Tags(_) => (config.tags_label.to_string(), config.theme.header),
-            Tag(tag) => {
-                let mut style = config.theme.tag;
-
-                let color = NewsFlashUtils::tag_color(tag).unwrap_or(style.fg.unwrap());
-                style = style.fg(color);
-
-                let label = config.tag_label.replace("{label}", &tag.label);
-
-                (label, style)
-            }
-
-            Query(query) => (
-                config.query_label.replace("{label}", &query.label),
-                config.theme.query,
-            ),
-        };
-
-        if let Some(unread_count) = unread_count
-            && unread_count > 0
-        {
-            style = style.add_modifier(config.theme.unread_modifier);
-        }
-
-        Text::styled(
-            label
-                .replace("{unread_count}", unread_count_str.as_str())
-                .replace("{marked_count}", marked_count_str.as_str()),
-            style,
-        )
-    }
-
-    fn to_tooltip(&self, _config: &Config) -> String {
-        use FeedListItem::*;
-        match self {
-            All => "all feeds".to_string(),
-            Category(category) => format!("Category: {}", category.label).to_string(),
-            Feed(feed) => {
-                format!(
-                    "Feed: {} ({})",
-                    feed.label,
-                    feed.website
-                        .as_deref()
-                        .map(|url| url.to_string())
-                        .unwrap_or("no url".into())
-                )
-            }
-            Tags(_) => "all tagged articles".to_string(),
-            Tag(tag) => format!("Tag: {}", tag.label),
-            Query(labeled_query) => format!("Query: {}", labeled_query.query),
-        }
-    }
-}
-
-impl TryFrom<FeedListItem> for AugmentedArticleFilter {
-    type Error = color_eyre::Report;
-
-    fn try_from(value: FeedListItem) -> Result<Self, Self::Error> {
-        use FeedListItem::*;
-        Ok(match value {
-            All => ArticleFilter::default().into(),
-            Feed(feed) => ArticleFilter {
-                feeds: vec![feed.feed_id].into(),
-                ..Default::default()
-            }
-            .into(),
-            Category(category) => ArticleFilter {
-                categories: vec![category.category_id].into(),
-                ..Default::default()
-            }
-            .into(),
-            Tags(tag_ids) => ArticleFilter {
-                tags: Some(tag_ids),
-                ..Default::default()
-            }
-            .into(),
-            Tag(tag) => ArticleFilter {
-                tags: vec![tag.tag_id].into(),
-                ..Default::default()
-            }
-            .into(),
-            Query(query) => AugmentedArticleFilter::from_str(&query.query)?,
-        })
-    }
-}
-
-pub struct FeedList {
-    config: Arc<Config>,
-    news_flash_utils: Arc<NewsFlashUtils>,
-    message_sender: UnboundedSender<Message>,
-
-    tree_state: TreeState<FeedListItem>,
-    items: Vec<TreeItem<'static, FeedListItem>>,
-
-    is_focused: bool,
-}
+use super::feed_list_item::FeedListItem;
 
 enum FeedOrCategory<'a> {
     Feed(&'a FeedMapping),
@@ -184,21 +52,6 @@ impl Widget for &mut FeedList {
 }
 
 impl FeedList {
-    pub fn new(
-        config: Arc<Config>,
-        news_flash_utils: Arc<NewsFlashUtils>,
-        message_sender: UnboundedSender<Message>,
-    ) -> Self {
-        Self {
-            config,
-            news_flash_utils: news_flash_utils.clone(),
-            message_sender,
-            items: vec![],
-            tree_state: TreeState::default(),
-            is_focused: true,
-        }
-    }
-
     pub async fn build_tree(&mut self) -> color_eyre::Result<()> {
         let previously_selected = self.get_selected_path();
 
@@ -469,19 +322,22 @@ impl FeedList {
         TreeItem::new(identifier, text, children).unwrap()
     }
 
-    fn update_tooltip(&self, now_selected: Option<&FeedListItem>) -> color_eyre::Result<()> {
+    pub(super) fn update_tooltip(
+        &self,
+        now_selected: Option<&FeedListItem>,
+    ) -> color_eyre::Result<()> {
         if let Some(item) = now_selected {
-            self.message_sender
-                .send(Message::Event(Event::Tooltip(Tooltip::from_str(
-                    item.to_tooltip(&self.config).as_str(),
-                    TooltipFlavor::Info,
-                ))))?;
+            tooltip(
+                &self.message_sender,
+                item.to_tooltip(&self.config).as_str(),
+                TooltipFlavor::Info,
+            )?;
         }
 
         Ok(())
     }
 
-    fn get_selected(&self) -> Option<FeedListItem> {
+    pub(super) fn get_selected(&self) -> Option<FeedListItem> {
         self.tree_state.selected().last().cloned()
     }
 
@@ -491,87 +347,6 @@ impl FeedList {
 
     fn select_entry(&mut self, path: Vec<FeedListItem>) -> color_eyre::Result<()> {
         if self.tree_state.select(path) {
-            self.generate_articles_selected_command()?;
-        }
-
-        Ok(())
-    }
-
-    fn generate_articles_selected_command(&self) -> color_eyre::Result<()> {
-        if let Some(selected) = self.get_selected() {
-            match selected.try_into() {
-                Ok(article_filter) => {
-                    self.message_sender
-                        .send(Message::Event(Event::ArticlesSelected(article_filter)))?;
-                }
-                Err(err) => {
-                    self.message_sender
-                        .send(Message::Event(Event::Tooltip(Tooltip::from_str(
-                            err.to_string().as_str(),
-                            TooltipFlavor::Warning,
-                        ))))?;
-                }
-            }
-        };
-
-        Ok(())
-    }
-}
-
-impl crate::messages::MessageReceiver for FeedList {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
-        use Command::*;
-        use Event::*;
-
-        // get selection befor
-        let selected_before_item = self.tree_state.selected().last().cloned();
-
-        match message {
-            Message::Command(NavigateUp) if self.is_focused => {
-                self.tree_state.key_up();
-            }
-            Message::Command(NavigateDown) if self.is_focused => {
-                self.tree_state.key_down();
-            }
-            Message::Command(NavigateFirst) if self.is_focused => {
-                self.tree_state.select_first();
-            }
-            Message::Command(NavigateLast) if self.is_focused => {
-                self.tree_state.select_last();
-            }
-            Message::Command(NavigateLeft) if self.is_focused => {
-                self.tree_state.key_left();
-            }
-            Message::Command(NavigateRight) if self.is_focused => {
-                self.tree_state.key_right();
-            }
-            Message::Command(NavigatePageDown) if self.is_focused => {
-                self.tree_state
-                    .scroll_down(self.config.input_config.scroll_amount);
-            }
-            Message::Command(NavigatePageUp) if self.is_focused => {
-                self.tree_state
-                    .scroll_up(self.config.input_config.scroll_amount);
-            }
-
-            Message::Event(ApplicationStarted)
-            | Message::Event(AsyncSyncFinished(_))
-            | Message::Event(AsyncMarkArticlesAsReadFinished) => {
-                self.build_tree().await?;
-            }
-
-            Message::Event(ApplicationStateChanged(state)) => {
-                self.is_focused = *state == AppState::FeedSelection;
-            }
-
-            _ => (),
-        };
-
-        // get selection after
-        let selected_after_item = self.tree_state.selected().last();
-
-        if selected_before_item.as_ref() != selected_after_item {
-            self.update_tooltip(selected_after_item)?;
             self.generate_articles_selected_command()?;
         }
 

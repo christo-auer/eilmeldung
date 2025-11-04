@@ -10,7 +10,7 @@ pub mod prelude {
     pub use super::article_content::ArticleContent;
     pub use super::articles_list::prelude::*;
     pub use super::command_input::CommandInput;
-    pub use super::feeds_list::FeedList;
+    pub use super::feeds_list::prelude::*;
     pub use super::tooltip::{Tooltip, TooltipFlavor, tooltip};
 }
 
