@@ -147,7 +147,7 @@ impl MessageReceiver for FeedList {
             let model_data = &mut self.model_data;
             model_data.update().await?;
             self.view_data
-                .update(self.config.clone(), &self.model_data)
+                .update(&self.config, &self.model_data)
                 .await?;
         }
 

@@ -60,7 +60,7 @@ impl Widget for &mut FeedList {
 impl FeedListViewData {
     pub async fn update(
         &mut self,
-        config: Arc<Config>,
+        config: &Config,
         model_data: &FeedListModelData,
     ) -> color_eyre::Result<()> {
         // let previously_selected = self.get_selected_path();
@@ -69,18 +69,18 @@ impl FeedListViewData {
         // feeds under all
         self.tree_items = vec![TreeItem::new(
             FeedListItem::All,
-            FeedListItem::All.to_text(config.clone(), Some(*model_data.unread_count_all()), None),
+            FeedListItem::All.to_text(&config, Some(*model_data.unread_count_all()), None),
             model_data
                 .feeds()
                 .iter()
-                .map(|feed| self.map_feed_to_tree_item(config.clone(), feed, model_data))
+                .map(|feed| self.map_feed_to_tree_item(&config, feed, model_data))
                 .collect(),
         )?];
 
         // categories
         for root in model_data.roots().iter() {
             self.tree_items
-                .push(self.map_category_to_tree_item(config.clone(), root, model_data));
+                .push(self.map_category_to_tree_item(&config, root, model_data));
         }
 
         // tags
@@ -90,7 +90,7 @@ impl FeedListViewData {
             .map(|tag| tag.tag_id.clone())
             .collect();
         let tags_item = FeedListItem::Tags(tag_ids);
-        let tag_item_text = tags_item.to_text(config.clone(), None, None);
+        let tag_item_text = tags_item.to_text(&config, None, None);
         //
         self.tree_items.push(TreeItem::new(
             tags_item,
@@ -103,7 +103,7 @@ impl FeedListViewData {
 
                     // TODO this is ugly => refactor
                     let tag_item_text = tag_item.to_text(
-                        config.clone(),
+                        &config,
                         model_data.unread_count_for_tag().get(&tag.tag_id).copied(),
                         None,
                     );
@@ -115,7 +115,7 @@ impl FeedListViewData {
         // queries
         config.queries.iter().for_each(|labeled_query| {
             let query_item = FeedListItem::Query(Box::new(labeled_query.clone()));
-            let query_item_text = query_item.to_text(config.clone(), None, None);
+            let query_item_text = query_item.to_text(&config, None, None);
             self.tree_items
                 .push(TreeItem::new_leaf(query_item, query_item_text))
         });
@@ -132,7 +132,7 @@ impl FeedListViewData {
 
     fn map_feed_to_tree_item<'a>(
         &self,
-        config: Arc<Config>,
+        config: &Config,
         feed: &Feed,
         model_data: &FeedListModelData,
     ) -> TreeItem<'a, FeedListItem> {
@@ -155,7 +155,7 @@ impl FeedListViewData {
     #[allow(clippy::too_many_arguments)] // yes, yes, I know
     fn map_category_to_tree_item<'a>(
         &self,
-        config: Arc<Config>,
+        config: &Config,
         category: &Category,
         model_data: &FeedListModelData,
     ) -> TreeItem<'a, FeedListItem> {
@@ -169,12 +169,12 @@ impl FeedListViewData {
             children.push(match child {
                 FeedOrCategory::Category(category_id) => {
                     let child_category = model_data.category_map().get(category_id).unwrap();
-                    self.map_category_to_tree_item(config.clone(), child_category, model_data)
+                    self.map_category_to_tree_item(&config, child_category, model_data)
                 }
 
                 FeedOrCategory::Feed(feed_id) => {
                     let feed = model_data.feed_map().get(feed_id).unwrap();
-                    self.map_feed_to_tree_item(config.clone(), feed, model_data)
+                    self.map_feed_to_tree_item(&config, feed, model_data)
                 }
             });
         }
@@ -188,7 +188,7 @@ impl FeedListViewData {
             .marked_count_for_feed_or_category()
             .get(&category.category_id.clone().into())
             .copied();
-        let text = identifier.to_text(config.clone(), unread_category, marked_category);
+        let text = identifier.to_text(&config, unread_category, marked_category);
         TreeItem::new(identifier, text, children).unwrap()
     }
 }

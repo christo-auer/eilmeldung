@@ -19,7 +19,7 @@ pub enum FeedListItem {
 impl FeedListItem {
     pub(super) fn to_text<'a>(
         &self,
-        config: Arc<Config>,
+        config: &Config,
         unread_count: Option<i64>,
         marked_count: Option<i64>,
     ) -> Text<'a> {

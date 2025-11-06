@@ -1,0 +1,409 @@
+use super::model::ArticleContentModelData;
+use crate::prelude::*;
+
+use std::sync::Arc;
+
+use getset::{Getters, MutGetters};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Constraint, Direction, Flex, Layout, Rect},
+    style::{Color, Stylize},
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, Paragraph, StatefulWidget, Widget, Wrap},
+};
+use ratatui_image::{
+    FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
+};
+use throbber_widgets_tui::{Throbber, ThrobberState, WhichUse};
+
+#[derive(Getters, MutGetters)]
+pub struct ArticleContentViewData {
+    // Scroll state
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
+    vertical_scroll: u16,
+    #[getset(get = "pub(super)")]
+    max_scroll: u16,
+
+    // Image rendering state
+    image: Option<StatefulProtocol>,
+    picker: Picker,
+
+    // Throbber state for loading animations
+    thumbnail_fetching_throbber: ThrobberState,
+}
+
+impl Default for ArticleContentViewData {
+    fn default() -> Self {
+        Self {
+            vertical_scroll: 0,
+            max_scroll: 0,
+            image: None,
+            picker: Picker::from_query_stdio().unwrap(), // TODO gracefully handle errors
+            thumbnail_fetching_throbber: ThrobberState::default(),
+        }
+    }
+}
+
+impl ArticleContentViewData {
+    pub(super) fn update(&mut self, model_data: &ArticleContentModelData, _config: Arc<Config>) {
+        // Reset scroll when article changes
+        if model_data.article().is_some() && self.vertical_scroll > self.max_scroll {
+            self.vertical_scroll = 0;
+        }
+    }
+
+    pub(super) fn set_image(&mut self, image: Option<StatefulProtocol>) {
+        self.image = image;
+    }
+
+    pub(super) fn clear_image(&mut self) {
+        self.image = None;
+    }
+
+    pub(super) fn reset_thumbnail_throbber(&mut self) {
+        self.thumbnail_fetching_throbber.calc_next();
+    }
+
+    // Public accessors for private fields
+    pub(super) fn picker(&self) -> &Picker {
+        &self.picker
+    }
+
+    pub(super) fn image(&self) -> &Option<StatefulProtocol> {
+        &self.image
+    }
+
+    pub(super) fn tick_throbber(&mut self) {
+        self.thumbnail_fetching_throbber.calc_next();
+    }
+
+    pub(super) fn scroll_up(&mut self) {
+        self.vertical_scroll = self.vertical_scroll.saturating_sub(1);
+    }
+
+    pub(super) fn scroll_down(&mut self) {
+        self.vertical_scroll = (self.vertical_scroll + 1).min(self.max_scroll);
+    }
+
+    pub(super) fn scroll_page_up(&mut self, scroll_amount: u16) {
+        self.vertical_scroll = self.vertical_scroll.saturating_sub(scroll_amount);
+    }
+
+    pub(super) fn scroll_page_down(&mut self, scroll_amount: u16) {
+        self.vertical_scroll = (self.vertical_scroll + scroll_amount).min(self.max_scroll);
+    }
+
+    pub(super) fn scroll_to_top(&mut self) {
+        self.vertical_scroll = 0;
+    }
+
+    pub(super) fn scroll_to_bottom(&mut self) {
+        self.vertical_scroll = self.max_scroll;
+    }
+
+    pub(super) fn render_block(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        config: &Config,
+        is_focused: bool,
+    ) -> Rect {
+        let mut block = Block::default()
+            .borders(Borders::all())
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .border_style(if is_focused {
+                config.theme.focused_border_style
+            } else {
+                config.theme.border_style
+            });
+
+        if is_focused {
+            block = block.title_bottom(
+                Line::from(format!(
+                    " {}% ",
+                    f64::round((self.vertical_scroll as f64 / self.max_scroll as f64) * 100.0)
+                        as u16
+                ))
+                .right_aligned(),
+            )
+        }
+
+        let inner_area = block.inner(area);
+        block.render(area, buf);
+        inner_area
+    }
+
+    pub(super) fn generate_summary<'a>(
+        &'a self,
+        model_data: &'a ArticleContentModelData,
+        config: &'a Config,
+        render_summary_content: bool,
+    ) -> Vec<Line<'a>> {
+        let Some(article) = model_data.article() else {
+            return vec![];
+        };
+
+        let title = article.title.as_deref().unwrap_or("no title");
+        let feed_label: String = if let Some(feed) = model_data.feed() {
+            feed.label.clone()
+        } else {
+            article.feed_id.as_str().into()
+        };
+        let mut summary = article.summary.clone().unwrap_or("no summary".into());
+        summary = ArticleContentModelData::clean_string(&summary);
+
+        let tag_texts = model_data
+            .tags()
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .flat_map(|tag| {
+                let color = NewsFlashUtils::tag_color(tag)
+                    .unwrap_or(config.theme.tag.fg.unwrap_or(Color::Gray));
+                let style = config.theme.tag.fg(color);
+
+                vec![
+                    Span::styled(" ", style),
+                    Span::styled(&tag.label, style.reversed()),
+                    Span::styled("", style),
+                ]
+            })
+            .collect::<Vec<Span>>();
+
+        let date_string: String = article
+            .date
+            .with_timezone(&chrono::Local)
+            .format(&config.date_format)
+            .to_string();
+
+        let mut summary_lines = vec![
+            Line::from(vec![
+                Span::from(date_string).style(config.theme.feed),
+                Span::from(" --- ").style(config.theme.feed),
+                Span::from(feed_label).style(config.theme.feed),
+            ]),
+            Line::from(Span::from(title).style(config.theme.header)),
+            Line::from(tag_texts),
+        ];
+
+        if render_summary_content {
+            summary_lines.push(Line::from(
+                Span::from(summary).style(config.theme.paragraph),
+            ));
+        }
+
+        summary_lines
+    }
+
+    pub(super) fn render_summary(
+        &mut self,
+        model_data: &ArticleContentModelData,
+        config: &Config,
+        render_summary_content: bool,
+        inner_area: Rect,
+        buf: &mut Buffer,
+    ) {
+        let thumbnail_width = if config.article_thumbnail_show {
+            config.article_thumbnail_width
+        } else {
+            0
+        };
+
+        let [thumbnail_chunk, summary_chunk] = Layout::default()
+            .direction(Direction::Horizontal)
+            .flex(ratatui::layout::Flex::Start)
+            .constraints(vec![
+                Constraint::Length(thumbnail_width),
+                Constraint::Min(1),
+            ])
+            .margin(1)
+            .spacing(2)
+            .areas(inner_area);
+
+        if config.article_thumbnail_show {
+            self.render_thumbnail(model_data, config, thumbnail_chunk, buf);
+        }
+
+        let paragraph =
+            Paragraph::new(self.generate_summary(model_data, config, render_summary_content))
+                .wrap(Wrap { trim: true });
+
+        paragraph.render(summary_chunk, buf);
+    }
+
+    pub(super) fn render_thumbnail(
+        &mut self,
+        model_data: &ArticleContentModelData,
+        config: &Config,
+        thumbnail_chunk: Rect,
+        buf: &mut Buffer,
+    ) {
+        let centered_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .flex(Flex::Start);
+
+        match &mut self.image {
+            Some(image) => {
+                let mut stateful_image = StatefulImage::new();
+                if config.article_thumbnail_resize {
+                    stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Nearest)))
+                }
+                let [centered_chunk] = centered_layout
+                    .constraints([Constraint::Min(1)])
+                    .areas(thumbnail_chunk);
+                stateful_image.render(centered_chunk, buf, image);
+            }
+            None if *model_data.thumbnail_fetch_running() => {
+                let throbber = Throbber::default()
+                    .throbber_style(config.theme.feed)
+                    .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
+                    .use_type(WhichUse::Spin);
+                let [centered_chunk] = centered_layout
+                    .constraints([Constraint::Length(1)])
+                    .areas(thumbnail_chunk);
+                StatefulWidget::render(
+                    throbber,
+                    centered_chunk,
+                    buf,
+                    &mut self.thumbnail_fetching_throbber,
+                );
+            }
+            None if !model_data.thumbnail_fetch_successful().unwrap_or(true) => {
+                let [centered_chunk] = centered_layout
+                    .constraints([Constraint::Length(8)])
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Length(8)])
+                    .flex(Flex::Start)
+                    .areas(thumbnail_chunk);
+                let block = Block::default()
+                    .borders(Borders::all())
+                    .border_type(ratatui::widgets::BorderType::Plain)
+                    .border_style(config.theme.inactive);
+
+                let question_mark = Text::from(vec![
+                    " ___  ".into(),
+                    "|__ \\".into(),
+                    "  / / ".into(),
+                    " |_|  ".into(),
+                    " (_)  ".into(),
+                ])
+                .style(config.theme.inactive)
+                .alignment(ratatui::layout::Alignment::Center);
+                Widget::render(question_mark, block.inner(centered_chunk), buf);
+                block.render(centered_chunk, buf);
+            }
+            _ => {}
+        }
+    }
+
+    pub(super) fn render_fat_article(
+        &mut self,
+        model_data: &ArticleContentModelData,
+        config: &Config,
+        inner_area: Rect,
+        buf: &mut Buffer,
+    ) {
+        let [summary_area, content_area] = Layout::default()
+            .direction(Direction::Vertical)
+            .flex(Flex::Start)
+            .constraints([Constraint::Length(10), Constraint::Fill(1)])
+            .areas(inner_area);
+
+        self.render_summary(model_data, config, false, summary_area, buf);
+
+        let [paragraph_area] = Layout::default()
+            .direction(Direction::Horizontal)
+            .flex(ratatui::layout::Flex::Center)
+            .constraints([
+                Constraint::Max(config.article_content_max_chars_per_line), // Middle content
+            ])
+            .areas(content_area);
+
+        let Some(fat_article) = model_data.fat_article() else {
+            return;
+        };
+
+        let text: Text<'_> = if config.article_content_preferred_type
+            == ArticleContentType::Markdown
+            && let Some(html) = fat_article.scraped_content.as_deref()
+        {
+            // Use the cached markdown content from model
+            if let Some(markdown) = model_data.markdown_content() {
+                tui_markdown::from_str(markdown)
+            } else {
+                // Fallback - convert to plain text instead of markdown to avoid lifetime issues
+                let plain_text = news_flash::util::html2text::html2text(html);
+                Text::from(plain_text)
+            }
+        } else if let Some(plain_text) = fat_article.plain_text.as_deref() {
+            Text::from(plain_text)
+        } else {
+            Text::from("no content available")
+        };
+
+        // Calculate the total number of lines the content would take when wrapped
+        let content_lines = self.calculate_wrapped_lines(&text, paragraph_area.width);
+
+        // Calculate maximum scroll (ensure it doesn't go negative)
+        self.max_scroll = content_lines.saturating_sub(paragraph_area.height);
+
+        // Ensure current scroll doesn't exceed maximum
+        self.vertical_scroll = self.vertical_scroll.min(self.max_scroll);
+
+        let content = Paragraph::new(text)
+            .wrap(Wrap { trim: true })
+            .scroll((self.vertical_scroll, 0));
+
+        content.render(paragraph_area, buf);
+    }
+
+    fn calculate_wrapped_lines(&self, text: &ratatui::text::Text, width: u16) -> u16 {
+        let mut total_lines = 0u16;
+
+        for line in text.lines.iter() {
+            if line.spans.is_empty() {
+                total_lines += 1;
+                continue;
+            }
+
+            let line_content: String = line
+                .spans
+                .iter()
+                .map(|span| span.content.as_ref())
+                .collect();
+
+            if line_content.is_empty() {
+                total_lines += 1;
+            } else {
+                // Calculate how many lines this content will take when wrapped
+                let line_width = line_content.chars().count() as u16;
+                let wrapped_lines = (line_width + width - 1) / width.max(1); // Ceiling division
+                total_lines += wrapped_lines.max(1);
+            }
+        }
+
+        total_lines
+    }
+}
+
+impl Widget for &mut ArticleContent {
+    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
+        let inner_area = self
+            .view_data
+            .render_block(area, buf, &self.config, self.is_focused);
+
+        if !self.is_focused && self.model_data.article().is_some() {
+            self.view_data
+                .render_summary(&self.model_data, &self.config, true, inner_area, buf);
+        }
+
+        if self.model_data.fat_article().is_some() {
+            self.view_data
+                .render_fat_article(&self.model_data, &self.config, inner_area, buf);
+        } else if self.model_data.article().is_some() {
+            self.view_data
+                .render_summary(&self.model_data, &self.config, true, inner_area, buf);
+        }
+    }
+}
+
