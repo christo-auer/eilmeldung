@@ -12,10 +12,7 @@ use news_flash::{
     models::{Article, FatArticle, Feed, Tag, Thumbnail},
     util::html2text,
 };
-use ratatui_image::{
-    picker::Picker,
-    protocol::StatefulProtocol,
-};
+use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
 use tokio::sync::mpsc::UnboundedSender;
 
 #[derive(Getters)]
@@ -23,7 +20,7 @@ use tokio::sync::mpsc::UnboundedSender;
 pub struct ArticleContentModelData {
     #[getset(skip)]
     news_flash_utils: Arc<NewsFlashUtils>,
-    
+
     #[getset(skip)]
     message_sender: UnboundedSender<Message>,
 
@@ -32,14 +29,14 @@ pub struct ArticleContentModelData {
     feed: Option<Feed>,
     tags: Option<Vec<Tag>>,
     fat_article: Option<FatArticle>,
-    
-    // Processed content 
+
+    // Processed content
     markdown_content: Option<String>,
-    
+
     // Thumbnail data and state
     thumbnail_fetch_successful: Option<bool>,
     thumbnail_fetch_running: bool,
-    
+
     // Timing for debouncing fetches
     instant_since_article_selected: Option<Instant>,
     duration_since_last_article_change: Option<Duration>,
@@ -53,7 +50,7 @@ impl ArticleContentModelData {
         Self {
             news_flash_utils,
             message_sender,
-            
+
             article: None,
             feed: None,
             tags: None,
@@ -107,7 +104,11 @@ impl ArticleContentModelData {
         Ok(())
     }
 
-    pub(super) fn prepare_thumbnail(&mut self, thumbnail: &Thumbnail, picker: &Picker) -> color_eyre::Result<Option<StatefulProtocol>> {
+    pub(super) fn prepare_thumbnail(
+        &mut self,
+        thumbnail: &Thumbnail,
+        picker: &Picker,
+    ) -> color_eyre::Result<Option<StatefulProtocol>> {
         if let Some(article) = self.article.as_ref()
             && article.article_id == thumbnail.article_id
             && let Some(data) = thumbnail.data.as_ref()
@@ -227,3 +228,4 @@ impl ArticleContentModelData {
         string.replace("\r", "").replace("\n", "")
     }
 }
+

@@ -1,7 +1,6 @@
 use super::model::FeedOrCategory;
 use crate::prelude::*;
 use crate::ui::feeds_list::model::FeedListModelData;
-use std::sync::Arc;
 
 use getset::{Getters, MutGetters};
 use news_flash::models::TagID;

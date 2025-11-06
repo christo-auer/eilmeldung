@@ -8,7 +8,6 @@ use crate::prelude::*;
 use std::sync::Arc;
 
 use news_flash::models::Thumbnail;
-use ratatui::widgets::Widget;
 use tokio::sync::mpsc::UnboundedSender;
 
 pub struct ArticleContent {

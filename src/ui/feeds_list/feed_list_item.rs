@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use std::str::FromStr;
-use std::sync::Arc;
 
 use news_flash::models::{ArticleFilter, Tag, TagID};
 use news_flash::models::{Category, Feed};

@@ -1,11 +1,11 @@
 use log::{debug, error, info};
 use news_flash::{
     NewsFlash,
-    models::{DirectLogin, LoginData, PluginID},
+    models::PluginID,
 };
 use tokio::{
     sync::mpsc::unbounded_channel,
-    task::{AbortHandle, spawn_blocking},
+    task::spawn_blocking,
 };
 
 mod prelude;
