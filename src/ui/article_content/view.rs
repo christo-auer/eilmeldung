@@ -306,7 +306,7 @@ impl ArticleContentViewData {
         let [summary_area, content_area] = Layout::default()
             .direction(Direction::Vertical)
             .flex(Flex::Start)
-            .constraints([Constraint::Length(10), Constraint::Fill(1)])
+            .constraints([Constraint::Length(8), Constraint::Fill(1)])
             .areas(inner_area);
 
         self.render_summary(model_data, config, false, summary_area, buf);
@@ -397,13 +397,19 @@ impl Widget for &mut ArticleContent {
                 .render_summary(&self.model_data, &self.config, true, inner_area, buf);
         }
 
-        if self.model_data.fat_article().is_some() {
-            self.view_data
-                .render_fat_article(&self.model_data, &self.config, inner_area, buf);
-        } else if self.model_data.article().is_some() {
-            self.view_data
-                .render_summary(&self.model_data, &self.config, true, inner_area, buf);
+        if self.is_focused {
+            if self.model_data.fat_article().is_some() {
+                self.view_data
+                    .render_fat_article(&self.model_data, &self.config, inner_area, buf);
+            } else if self.model_data.article().is_some() {
+                self.view_data.render_summary(
+                    &self.model_data,
+                    &self.config,
+                    true,
+                    inner_area,
+                    buf,
+                );
+            }
         }
     }
 }
-

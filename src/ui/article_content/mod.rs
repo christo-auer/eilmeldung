@@ -43,6 +43,8 @@ impl ArticleContent {
         self.model_data
             .on_article_selected(article, feed, tags, self.is_focused)
             .await?;
+        self.view_data.clear_image();
+        self.view_data.scroll_to_top();
         self.view_data.update(&self.model_data, self.config.clone());
         Ok(())
     }
@@ -136,8 +138,10 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     None => {
                         log::debug!("fetching thumbnail not successful");
                         self.view_data.clear_image();
+                        self.model_data.on_thumbnail_fetch_failed();
                     }
                 }
+                view_needs_update = true;
             }
 
             Message::Event(AsyncOperationFailed(err, reason)) => {
@@ -145,6 +149,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     log::debug!("fetching thumbnail not successful: {err}");
                     self.view_data.clear_image();
                     self.model_data.on_thumbnail_fetch_failed();
+                    view_needs_update = true;
                 }
             }
 
@@ -183,4 +188,3 @@ impl crate::messages::MessageReceiver for ArticleContent {
         Ok(())
     }
 }
-
