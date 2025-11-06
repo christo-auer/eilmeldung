@@ -160,18 +160,11 @@ impl App {
     }
 
     pub async fn run(
-        mut self,
+        self,
         message_receiver: UnboundedReceiver<Message>,
         terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
         info!("Starting application run loop");
-
-        debug!("Building feed tree");
-        self.feed_list.build_tree().await.map_err(|e| {
-            error!("Failed to build feed tree: {}", e);
-            e
-        })?;
-        info!("Feed tree built successfully");
 
         let config_arc = self.config.clone();
         let message_sender = self.message_sender.clone();
@@ -186,6 +179,11 @@ impl App {
         debug!("Sending ApplicationStarted command");
         self.message_sender
             .send(Message::Event(Event::ApplicationStarted))?;
+        debug!("Select feeds panel");
+        self.message_sender
+            .send(Message::Command(Command::PanelFocus(
+                AppState::FeedSelection,
+            )))?;
 
         info!("Starting command processing loop");
         self.process_commands(message_receiver, terminal).await?;

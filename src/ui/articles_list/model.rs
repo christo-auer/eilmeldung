@@ -28,10 +28,16 @@ impl ArticleListModelData {
 
         // fill model data
         let (feeds, _) = news_flash.get_feeds()?;
-        self.feed_map = NewsFlashUtils::generate_id_map(&feeds, |f| f.feed_id.clone());
+        self.feed_map = NewsFlashUtils::generate_id_map(&feeds, |f| f.feed_id.clone())
+            .into_iter()
+            .map(|(k, v)| (k, v.clone()))
+            .collect();
 
         let (tags, taggings) = news_flash.get_tags()?;
-        self.tag_map = NewsFlashUtils::generate_id_map(&tags, |t| t.tag_id.clone());
+        self.tag_map = NewsFlashUtils::generate_id_map(&tags, |t| t.tag_id.clone())
+            .into_iter()
+            .map(|(k, v)| (k, v.clone()))
+            .collect();
 
         self.tags_for_article = NewsFlashUtils::generate_one_to_many(
             &taggings,

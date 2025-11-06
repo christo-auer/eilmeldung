@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use news_flash::models::{ArticleFilter, Tag, TagID};
 use news_flash::models::{Category, Feed};
@@ -18,7 +19,7 @@ pub enum FeedListItem {
 impl FeedListItem {
     pub(super) fn to_text<'a>(
         &self,
-        config: &Config,
+        config: Arc<Config>,
         unread_count: Option<i64>,
         marked_count: Option<i64>,
     ) -> Text<'a> {

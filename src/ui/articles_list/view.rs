@@ -293,7 +293,7 @@ impl<'a> ArticleListViewData<'a> {
                 .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
                 .title_top(self.build_title(filter_state))
                 .border_type(ratatui::widgets::BorderType::Rounded)
-                .border_style(if self.is_focused {
+                .border_style(if is_focused {
                     config.theme.focused_border_style
                 } else {
                     config.theme.border_style
