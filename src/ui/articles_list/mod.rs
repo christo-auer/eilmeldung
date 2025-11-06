@@ -62,7 +62,7 @@ impl ArticlesList {
         if let Some(article_id) = article_id
             && let Some(index) = self
                 .model_data
-                .get_articles()
+                .articles()
                 .iter()
                 .position(|article| article.article_id == *article_id)
         {
@@ -85,22 +85,19 @@ impl ArticlesList {
         let index = index
             .or(self.view_data.get_table_state().selected())
             .unwrap_or_default();
-        if let Some(article) = self.model_data.get_articles().get(index) {
-            self.view_data.get_table_state_mut().select(Some(index));
+        if let Some(article) = self.model_data.articles().get(index) {
+            self.view_data.table_state_mut().select(Some(index));
             self.message_sender
                 .send(Message::Event(Event::ArticleSelected(
                     article.clone(),
+                    self.model_data.feed_map().get(&article.feed_id).cloned(),
                     self.model_data
-                        .get_feed_map()
-                        .get(&article.feed_id)
-                        .cloned(),
-                    self.model_data
-                        .get_tags_for_article()
+                        .tags_for_article()
                         .get(&article.article_id)
                         .map(|tag_ids| {
                             tag_ids
                                 .iter()
-                                .filter_map(|tag_id| self.model_data.get_tag_map().get(tag_id))
+                                .filter_map(|tag_id| self.model_data.tag_map().get(tag_id))
                                 .cloned()
                                 .collect()
                         })
@@ -118,10 +115,10 @@ impl ArticlesList {
     }
 
     fn first_unread(&self) -> Option<usize> {
-        let current_index = self.view_data.get_table_state().selected().unwrap_or(0);
+        let current_index = self.view_data.table_state().selected().unwrap_or(0);
 
         self.model_data
-            .get_articles()
+            .articles()
             .iter()
             .enumerate()
             .find(|(index, article)| *index >= current_index && article.unread == Read::Unread)
@@ -141,7 +138,7 @@ impl ArticlesList {
 
     pub(super) fn get_current_article(&self) -> Option<Article> {
         if let Some(index) = self.view_data.get_table_state().selected() {
-            return self.model_data.get_articles().get(index).cloned();
+            return self.model_data.articles().get(index).cloned();
         }
 
         None
@@ -156,9 +153,9 @@ impl ArticlesList {
         let predicate = |article: &Article| {
             article_query.test(
                 article,
-                self.model_data.get_feed_map(),
-                self.model_data.get_tags_for_article(),
-                self.model_data.get_tag_map(),
+                self.model_data.feed_map(),
+                self.model_data.tags_for_article(),
+                self.model_data.tag_map(),
             )
         };
 
@@ -199,7 +196,7 @@ impl ArticlesList {
         reversed: bool,
     ) -> color_eyre::Result<()> {
         let offset = if skip_current { 1 } else { 0 };
-        let Some(article_query) = self.filter_state.article_search_query.as_ref() else {
+        let Some(article_query) = self.filter_state.article_search_query().as_ref() else {
             return Err(color_eyre::eyre::eyre!("no search query"));
         };
 
@@ -210,7 +207,7 @@ impl ArticlesList {
                 selected.saturating_sub(offset)
             };
 
-            let slices = self.model_data.get_articles().split_at(split_index);
+            let slices = self.model_data.articles().split_at(split_index);
 
             let (first_range, second_range) = if reversed {
                 slices
@@ -296,7 +293,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
             Message::Command(NavigateLast) if self.is_focused => {
                 self.view_data.get_table_state_mut().select_last();
                 // manually "select" as select_last does not know the number of rows
-                self.select_index_and_send_message(Some(self.model_data.get_articles().len() - 1))?;
+                self.select_index_and_send_message(Some(self.model_data.articles().len() - 1))?;
             }
 
             Message::Event(AsyncOperationFailed(_, _)) => {
@@ -310,7 +307,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
             }
 
             Message::Command(ArticleListSetScope(scope)) => {
-                self.filter_state.article_scope = *scope;
+                *self.filter_state.article_scope_mut() = *scope;
                 model_needs_update = true;
             }
 
@@ -357,7 +354,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
             }
 
             Message::Command(ArticleListSearch(query)) => {
-                self.filter_state.article_search_query = Some(query.clone());
+                *self.filter_state.article_search_query_mut() = Some(query.clone());
                 self.view_data.update(
                     self.config.clone(),
                     &self.model_data,
@@ -382,12 +379,12 @@ impl crate::messages::MessageReceiver for ArticlesList {
             }
 
             Message::Command(ArticleListFilterApply) => {
-                self.filter_state.apply_article_adhoc_filter = true;
+                *self.filter_state.apply_article_adhoc_filter_mut() = true;
                 model_needs_update = true;
             }
 
             Message::Command(ArticleListFilterClear) => {
-                self.filter_state.apply_article_adhoc_filter = false;
+                *self.filter_state.apply_article_adhoc_filter_mut() = false;
                 model_needs_update = true;
             }
 

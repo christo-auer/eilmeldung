@@ -1,8 +1,11 @@
 use crate::{prelude::*, ui::articles_list::view::FilterState};
 use std::{collections::HashMap, sync::Arc};
 
+use getset::Getters;
 use news_flash::models::{Article, ArticleID, Feed, FeedID, Read, Tag, TagID};
 
+#[derive(Getters)]
+#[getset(get = "pub(super)")]
 pub struct ArticleListModelData {
     news_flash_utils: Arc<NewsFlashUtils>,
     articles: Vec<Article>,
@@ -67,7 +70,8 @@ impl ArticleListModelData {
     }
 
     async fn filter_articles(&mut self, filter_state: &FilterState) -> color_eyre::Result<()> {
-        let Some(augmented_article_filter) = filter_state.augmented_article_filter.as_ref() else {
+        let Some(augmented_article_filter) = filter_state.augmented_article_filter().as_ref()
+        else {
             return Ok(());
         };
 
@@ -92,8 +96,8 @@ impl ArticleListModelData {
             );
         }
 
-        if let Some(article_adhoc_filter) = filter_state.article_adhoc_filter.as_ref()
-            && filter_state.apply_article_adhoc_filter
+        if let Some(article_adhoc_filter) = filter_state.article_adhoc_filter().as_ref()
+            && *filter_state.apply_article_adhoc_filter()
         {
             self.articles = article_adhoc_filter.filter(
                 &self.articles,
@@ -104,22 +108,6 @@ impl ArticleListModelData {
         }
 
         Ok(())
-    }
-
-    pub(super) fn get_articles(&self) -> &Vec<Article> {
-        &self.articles
-    }
-
-    pub(super) fn get_tags_for_article(&self) -> &HashMap<ArticleID, Vec<TagID>> {
-        &self.tags_for_article
-    }
-
-    pub(super) fn get_tag_map(&self) -> &HashMap<TagID, Tag> {
-        &self.tag_map
-    }
-
-    pub(super) fn get_feed_map(&self) -> &HashMap<FeedID, Feed> {
-        &self.feed_map
     }
 
     pub(super) fn set_all_read_status(

@@ -2,6 +2,7 @@ use crate::prelude::*;
 use crate::ui::articles_list::model::ArticleListModelData;
 use std::sync::Arc;
 
+use getset::{Getters, MutGetters};
 use news_flash::models::{ArticleFilter, Marked, Read};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Row, StatefulWidget, Table, TableState, Widget};
@@ -10,12 +11,22 @@ use ratatui::{
     style::{Style, Stylize},
 };
 
+#[derive(Getters, MutGetters)]
+#[getset(get = "pub(super)")]
 pub struct FilterState {
-    pub(super) augmented_article_filter: Option<AugmentedArticleFilter>,
-    pub(super) article_scope: ArticleScope,
-    pub(super) article_search_query: Option<ArticleQuery>,
-    pub(super) article_adhoc_filter: Option<ArticleQuery>,
-    pub(super) apply_article_adhoc_filter: bool,
+    augmented_article_filter: Option<AugmentedArticleFilter>,
+
+    #[get_mut = "pub(super)"]
+    article_scope: ArticleScope,
+
+    #[get_mut = "pub(super)"]
+    article_search_query: Option<ArticleQuery>,
+
+    #[get_mut = "pub(super)"]
+    article_adhoc_filter: Option<ArticleQuery>,
+
+    #[get_mut = "pub(super)"]
+    apply_article_adhoc_filter: bool,
 }
 
 impl Default for FilterState {
@@ -94,9 +105,11 @@ impl Widget for &mut ArticlesList {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Getters, MutGetters)]
+#[getset(get = "pub(super)")]
 pub struct ArticleListViewData<'a> {
     table: Table<'a>,
+    #[getset(get_mut = "pub(super)")]
     table_state: TableState,
 }
 
@@ -158,7 +171,7 @@ impl<'a> ArticleListViewData<'a> {
         let mut max_tags: u16 = 0;
 
         let entries: Vec<Row> = model_data
-            .get_articles()
+            .articles()
             .iter()
             .map(|article| {
                 let row_vec: Vec<Line> = placeholders
@@ -166,15 +179,14 @@ impl<'a> ArticleListViewData<'a> {
                     .map(|placeholder| match *placeholder {
                         "{title}" => article.title.as_deref().unwrap_or("?").to_string().into(),
                         "{tag_icons}" => Line::from(
-                            match model_data.get_tags_for_article().get(&article.article_id) {
+                            match model_data.tags_for_article().get(&article.article_id) {
                                 Some(tag_ids) => {
                                     max_tags = u16::max(max_tags, tag_ids.len() as u16);
 
                                     tag_ids
                                         .iter()
                                         .map(|tag_id| {
-                                            let Some(tag) = model_data.get_tag_map().get(tag_id)
-                                            else {
+                                            let Some(tag) = model_data.tag_map().get(tag_id) else {
                                                 return Span::from("");
                                             };
 
@@ -191,7 +203,7 @@ impl<'a> ArticleListViewData<'a> {
                         ),
                         "{author}" => article.author.as_deref().unwrap_or("?").to_string().into(),
                         "{feed}" => model_data
-                            .get_feed_map()
+                            .feed_map()
                             .get(&article.feed_id)
                             .map(|feed| feed.label.as_str())
                             .unwrap_or("?")
@@ -252,9 +264,9 @@ impl<'a> ArticleListViewData<'a> {
                     Some(query)
                         if query.test(
                             article,
-                            model_data.get_feed_map(),
-                            model_data.get_tags_for_article(),
-                            model_data.get_tag_map(),
+                            model_data.feed_map(),
+                            model_data.tags_for_article(),
+                            model_data.tag_map(),
                         ) =>
                     {
                         config.theme.article_highlighted
