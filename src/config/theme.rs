@@ -50,8 +50,8 @@ impl Default for Theme {
             command_line: Style::default().bg(DarkGray).fg(Magenta),
             inactive: Style::default().fg(DarkGray),
 
-            border_style: Style::default().fg(Magenta),
-            focused_border_style: Style::default().fg(Gray),
+            border_style: Style::default().fg(DarkGray),
+            focused_border_style: Style::default().fg(Magenta),
 
             unread_modifier: Modifier::BOLD,
         }
