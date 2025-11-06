@@ -3,7 +3,10 @@ use news_flash::{
     NewsFlash,
     models::{DirectLogin, LoginData, PluginID},
 };
-use tokio::sync::mpsc::unbounded_channel;
+use tokio::{
+    sync::mpsc::unbounded_channel,
+    task::{AbortHandle, spawn_blocking},
+};
 
 mod prelude;
 use crate::prelude::*;
@@ -71,11 +74,18 @@ async fn main() -> color_eyre::Result<()> {
 
     let (message_sender, message_receiver) = unbounded_channel::<Message>();
     let news_flash_utils = NewsFlashUtils::new(news_flash, client, message_sender.clone());
+    let input_reader_message_sender = message_sender.clone();
 
     let app = crate::app::App::new(config, news_flash_utils, message_sender);
 
     info!("Initializing terminal");
     let terminal = ratatui::init();
+
+    let _input_reader_handle = spawn_blocking(move || {
+        if let Err(err) = input_reader(input_reader_message_sender) {
+            error!("input reader got an error: {err}");
+        }
+    });
 
     info!("Starting application main loop");
     let result = app.run(message_receiver, terminal).await;

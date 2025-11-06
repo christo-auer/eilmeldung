@@ -13,7 +13,6 @@ use crate::prelude::*;
 pub enum Message {
     Command(Command),
     Event(Event),
-    SetRawInput(bool),
 }
 
 pub trait MessageReceiver {

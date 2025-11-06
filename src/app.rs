@@ -4,10 +4,7 @@ use log::{debug, error, info, trace};
 use ratatui::DefaultTerminal;
 use std::{fmt::Display, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
-use tokio::sync::{
-    Mutex,
-    mpsc::{UnboundedReceiver, UnboundedSender},
-};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 pub enum AppState {
@@ -99,6 +96,7 @@ pub struct App {
 
     pub tooltip: Tooltip<'static>,
 
+    pub input_command_generator: InputCommandGenerator,
     pub feed_list: FeedList,
     pub articles_list: ArticlesList,
     pub article_content: ArticleContent,
@@ -106,8 +104,6 @@ pub struct App {
     pub async_operation_throbber: ThrobberState,
 
     pub is_running: bool,
-
-    raw_input: Arc<Mutex<bool>>,
 }
 
 impl App {
@@ -127,23 +123,27 @@ impl App {
             news_flash_utils: news_flash_utils_arc.clone(),
             is_running: true,
             message_sender: message_sender.clone(),
+            input_command_generator: InputCommandGenerator::new(
+                config_arc.clone(),
+                message_sender.clone(),
+            ),
             feed_list: FeedList::new(
-                Arc::clone(&config_arc),
+                config_arc.clone(),
                 news_flash_utils_arc.clone(),
                 message_sender.clone(),
             ),
             articles_list: ArticlesList::new(
-                Arc::clone(&config_arc),
+                config_arc.clone(),
                 news_flash_utils_arc.clone(),
                 message_sender.clone(),
             ),
             article_content: ArticleContent::new(
-                Arc::clone(&config_arc),
+                config_arc.clone(),
                 news_flash_utils_arc.clone(),
                 message_sender.clone(),
             ),
             command_line: CommandInput::new(
-                Arc::clone(&config_arc),
+                config_arc.clone(),
                 news_flash_utils_arc.clone(),
                 message_sender.clone(),
             ),
@@ -152,7 +152,6 @@ impl App {
                 crate::ui::tooltip::TooltipFlavor::Info,
             ),
             async_operation_throbber: ThrobberState::default(),
-            raw_input: Arc::new(Mutex::new(false)),
         };
 
         info!("App instance created with initial state: FeedSelection");
@@ -165,16 +164,6 @@ impl App {
         terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
         info!("Starting application run loop");
-
-        let config_arc = self.config.clone();
-        let message_sender = self.message_sender.clone();
-        debug!("Spawning input processing task");
-
-        InputCommandHandler::spawn_input_command_handler(
-            config_arc,
-            message_sender,
-            self.raw_input.clone(),
-        );
 
         debug!("Sending ApplicationStarted command");
         self.message_sender
@@ -226,11 +215,6 @@ impl App {
                                 trace!("Processing message: AsyncFetchThumbnailFinished");
                             }
 
-                            Message::SetRawInput(raw_input_value) => {
-                                let mut raw_input = self.raw_input.lock().await;
-                                *raw_input = *raw_input_value;
-                            }
-
                             _ => {
                                 trace!("Processing message: {:?}", message);
                             }
@@ -238,25 +222,14 @@ impl App {
                         }
 
 
-                        if let Err(e) = self.process_command(&message).await {
-                            error!("Failed to process app message: {}", e);
+                        if !self.command_line.is_active() {
+                            self.input_command_generator.process_command(&message).await?;
                         }
-
-                        if let Err(e) = self.feed_list.process_command(&message).await {
-                            error!("Failed to process feed list message: {}", e);
-                        }
-
-                        if let Err(e) = self.articles_list.process_command(&message).await {
-                            error!("Failed to process articles list message: {}", e);
-                        }
-
-                        if let Err(e) = self.article_content.process_command(&message).await {
-                            error!("Failed to process article content message: {}", e);
-                        }
-
-                        if let Err(e) = self.command_line.process_command(&message).await {
-                            error!("Failed to process command line message: {}", e);
-                        }
+                        self.process_command(&message).await?;
+                        self.feed_list.process_command(&message).await?;
+                        self.articles_list.process_command(&message).await?;
+                        self.article_content.process_command(&message).await?;
+                        self.command_line.process_command(&message).await?;
 
                     } else {
                         debug!("Message channel closed, stopping message processing");

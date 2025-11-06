@@ -1,151 +1,61 @@
 mod key;
 
 pub mod prelude {
-    pub use super::InputCommandHandler;
     pub use super::key::{Key, KeySequence};
+    pub use super::{InputCommandGenerator, input_reader};
 }
 
 use crate::prelude::*;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use log::{debug, trace, warn};
+use log::{info, trace};
 use ratatui::crossterm::event::KeyCode;
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
-use tokio::sync::Mutex;
 use tokio::sync::mpsc::UnboundedSender;
 
-// this is heavily inspired by spotify-player's key.rs
-
-pub struct InputCommandHandler {
-    config: Arc<Config>,
-    message_sender: UnboundedSender<Message>,
-    raw_input: Arc<Mutex<bool>>,
+pub fn input_reader(message_sender: UnboundedSender<Message>) -> color_eyre::Result<()> {
+    info!("staring input reader loop");
+    loop {
+        match ratatui::crossterm::event::read()? {
+            ratatui::crossterm::event::Event::Key(key_event) => {
+                trace!("crossterm input event: {:?}", key_event);
+                message_sender.send(Message::Event(Event::Key(key_event)))?;
+            }
+            event => trace!("ignoring event {:?}", event),
+        }
+    }
 }
 
-impl InputCommandHandler {
-    fn new(
-        config: Arc<Config>,
-        message_sender: UnboundedSender<Message>,
-        raw_input: Arc<Mutex<bool>>,
-    ) -> Self {
+pub struct InputCommandGenerator {
+    config: Arc<Config>,
+    message_sender: UnboundedSender<Message>,
+    key_sequence: KeySequence,
+    last_input_instant: Instant,
+}
+
+impl MessageReceiver for InputCommandGenerator {
+    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+        match message {
+            Message::Event(Event::Key(key_event)) => {
+                self.process_key_event(Some(key_event.clone().into()))
+            }
+
+            Message::Event(Event::Tick) => self.process_key_event(None),
+
+            _ => Ok(()),
+        }
+    }
+}
+
+impl InputCommandGenerator {
+    pub fn new(config: Arc<Config>, message_sender: UnboundedSender<Message>) -> Self {
         Self {
             config,
             message_sender,
-            raw_input: raw_input.clone(),
-        }
-    }
-
-    pub fn spawn_input_command_handler(
-        config: Arc<Config>,
-        message_sender: UnboundedSender<Message>,
-        raw_input: Arc<Mutex<bool>>,
-    ) {
-        tokio::spawn(async move {
-            let mut handler = Self::new(config, message_sender, raw_input);
-            if let Err(error) = handler.handle_input_commands().await {
-                warn!("error handling input {error}");
-            }
-        });
-    }
-
-    pub async fn handle_input_commands(&mut self) -> color_eyre::Result<()> {
-        debug!("Input processing loop started");
-        let mut key_sequence = KeySequence::default();
-        loop {
-            let mut timeout = false;
-            let mut aborted = false;
-
-            if let Ok(event_available) =
-                ratatui::crossterm::event::poll(Duration::from_millis(5000))
-            {
-                if event_available {
-                    match ratatui::crossterm::event::read()? {
-                        ratatui::crossterm::event::Event::Key(key_event) => {
-                            {
-                                let raw_input = self.raw_input.lock().await;
-                                if *raw_input {
-                                    trace!("sending raw key event: {:?}", key_event);
-                                    self.message_sender
-                                        .send(Message::Event(Event::Key(key_event)))?;
-                                    continue;
-                                }
-                            }
-
-                            let key: Key = key_event.into();
-
-                            if key == Key::Just(KeyCode::Esc) {
-                                aborted = true;
-                            } else {
-                                key_sequence.keys.push(key);
-                                trace!("current key_sequence: {:?}", key_sequence);
-                            }
-                        }
-                        _ => {
-                            trace!("Non-key event ignored");
-                        }
-                    }
-                } else {
-                    trace!("input timeout");
-                    timeout = true;
-                }
-            }
-
-            {
-                let raw_input = self.raw_input.lock().await;
-                if *raw_input {
-                    continue;
-                }
-            }
-
-            // get key sequences which have a matching prefix
-            let mut prefix_matches = self
-                .config
-                .input_config
-                .input_commands
-                .iter()
-                .filter(|(other_key_sequence, _)| key_sequence.is_prefix_of(other_key_sequence))
-                .collect::<Vec<_>>();
-            prefix_matches.sort_by(|(ks_1, _), (ks_2, _)| ks_1.keys.len().cmp(&ks_2.keys.len()));
-
-            trace!("prefix matches of input: {}", prefix_matches.len());
-
-            if let Some(command_sequence) =
-                self.config.input_config.input_commands.get(&key_sequence) // direct match
-                    && (prefix_matches.len() == 1 || timeout)
-            {
-                for command in command_sequence.commands.iter() {
-                    self.message_sender
-                        .send(Message::Command(command.clone()))?;
-                }
-                key_sequence.keys.clear();
-                let _ =
-                    self.message_sender
-                        .send(Message::Event(Event::Tooltip(Tooltip::from_str(
-                            " ",
-                            TooltipFlavor::Info,
-                        ))));
-            } else if !key_sequence.keys.is_empty()
-                && (aborted || timeout || prefix_matches.is_empty())
-            {
-                let tooltip = if aborted {
-                    Tooltip::from_str("Aborted", crate::ui::tooltip::TooltipFlavor::Info)
-                } else {
-                    Tooltip::from_str(
-                        format!("Unknown key sequence: {key_sequence}").as_str(),
-                        crate::ui::tooltip::TooltipFlavor::Warning,
-                    )
-                };
-
-                key_sequence.keys.clear();
-
-                let _ = self
-                    .message_sender
-                    .send(Message::Event(Event::Tooltip(tooltip)));
-            }
-
-            self.generate_input_tooltip(&key_sequence, &prefix_matches);
+            key_sequence: KeySequence::default(),
+            last_input_instant: Instant::now(),
         }
     }
 
@@ -183,5 +93,69 @@ impl InputCommandHandler {
         let _ = self
             .message_sender
             .send(Message::Event(Event::Tooltip(tooltip)));
+    }
+
+    fn process_key_event(&mut self, key: Option<Key>) -> color_eyre::Result<()> {
+        let mut aborted = false;
+        let now = Instant::now();
+        let timeout = now.duration_since(self.last_input_instant) > Duration::from_millis(5000);
+
+        self.last_input_instant = now;
+
+        match key {
+            Some(Key::Just(KeyCode::Esc)) => aborted = true,
+            Some(key) => {
+                self.key_sequence.keys.push(key);
+                trace!("current key_sequence: {:?}", self.key_sequence);
+            }
+            _ => {}
+        }
+
+        // get key sequences which have a matching prefix
+        let mut prefix_matches = self
+            .config
+            .input_config
+            .input_commands
+            .iter()
+            .filter(|(other_key_sequence, _)| self.key_sequence.is_prefix_of(other_key_sequence))
+            .collect::<Vec<_>>();
+        prefix_matches.sort_by(|(ks_1, _), (ks_2, _)| ks_1.keys.len().cmp(&ks_2.keys.len()));
+
+        if let Some(command_sequence) =
+            self.config.input_config.input_commands.get(&self.key_sequence) // direct match
+                && (prefix_matches.len() == 1 || timeout)
+        {
+            for command in command_sequence.commands.iter() {
+                self.message_sender
+                    .send(Message::Command(command.clone()))?;
+            }
+            self.key_sequence.keys.clear();
+            let _ = self
+                .message_sender
+                .send(Message::Event(Event::Tooltip(Tooltip::from_str(
+                    " ",
+                    TooltipFlavor::Info,
+                ))));
+        } else if !self.key_sequence.keys.is_empty()
+            && (aborted || timeout || prefix_matches.is_empty())
+        {
+            let tooltip = if aborted {
+                Tooltip::from_str("Aborted", crate::ui::tooltip::TooltipFlavor::Info)
+            } else {
+                Tooltip::from_str(
+                    format!("Unknown key sequence: {}", self.key_sequence).as_str(),
+                    crate::ui::tooltip::TooltipFlavor::Warning,
+                )
+            };
+
+            self.key_sequence.keys.clear();
+
+            let _ = self
+                .message_sender
+                .send(Message::Event(Event::Tooltip(tooltip)));
+        }
+
+        self.generate_input_tooltip(&self.key_sequence, &prefix_matches);
+        Ok(())
     }
 }

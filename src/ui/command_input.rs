@@ -50,7 +50,6 @@ impl CommandInput {
         match <Command>::from_str(input) {
             Ok(command) => {
                 self.is_active = false;
-                self.message_sender.send(Message::SetRawInput(false))?;
                 self.message_sender
                     .send(Message::Command(command.clone()))?;
             }
@@ -144,7 +143,6 @@ impl crate::messages::MessageReceiver for CommandInput {
                 if config.abort.contains(&key) {
                     self.history.remove(self.history.len() - 1);
                     self.is_active = false;
-                    self.message_sender.send(Message::SetRawInput(false))?;
                 } else if config.submit.contains(&key) {
                     self.on_submit()?;
                 } else if config.clear.contains(&key) {
@@ -173,7 +171,6 @@ impl crate::messages::MessageReceiver for CommandInput {
                 self.history.push(preset_command.to_string());
                 self.history_index = self.history.len() - 1;
                 self.text_input.insert_str(preset_command);
-                self.message_sender.send(Message::SetRawInput(true))?;
             }
 
             _ => {}
