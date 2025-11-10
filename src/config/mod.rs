@@ -62,6 +62,7 @@ pub struct Config {
 
     pub refresh_fps: u64,
 
+    pub offline_icon: char,
     pub all_label: String,
     pub feed_label: String,
     pub category_label: String,
@@ -104,6 +105,7 @@ impl Default for Config {
             theme: Default::default(),
             input_config: Default::default(),
             refresh_fps: 10,
+            offline_icon: '',
             read_icon: '',
             unread_icon: '',
             marked_icon: '',

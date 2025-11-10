@@ -46,7 +46,7 @@ impl Display for AppState {
 }
 
 impl AppState {
-    fn previous_cyclic(&mut self) -> AppState {
+    fn previous_cyclic(&self) -> AppState {
         use AppState::*;
         match self {
             ArticleSelection => FeedSelection,
@@ -56,7 +56,7 @@ impl AppState {
         }
     }
 
-    fn next_cyclic(&mut self) -> AppState {
+    fn next_cyclic(&self) -> AppState {
         use AppState::*;
         match self {
             FeedSelection => ArticleSelection,
@@ -103,24 +103,25 @@ pub struct App {
     pub command_line: CommandInput,
     pub async_operation_throbber: ThrobberState,
 
+    pub is_offline: bool,
+
     pub is_running: bool,
 }
 
 impl App {
     pub fn new(
         config: Config,
-        news_flash_utils: NewsFlashUtils,
+        news_flash_utils: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         debug!("Creating new App instance");
         let config_arc = Arc::new(config);
-        let news_flash_utils_arc = Arc::new(news_flash_utils);
 
         debug!("Initializing UI components");
         let app = Self {
             state: AppState::FeedSelection,
             config: Arc::clone(&config_arc),
-            news_flash_utils: news_flash_utils_arc.clone(),
+            news_flash_utils: news_flash_utils.clone(),
             is_running: true,
             message_sender: message_sender.clone(),
             input_command_generator: InputCommandGenerator::new(
@@ -129,22 +130,22 @@ impl App {
             ),
             feed_list: FeedList::new(
                 config_arc.clone(),
-                news_flash_utils_arc.clone(),
+                news_flash_utils.clone(),
                 message_sender.clone(),
             ),
             articles_list: ArticlesList::new(
                 config_arc.clone(),
-                news_flash_utils_arc.clone(),
+                news_flash_utils.clone(),
                 message_sender.clone(),
             ),
             article_content: ArticleContent::new(
                 config_arc.clone(),
-                news_flash_utils_arc.clone(),
+                news_flash_utils.clone(),
                 message_sender.clone(),
             ),
             command_line: CommandInput::new(
                 config_arc.clone(),
-                news_flash_utils_arc.clone(),
+                news_flash_utils.clone(),
                 message_sender.clone(),
             ),
             tooltip: Tooltip::new(
@@ -152,6 +153,7 @@ impl App {
                 crate::ui::tooltip::TooltipFlavor::Info,
             ),
             async_operation_throbber: ThrobberState::default(),
+            is_offline: false,
         };
 
         info!("App instance created with initial state: FeedSelection");
@@ -159,11 +161,19 @@ impl App {
     }
 
     pub async fn run(
-        self,
+        mut self,
         message_receiver: UnboundedReceiver<Message>,
         terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
         info!("Starting application run loop");
+
+        debug!("get offline state");
+        self.is_offline = self
+            .news_flash_utils
+            .news_flash_lock
+            .read()
+            .await
+            .is_offline();
 
         debug!("Sending ApplicationStarted command");
         self.message_sender
@@ -246,6 +256,16 @@ impl App {
         info!("Message processing loop ended");
         Ok(())
     }
+
+    fn switch_state(&mut self, next_state: AppState) -> color_eyre::eyre::Result<()> {
+        let old_state = self.state;
+        self.state = next_state;
+        debug!("Focus moved from {:?} to {:?}", old_state, self.state);
+        self.message_sender
+            .send(Message::Event(Event::ApplicationStateChanged(self.state)))?;
+
+        Ok(())
+    }
 }
 
 impl MessageReceiver for App {
@@ -273,71 +293,97 @@ impl MessageReceiver for App {
 
             Message::Event(AsyncOperationFailed(error, starting_event)) => {
                 error!("Async operation {} failed: {:?}", error, starting_event);
-                self.tooltip = crate::ui::tooltip::Tooltip::from_str(
-                    error.clone().as_str(),
-                    TooltipFlavor::Error,
-                );
+
+                match error {
+                    AsyncOperationError::NewsFlashError(news_flash_error) => {
+                        tooltip(
+                            &self.message_sender,
+                            NewsFlashUtils::error_to_message(news_flash_error).as_str(),
+                            TooltipFlavor::Error,
+                        )?;
+                    }
+                    AsyncOperationError::Report(report) => {
+                        tooltip(
+                            &self.message_sender,
+                            report.to_string().as_str(),
+                            TooltipFlavor::Error,
+                        )?;
+                    }
+                }
             }
 
             // TODO refactor redundant code!
             Message::Command(PanelFocus(next_state)) => {
-                let old_state = self.state;
-                self.state = *next_state;
-                debug!("Focus moved from {:?} to {:?}", old_state, self.state);
-                self.message_sender
-                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
+                self.switch_state(*next_state)?;
             }
 
             Message::Command(PanelFocusNext) => {
-                let old_state = self.state;
-                self.state = self.state.next();
-                debug!("Focus moved from {:?} to {:?}", old_state, self.state);
-                self.message_sender
-                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
+                self.switch_state(self.state.next())?;
             }
 
             Message::Command(PanelFocusPrevious) => {
-                let old_state = self.state;
-                self.state = self.state.previous();
-                debug!("Focus moved from {:?} to {:?}", old_state, self.state);
-                self.message_sender
-                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
+                self.switch_state(self.state.previous())?;
             }
 
             Message::Command(PanelFocusNextCyclic) => {
-                let old_state = self.state;
-                self.state = self.state.next_cyclic();
-                debug!(
-                    "Cyclic focus moved from {:?} to {:?}",
-                    old_state, self.state
-                );
-                self.message_sender
-                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
+                self.switch_state(self.state.next_cyclic())?;
             }
 
             Message::Command(PanelFocusPreviousCyclic) => {
-                let old_state = self.state;
-                self.state = self.state.previous_cyclic();
-                debug!(
-                    "Cyclic focus moved from {:?} to {:?}",
-                    old_state, self.state
-                );
-                self.message_sender
-                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
+                self.switch_state(self.state.previous_cyclic())?;
+            }
+
+            Message::Event(Event::ConnectionAvailable) => {
+                let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+
+                if news_flash.is_offline() {
+                    tooltip(
+                        &self.message_sender,
+                        "Trying to get online...",
+                        TooltipFlavor::Info,
+                    )?;
+                    self.news_flash_utils.set_offline(false);
+                }
+            }
+
+            Message::Event(Event::ConnectionLost(reason)) => {
+                if !self.is_offline {
+                    match reason {
+                        ConnectionLostReason::NoInternet => {
+                            tooltip(
+                                &self.message_sender,
+                                "Connection to internet lost, going offline",
+                                TooltipFlavor::Warning,
+                            )?;
+                        }
+                        ConnectionLostReason::NotReachable => {
+                            tooltip(
+                                &self.message_sender,
+                                "Service is not reachable any more, going offline",
+                                TooltipFlavor::Warning,
+                            )?;
+                        }
+                    }
+                    self.news_flash_utils.set_offline(true);
+                }
+            }
+
+            Message::Event(Event::AsyncSetOfflineFinished(offline)) => {
+                info!("new offline state: {}", offline);
+                self.is_offline = *offline;
+
+                if !offline {
+                    tooltip(&self.message_sender, "Online again", TooltipFlavor::Info)?;
+                }
             }
 
             Message::Command(ToggleDistractionFreeMode) => {
                 let old_state = self.state;
-                self.state = match old_state {
+                let new_state = match old_state {
                     AppState::ArticleContentDistractionFree => AppState::ArticleContent,
                     _ => AppState::ArticleContentDistractionFree,
                 };
-                debug!(
-                    "Toggling distraction free state from {:?} to {:?}",
-                    old_state, self.state
-                );
-                self.message_sender
-                    .send(Message::Event(ApplicationStateChanged(self.state)))?;
+                self.switch_state(new_state)?;
             }
 
             _ => {}

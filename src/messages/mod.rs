@@ -3,7 +3,7 @@ pub mod event;
 
 pub mod prelude {
     pub use super::command::{Command, CommandSequence};
-    pub use super::event::Event;
+    pub use super::event::{AsyncOperationError, Event};
     pub use super::{Message, MessageReceiver};
 }
 

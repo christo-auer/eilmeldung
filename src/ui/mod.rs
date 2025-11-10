@@ -16,7 +16,8 @@ pub mod prelude {
 
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    text::Text,
     widgets::{StatefulWidget, Widget},
 };
 use throbber_widgets_tui::Throbber;
@@ -66,20 +67,41 @@ impl Widget for &mut App {
         self.articles_list.render(articles_list_chunk, buf);
         self.article_content.render(article_content_chunk, buf);
 
-        let use_type = if self.news_flash_utils.is_async_operation_running() {
-            throbber_widgets_tui::WhichUse::Spin
+        let [throbber_chunk, title_chunk] = Layout::default()
+            .direction(Direction::Horizontal)
+            .flex(ratatui::layout::Flex::Start)
+            .constraints(vec![Constraint::Length(2), Constraint::Min(1)])
+            .areas(top);
+
+        if self.is_offline {
+            // when offline display offline icon
+            let offline_text = Text::from(format!("{}", self.config.offline_icon))
+                .alignment(Alignment::Center)
+                .style(self.config.theme.statusbar);
+            offline_text.render(throbber_chunk, buf);
         } else {
-            throbber_widgets_tui::WhichUse::Full
-        };
+            // when online display throbber
+            let use_type = if self.news_flash_utils.is_async_operation_running() {
+                throbber_widgets_tui::WhichUse::Spin
+            } else {
+                throbber_widgets_tui::WhichUse::Full
+            };
+            let throbber = Throbber::default()
+                .throbber_style(self.config.theme.statusbar)
+                .style(self.config.theme.statusbar)
+                .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
+                .use_type(use_type);
 
-        let top_line = Throbber::default()
-            .label("+++ eilmeldung +++")
-            .throbber_style(self.config.theme.statusbar)
-            .style(self.config.theme.statusbar)
-            .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
-            .use_type(use_type);
+            StatefulWidget::render(
+                throbber,
+                throbber_chunk,
+                buf,
+                &mut self.async_operation_throbber,
+            );
+        }
 
-        StatefulWidget::render(top_line, top, buf, &mut self.async_operation_throbber);
+        let title = Text::from("+++ eilmeldung +++").style(self.config.theme.statusbar);
+        title.render(title_chunk, buf);
 
         if self.command_line.is_active() {
             self.command_line.render(command_line, buf);

@@ -1,20 +1,19 @@
+use std::sync::Arc;
+
 use log::{debug, error, info};
-use news_flash::{
-    NewsFlash,
-    models::PluginID,
-};
-use tokio::{
-    sync::mpsc::unbounded_channel,
-    task::spawn_blocking,
-};
+use network_connectivity::ConnectivityState;
+use news_flash::{NewsFlash, models::LoginData};
+use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
 
 mod prelude;
-use crate::prelude::*;
+use crate::{connectivity::ConnectivityMonitor, prelude::*};
 
 mod app;
 mod config;
+mod connectivity;
 mod input;
 mod logging;
+mod login;
 mod messages;
 mod newsflash_utils;
 mod query;
@@ -30,62 +29,70 @@ async fn main() -> color_eyre::Result<()> {
 
     info!("Loading configuration");
     let config = load_config()?;
-    debug!("Configuration loaded successfully");
 
     let config_dir = PROJECT_DIRS.config_dir();
     let state_dir = PROJECT_DIRS.state_dir();
 
-    let local_plugin_id = PluginID::new("freshrss");
-    info!("Initializing NewsFlash with plugin: {}", local_plugin_id);
-
-    // let news_flash = match NewsFlash::try_load(state_dir.unwrap(), config_dir) {
-    //     Ok(news_flash) => news_flash,
-    //     Err(_error) => login(&config)?,
-    // };
-
-    let news_flash = NewsFlash::new(config_dir, state_dir.unwrap(), &local_plugin_id, None)
-        .map_err(|e| {
-            error!("Failed to initialize NewsFlash: {}", e);
-            e
-        })?;
-    debug!("NewsFlash instance created successfully");
-
-    debug!("Message channel created");
-
-    // let login_data = LoginData::Direct(DirectLogin::Password(news_flash::models::PasswordLogin {
-    //     id: local_plugin_id,
-    //     url: Some("http://10.0.64.2:8081/api/greader.php".into()),
-    //     user: "chris".into(),
-    //     password: "abcdefgh".into(),
-    //     basic_auth: None,
-    // }));
+    info!("Initializing NewsFlash");
+    let news_flash_attempt = NewsFlash::try_load(state_dir.unwrap(), config_dir);
 
     let client = reqwest::Client::new();
 
-    // info!("Attempting to login to NewsFlash");
-    // news_flash.login(login_data, &client).await.map_err(|e| {
-    //     error!("Failed to login to NewsFlash: {}", e);
-    //     e
-    // })?;
+    let news_flash = match news_flash_attempt {
+        Ok(news_flash) => news_flash,
+        Err(_) => {
+            // this is the initial setup => setup login data
+            info!("no profile found => ask user");
+            let mut logged_in = false;
 
-    news_flash.set_offline(false, &client).await?;
+            let mut login_data: Option<LoginData> = None;
+            let login_setup = LoginSetup::new();
+            let mut news_flash: Option<NewsFlash> = None;
+            while !logged_in {
+                login_data = Some(login_setup.inquire_login_data(&login_data).await?);
+                news_flash = Some(NewsFlash::new(
+                    state_dir.unwrap(),
+                    config_dir,
+                    &login_data.as_ref().unwrap().id(),
+                    None,
+                )?);
+                logged_in = login_setup
+                    .login_and_initial_sync(
+                        news_flash.as_ref().unwrap(),
+                        login_data.as_ref().unwrap(),
+                        &client,
+                    )
+                    .await?;
+            }
+            news_flash.unwrap()
+        }
+    };
 
-    // news_flash.initial_sync(&client, Default::default()).await?;
-
+    // setup of things we need in the app
     let (message_sender, message_receiver) = unbounded_channel::<Message>();
-    let news_flash_utils = NewsFlashUtils::new(news_flash, client, message_sender.clone());
     let input_reader_message_sender = message_sender.clone();
+    let news_flash_utils = Arc::new(NewsFlashUtils::new(
+        news_flash,
+        client,
+        message_sender.clone(),
+    ));
+    let connectivity_monitor =
+        ConnectivityMonitor::new(news_flash_utils.clone(), message_sender.clone());
 
-    let app = crate::app::App::new(config, news_flash_utils, message_sender);
+    // create the main app
+    let app = crate::app::App::new(config, news_flash_utils.clone(), message_sender);
 
     info!("Initializing terminal");
     let terminal = ratatui::init();
 
+    // startup task which reads the crossterm events
     let _input_reader_handle = spawn_blocking(move || {
         if let Err(err) = input_reader(input_reader_message_sender) {
             error!("input reader got an error: {err}");
         }
     });
+
+    let _connecitivty_monitor_handle = connectivity_monitor.spawn()?;
 
     info!("Starting application main loop");
     let result = app.run(message_receiver, terminal).await;

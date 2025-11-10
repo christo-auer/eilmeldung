@@ -1,11 +1,23 @@
 use std::collections::HashMap;
 
-use news_flash::models::{Article, FatArticle, Feed, FeedID, Tag, Thumbnail};
+use news_flash::{
+    error::NewsFlashError,
+    models::{Article, FatArticle, Feed, FeedID, Tag, Thumbnail},
+};
 use ratatui::crossterm::event::KeyEvent;
 
 use crate::prelude::*;
 
-#[derive(Clone, Debug)]
+#[derive(thiserror::Error, Debug)]
+pub enum AsyncOperationError {
+    #[error("news flash error")]
+    NewsFlashError(#[from] NewsFlashError),
+
+    #[error("error report")]
+    Report(#[from] color_eyre::Report),
+}
+
+#[derive(Debug)]
 pub enum Event {
     ArticlesSelected(AugmentedArticleFilter),
     ArticleSelected(Article, Option<Feed>, Option<Vec<Tag>>),
@@ -23,7 +35,10 @@ pub enum Event {
     AsyncMarkArticlesAsRead,
     AsyncMarkArticlesAsReadFinished,
 
-    AsyncOperationFailed(String, Box<Event>),
+    AsyncOperationFailed(AsyncOperationError, Box<Event>),
+
+    AsyncSetOffline,
+    AsyncSetOfflineFinished(bool),
 
     Tick, // general tick for animations and regular updates
 
@@ -36,4 +51,8 @@ pub enum Event {
 
     // raw key event
     Key(KeyEvent),
+
+    // connectivity
+    ConnectionAvailable,
+    ConnectionLost(ConnectionLostReason),
 }

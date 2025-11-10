@@ -1,9 +1,8 @@
-use crate::prelude::*;
-use std::{collections::HashMap, hash::Hash, str::FromStr, sync::Arc};
+use crate::{messages::event::AsyncOperationError, prelude::*};
+use std::{collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
-    NewsFlash,
-    models::{ArticleID, Read, Tag},
+    NewsFlash, error::NewsFlashError, models::{ArticleID, Read, Tag}
 };
 
 use log::{debug, error, info};
@@ -40,6 +39,44 @@ impl NewsFlashUtils {
         self.async_operation_mutex.try_lock().is_err()
     }
 
+    pub fn set_offline(&self, offline: bool) {
+        info!("Starting going online/offline operation");
+        let news_flash_lock = self.news_flash_lock.clone();
+        let client_lock = self.client_lock.clone();
+        let command_sender = self.command_sender.clone();
+        let async_operation_mutex = self.async_operation_mutex.clone();
+
+        tokio::spawn(async move {
+            debug!("Acquiring async operation lock for sync");
+            let _lock = async_operation_mutex.lock().await;
+
+            if let Err(e) = async {
+                debug!("Sending AsyncSyncStarted command");
+                command_sender.send(Message::Event(Event::AsyncSetOffline)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+
+                debug!("Acquiring NewsFlash and client locks");
+                let news_flash = news_flash_lock.read().await;
+                let client = client_lock.read().await;
+
+                info!("Starting NewsFlash set offline operation");
+                news_flash.set_offline(offline, &client).await?;
+
+                debug!("Sending AsyncSyncFinished command");
+                command_sender.send(Message::Event(Event::AsyncSetOfflineFinished(offline))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+                Ok::<(), AsyncOperationError>(())
+            }
+            .await
+            {
+                error!("Feed sync failed: {}", e);
+                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
+                    e,
+                    Box::new(Event::AsyncSetOffline),
+                )));
+            }
+        });
+    
+    }
+
     pub fn sync_feeds(&self) {
         info!("Starting feed sync operation");
         let news_flash_lock = self.news_flash_lock.clone();
@@ -53,7 +90,7 @@ impl NewsFlashUtils {
 
             if let Err(e) = async {
                 debug!("Sending AsyncSyncStarted command");
-                command_sender.send(Message::Event(Event::AsyncSync))?;
+                command_sender.send(Message::Event(Event::AsyncSync)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
 
                 debug!("Acquiring NewsFlash and client locks");
                 let news_flash = news_flash_lock.read().await;
@@ -64,14 +101,14 @@ impl NewsFlashUtils {
                 info!("Sync completed, {} new articles found", new_articles.len());
 
                 debug!("Sending AsyncSyncFinished command");
-                command_sender.send(Message::Event(Event::AsyncSyncFinished(new_articles)))?;
-                Ok::<_, color_eyre::Report>(())
+                command_sender.send(Message::Event(Event::AsyncSyncFinished(new_articles))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+                Ok::<(), AsyncOperationError>(())
             }
             .await
             {
                 error!("Feed sync failed: {}", e);
                 let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
-                    e.to_string(),
+                    e,
                     Box::new(Event::AsyncSync),
                 )));
             }
@@ -91,7 +128,7 @@ impl NewsFlashUtils {
 
             if let Err(e) = async {
                 debug!("Sending AsyncFetchThumbnailStarted command");
-                command_sender.send(Message::Event(Event::AsyncFetchThumbnail))?;
+                command_sender.send(Message::Event(Event::AsyncFetchThumbnail)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
 
                 debug!("Acquiring NewsFlash and client locks for thumbnail");
                 let news_flash = news_flash_lock.read().await;
@@ -113,14 +150,14 @@ impl NewsFlashUtils {
                 debug!("Sending AsyncFetchThumbnailFinished command");
                 command_sender.send(Message::Event(Event::AsyncFetchThumbnailFinished(
                     thumbnail,
-                )))?;
-                Ok::<_, color_eyre::Report>(())
+                ))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+                Ok::<_, AsyncOperationError>(())
             }
             .await
             {
                 error!("Thumbnail fetch failed for article {:?}: {}", article_id, e);
                 let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
-                    e.to_string(),
+                    e,
                     Box::new(Event::AsyncFetchThumbnail),
                 )));
             }
@@ -140,7 +177,7 @@ impl NewsFlashUtils {
 
             if let Err(e) = async {
                 debug!("Sending AsyncFetchFatArticleStarted command");
-                command_sender.send(Message::Event(Event::AsyncFetchFatArticle))?;
+                command_sender.send(Message::Event(Event::AsyncFetchFatArticle)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
 
                 debug!("Acquiring NewsFlash and client locks for fat article");
                 let news_flash = news_flash_lock.read().await;
@@ -158,8 +195,8 @@ impl NewsFlashUtils {
                 debug!("Sending AsyncFetchFatArticleFinished command");
                 command_sender.send(Message::Event(Event::AsyncFetchFatArticleFinished(
                     fat_article,
-                )))?;
-                Ok::<_, color_eyre::Report>(())
+                ))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+                Ok::<_, AsyncOperationError>(())
             }
             .await
             {
@@ -168,7 +205,7 @@ impl NewsFlashUtils {
                     article_id, e
                 );
                 let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
-                    e.to_string(),
+                    e,
                     Box::new(Event::AsyncFetchFatArticle),
                 )));
             }
@@ -192,7 +229,7 @@ impl NewsFlashUtils {
 
             if let Err(e) = async {
                 debug!("Sending AsyncMarkArticlesAsReadStarted command");
-                command_sender.send(Message::Event(Event::AsyncMarkArticlesAsRead))?;
+                command_sender.send(Message::Event(Event::AsyncMarkArticlesAsRead)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
 
                 debug!("Acquiring NewsFlash and client locks for article status");
                 let news_flash = news_flash_lock.read().await;
@@ -208,8 +245,8 @@ impl NewsFlashUtils {
                     article_ids.len()
                 );
                 debug!("Sending AsyncMarkArticlesAsReadFinished command");
-                command_sender.send(Message::Event(Event::AsyncMarkArticlesAsReadFinished))?;
-                Ok::<_, color_eyre::Report>(())
+                command_sender.send(Message::Event(Event::AsyncMarkArticlesAsReadFinished)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+                Ok::<_, AsyncOperationError>(())
             }
             .await
             {
@@ -219,7 +256,7 @@ impl NewsFlashUtils {
                     e
                 );
                 let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
-                    e.to_string(),
+                    e,
                     Box::new(Event::AsyncMarkArticlesAsRead),
                 )));
             }
@@ -266,4 +303,77 @@ impl NewsFlashUtils {
 
         None
     }
+
+    fn get_root_cause_message(error: &dyn Error) -> String {
+        let mut current_error = error;
+        while let Some(source) = current_error.source() {
+            current_error = source;
+        }
+        current_error.to_string()
+    }
+
+    pub fn error_to_message(news_flash_error: &NewsFlashError) -> String {
+        match news_flash_error {
+            NewsFlashError::Database(database_error) => {
+                format!("Database error ({}).", Self::get_root_cause_message(&database_error))
+            }
+            
+            NewsFlashError::API(feed_api_error) => {
+                format!("API error ({})", Self::get_root_cause_message(&feed_api_error))
+            }
+            
+            NewsFlashError::IO(error) => {
+                format!("IO error ({})", Self::get_root_cause_message(&error))
+            }
+            
+            NewsFlashError::LoadBackend => {
+                "Failed to load NewsFlash backend.".to_string()
+            }
+            
+            NewsFlashError::Icon(fav_icon_error) => {
+                format!("Favicon error: {}.", fav_icon_error)
+            }
+            
+            NewsFlashError::Url(parse_error) => {
+                format!("Invalid URL format: {}", parse_error)
+            }
+            
+            NewsFlashError::NotLoggedIn => {
+                "You need be logged in to perform this action. Please log in first.".to_string()
+            }
+            
+            NewsFlashError::Thumbnail => {
+                "Failed to load or generate thumbnail image for the article.".to_string()
+            }
+            
+            NewsFlashError::OPML(error) => {
+                format!("OPML file processing failed: {}. The file may be corrupted or invalid.", error)
+            }
+            
+            NewsFlashError::ImageDownload(image_download_error) => {
+                format!("Failed to download images for article: {}", image_download_error)
+            }
+            
+            NewsFlashError::GrabContent => {
+                "Failed to download full article content.".to_string()
+            }
+            
+            NewsFlashError::Semaphore(acquire_error) => {
+                format!("Unable to start concurrent operation: {}", acquire_error)
+            }
+            
+            NewsFlashError::Syncing => {
+                "Cannot perform this operation while syncing feeds. Please wait for sync to complete.".to_string()
+            }
+            
+            NewsFlashError::Offline => {
+                "Cannot perform this operation while offline.".to_string()
+            }
+            
+            NewsFlashError::Unknown => {
+                "An unknown error occurred.".to_string()
+            }
+        }
+    }
+
 }
