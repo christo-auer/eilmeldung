@@ -1,6 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use log::{info, warn};
+use news_flash::error::{FeedApiError, NewsFlashError};
 use reqwest::Client;
 use tokio::task::JoinHandle;
 
@@ -41,18 +42,24 @@ impl ConnectivityMonitor {
         info!("checking reachability of service");
         let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
 
-        let reachable_result = news_flash.is_reachable(&client).await;
-        if !reachable_result.is_ok_and(|reachable| reachable) {
-            warn!("service is not reachable anymore");
-            self.message_sender
-                .send(Message::Event(Event::ConnectionLost(
-                    ConnectionLostReason::NotReachable,
-                )))?;
-        } else {
-            info!("service is reachable ");
-            self.message_sender
-                .send(Message::Event(Event::ConnectionAvailable))?;
+        let is_reachable = news_flash.is_reachable(&client).await;
+        match is_reachable {
+            // if reachable or not supported => reachable
+            Ok(true) | Err(NewsFlashError::API(FeedApiError::Unsupported)) => {
+                info!("service is reachable ");
+                self.message_sender
+                    .send(Message::Event(Event::ConnectionAvailable))?;
+            }
+
+            Ok(false) | Err(_) => {
+                warn!("service is not reachable anymore");
+                self.message_sender
+                    .send(Message::Event(Event::ConnectionLost(
+                        ConnectionLostReason::NotReachable,
+                    )))?;
+            }
         }
+
         Ok(())
     }
 
@@ -76,9 +83,6 @@ impl ConnectivityMonitor {
         let (driver, mut receiver) =
             network_connectivity::new().map_err(|error| color_eyre::eyre::eyre!(error))?;
         let driver = tokio::spawn(driver);
-        // let is_running = self.is_running.clone();
-        // let news_flash_utils = self.news_flash_utils.clone();
-        // let message_sender = self.message_sender.clone();
 
         Ok(tokio::spawn(async move {
             *self.is_running.lock().await = true;
