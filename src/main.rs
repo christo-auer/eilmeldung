@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use log::{debug, error, info};
-use network_connectivity::ConnectivityState;
 use news_flash::{NewsFlash, models::LoginData};
 use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
 

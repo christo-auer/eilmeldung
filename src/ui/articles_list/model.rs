@@ -2,7 +2,7 @@ use crate::{prelude::*, ui::articles_list::view::FilterState};
 use std::{collections::HashMap, sync::Arc};
 
 use getset::Getters;
-use news_flash::models::{Article, ArticleID, Feed, FeedID, Read, Tag, TagID};
+use news_flash::models::{Article, ArticleID, Feed, FeedID, Marked, Read, Tag, TagID};
 
 #[derive(Getters)]
 #[getset(get = "pub(super)")]
@@ -145,6 +145,44 @@ impl ArticleListModelData {
 
             // update locally
             article.unread = new_state;
+        }
+
+        Ok(())
+    }
+
+    pub(super) fn set_all_marked_status(&mut self, marked: Marked) -> color_eyre::Result<()> {
+        let article_ids: Vec<ArticleID> = self
+            .articles
+            .iter()
+            .map(|article| article.article_id.clone())
+            .collect();
+
+        self.news_flash_utils
+            .set_article_marked(article_ids, marked);
+
+        self.articles
+            .iter_mut()
+            .for_each(|article| article.marked = marked);
+
+        Ok(())
+    }
+
+    pub(super) fn set_marked_status(
+        &mut self,
+        index: usize,
+        marked: Option<Marked>,
+    ) -> color_eyre::Result<()> {
+        if let Some(article) = self.articles.get_mut(index) {
+            let new_state = match marked {
+                Some(state) => state,
+                None => article.marked.invert(),
+            };
+
+            self.news_flash_utils
+                .set_article_marked(vec![article.article_id.clone()], new_state);
+
+            // update locally
+            article.marked = new_state;
         }
 
         Ok(())

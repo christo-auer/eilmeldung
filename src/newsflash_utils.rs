@@ -2,7 +2,7 @@ use crate::{messages::event::AsyncOperationError, prelude::*};
 use std::{collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
-    NewsFlash, error::NewsFlashError, models::{ArticleID, Read, Tag}
+    NewsFlash, error::NewsFlashError, models::{ArticleID, Marked, Read, Tag}
 };
 
 use log::{debug, error, info};
@@ -144,6 +144,19 @@ impl NewsFlashUtils {
                     .await?,
         success_event: Event::AsyncMarkArticlesAsReadFinished,
     }
+
+    gen_async_call! {
+        method_name: set_article_marked,
+        params: (article_ids: Vec<ArticleID>, marked: Marked),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncMarkArticlesAsRead,
+        operation: news_flash
+                    .set_article_marked(&article_ids, marked, &client)
+                    .await?,
+        success_event: Event::AsyncMarkArticlesAsMarkedFinished,
+    }
+
 
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(

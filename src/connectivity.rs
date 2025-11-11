@@ -9,7 +9,7 @@ use crate::prelude::*;
 use network_connectivity::{Connectivity, ConnectivityState};
 use tokio::sync::{
     Mutex,
-    mpsc::{UnboundedReceiver, UnboundedSender},
+    mpsc::UnboundedSender,
 };
 
 pub struct ConnectivityMonitor {

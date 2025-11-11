@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, fmt::Display};
 
-use crate::{login, prelude::*};
+use crate::prelude::*;
 
 use inquire::{Confirm, Password, Select, Text, min_length, validator::Validation};
 use log::info;
@@ -40,32 +40,6 @@ impl LoginSetup {
             .bold
             .set_fg(termimad::crossterm::style::Color::Magenta);
         s
-    }
-
-    fn print_basic_auth(&self, basic_auth: &Option<BasicAuth>) {
-        match basic_auth {
-            Some(basic_auth) => {
-                self.print_table(
-                    None,
-                    "|-|-|",
-                    &vec![
-                        vec!["**Basic/HTTP Auth**", "enabled"],
-                        vec!["**User**", &basic_auth.user],
-                        vec![
-                            "**Password**",
-                            &"*".repeat(basic_auth.password.as_ref().map(|s| s.len()).unwrap_or(8)),
-                        ],
-                    ],
-                );
-            }
-            None => {
-                self.print_table(
-                    None,
-                    "|-|-|",
-                    &vec![vec!["**Basic/HTTP Auth**", "disabled"]],
-                );
-            }
-        }
     }
 
     fn print_summary(&self, plugin_info: &PluginInfo, login_data: &LoginData) {

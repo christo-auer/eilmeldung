@@ -6,7 +6,7 @@ pub mod prelude {
 }
 
 use crate::ui::articles_list::{model::ArticleListModelData, view::FilterState};
-use news_flash::models::{Article, ArticleID, Read};
+use news_flash::models::{Article, ArticleID, Marked, Read};
 use view::ArticleListViewData;
 
 use crate::prelude::*;
@@ -190,6 +190,17 @@ impl ArticlesList {
         Ok(())
     }
 
+    pub(super) async fn set_current_marked_status(
+        &mut self,
+        marked: Option<Marked>,
+    ) -> color_eyre::Result<()> {
+        if let Some(index) = self.view_data.get_table_state_mut().selected() {
+            return self.model_data.set_marked_status(index, marked);
+        }
+
+        Ok(())
+    }
+
     pub(super) fn search_next(
         &mut self,
         skip_current: bool,
@@ -318,6 +329,32 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
             Message::Command(ArticleCurrentOpenInBrowser) => {
                 self.open_in_browser()?;
+            }
+
+            Message::Command(ArticleCurrentSetMarked) => {
+                self.set_current_marked_status(Some(Marked::Marked)).await?;
+                view_needs_update = true;
+            }
+
+            Message::Command(ArticleCurrentSetUnmarked) => {
+                self.set_current_marked_status(Some(Marked::Unmarked))
+                    .await?;
+                view_needs_update = true;
+            }
+
+            Message::Command(ArticleCurrentToggleMarked) => {
+                self.set_current_marked_status(None).await?;
+                view_needs_update = true;
+            }
+
+            Message::Command(ArticleListSetAllMarked) => {
+                self.model_data.set_all_marked_status(Marked::Marked)?;
+                view_needs_update = true;
+            }
+
+            Message::Command(ArticleListSetAllUnmarked) => {
+                self.model_data.set_all_marked_status(Marked::Unmarked)?;
+                view_needs_update = true;
             }
 
             Message::Command(ArticleCurrentSetRead) => {

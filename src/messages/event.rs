@@ -35,6 +35,9 @@ pub enum Event {
     AsyncMarkArticlesAsRead,
     AsyncMarkArticlesAsReadFinished,
 
+    AsyncMarkArticlesAsMarked,
+    AsyncMarkArticlesAsMarkedFinished,
+
     AsyncOperationFailed(AsyncOperationError, Box<Event>),
 
     AsyncSetOffline,

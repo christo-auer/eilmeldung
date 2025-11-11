@@ -108,7 +108,7 @@ impl Default for Config {
             offline_icon: '',
             read_icon: '',
             unread_icon: '',
-            marked_icon: '',
+            marked_icon: '',
             unmarked_icon: ' ',
             tag_icon: '󰓹',
             command_line_prompt_icon: '',
