@@ -1,14 +1,14 @@
 use std::{cmp::Ordering, fmt::Display};
 
-use crate::prelude::*;
+use crate::{login, prelude::*};
 
 use inquire::{Confirm, Password, Select, Text, min_length, validator::Validation};
 use log::info;
 use news_flash::{
     NewsFlash,
     models::{
-        BasicAuth, DirectLogin, DirectLoginGUI, LoginData, LoginGUI, PasswordLogin, PluginInfo,
-        ServicePrice, ServiceType, Url,
+        BasicAuth, DirectLogin, DirectLoginGUI, LoginData, LoginGUI, OAuthData, OAuthLoginGUI,
+        PasswordLogin, PluginInfo, ServicePrice, ServiceType, TokenLogin, Url,
     },
 };
 use reqwest::Client;
@@ -106,13 +106,19 @@ impl LoginSetup {
                 // self.print_basic_auth(&password_login.basic_auth);
             }
             Direct(DirectLogin::Token(token_login)) => {
-                println!("Login Data:");
-                println!(
-                    "  URL:      {}",
-                    token_login.url.as_deref().unwrap_or("none")
+                self.print_table(
+                    Option::None,
+                    "|-|-|",
+                    &vec![
+                        vec!["**Provider**", &plugin_info.name],
+                        vec!["**URL**", token_login.url.as_deref().unwrap_or("none")],
+                        vec!["**Token**", &token_login.token],
+                        summary_basic_auth(&token_login.basic_auth)
+                            .iter()
+                            .map(String::as_str)
+                            .collect(),
+                    ],
                 );
-                println!("  Token:     {}", token_login.token);
-                self.print_basic_auth(&token_login.basic_auth);
             }
 
             OAuth(oauth_data) => {
@@ -236,13 +242,36 @@ impl LoginSetup {
                 .unwrap(),
         };
 
-        Select::new("Select a provider you want to use", plugin_infos)
+        Select::new("Select a provider", plugin_infos)
             .with_vim_mode(true)
             .with_starting_cursor(preselect_index)
             .without_filtering()
             .prompt()
             .map(|wrapper| wrapper.plugin_info)
             .map_err(|err| color_eyre::eyre::eyre!(err))
+    }
+
+    fn inquire_oauth_login(
+        &self,
+        _plugin_info: &PluginInfo,
+        _oauth_login_gui: &OAuthLoginGUI,
+        _preset_direct_login_data: &Option<OAuthData>,
+    ) -> color_eyre::Result<LoginData> {
+        // if oauth_login_gui.custom_api_secret {
+        //     self.skin
+        //         .print_text(r#"For this provider you need an API Secret"#);
+        //     self.skin.print_inline(
+        //         &oauth_login_gui
+        //             .custom_api_secret_url
+        //             .as_ref()
+        //             .map(|url| url.to_string())
+        //             .unwrap_or("no url".into()),
+        //     );
+        // }
+
+        Err(color_eyre::eyre::eyre!(
+            "eilmeldung does not yet support OAuth. You can raise an issue of you need it."
+        ))
     }
 
     fn inquire_direct_login(
@@ -256,6 +285,7 @@ impl LoginSetup {
                 "How do you want to login?",
                 vec![LOGIN_TYPE_PASSWORD, LOGIN_TYPE_TOKEN],
             )
+            .with_vim_mode(true)
             .with_starting_cursor(match preset_direct_login_data {
                 Some(DirectLogin::Password(_)) => 0,
                 Some(DirectLogin::Token(_)) => 1,
@@ -285,7 +315,19 @@ impl LoginSetup {
                     )?,
                 )))
             }
-            _ => todo!(),
+            LOGIN_TYPE_TOKEN => {
+                let preset_token_login =
+                    preset_direct_login_data
+                        .as_ref()
+                        .and_then(|login_data| match login_data {
+                            DirectLogin::Token(token_login) => Some(token_login.clone()),
+                            _ => None,
+                        });
+                Ok(LoginData::Direct(DirectLogin::Token(
+                    self.inquire_token_login(plugin_info, direct_login_gui, &preset_token_login)?,
+                )))
+            }
+            _ => unreachable!(),
         }
     }
 
@@ -345,6 +387,35 @@ impl LoginSetup {
             .prompt_skippable()?;
 
         Ok(Some(BasicAuth { user, password }))
+    }
+
+    fn inquire_token_login(
+        &self,
+        plugin_info: &PluginInfo,
+        direct_login_gui: &DirectLoginGUI,
+        preset_token_login: &Option<TokenLogin>,
+    ) -> color_eyre::Result<TokenLogin> {
+        let mut token_login = preset_token_login.clone().unwrap_or(TokenLogin {
+            id: plugin_info.id.clone(),
+            url: None,
+            token: "".into(),
+            basic_auth: None,
+        });
+
+        if direct_login_gui.url {
+            token_login.url = self.inquire_url("Server URL: ", &token_login.url).ok();
+        }
+
+        token_login.token = inquire::Text::new("Token: ")
+            .with_default(&token_login.token)
+            .with_placeholder("login token by the provider")
+            .prompt()?;
+
+        if direct_login_gui.http_auth {
+            token_login.basic_auth = self.inquire_basic_auth(&token_login.basic_auth)?;
+        }
+
+        Ok(token_login)
     }
 
     fn inquire_password_login(
@@ -408,7 +479,14 @@ impl LoginSetup {
                         _ => Option::None,
                     }),
                 )?,
-                OAuth(_) => LoginData::None(plugin_info.id.clone()),
+                OAuth(oath_login_gui) => self.inquire_oauth_login(
+                    plugin_info,
+                    oath_login_gui,
+                    &login_data.as_ref().and_then(|login_data| match login_data {
+                        LoginData::OAuth(oauth_login_data) => Some(oauth_login_data.clone()),
+                        _ => Option::None,
+                    }),
+                )?,
                 None => LoginData::None(plugin_info.id.clone()),
             });
 
@@ -435,9 +513,9 @@ impl LoginSetup {
         termimad::print_inline("Attempting to login and synchronize...\n");
 
         let login_attempt = news_flash
-            .login(login_data.clone(), &client)
+            .login(login_data.clone(), client)
             .await
-            .and(news_flash.initial_sync(&client, Default::default()).await);
+            .and(news_flash.initial_sync(client, Default::default()).await);
 
         match login_attempt {
             Err(login_error) => {
@@ -452,9 +530,9 @@ impl LoginSetup {
                     .prompt()
                     .map_err(|err| color_eyre::eyre::eyre!(err))?
                 {
-                    return Ok(false);
+                    Ok(false)
                 } else {
-                    return Err(color_eyre::eyre::eyre!(login_error));
+                    Err(color_eyre::eyre::eyre!(login_error))
                 }
             }
 
@@ -464,7 +542,7 @@ impl LoginSetup {
                     "Login and initial sync successful. **You are ready to go**!\n",
                 );
                 inquire::Text::new("Press enter to continue...").prompt_skippable()?;
-                return Ok(true);
+                Ok(true)
             }
         }
     }
