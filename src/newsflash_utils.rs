@@ -19,6 +19,56 @@ pub struct NewsFlashUtils {
     async_operation_mutex: Arc<Mutex<()>>,
 }
 
+
+// macro to wrap news flash async calls into spawns and send messages at the beginning and end
+macro_rules! gen_async_call {
+    {
+        method_name: $method_name:ident,
+        params: ($($param:ident: $param_type:ty),*),
+        news_flash_var: $news_flash_var:ident,
+        client_var: $client_var:ident,
+        start_event: $start_event:expr,
+        operation: $operation:stmt,
+        success_event: $success_event:expr,
+    } => {
+        pub fn $method_name(&self, $($param: $param_type),*) {
+            let news_flash_lock = self.news_flash_lock.clone();
+            let client_lock = self.client_lock.clone();
+            let command_sender = self.command_sender.clone();
+            let async_operation_mutex = self.async_operation_mutex.clone();
+
+            tokio::spawn(async move {
+                let _lock = async_operation_mutex.lock().await;
+
+                if let Err(e) = async {
+                    command_sender.send(Message::Event($start_event)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+
+                    let $news_flash_var = news_flash_lock.read().await;
+                    let $client_var = client_lock.read().await;
+
+                    info!("Async call {}", stringify!($method_name));
+                    $operation
+                    info!("Async call finished {}", stringify!($method_name));
+
+                    command_sender.send(Message::Event($success_event)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+                    Ok::<(), AsyncOperationError>(())
+                }
+                .await
+                {
+                    error!("Async call {} failed: {}", stringify!(&method_name), e,);
+                    let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
+                                e,
+                                Box::new($start_event),
+                    )));
+                }
+            });
+    }
+
+    }
+
+
+}
+
 impl NewsFlashUtils {
     pub fn new(
         news_flash: NewsFlash,
@@ -39,232 +89,65 @@ impl NewsFlashUtils {
         self.async_operation_mutex.try_lock().is_err()
     }
 
-    pub fn set_offline(&self, offline: bool) {
-        info!("Starting going online/offline operation");
-        let news_flash_lock = self.news_flash_lock.clone();
-        let client_lock = self.client_lock.clone();
-        let command_sender = self.command_sender.clone();
-        let async_operation_mutex = self.async_operation_mutex.clone();
-
-        tokio::spawn(async move {
-            debug!("Acquiring async operation lock for sync");
-            let _lock = async_operation_mutex.lock().await;
-
-            if let Err(e) = async {
-                debug!("Sending AsyncSyncStarted command");
-                command_sender.send(Message::Event(Event::AsyncSetOffline)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
-
-                debug!("Acquiring NewsFlash and client locks");
-                let news_flash = news_flash_lock.read().await;
-                let client = client_lock.read().await;
-
-                info!("Starting NewsFlash set offline operation");
-                news_flash.set_offline(offline, &client).await?;
-
-                debug!("Sending AsyncSyncFinished command");
-                command_sender.send(Message::Event(Event::AsyncSetOfflineFinished(offline))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
-                Ok::<(), AsyncOperationError>(())
-            }
-            .await
-            {
-                error!("Feed sync failed: {}", e);
-                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
-                    e,
-                    Box::new(Event::AsyncSetOffline),
-                )));
-            }
-        });
-    
+    gen_async_call! {
+        method_name: set_offline,
+        params: (offline: bool),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncSetOffline,
+        operation: news_flash.set_offline(offline, &client).await?,
+        success_event: Event::AsyncSetOfflineFinished(offline),
     }
 
-    pub fn sync_feeds(&self) {
-        info!("Starting feed sync operation");
-        let news_flash_lock = self.news_flash_lock.clone();
-        let client_lock = self.client_lock.clone();
-        let command_sender = self.command_sender.clone();
-        let async_operation_mutex = self.async_operation_mutex.clone();
-
-        tokio::spawn(async move {
-            debug!("Acquiring async operation lock for sync");
-            let _lock = async_operation_mutex.lock().await;
-
-            if let Err(e) = async {
-                debug!("Sending AsyncSyncStarted command");
-                command_sender.send(Message::Event(Event::AsyncSync)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
-
-                debug!("Acquiring NewsFlash and client locks");
-                let news_flash = news_flash_lock.read().await;
-                let client = client_lock.read().await;
-
-                info!("Starting NewsFlash sync operation");
-                let new_articles = news_flash.sync(&client, Default::default()).await?;
-                info!("Sync completed, {} new articles found", new_articles.len());
-
-                debug!("Sending AsyncSyncFinished command");
-                command_sender.send(Message::Event(Event::AsyncSyncFinished(new_articles))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
-                Ok::<(), AsyncOperationError>(())
-            }
-            .await
-            {
-                error!("Feed sync failed: {}", e);
-                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
-                    e,
-                    Box::new(Event::AsyncSync),
-                )));
-            }
-        });
+    gen_async_call! {
+        method_name: sync_feeds,
+        params: (),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncSync,
+        operation: let new_articles = news_flash.sync(&client, Default::default()).await?,
+        success_event: Event::AsyncSyncFinished(new_articles),
     }
 
-    pub fn fetch_thumbnail(&self, article_id: ArticleID) {
-        debug!("Starting thumbnail fetch for article: {:?}", article_id);
-        let news_flash_lock = self.news_flash_lock.clone();
-        let client_lock = self.client_lock.clone();
-        let command_sender = self.command_sender.clone();
-        let async_operation_mutex = self.async_operation_mutex.clone();
-
-        tokio::spawn(async move {
-            debug!("Acquiring async operation lock for thumbnail fetch");
-            let _lock = async_operation_mutex.lock().await;
-
-            if let Err(e) = async {
-                debug!("Sending AsyncFetchThumbnailStarted command");
-                command_sender.send(Message::Event(Event::AsyncFetchThumbnail)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
-
-                debug!("Acquiring NewsFlash and client locks for thumbnail");
-                let news_flash = news_flash_lock.read().await;
-                let client = client_lock.read().await;
-
-                debug!("Fetching thumbnail from NewsFlash");
-                let thumbnail = news_flash
+    gen_async_call! {
+        method_name: fetch_thumbnail,
+        params: (article_id: ArticleID),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncFetchThumbnail,
+        operation: let thumbnail = news_flash
                     .get_article_thumbnail(&article_id, &client)
-                    .await?;
-
-                match &thumbnail {
-                    Some(_) => info!(
-                        "Thumbnail fetched successfully for article: {:?}",
-                        article_id
-                    ),
-                    None => debug!("No thumbnail available for article: {:?}", article_id),
-                }
-
-                debug!("Sending AsyncFetchThumbnailFinished command");
-                command_sender.send(Message::Event(Event::AsyncFetchThumbnailFinished(
-                    thumbnail,
-                ))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
-                Ok::<_, AsyncOperationError>(())
-            }
-            .await
-            {
-                error!("Thumbnail fetch failed for article {:?}: {}", article_id, e);
-                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
-                    e,
-                    Box::new(Event::AsyncFetchThumbnail),
-                )));
-            }
-        });
+                    .await?,
+        success_event: Event::AsyncFetchThumbnailFinished(thumbnail),
     }
 
-    pub fn fetch_fat_article(&self, article_id: ArticleID) {
-        info!("Starting fat article fetch for article: {:?}", article_id);
-        let news_flash_lock = self.news_flash_lock.clone();
-        let client_lock = self.client_lock.clone();
-        let command_sender = self.command_sender.clone();
-        let async_operation_mutex = self.async_operation_mutex.clone();
-
-        tokio::spawn(async move {
-            debug!("Acquiring async operation lock for fat article fetch");
-            let _lock = async_operation_mutex.lock().await;
-
-            if let Err(e) = async {
-                debug!("Sending AsyncFetchFatArticleStarted command");
-                command_sender.send(Message::Event(Event::AsyncFetchFatArticle)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
-
-                debug!("Acquiring NewsFlash and client locks for fat article");
-                let news_flash = news_flash_lock.read().await;
-                let client = client_lock.read().await;
-
-                info!("Scraping article content from NewsFlash");
-                let fat_article = news_flash
+    gen_async_call! {
+        method_name: fetch_fat_article,
+        params: (article_id: ArticleID),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncFetchFatArticle,
+        operation: let fat_article = news_flash
                     .scrap_content_article(&article_id, &client, None)
-                    .await?;
-
-                info!(
-                    "Fat article fetched successfully for article: {:?}",
-                    article_id
-                );
-                debug!("Sending AsyncFetchFatArticleFinished command");
-                command_sender.send(Message::Event(Event::AsyncFetchFatArticleFinished(
-                    fat_article,
-                ))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
-                Ok::<_, AsyncOperationError>(())
-            }
-            .await
-            {
-                error!(
-                    "Fat article fetch failed for article {:?}: {}",
-                    article_id, e
-                );
-                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
-                    e,
-                    Box::new(Event::AsyncFetchFatArticle),
-                )));
-            }
-        });
+                    .await?,
+        success_event: Event::AsyncFetchFatArticleFinished(fat_article),
     }
 
-    pub fn set_article_status(&self, article_ids: Vec<ArticleID>, read: Read) {
-        info!(
-            "Starting article status update: {} articles to {:?}",
-            article_ids.len(),
-            read
-        );
-        let news_flash_lock = self.news_flash_lock.clone();
-        let client_lock = self.client_lock.clone();
-        let command_sender = self.command_sender.clone();
-        let async_operation_mutex = self.async_operation_mutex.clone();
-
-        tokio::spawn(async move {
-            debug!("Acquiring async operation lock for article status update");
-            let _lock = async_operation_mutex.lock().await;
-
-            if let Err(e) = async {
-                debug!("Sending AsyncMarkArticlesAsReadStarted command");
-                command_sender.send(Message::Event(Event::AsyncMarkArticlesAsRead)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
-
-                debug!("Acquiring NewsFlash and client locks for article status");
-                let news_flash = news_flash_lock.read().await;
-                let client = client_lock.read().await;
-
-                debug!("Updating article read status in NewsFlash");
-                news_flash
+    gen_async_call! {
+        method_name: set_article_status,
+        params: (article_ids: Vec<ArticleID>, read: Read),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncMarkArticlesAsRead,
+        operation: news_flash
                     .set_article_read(&article_ids, read, &client)
-                    .await?;
-
-                info!(
-                    "Successfully updated status for {} articles",
-                    article_ids.len()
-                );
-                debug!("Sending AsyncMarkArticlesAsReadFinished command");
-                command_sender.send(Message::Event(Event::AsyncMarkArticlesAsReadFinished)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
-                Ok::<_, AsyncOperationError>(())
-            }
-            .await
-            {
-                error!(
-                    "Article status update failed for {} articles: {}",
-                    article_ids.len(),
-                    e
-                );
-                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
-                    e,
-                    Box::new(Event::AsyncMarkArticlesAsRead),
-                )));
-            }
-        });
+                    .await?,
+        success_event: Event::AsyncMarkArticlesAsReadFinished,
     }
+
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(
-        items: &Vec<V>,
+        items: &[V],
         id_extractor: impl Fn(&V) -> I,
     ) -> HashMap<I, V>
     where
@@ -277,7 +160,7 @@ impl NewsFlashUtils {
     }
 
     pub fn generate_one_to_many<E, I: Hash + Eq + Clone, V>(
-        mappings: &Vec<E>,
+        mappings: &[E],
         id_extractor: impl Fn(&E) -> I,
         value_extractor: impl Fn(&E) -> V,
     ) -> HashMap<I, Vec<V>>
@@ -285,7 +168,7 @@ impl NewsFlashUtils {
         V: Clone,
     {
         mappings
-            .into_iter()
+            .iter()
             .fold(HashMap::new(), |mut acc, mapping| {
                 acc.entry(id_extractor(mapping).clone())
                     .or_default()
