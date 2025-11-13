@@ -58,7 +58,7 @@ impl FilterState {
         let mut article_filter = augmented_article_filter.article_filter.clone();
 
         // read/unread/marked etc comes from query
-        if !augmented_article_filter.is_augmented() {
+        if !augmented_article_filter.defines_scope() {
             match self.article_scope {
                 ArticleScope::All => {}
                 ArticleScope::Unread => {
@@ -76,7 +76,7 @@ impl FilterState {
 
     pub fn get_effective_scope(&self) -> Option<ArticleScope> {
         if let Some(augmented_article_filter) = self.augmented_article_filter.as_ref()
-            && augmented_article_filter.is_augmented()
+            && augmented_article_filter.defines_scope()
         {
             return None;
         }
@@ -136,7 +136,7 @@ impl<'a> ArticleListViewData<'a> {
 
         let filter_info = match filter_state.article_adhoc_filter {
             Some(_) if filter_state.apply_article_adhoc_filter => " ",
-            Some(_) => " ",
+            Some(_) => "  ",
             _ => "",
         };
 

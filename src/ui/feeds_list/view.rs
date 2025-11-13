@@ -118,13 +118,6 @@ impl FeedListViewData {
             self.tree_items
                 .push(TreeItem::new_leaf(query_item, query_item_text))
         });
-        // }
-        //
-        // if !previously_selected.is_empty() {
-        //     self.select_entry(previously_selected)?;
-        // } else {
-        //     self.select_entry(vec![FeedListItem::All])?;
-        // }
 
         Ok(())
     }

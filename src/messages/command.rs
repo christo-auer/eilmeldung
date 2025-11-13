@@ -6,6 +6,35 @@ use serde::Deserialize;
 use crate::prelude::*;
 
 #[derive(Clone, Debug)]
+pub enum ActionScope {
+    Current,
+    All,
+    Query(ArticleQuery),
+}
+
+impl FromStr for ActionScope {
+    type Err = color_eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use ActionScope::*;
+        match s {
+            "." => Ok(Current),
+            "%" => Ok(All),
+            _ => Ok(Query(ArticleQuery::from_str(s)?)),
+        }
+    }
+}
+
+impl ActionScope {
+    fn from_option_string(s: Option<&str>) -> color_eyre::Result<ActionScope> {
+        match s {
+            Some(s) => ActionScope::from_str(s),
+            None => Ok(ActionScope::Current),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum Command {
     // general navigation
     NavigateUp,
@@ -34,6 +63,15 @@ pub enum Command {
     ArticleCurrentSetMarked,
     ArticleCurrentSetUnmarked,
     ArticleCurrentToggleMarked,
+
+    ActionSetRead(ActionScope),
+    ActionSetUnread(ActionScope),
+    ActionToggleRead(ActionScope),
+    ActionSetMarked(ActionScope),
+    ActionSetUnmarked(ActionScope),
+    ActionToggleMarked(ActionScope),
+    ActionOpenInBrowser(ActionScope),
+
     ArticleListSelectNextUnread,
     ArticleListSetAllRead,
     ArticleListSetAllUnread,
@@ -102,6 +140,14 @@ impl Display for Command {
             }
             ArticleListFilterApply => write!(f, "apply current article filter"),
             ArticleListFilterClear => write!(f, "clear article filter"),
+
+            ActionSetRead(_) => write!(f, "mark as read"),
+            ActionSetUnread(_) => write!(f, "mark as unread"),
+            ActionToggleRead(_) => write!(f, "toggle read/unread"),
+            ActionSetMarked(_) => write!(f, "mark"),
+            ActionSetUnmarked(_) => write!(f, "unmark"),
+            ActionToggleMarked(_) => write!(f, "toggle marked/unmarked"),
+            ActionOpenInBrowser(_) => write!(f, "open in browser"),
         }
     }
 }
@@ -182,17 +228,14 @@ impl FromStr for Command {
 
             "sync" => FeedsSync,
             "open" => ArticleCurrentOpenInBrowser,
-            "read" => ArticleCurrentSetRead,
-            "unread" => ArticleCurrentSetUnread,
-            "!read" => ArticleCurrentToggleRead,
-            "mark" => ArticleCurrentSetMarked,
-            "unmark" => ArticleCurrentSetUnmarked,
-            "!marked" => ArticleCurrentToggleMarked,
+
+            "read" => ActionSetRead(ActionScope::from_option_string(args)?),
+            "unread" => ActionSetUnread(ActionScope::from_option_string(args)?),
+            "mark" => ActionSetMarked(ActionScope::from_option_string(args)?),
+            "unmark" => ActionSetUnmarked(ActionScope::from_option_string(args)?),
+
             "nextu" | "nextunread" => ArticleListSelectNextUnread,
-            "%read" => ArticleListSetAllRead,
-            "%unread" => ArticleListSetAllUnread,
-            "%mark" => ArticleListSetAllMarked,
-            "%unmark" => ArticleListSetAllUnmarked,
+
             "scope" => match args {
                 Some(args) => ArticleListSetScope(ArticleScope::from_str(args)?),
                 None => {

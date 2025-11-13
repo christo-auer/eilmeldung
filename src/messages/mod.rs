@@ -2,7 +2,7 @@ pub mod command;
 pub mod event;
 
 pub mod prelude {
-    pub use super::command::{Command, CommandSequence};
+    pub use super::command::{ActionScope, Command, CommandSequence};
     pub use super::event::{AsyncOperationError, Event};
     pub use super::{Message, MessageReceiver};
 }

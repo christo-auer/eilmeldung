@@ -1,5 +1,8 @@
 use crate::{prelude::*, ui::articles_list::view::FilterState};
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use getset::Getters;
 use news_flash::models::{Article, ArticleID, Feed, FeedID, Marked, Read, Tag, TagID};
@@ -88,103 +91,59 @@ impl ArticleListModelData {
         self.articles = news_flash.get_articles(article_filter.clone())?;
 
         if augmented_article_filter.is_augmented() {
-            self.articles = augmented_article_filter.article_query.filter(
-                &self.articles,
-                &self.feed_map,
-                &self.tags_for_article,
-                &self.tag_map,
-            );
+            self.articles = self.get_queried_articles(&augmented_article_filter.article_query);
         }
 
         if let Some(article_adhoc_filter) = filter_state.article_adhoc_filter().as_ref()
             && *filter_state.apply_article_adhoc_filter()
         {
-            self.articles = article_adhoc_filter.filter(
-                &self.articles,
-                &self.feed_map,
-                &self.tags_for_article,
-                &self.tag_map,
-            );
+            self.articles = self.get_queried_articles(article_adhoc_filter);
         }
 
         Ok(())
     }
 
-    pub(super) fn set_all_read_status(
-        &mut self,
-        read: news_flash::models::Read,
-    ) -> color_eyre::Result<()> {
-        let article_ids: Vec<ArticleID> = self
-            .articles
-            .iter()
-            .map(|article| article.article_id.clone())
-            .collect();
-
-        self.news_flash_utils.set_article_status(article_ids, read);
-
-        self.articles
-            .iter_mut()
-            .for_each(|article| article.unread = read);
-
-        Ok(())
+    pub(super) fn get_queried_articles(&self, query: &ArticleQuery) -> Vec<Article> {
+        query.filter(
+            &self.articles,
+            &self.feed_map,
+            &self.tags_for_article,
+            &self.tag_map,
+        )
     }
 
     pub(super) fn set_read_status(
         &mut self,
-        index: usize,
-        read: Option<Read>,
-    ) -> color_eyre::Result<()> {
-        if let Some(article) = self.articles.get_mut(index) {
-            let new_state = match read {
-                Some(state) => state,
-                None => article.unread.invert(),
-            };
+        article_ids: Vec<ArticleID>,
+        read: news_flash::models::Read,
+    ) -> color_eyre::Result<usize> {
+        let article_ids_set: HashSet<ArticleID> = article_ids.iter().cloned().collect();
 
-            self.news_flash_utils
-                .set_article_status(vec![article.article_id.clone()], new_state);
+        self.news_flash_utils
+            .set_article_status(article_ids.clone(), read);
 
-            // update locally
-            article.unread = new_state;
-        }
+        self.articles
+            .iter_mut()
+            .filter(|article| article_ids_set.contains(&article.article_id))
+            .for_each(|article| article.unread = read);
 
-        Ok(())
+        Ok(article_ids_set.len())
     }
 
-    pub(super) fn set_all_marked_status(&mut self, marked: Marked) -> color_eyre::Result<()> {
-        let article_ids: Vec<ArticleID> = self
-            .articles
-            .iter()
-            .map(|article| article.article_id.clone())
-            .collect();
-
+    pub(super) fn set_marked_status(
+        &mut self,
+        article_ids: Vec<ArticleID>,
+        marked: Marked,
+    ) -> color_eyre::Result<usize> {
+        let article_ids_set: HashSet<ArticleID> = article_ids.iter().cloned().collect();
         self.news_flash_utils
             .set_article_marked(article_ids, marked);
 
         self.articles
             .iter_mut()
+            .filter(|article| article_ids_set.contains(&article.article_id))
             .for_each(|article| article.marked = marked);
 
-        Ok(())
-    }
-
-    pub(super) fn set_marked_status(
-        &mut self,
-        index: usize,
-        marked: Option<Marked>,
-    ) -> color_eyre::Result<()> {
-        if let Some(article) = self.articles.get_mut(index) {
-            let new_state = match marked {
-                Some(state) => state,
-                None => article.marked.invert(),
-            };
-
-            self.news_flash_utils
-                .set_article_marked(vec![article.article_id.clone()], new_state);
-
-            // update locally
-            article.marked = new_state;
-        }
-
-        Ok(())
+        Ok(article_ids_set.len())
     }
 }

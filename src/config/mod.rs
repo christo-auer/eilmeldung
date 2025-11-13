@@ -124,15 +124,8 @@ impl Default for Config {
             article_content_preferred_type: ArticleContentType::Markdown,
 
             queries: vec![
-                // ("Heise".into(), "unread feed:heise".into()).into(),
-                ("Apple News".into(), "title:/(?i).*apple:.*/".into()).into(),
-                ("Tag test ".into(), "tag:#test feedurl:\"pitchfork\"".into()).into(),
-                ("Tag test 2".into(), "tag:#test,#abc ~tag:#abcd".into()).into(),
-                (
-                    "alle ungelesenen von heute auf heise".into(),
-                    "newer:\"1 day ago\" ~newer:\"5 hours ago\" unread feed:/(?i)heise/".into(),
-                )
-                    .into(),
+                ("Today Unread".into(), "today unread".into()).into(),
+                ("Today Marked".into(), "today marked".into()).into(),
             ],
         }
     }

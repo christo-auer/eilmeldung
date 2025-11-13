@@ -243,6 +243,9 @@ enum QueryToken {
     #[token("older:")]
     KeyOlder,
 
+    #[token("today")]
+    KeyToday,
+
     #[token("syncedbefore:")]
     KeySyncedBefore,
 
@@ -311,6 +314,12 @@ impl AugmentedArticleFilter {
 
     pub fn is_augmented(&self) -> bool {
         !self.article_query.query.is_empty()
+    }
+
+    pub fn defines_scope(&self) -> bool {
+        self.is_augmented()
+            || self.article_filter.unread.is_some()
+            || self.article_filter.marked.is_some()
     }
 }
 
@@ -452,31 +461,42 @@ fn parse_query(
                 }
             },
 
-            mut time_key @ (KeyNewer | KeyOlder | KeySyncedBefore | KeySyncedAfter) => {
-                let time = match query_lexer.next() {
-                    Some(Ok(QuotedString)) => {
-                        let mut time_string = query_lexer.slice().to_string();
-                        strip_first_and_last(&mut time_string);
-                        let zoned = parse_datetime(&time_string).map_err(|_| {
-                            to_error(
+            mut time_key @ (KeyNewer | KeyOlder | KeyToday | KeySyncedBefore | KeySyncedAfter) => {
+                let time = if matches!(time_key, KeyToday) {
+                    time_key = KeyNewer;
+
+                    let zoned = parse_datetime("1 day ago").unwrap();
+                    DateTime::from_timestamp(
+                        zoned.timestamp().as_second(),
+                        zoned.timestamp().subsec_nanosecond() as u32,
+                    )
+                    .unwrap()
+                } else {
+                    match query_lexer.next() {
+                        Some(Ok(QuotedString)) => {
+                            let mut time_string = query_lexer.slice().to_string();
+                            strip_first_and_last(&mut time_string);
+                            let zoned = parse_datetime(&time_string).map_err(|_| {
+                                to_error(
+                                    "expected time string or relative time",
+                                    query_lexer.slice(),
+                                    query_lexer.span().start,
+                                )
+                            })?;
+                            DateTime::from_timestamp(
+                                zoned.timestamp().as_second(),
+                                zoned.timestamp().subsec_nanosecond() as u32,
+                            )
+                            .unwrap()
+                        }
+
+                        _ => {
+                            return Err(to_error(
                                 "expected time string or relative time",
                                 query_lexer.slice(),
                                 query_lexer.span().start,
-                            )
-                        })?;
-                        DateTime::from_timestamp(
-                            zoned.timestamp().as_second(),
-                            zoned.timestamp().subsec_nanosecond() as u32,
-                        )
-                        .unwrap()
-                    }
-
-                    _ => {
-                        return Err(to_error(
-                            "expected time string or relative time",
-                            query_lexer.slice(),
-                            query_lexer.span().start,
-                        ));
+                            ));
+                        }
                     }
                 };
 

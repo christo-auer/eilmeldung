@@ -6,6 +6,7 @@ pub mod prelude {
 }
 
 use crate::ui::articles_list::{model::ArticleListModelData, view::FilterState};
+use log::info;
 use news_flash::models::{Article, ArticleID, Marked, Read};
 use view::ArticleListViewData;
 
@@ -179,26 +180,128 @@ impl ArticlesList {
         }
     }
 
-    pub(super) async fn set_current_read_status(
-        &mut self,
-        read: Option<Read>,
-    ) -> color_eyre::Result<()> {
-        if let Some(index) = self.view_data.get_table_state_mut().selected() {
-            return self.model_data.set_read_status(index, read);
-        }
-
-        Ok(())
+    fn get_all_article_ids(&self) -> Vec<ArticleID> {
+        self.model_data
+            .articles()
+            .iter()
+            .map(|article| &article.article_id)
+            .cloned()
+            .collect()
     }
 
-    pub(super) async fn set_current_marked_status(
-        &mut self,
-        marked: Option<Marked>,
-    ) -> color_eyre::Result<()> {
-        if let Some(index) = self.view_data.get_table_state_mut().selected() {
-            return self.model_data.set_marked_status(index, marked);
+    pub(super) fn set_all_read_status(&mut self, read: Read) -> color_eyre::Result<usize> {
+        info!("setting all articles to {:?}", read);
+        self.model_data
+            .set_read_status(self.get_all_article_ids(), read)
+    }
+
+    pub(super) fn set_current_read_status(&mut self, read: Read) -> color_eyre::Result<usize> {
+        info!("setting current article to {:?}", read);
+        if let Some(article) = self.get_current_article() {
+            return self
+                .model_data
+                .set_read_status(vec![article.article_id], read);
         }
 
-        Ok(())
+        Ok(0)
+    }
+
+    pub(super) fn set_queried_read_status(
+        &mut self,
+        query: &ArticleQuery,
+        read: Read,
+    ) -> color_eyre::Result<usize> {
+        let queried_articles = self
+            .model_data
+            .get_queried_articles(query)
+            .iter()
+            .map(|article| &article.article_id)
+            .cloned()
+            .collect::<Vec<ArticleID>>();
+
+        info!("setting queried article to {:?}", read);
+        self.model_data.set_read_status(queried_articles, read)
+    }
+
+    pub(super) fn set_action_scope_read_status(
+        &mut self,
+        action_scope: &ActionScope,
+        read: Read,
+    ) -> color_eyre::Result<usize> {
+        use ActionScope::*;
+        let amount = match action_scope {
+            All => self.set_all_read_status(read)?,
+            Current => self.set_current_read_status(read)?,
+            Query(query) => self.set_queried_read_status(query, read)?,
+        };
+
+        // TODO make better
+        tooltip(
+            &self.message_sender,
+            format!("set status of {} articles to {:?}", amount, read).as_str(),
+            TooltipFlavor::Info,
+        )?;
+
+        Ok(amount)
+    }
+
+    pub(super) fn set_current_marked_status(
+        &mut self,
+        marked: Marked,
+    ) -> color_eyre::Result<usize> {
+        info!("setting current article to {:?}", marked);
+        if let Some(article) = self.get_current_article() {
+            return self
+                .model_data
+                .set_marked_status(vec![article.article_id], marked);
+        }
+
+        Ok(0)
+    }
+
+    pub(super) fn set_all_marked_status(&mut self, marked: Marked) -> color_eyre::Result<usize> {
+        info!("setting all articles to {:?}", marked);
+        self.model_data
+            .set_marked_status(self.get_all_article_ids(), marked)
+    }
+
+    pub(super) fn set_queried_marked_status(
+        &mut self,
+        query: &ArticleQuery,
+        marked: Marked,
+    ) -> color_eyre::Result<usize> {
+        info!("setting queried articles to {:?}", marked);
+        let queried_articles = self
+            .model_data
+            .get_queried_articles(query)
+            .iter()
+            .map(|article| &article.article_id)
+            .cloned()
+            .collect::<Vec<ArticleID>>();
+
+        self.model_data.set_marked_status(queried_articles, marked)
+    }
+
+    pub(super) fn set_action_scope_marked_status(
+        &mut self,
+        action_scope: &ActionScope,
+        marked: Marked,
+    ) -> color_eyre::Result<usize> {
+        use ActionScope::*;
+        let amount = match action_scope {
+            All => self.set_all_marked_status(marked)?,
+            Current => self.set_current_marked_status(marked)?,
+            Query(query) => self.set_queried_marked_status(query, marked)?,
+        };
+
+        // TODO make better
+        tooltip(
+            &self.message_sender,
+            format!("set status of {} articles to {:?}", amount, marked).as_str(),
+            TooltipFlavor::Info,
+        )?;
+
+        Ok(amount)
     }
 
     pub(super) fn search_next(
@@ -332,53 +435,62 @@ impl crate::messages::MessageReceiver for ArticlesList {
             }
 
             Message::Command(ArticleCurrentSetMarked) => {
-                self.set_current_marked_status(Some(Marked::Marked)).await?;
+                self.set_current_marked_status(Marked::Marked)?;
                 view_needs_update = true;
             }
 
             Message::Command(ArticleCurrentSetUnmarked) => {
-                self.set_current_marked_status(Some(Marked::Unmarked))
-                    .await?;
-                view_needs_update = true;
-            }
-
-            Message::Command(ArticleCurrentToggleMarked) => {
-                self.set_current_marked_status(None).await?;
+                self.set_current_marked_status(Marked::Unmarked)?;
                 view_needs_update = true;
             }
 
             Message::Command(ArticleListSetAllMarked) => {
-                self.model_data.set_all_marked_status(Marked::Marked)?;
+                self.set_all_marked_status(Marked::Marked)?;
                 view_needs_update = true;
             }
 
             Message::Command(ArticleListSetAllUnmarked) => {
-                self.model_data.set_all_marked_status(Marked::Unmarked)?;
+                self.set_all_marked_status(Marked::Unmarked)?;
+                view_needs_update = true;
+            }
+
+            Message::Command(ActionSetRead(action_scope)) if self.is_focused => {
+                self.set_action_scope_read_status(action_scope, Read::Read)?;
+                view_needs_update = true;
+            }
+
+            Message::Command(ActionSetUnread(action_scope)) if self.is_focused => {
+                self.set_action_scope_read_status(action_scope, Read::Unread)?;
+                view_needs_update = true;
+            }
+
+            Message::Command(ActionSetMarked(action_scope)) if self.is_focused => {
+                self.set_action_scope_marked_status(action_scope, Marked::Marked)?;
+                view_needs_update = true;
+            }
+
+            Message::Command(ActionSetUnmarked(action_scope)) if self.is_focused => {
+                self.set_action_scope_marked_status(action_scope, Marked::Unmarked)?;
                 view_needs_update = true;
             }
 
             Message::Command(ArticleCurrentSetRead) => {
-                self.set_current_read_status(Some(Read::Read)).await?;
+                self.set_current_read_status(Read::Read)?;
                 view_needs_update = true;
             }
 
             Message::Command(ArticleCurrentSetUnread) => {
-                self.set_current_read_status(Some(Read::Unread)).await?;
-                view_needs_update = true;
-            }
-
-            Message::Command(ArticleCurrentToggleRead) => {
-                self.set_current_read_status(None).await?;
+                self.set_current_read_status(Read::Unread)?;
                 view_needs_update = true;
             }
 
             Message::Command(ArticleListSetAllRead) => {
-                self.model_data.set_all_read_status(Read::Read)?;
+                self.set_all_read_status(Read::Read)?;
                 view_needs_update = true;
             }
 
             Message::Command(ArticleListSetAllUnread) => {
-                self.model_data.set_all_read_status(Read::Unread)?;
+                self.set_all_read_status(Read::Unread)?;
                 view_needs_update = true;
             }
 
