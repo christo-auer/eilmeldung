@@ -159,11 +159,11 @@ impl Display for Command {
             ActionSetMarked(action_scope) => write!(f, "mark {}", action_scope),
             ActionSetUnmarked(action_scope) => write!(f, "unmark {}", action_scope),
             ActionOpenInBrowser(action_scope) => write!(f, "open {} in browser", action_scope),
-            ActionTagArticle(tag, action_scope) => {
-                write!(f, "add tag {} to {}", tag, &action_scope)
+            ActionTagArticle(action_scope, tag) => {
+                write!(f, "add #{} to {}", tag, &action_scope)
             }
-            ActionUntagArticle(tag, action_scope) => {
-                write!(f, "remove tag {} to {}", tag, &action_scope)
+            ActionUntagArticle(action_scope, tag) => {
+                write!(f, "remove #{} from {}", tag, &action_scope)
             }
         }
     }
