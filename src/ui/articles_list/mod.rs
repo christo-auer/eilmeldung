@@ -516,7 +516,9 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 view_needs_update = true;
             }
 
-            Message::Event(AsyncMarkArticlesAsReadFinished) => {
+            Message::Event(AsyncMarkArticlesAsReadFinished)
+            | Message::Event(AsyncMarkArticlesAsMarkedFinished)
+            | Message::Event(AsyncTagArticleFinished) => {
                 model_needs_update = true;
             }
 

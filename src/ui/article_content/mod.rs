@@ -112,6 +112,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 self.view_data.scroll_to_bottom();
             }
 
+            // TODO fetch article data directly instead of using command
             Message::Event(ArticleSelected(article, feed, tags)) => {
                 self.on_article_selected(article, feed, tags).await?;
             }
@@ -170,6 +171,13 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 if self.is_focused && self.config.article_auto_scrape {
                     self.scrape_article()?;
                 }
+                view_needs_update = true;
+            }
+
+            Message::Event(AsyncSyncFinished(_))
+            | Message::Event(AsyncMarkArticlesAsReadFinished)
+            | Message::Event(AsyncMarkArticlesAsMarkedFinished)
+            | Message::Event(AsyncTagArticleFinished) => {
                 view_needs_update = true;
             }
 

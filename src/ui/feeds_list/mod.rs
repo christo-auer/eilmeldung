@@ -124,7 +124,9 @@ impl MessageReceiver for FeedList {
 
             Message::Event(ApplicationStarted)
             | Message::Event(AsyncSyncFinished(_))
-            | Message::Event(AsyncMarkArticlesAsReadFinished) => {
+            | Message::Event(AsyncMarkArticlesAsReadFinished)
+            | Message::Event(AsyncMarkArticlesAsMarkedFinished)
+            | Message::Event(AsyncTagArticleFinished) => {
                 models_need_update = true;
             }
 
