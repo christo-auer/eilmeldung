@@ -7,7 +7,7 @@ pub mod prelude {
 
 use crate::ui::articles_list::{model::ArticleListModelData, view::FilterState};
 use log::info;
-use news_flash::models::{Article, ArticleID, Marked, Read};
+use news_flash::models::{Article, ArticleID, Marked, Read, Tag};
 use view::ArticleListViewData;
 
 use crate::prelude::*;
@@ -129,11 +129,15 @@ impl ArticlesList {
     pub(super) fn open_in_browser(&self) -> color_eyre::Result<()> {
         if let Some(article) = self.get_current_article()
             && let Some(url) = article.url.as_ref()
+            && let Err(error) = webbrowser::open(url.as_ref())
         {
-            webbrowser::open(url.as_ref())?;
+            tooltip(
+                &self.message_sender,
+                format!("unable to open article in webbrowser: {}", error).as_str(),
+                TooltipFlavor::Error,
+            )?;
         }
 
-        // TODO error handling
         Ok(())
     }
 
@@ -206,21 +210,25 @@ impl ArticlesList {
         Ok(0)
     }
 
-    pub(super) fn set_queried_read_status(
-        &mut self,
-        query: &ArticleQuery,
-        read: Read,
-    ) -> color_eyre::Result<usize> {
-        let queried_articles = self
-            .model_data
-            .get_queried_articles(query)
-            .iter()
-            .map(|article| &article.article_id)
-            .cloned()
-            .collect::<Vec<ArticleID>>();
-
-        info!("setting queried article to {:?}", read);
-        self.model_data.set_read_status(queried_articles, read)
+    pub(super) fn get_articles_by_action_scope(
+        &self,
+        action_scope: &ActionScope,
+    ) -> color_eyre::Result<Vec<ArticleID>> {
+        use ActionScope::*;
+        Ok(match action_scope {
+            All => self.get_all_article_ids(),
+            Current => match self.get_current_article() {
+                Some(article) => vec![article.article_id],
+                None => Vec::default(),
+            },
+            Query(query) => self
+                .model_data
+                .get_queried_articles(query)
+                .iter()
+                .map(|article| &article.article_id)
+                .cloned()
+                .collect::<Vec<ArticleID>>(),
+        })
     }
 
     pub(super) fn set_action_scope_read_status(
@@ -228,58 +236,25 @@ impl ArticlesList {
         action_scope: &ActionScope,
         read: Read,
     ) -> color_eyre::Result<usize> {
-        use ActionScope::*;
-        let amount = match action_scope {
-            All => self.set_all_read_status(read)?,
-            Current => self.set_current_read_status(read)?,
-            Query(query) => self.set_queried_read_status(query, read)?,
-        };
+        let amount = self
+            .model_data
+            .set_read_status(self.get_articles_by_action_scope(action_scope)?, read)?;
 
-        // TODO make better
         tooltip(
             &self.message_sender,
-            format!("set status of {} articles to {:?}", amount, read).as_str(),
+            format!(
+                "set status of {} articles to {}",
+                amount,
+                match read {
+                    Read::Read => "read",
+                    Read::Unread => "read",
+                }
+            )
+            .as_str(),
             TooltipFlavor::Info,
         )?;
 
         Ok(amount)
-    }
-
-    pub(super) fn set_current_marked_status(
-        &mut self,
-        marked: Marked,
-    ) -> color_eyre::Result<usize> {
-        info!("setting current article to {:?}", marked);
-        if let Some(article) = self.get_current_article() {
-            return self
-                .model_data
-                .set_marked_status(vec![article.article_id], marked);
-        }
-
-        Ok(0)
-    }
-
-    pub(super) fn set_all_marked_status(&mut self, marked: Marked) -> color_eyre::Result<usize> {
-        info!("setting all articles to {:?}", marked);
-        self.model_data
-            .set_marked_status(self.get_all_article_ids(), marked)
-    }
-
-    pub(super) fn set_queried_marked_status(
-        &mut self,
-        query: &ArticleQuery,
-        marked: Marked,
-    ) -> color_eyre::Result<usize> {
-        info!("setting queried articles to {:?}", marked);
-        let queried_articles = self
-            .model_data
-            .get_queried_articles(query)
-            .iter()
-            .map(|article| &article.article_id)
-            .cloned()
-            .collect::<Vec<ArticleID>>();
-
-        self.model_data.set_marked_status(queried_articles, marked)
     }
 
     pub(super) fn set_action_scope_marked_status(
@@ -287,21 +262,57 @@ impl ArticlesList {
         action_scope: &ActionScope,
         marked: Marked,
     ) -> color_eyre::Result<usize> {
-        use ActionScope::*;
-        let amount = match action_scope {
-            All => self.set_all_marked_status(marked)?,
-            Current => self.set_current_marked_status(marked)?,
-            Query(query) => self.set_queried_marked_status(query, marked)?,
-        };
+        let amount = self
+            .model_data
+            .set_marked_status(self.get_articles_by_action_scope(action_scope)?, marked)?;
 
-        // TODO make better
         tooltip(
             &self.message_sender,
-            format!("set status of {} articles to {:?}", amount, marked).as_str(),
+            format!(
+                "set status of {} articles to {:?}",
+                amount,
+                match marked {
+                    Marked::Marked => "marked",
+                    Marked::Unmarked => "unmarked",
+                }
+            )
+            .as_str(),
             TooltipFlavor::Info,
         )?;
 
         Ok(amount)
+    }
+
+    pub(super) fn change_tag(
+        &mut self,
+        action_scope: &ActionScope,
+        tag: Tag,
+        add: bool,
+    ) -> color_eyre::Result<()> {
+        let article_ids = self.get_articles_by_action_scope(action_scope)?;
+        if add {
+            let amount = self
+                .model_data
+                .tag_articles(article_ids, tag.tag_id.clone())?;
+            tooltip(
+                &self.message_sender,
+                format!("adding tag {} to {} articles", tag.label, amount).as_str(),
+                TooltipFlavor::Info,
+            )?;
+            amount
+        } else {
+            let amount = self
+                .model_data
+                .untag_articles(article_ids, tag.tag_id.clone())?;
+            tooltip(
+                &self.message_sender,
+                format!("removing tag {} from {} articles", tag.label, amount).as_str(),
+                TooltipFlavor::Info,
+            )?;
+            amount
+        };
+
+        Ok(())
     }
 
     pub(super) fn search_next(
@@ -434,26 +445,6 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 self.open_in_browser()?;
             }
 
-            Message::Command(ArticleCurrentSetMarked) => {
-                self.set_current_marked_status(Marked::Marked)?;
-                view_needs_update = true;
-            }
-
-            Message::Command(ArticleCurrentSetUnmarked) => {
-                self.set_current_marked_status(Marked::Unmarked)?;
-                view_needs_update = true;
-            }
-
-            Message::Command(ArticleListSetAllMarked) => {
-                self.set_all_marked_status(Marked::Marked)?;
-                view_needs_update = true;
-            }
-
-            Message::Command(ArticleListSetAllUnmarked) => {
-                self.set_all_marked_status(Marked::Unmarked)?;
-                view_needs_update = true;
-            }
-
             Message::Command(ActionSetRead(action_scope)) if self.is_focused => {
                 self.set_action_scope_read_status(action_scope, Read::Read)?;
                 view_needs_update = true;
@@ -471,6 +462,37 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
             Message::Command(ActionSetUnmarked(action_scope)) if self.is_focused => {
                 self.set_action_scope_marked_status(action_scope, Marked::Unmarked)?;
+                view_needs_update = true;
+            }
+
+            tag_command @ (Message::Command(ActionTagArticle(action_scope, tag_name))
+            | Message::Command(ActionUntagArticle(action_scope, tag_name)))
+                if self.is_focused =>
+            {
+                match self
+                    .model_data
+                    .tag_map()
+                    .values()
+                    .find(|&tag| tag.label == *tag_name)
+                {
+                    Some(tag) => {
+                        self.change_tag(
+                            action_scope,
+                            tag.clone(),
+                            matches!(tag_command, Message::Command(ActionTagArticle(..))),
+                        )?;
+                    }
+                    None => {
+                        log::warn!("could not find tag with name {}", tag_name);
+                        tooltip(
+                            &self.message_sender,
+                            format!("unknown tag: {}", tag_name).as_str(),
+                            TooltipFlavor::Error,
+                        )?;
+                    }
+                }
+
+                // self.set_action_scope_marked_status(action_scope, Marked::Unmarked)?;
                 view_needs_update = true;
             }
 

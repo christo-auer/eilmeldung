@@ -34,6 +34,18 @@ impl ActionScope {
     }
 }
 
+impl Display for ActionScope {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use ActionScope::*;
+        match self {
+            Current => write!(f, "current article")?,
+            All => write!(f, "all articles")?,
+            Query(query) => write!(f, "all articles matching {}", query.query_string())?,
+        };
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum Command {
     // general navigation
@@ -66,11 +78,12 @@ pub enum Command {
 
     ActionSetRead(ActionScope),
     ActionSetUnread(ActionScope),
-    ActionToggleRead(ActionScope),
     ActionSetMarked(ActionScope),
     ActionSetUnmarked(ActionScope),
-    ActionToggleMarked(ActionScope),
     ActionOpenInBrowser(ActionScope),
+
+    ActionTagArticle(ActionScope, String),
+    ActionUntagArticle(ActionScope, String),
 
     ArticleListSelectNextUnread,
     ArticleListSetAllRead,
@@ -141,13 +154,17 @@ impl Display for Command {
             ArticleListFilterApply => write!(f, "apply current article filter"),
             ArticleListFilterClear => write!(f, "clear article filter"),
 
-            ActionSetRead(_) => write!(f, "mark as read"),
-            ActionSetUnread(_) => write!(f, "mark as unread"),
-            ActionToggleRead(_) => write!(f, "toggle read/unread"),
-            ActionSetMarked(_) => write!(f, "mark"),
-            ActionSetUnmarked(_) => write!(f, "unmark"),
-            ActionToggleMarked(_) => write!(f, "toggle marked/unmarked"),
-            ActionOpenInBrowser(_) => write!(f, "open in browser"),
+            ActionSetRead(action_scope) => write!(f, "mark {} as read", action_scope),
+            ActionSetUnread(action_scope) => write!(f, "mark {} as unread", action_scope),
+            ActionSetMarked(action_scope) => write!(f, "mark {}", action_scope),
+            ActionSetUnmarked(action_scope) => write!(f, "unmark {}", action_scope),
+            ActionOpenInBrowser(action_scope) => write!(f, "open {} in browser", action_scope),
+            ActionTagArticle(tag, action_scope) => {
+                write!(f, "add tag {} to {}", tag, &action_scope)
+            }
+            ActionUntagArticle(tag, action_scope) => {
+                write!(f, "remove tag {} to {}", tag, &action_scope)
+            }
         }
     }
 }
@@ -187,19 +204,29 @@ impl Display for CommandSequence {
     }
 }
 
+fn split_off_first(s: &str) -> (String, Option<String>) {
+    let trimmed = s.trim();
+    let end_pos = trimmed.find(" ");
+
+    let first = match end_pos {
+        Some(pos) => &trimmed[..pos],
+        None => trimmed,
+    };
+
+    let args = end_pos
+        .map(|pos| (&trimmed[pos + 1..]).to_owned())
+        .to_owned();
+
+    (first.to_owned(), args)
+}
+
 impl FromStr for Command {
     type Err = color_eyre::Report;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let trimmed_command = s.trim();
-        let command_end_pos = trimmed_command.find(" ");
-
-        let command = match command_end_pos {
-            Some(pos) => &trimmed_command[..pos],
-            None => trimmed_command,
-        };
-
-        let args = command_end_pos.map(|pos| &trimmed_command[pos + 1..]);
+        let split = split_off_first(s);
+        let args = split.1.as_deref();
+        let command = split.0.as_str();
 
         use Command::*;
         Ok(match command {
@@ -233,6 +260,23 @@ impl FromStr for Command {
             "unread" => ActionSetUnread(ActionScope::from_option_string(args)?),
             "mark" => ActionSetMarked(ActionScope::from_option_string(args)?),
             "unmark" => ActionSetUnmarked(ActionScope::from_option_string(args)?),
+            tag_command @ ("tag" | "untag") => {
+                let Some(args) = args else {
+                    return Err(color_eyre::eyre::eyre!("expecting tag name"));
+                };
+
+                let (tag, args) = split_off_first(args);
+
+                match tag_command {
+                    "tag" => {
+                        ActionTagArticle(ActionScope::from_option_string(args.as_deref())?, tag)
+                    }
+                    "untag" => {
+                        ActionUntagArticle(ActionScope::from_option_string(args.as_deref())?, tag)
+                    }
+                    _ => unreachable!(),
+                }
+            }
 
             "nextu" | "nextunread" => ArticleListSelectNextUnread,
 

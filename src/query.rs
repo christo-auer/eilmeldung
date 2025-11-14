@@ -4,6 +4,7 @@ use std::{
 };
 
 use chrono::{DateTime, Utc};
+use getset::Getters;
 use log::trace;
 use logos::Logos;
 use news_flash::models::{
@@ -58,17 +59,14 @@ impl QueryClause {
     }
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Getters)]
+#[getset(get = "pub")]
 pub struct ArticleQuery {
     query_string: String,
     query: Vec<QueryClause>,
 }
 
 impl ArticleQuery {
-    pub fn query_string(&self) -> &str {
-        self.query_string.as_str()
-    }
-
     #[inline(always)]
     pub fn filter(
         &self,

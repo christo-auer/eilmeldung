@@ -38,6 +38,12 @@ pub enum Event {
     AsyncMarkArticlesAsMarked,
     AsyncMarkArticlesAsMarkedFinished,
 
+    AsyncTagArticle,
+    AsyncTagArticleFinished,
+
+    AsyncUntagArticle,
+    AsyncUntagArticleFinished,
+
     AsyncOperationFailed(AsyncOperationError, Box<Event>),
 
     AsyncSetOffline,

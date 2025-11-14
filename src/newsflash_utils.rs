@@ -2,7 +2,7 @@ use crate::{messages::event::AsyncOperationError, prelude::*};
 use std::{collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
-    NewsFlash, error::NewsFlashError, models::{ArticleID, Marked, Read, Tag}
+    NewsFlash, error::NewsFlashError, models::{ArticleID, Marked, Read, Tag, TagID}
 };
 
 use log::{debug, error, info};
@@ -155,6 +155,36 @@ impl NewsFlashUtils {
                     .set_article_marked(&article_ids, marked, &client)
                     .await?,
         success_event: Event::AsyncMarkArticlesAsMarkedFinished,
+    }
+
+    gen_async_call! {
+        method_name: tag_articles,
+        params: (article_ids: Vec<ArticleID>, tag_id: TagID),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncTagArticle,
+        operation: 
+            for article_id in article_ids {
+                    news_flash
+                        .tag_article(&article_id, &tag_id, &client)
+                        .await?; 
+            },
+        success_event: Event::AsyncTagArticleFinished,
+    }
+
+    gen_async_call! {
+        method_name: untag_articles,
+        params: (article_ids: Vec<ArticleID>, tag_id: TagID),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncUntagArticle,
+        operation: 
+            for article_id in article_ids {
+                news_flash
+                    .untag_article(&article_id, &tag_id, &client)
+                    .await?;
+            },
+        success_event: Event::AsyncUntagArticleFinished,
     }
 
 

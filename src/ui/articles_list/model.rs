@@ -5,7 +5,8 @@ use std::{
 };
 
 use getset::Getters;
-use news_flash::models::{Article, ArticleID, Feed, FeedID, Marked, Read, Tag, TagID};
+use log::info;
+use news_flash::models::{Article, ArticleID, Feed, FeedID, Marked, Tag, TagID};
 
 #[derive(Getters)]
 #[getset(get = "pub(super)")]
@@ -145,5 +146,49 @@ impl ArticleListModelData {
             .for_each(|article| article.marked = marked);
 
         Ok(article_ids_set.len())
+    }
+
+    pub(super) fn tag_articles(
+        &mut self,
+        article_ids: Vec<ArticleID>,
+        tag_id: TagID,
+    ) -> color_eyre::Result<usize> {
+        let mut counter = 0;
+        self.news_flash_utils
+            .tag_articles(article_ids.clone(), tag_id.clone());
+
+        info!("tagging {} articles with {}", article_ids.len(), tag_id);
+        for article_id in article_ids {
+            let tags = self.tags_for_article.entry(article_id).or_default();
+
+            if !tags.contains(&tag_id) {
+                tags.push(tag_id.clone());
+                counter += 1;
+            }
+        }
+
+        Ok(counter)
+    }
+
+    pub(super) fn untag_articles(
+        &mut self,
+        article_ids: Vec<ArticleID>,
+        tag_id: TagID,
+    ) -> color_eyre::Result<usize> {
+        let mut counter = 0;
+        self.news_flash_utils
+            .untag_articles(article_ids.clone(), tag_id.clone());
+
+        info!("tagging {} articles with {}", article_ids.len(), tag_id);
+        for article_id in article_ids {
+            if let Some(tags) = self.tags_for_article.get_mut(&article_id)
+                && let Some(position) = tags.iter().position(|other_tag_id| tag_id == *other_tag_id)
+            {
+                tags.remove(position);
+                counter += 1;
+            }
+        }
+
+        Ok(counter)
     }
 }

@@ -163,9 +163,9 @@ impl ArticleContentViewData {
                 let style = config.theme.tag.fg(color);
 
                 vec![
-                    Span::styled(" ", style),
+                    Span::styled("", style),
                     Span::styled(&tag.label, style.reversed()),
-                    Span::styled("", style),
+                    Span::styled("", style),
                 ]
             })
             .collect::<Vec<Span>>();
