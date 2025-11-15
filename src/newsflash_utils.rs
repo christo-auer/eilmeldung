@@ -187,6 +187,43 @@ impl NewsFlashUtils {
         success_event: Event::AsyncUntagArticleFinished,
     }
 
+    gen_async_call! {
+        method_name: add_tag,
+        params: (tag_title: String, color: Option<Color>),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncTagAdd,
+        operation: 
+            let tag = news_flash.add_tag(
+                tag_title.as_str(), 
+                color.map(|color| color.to_string()), &client).await?,
+        success_event: Event::AsyncTagAddFinished(tag),
+    }
+
+    gen_async_call! {
+        method_name: remove_tag,
+        params: (tag_id: TagID),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncTagRemove,
+        operation: 
+            news_flash.remove_tag(&tag_id, &client).await?,
+        success_event: Event::AsyncTagRemoveFinished,
+    }
+
+    gen_async_call! {
+        method_name: edit_tag,
+        params: (tag_id: TagID, new_tag_title: String, color: Option<Color>),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncTagEdit,
+        operation: 
+            let tag = news_flash.edit_tag(
+                &tag_id,
+                new_tag_title.as_str(),
+                &color.map(|color| color.to_string()), &client).await?,
+        success_event: Event::AsyncTagEditFinished(tag),
+    }
 
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(

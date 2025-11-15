@@ -235,6 +235,7 @@ impl App {
                         if !self.command_line.is_active() {
                             self.input_command_generator.process_command(&message).await?;
                         }
+
                         self.process_command(&message).await?;
                         self.feed_list.process_command(&message).await?;
                         self.articles_list.process_command(&message).await?;

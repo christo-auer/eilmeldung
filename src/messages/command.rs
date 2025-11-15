@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
+use ratatui::style::Color;
 use serde::Deserialize;
 
 use crate::prelude::*;
@@ -85,6 +86,11 @@ pub enum Command {
     ActionTagArticle(ActionScope, String),
     ActionUntagArticle(ActionScope, String),
 
+    TagAdd(String, Option<Color>),
+    TagRemove(String),
+    TagRename(String, String),
+    TagChangeColor(String, Color),
+
     ArticleListSelectNextUnread,
     ArticleListSetAllRead,
     ArticleListSetAllUnread,
@@ -165,6 +171,18 @@ impl Display for Command {
             ActionUntagArticle(action_scope, tag) => {
                 write!(f, "remove #{} from {}", tag, &action_scope)
             }
+            TagAdd(tag_title, _) => {
+                write!(f, "add tag #{}", tag_title)
+            }
+            TagRemove(tag_title) => {
+                write!(f, "remove tag {}", tag_title)
+            }
+            TagRename(tag_title, new_tag_title) => {
+                write!(f, "rename #{} to #{}", tag_title, new_tag_title)
+            }
+            TagChangeColor(tag_title, color) => {
+                write!(f, "change color of #{} to #{}", tag_title, color)
+            }
         }
     }
 }
@@ -214,10 +232,34 @@ fn split_off_first(s: &str) -> (String, Option<String>) {
     };
 
     let args = end_pos
-        .map(|pos| (&trimmed[pos + 1..]).to_owned())
+        .map(|pos| (trimmed[pos + 1..]).to_owned())
         .to_owned();
 
     (first.to_owned(), args)
+}
+
+fn expect_word(s: &mut Option<String>, to_expect: &str) -> color_eyre::Result<String> {
+    let Some(args) = s.as_mut() else {
+        return Err(color_eyre::eyre::eyre!("expected {}", to_expect));
+    };
+
+    let (word, tail) = split_off_first(args.as_str());
+
+    *s = tail;
+
+    Ok(word)
+}
+
+fn expect_color(s: &mut Option<String>) -> color_eyre::Result<Color> {
+    let word = expect_word(s, "color")?;
+    Ok(Color::from_str(word.as_str())?)
+}
+
+fn expect_nothing(s: Option<String>) -> color_eyre::Result<()> {
+    match s {
+        Some(s) => Err(color_eyre::eyre::eyre!("unknown trailing arguments: {s}")),
+        None => Ok(()),
+    }
 }
 
 impl FromStr for Command {
@@ -225,7 +267,7 @@ impl FromStr for Command {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let split = split_off_first(s);
-        let args = split.1.as_deref();
+        let mut args = split.1;
         let command = split.0.as_str();
 
         use Command::*;
@@ -241,7 +283,7 @@ impl FromStr for Command {
 
             "next" => PanelFocusNext,
             "focus" => match args {
-                Some(args) => PanelFocus(AppState::from_str(args)?),
+                Some(args) => PanelFocus(AppState::from_str(args.as_str())?),
                 None => {
                     return Err(color_eyre::eyre::eyre!(
                         "expected panel: feeds, articles, content or zen"
@@ -256,16 +298,12 @@ impl FromStr for Command {
             "sync" => FeedsSync,
             "open" => ArticleCurrentOpenInBrowser,
 
-            "read" => ActionSetRead(ActionScope::from_option_string(args)?),
-            "unread" => ActionSetUnread(ActionScope::from_option_string(args)?),
-            "mark" => ActionSetMarked(ActionScope::from_option_string(args)?),
-            "unmark" => ActionSetUnmarked(ActionScope::from_option_string(args)?),
+            "read" => ActionSetRead(ActionScope::from_option_string(args.as_deref())?),
+            "unread" => ActionSetUnread(ActionScope::from_option_string(args.as_deref())?),
+            "mark" => ActionSetMarked(ActionScope::from_option_string(args.as_deref())?),
+            "unmark" => ActionSetUnmarked(ActionScope::from_option_string(args.as_deref())?),
             tag_command @ ("tag" | "untag") => {
-                let Some(args) = args else {
-                    return Err(color_eyre::eyre::eyre!("expecting tag name"));
-                };
-
-                let (tag, args) = split_off_first(args);
+                let tag = expect_word(&mut args, "tag name")?;
 
                 match tag_command {
                     "tag" => {
@@ -278,10 +316,40 @@ impl FromStr for Command {
                 }
             }
 
+            "tagchangecolor" => {
+                let tag_title = expect_word(&mut args, "tag name")?;
+                let color = expect_color(&mut args)?;
+                expect_nothing(args)?;
+                TagChangeColor(tag_title, color)
+            }
+
+            "tagadd" => {
+                let tag_title = expect_word(&mut args, "tag name")?;
+                let color = match args {
+                    None => None,
+                    _ => Some(expect_color(&mut args)?),
+                };
+                expect_nothing(args)?;
+                TagAdd(tag_title, color)
+            }
+
+            "tagrename" => {
+                let tag_title = expect_word(&mut args, "old tag name")?;
+                let new_tag_title = expect_word(&mut args, "new tag name")?;
+                expect_nothing(args)?;
+                TagRename(tag_title, new_tag_title)
+            }
+
+            "tagremove" => {
+                let tag_title = expect_word(&mut args, "tag name")?;
+                expect_nothing(args)?;
+                TagRemove(tag_title)
+            }
+
             "nextu" | "nextunread" => ArticleListSelectNextUnread,
 
             "scope" => match args {
-                Some(args) => ArticleListSetScope(ArticleScope::from_str(args)?),
+                Some(args) => ArticleListSetScope(ArticleScope::from_str(args.as_str())?),
                 None => {
                     return Err(color_eyre::eyre::eyre!(
                         "expected scope: all, unread or marked"
@@ -293,15 +361,15 @@ impl FromStr for Command {
             "quit" | "q" => ApplicationQuit,
 
             "/" => match args {
-                Some(args) => ArticleListSearch(ArticleQuery::from_str(args)?),
-                None => return Err(color_eyre::eyre::eyre!("Search query expected")),
+                Some(args) => ArticleListSearch(ArticleQuery::from_str(args.as_str())?),
+                None => return Err(color_eyre::eyre::eyre!("search query expected")),
             },
             "/next" => ArticleListSearchNext,
             "/prev" => ArticleListSearchPrevious,
 
             "=" => match args {
-                Some(args) => ArticleListFilterSet(ArticleQuery::from_str(args)?),
-                None => return Err(color_eyre::eyre::eyre!("Search query expected")),
+                Some(args) => ArticleListFilterSet(ArticleQuery::from_str(args.as_str())?),
+                None => return Err(color_eyre::eyre::eyre!("search query expected")),
             },
 
             "=clear" => ArticleListFilterClear,

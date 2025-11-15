@@ -177,6 +177,8 @@ impl crate::messages::MessageReceiver for ArticleContent {
             Message::Event(AsyncSyncFinished(_))
             | Message::Event(AsyncMarkArticlesAsReadFinished)
             | Message::Event(AsyncMarkArticlesAsMarkedFinished)
+            | Message::Event(AsyncTagEditFinished(_))
+            | Message::Event(AsyncTagRemoveFinished)
             | Message::Event(AsyncTagArticleFinished) => {
                 view_needs_update = true;
             }

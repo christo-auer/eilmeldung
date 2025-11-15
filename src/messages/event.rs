@@ -44,6 +44,15 @@ pub enum Event {
     AsyncUntagArticle,
     AsyncUntagArticleFinished,
 
+    AsyncTagAdd,
+    AsyncTagAddFinished(Tag),
+
+    AsyncTagRemove,
+    AsyncTagRemoveFinished,
+
+    AsyncTagEdit,
+    AsyncTagEditFinished(Tag),
+
     AsyncOperationFailed(AsyncOperationError, Box<Event>),
 
     AsyncSetOffline,

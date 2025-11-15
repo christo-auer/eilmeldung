@@ -1,10 +1,12 @@
 use std::{cmp::Ordering, collections::HashMap, hash::Hash, sync::Arc};
 
 use getset::Getters;
+use log::info;
 use news_flash::models::{
     ArticleFilter, ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping,
     Tag, TagID,
 };
+use ratatui::style::Color;
 
 use crate::prelude::*;
 
@@ -236,5 +238,44 @@ impl FeedListModelData {
             .sum::<i64>();
         count_map.insert(category_id.clone().into(), count);
         count
+    }
+
+    pub(super) async fn add_tag(
+        &self,
+        tag_title: &String,
+        color: &Option<Color>,
+    ) -> color_eyre::Result<()> {
+        self.news_flash_utils
+            .add_tag(tag_title.to_owned(), color.to_owned());
+
+        Ok(())
+    }
+
+    pub(super) async fn remove_tag(&self, tag_id: TagID) -> color_eyre::Result<()> {
+        info!("removing {}", tag_id);
+        self.news_flash_utils.remove_tag(tag_id);
+
+        Ok(())
+    }
+
+    pub(super) fn get_tag_by_label(&self, tag_label: &String) -> Option<Tag> {
+        self.tags()
+            .iter()
+            .find(|tag| *tag.label == *tag_label)
+            .cloned()
+    }
+
+    pub(super) fn edit_tag(
+        &self,
+        tag_id: TagID,
+        new_tag_title: String,
+        color: Option<Color>,
+    ) -> color_eyre::Result<()> {
+        info!(
+            "editing tag {:?}: name {:?} and color {:?}",
+            tag_id, new_tag_title, color
+        );
+        self.news_flash_utils.edit_tag(tag_id, new_tag_title, color);
+        Ok(())
     }
 }

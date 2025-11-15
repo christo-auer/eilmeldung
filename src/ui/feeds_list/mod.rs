@@ -122,11 +122,74 @@ impl MessageReceiver for FeedList {
                     .scroll_up(self.config.input_config.scroll_amount);
             }
 
+            Message::Command(TagAdd(name, color)) => {
+                if self.model_data.tags().iter().any(|tag| *tag.label == *name) {
+                    tooltip(
+                        &self.message_sender,
+                        format!("tag with name {} already exists", name).as_str(),
+                        TooltipFlavor::Error,
+                    )?;
+                } else {
+                    self.model_data.add_tag(name, color).await?;
+                }
+            }
+
+            Message::Command(TagRemove(name)) => match self.model_data.get_tag_by_label(name) {
+                Some(tag) => self.model_data.remove_tag(tag.tag_id).await?,
+                None => tooltip(
+                    &self.message_sender,
+                    format!("no tag with name {} exists", name).as_str(),
+                    TooltipFlavor::Error,
+                )?,
+            },
+
+            Message::Command(TagRename(old_name, new_name)) => {
+                match (
+                    self.model_data.get_tag_by_label(old_name),
+                    self.model_data.get_tag_by_label(new_name),
+                ) {
+                    (Some(tag), None) => {
+                        self.model_data
+                            .edit_tag(tag.tag_id, new_name.to_owned(), None)?;
+                    }
+                    (None, _) => tooltip(
+                        &self.message_sender,
+                        format!("no tag with name {} exists", old_name).as_str(),
+                        TooltipFlavor::Error,
+                    )?,
+                    (_, Some(_)) => tooltip(
+                        &self.message_sender,
+                        format!("tag with name {} already exists", new_name).as_str(),
+                        TooltipFlavor::Error,
+                    )?,
+                }
+            }
+
+            Message::Command(TagChangeColor(name, color)) => {
+                match self.model_data.get_tag_by_label(name) {
+                    Some(tag) => {
+                        self.model_data.edit_tag(
+                            tag.tag_id.to_owned(),
+                            name.to_owned(),
+                            Some(color.to_owned()),
+                        )?;
+                    }
+                    None => tooltip(
+                        &self.message_sender,
+                        format!("no tag with name {} exists", name).as_str(),
+                        TooltipFlavor::Error,
+                    )?,
+                }
+            }
+
             Message::Event(ApplicationStarted)
             | Message::Event(AsyncSyncFinished(_))
             | Message::Event(AsyncMarkArticlesAsReadFinished)
             | Message::Event(AsyncMarkArticlesAsMarkedFinished)
-            | Message::Event(AsyncTagArticleFinished) => {
+            | Message::Event(AsyncTagArticleFinished)
+            | Message::Event(AsyncTagRemoveFinished)
+            | Message::Event(AsyncTagEditFinished(_))
+            | Message::Event(AsyncTagAddFinished(_)) => {
                 models_need_update = true;
             }
 
@@ -146,8 +209,7 @@ impl MessageReceiver for FeedList {
         }
 
         if models_need_update {
-            let model_data = &mut self.model_data;
-            model_data.update().await?;
+            self.model_data.update().await?;
             self.view_data
                 .update(&self.config, &self.model_data)
                 .await?;
