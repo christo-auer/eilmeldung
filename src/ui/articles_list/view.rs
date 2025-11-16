@@ -152,10 +152,12 @@ impl<'a> ArticleListViewData<'a> {
 
         title.push_str(filter_info);
 
-        let selected_row = self.table_state().selected().unwrap_or(0) + 1;
         let rows = model_data.articles().len();
-        let percent = (100f32 * (selected_row as f32 / rows as f32)) as i32;
-        title.push_str(format!("{selected_row}/{rows} ({percent}%) ",).as_str());
+        if rows > 0 {
+            let selected_row = self.table_state().selected().unwrap_or(0) + 1;
+            let percent = (100f32 * (selected_row as f32 / rows as f32)) as i32;
+            title.push_str(format!("{selected_row}/{rows} ({percent}%) ",).as_str());
+        }
 
         title
     }
