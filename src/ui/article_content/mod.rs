@@ -85,109 +85,111 @@ impl ArticleContent {
 
 impl crate::messages::MessageReceiver for ArticleContent {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
-        use Command::*;
-        use Event::*;
-
         let mut view_needs_update = false;
 
-        match message {
-            Message::Command(NavigateDown) if self.is_focused => {
-                self.view_data.scroll_down();
-            }
-            Message::Command(NavigateUp) if self.is_focused => {
-                self.view_data.scroll_up();
-            }
-            Message::Command(NavigatePageUp) if self.is_focused => {
-                self.view_data
-                    .scroll_page_up(self.config.input_config.scroll_amount as u16);
-            }
-            Message::Command(NavigatePageDown) if self.is_focused => {
-                self.view_data
-                    .scroll_page_down(self.config.input_config.scroll_amount as u16);
-            }
-            Message::Command(NavigateFirst) if self.is_focused => {
-                self.view_data.scroll_to_top();
-            }
-            Message::Command(NavigateLast) if self.is_focused => {
-                self.view_data.scroll_to_bottom();
-            }
+        if let Message::Command(command) = message {
+            use Command::*;
+            match command {
+                NavigateDown if self.is_focused => {
+                    self.view_data.scroll_down();
+                }
+                NavigateUp if self.is_focused => {
+                    self.view_data.scroll_up();
+                }
+                NavigatePageUp if self.is_focused => {
+                    self.view_data
+                        .scroll_page_up(self.config.input_config.scroll_amount as u16);
+                }
+                NavigatePageDown if self.is_focused => {
+                    self.view_data
+                        .scroll_page_down(self.config.input_config.scroll_amount as u16);
+                }
+                NavigateFirst if self.is_focused => {
+                    self.view_data.scroll_to_top();
+                }
+                NavigateLast if self.is_focused => {
+                    self.view_data.scroll_to_bottom();
+                }
 
-            // TODO fetch article data directly instead of using command
-            Message::Event(ArticleSelected(article, feed, tags)) => {
-                self.on_article_selected(article, feed, tags).await?;
-            }
-
-            Message::Event(FatArticleSelected(article, feed, tags)) => {
-                self.model_data
-                    .on_article_selected(article, feed, tags, self.is_focused)
-                    .await?;
-
-                if self.is_focused && self.config.article_auto_scrape {
+                Command::ArticleCurrentScrape if self.is_focused => {
                     self.scrape_article()?;
                 }
-                view_needs_update = true;
-            }
 
-            Message::Event(AsyncFetchThumbnailFinished(thumbnail)) => {
-                self.model_data
-                    .on_thumbnail_fetch_finished(thumbnail.as_ref());
-                match thumbnail {
-                    Some(thumbnail) => {
-                        self.prepare_thumbnail(thumbnail)?;
-                    }
-                    None => {
-                        log::debug!("fetching thumbnail not successful");
-                        self.view_data.clear_image();
-                        self.model_data.on_thumbnail_fetch_failed();
-                    }
+                _ => {}
+            }
+        }
+
+        if let Message::Event(event) = message {
+            use Event::*;
+            match event {
+                // TODO fetch article data directly instead of using command
+                ArticleSelected(article, feed, tags) => {
+                    self.on_article_selected(article, feed, tags).await?;
                 }
-                view_needs_update = true;
-            }
 
-            Message::Event(AsyncOperationFailed(err, reason)) => {
-                if let Event::AsyncFetchThumbnail = *reason.as_ref() {
-                    log::debug!("fetching thumbnail not successful: {err}");
-                    self.view_data.clear_image();
-                    self.model_data.on_thumbnail_fetch_failed();
+                FatArticleSelected(article, feed, tags) => {
+                    self.model_data
+                        .on_article_selected(article, feed, tags, self.is_focused)
+                        .await?;
+
+                    if self.is_focused && self.config.article_auto_scrape {
+                        self.scrape_article()?;
+                    }
                     view_needs_update = true;
                 }
-            }
 
-            Message::Command(Command::ArticleCurrentScrape) if self.is_focused => {
-                self.scrape_article()?;
-            }
-
-            Message::Event(AsyncFetchFatArticleFinished(fat_article)) => {
-                self.model_data.set_fat_article(fat_article.clone());
-                // Process markdown content if needed
-                self.model_data.get_or_create_markdown_content(&self.config);
-                view_needs_update = true;
-            }
-
-            Message::Event(ApplicationStateChanged(state)) => {
-                self.is_focused = *state == AppState::ArticleContent
-                    || *state == AppState::ArticleContentDistractionFree;
-
-                if self.is_focused && self.config.article_auto_scrape {
-                    self.scrape_article()?;
+                AsyncFetchThumbnailFinished(thumbnail) => {
+                    self.model_data
+                        .on_thumbnail_fetch_finished(thumbnail.as_ref());
+                    match thumbnail {
+                        Some(thumbnail) => {
+                            self.prepare_thumbnail(thumbnail)?;
+                        }
+                        None => {
+                            log::debug!("fetching thumbnail not successful");
+                            self.view_data.clear_image();
+                            self.model_data.on_thumbnail_fetch_failed();
+                        }
+                    }
+                    view_needs_update = true;
                 }
-                view_needs_update = true;
-            }
 
-            Message::Event(AsyncSyncFinished(_))
-            | Message::Event(AsyncMarkArticlesAsReadFinished)
-            | Message::Event(AsyncMarkArticlesAsMarkedFinished)
-            | Message::Event(AsyncTagEditFinished(_))
-            | Message::Event(AsyncTagRemoveFinished)
-            | Message::Event(AsyncTagArticleFinished) => {
-                view_needs_update = true;
-            }
+                AsyncOperationFailed(err, reason) => {
+                    if let Event::AsyncFetchThumbnail = *reason.as_ref() {
+                        log::debug!("fetching thumbnail not successful: {err}");
+                        self.view_data.clear_image();
+                        self.model_data.on_thumbnail_fetch_failed();
+                        view_needs_update = true;
+                    }
+                }
 
-            Message::Event(Tick) => {
-                self.tick()?;
-            }
+                AsyncFetchFatArticleFinished(fat_article) => {
+                    self.model_data.set_fat_article(fat_article.clone());
+                    // Process markdown content if needed
+                    self.model_data.get_or_create_markdown_content(&self.config);
+                    view_needs_update = true;
+                }
 
-            _ => {}
+                ApplicationStateChanged(state) => {
+                    self.is_focused = *state == AppState::ArticleContent
+                        || *state == AppState::ArticleContentDistractionFree;
+
+                    if self.is_focused && self.config.article_auto_scrape {
+                        self.scrape_article()?;
+                    }
+                    view_needs_update = true;
+                }
+
+                Tick => {
+                    self.tick()?;
+                }
+
+                event if event.caused_model_update() => {
+                    view_needs_update = true;
+                }
+
+                _ => {}
+            }
         }
 
         if view_needs_update {

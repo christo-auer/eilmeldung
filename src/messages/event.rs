@@ -32,9 +32,6 @@ pub enum Event {
     AsyncFetchFatArticle,
     AsyncFetchFatArticleFinished(FatArticle),
 
-    AsyncMarkArticlesAsRead,
-    AsyncMarkArticlesAsReadFinished,
-
     AsyncMarkArticlesAsMarked,
     AsyncMarkArticlesAsMarkedFinished,
 
@@ -58,6 +55,21 @@ pub enum Event {
     AsyncSetOffline,
     AsyncSetOfflineFinished(bool),
 
+    AsyncSetAllRead,
+    AsyncSetAllReadFinished,
+
+    AsyncSetFeedRead,
+    AsyncSetFeedReadFinished,
+
+    AsyncSetCategoryRead,
+    AsyncSetCategoryReadFinished,
+
+    AsyncSetTagRead,
+    AsyncSetTagReadFinished,
+
+    AsyncSetArticlesAsRead,
+    AsyncSetArticlesAsReadFinished,
+
     Tick, // general tick for animations and regular updates
 
     // messaging/status
@@ -73,4 +85,29 @@ pub enum Event {
     // connectivity
     ConnectionAvailable,
     ConnectionLost(ConnectionLostReason),
+}
+
+impl Event {
+    pub fn caused_model_update(&self) -> bool {
+        use Event::*;
+
+        match self {
+            AsyncSyncFinished(_)
+            | AsyncFetchFatArticleFinished(_)
+            | AsyncMarkArticlesAsMarkedFinished
+            | AsyncTagArticleFinished
+            | AsyncUntagArticleFinished
+            | AsyncTagAddFinished(_)
+            | AsyncTagRemoveFinished
+            | AsyncTagEditFinished(_)
+            | AsyncOperationFailed(..)
+            | AsyncSetOfflineFinished(_)
+            | AsyncSetAllReadFinished
+            | AsyncSetFeedReadFinished
+            | AsyncSetCategoryReadFinished
+            | AsyncSetTagReadFinished
+            | AsyncSetArticlesAsReadFinished => true,
+            _ => false,
+        }
+    }
 }

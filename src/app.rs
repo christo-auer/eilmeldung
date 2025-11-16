@@ -278,10 +278,6 @@ impl MessageReceiver for App {
                 info!("Application quit requested");
                 self.is_running = false;
             }
-            Message::Command(FeedsSync) => {
-                info!("Sync operation initiated");
-                self.news_flash_utils.sync_feeds();
-            }
 
             Message::Event(Tooltip(tooltip)) => {
                 trace!("Tooltip updated");

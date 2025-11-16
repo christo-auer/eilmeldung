@@ -126,16 +126,20 @@ impl ArticlesList {
             .map(|(index, _)| index)
     }
 
-    pub(super) fn open_in_browser(&self) -> color_eyre::Result<()> {
-        if let Some(article) = self.get_current_article()
-            && let Some(url) = article.url.as_ref()
-            && let Err(error) = webbrowser::open(url.as_ref())
-        {
-            tooltip(
-                &self.message_sender,
-                format!("unable to open article in webbrowser: {}", error).as_str(),
-                TooltipFlavor::Error,
-            )?;
+    pub(super) fn open_in_browser(&self, action_scope: &ActionScope) -> color_eyre::Result<()> {
+        let articles = self.get_articles_by_action_scope(action_scope)?;
+
+        for article in articles.iter() {
+            if let Some(url) = article.url.as_ref()
+                && let Err(error) = webbrowser::open(url.as_ref())
+            {
+                tooltip(
+                    &self.message_sender,
+                    format!("unable to open article in webbrowser: {}", error).as_str(),
+                    TooltipFlavor::Error,
+                )?;
+                break;
+            }
         }
 
         Ok(())
@@ -184,51 +188,27 @@ impl ArticlesList {
         }
     }
 
-    fn get_all_article_ids(&self) -> Vec<ArticleID> {
-        self.model_data
-            .articles()
-            .iter()
-            .map(|article| &article.article_id)
-            .cloned()
-            .collect()
-    }
-
-    pub(super) fn set_all_read_status(&mut self, read: Read) -> color_eyre::Result<usize> {
-        info!("setting all articles to {:?}", read);
-        self.model_data
-            .set_read_status(self.get_all_article_ids(), read)
-    }
-
-    pub(super) fn set_current_read_status(&mut self, read: Read) -> color_eyre::Result<usize> {
-        info!("setting current article to {:?}", read);
-        if let Some(article) = self.get_current_article() {
-            return self
-                .model_data
-                .set_read_status(vec![article.article_id], read);
-        }
-
-        Ok(0)
-    }
-
     pub(super) fn get_articles_by_action_scope(
         &self,
         action_scope: &ActionScope,
-    ) -> color_eyre::Result<Vec<ArticleID>> {
+    ) -> color_eyre::Result<Vec<Article>> {
         use ActionScope::*;
         Ok(match action_scope {
-            All => self.get_all_article_ids(),
-            Current => match self.get_current_article() {
-                Some(article) => vec![article.article_id],
-                None => Vec::default(),
-            },
-            Query(query) => self
-                .model_data
-                .get_queried_articles(query)
-                .iter()
-                .map(|article| &article.article_id)
-                .cloned()
-                .collect::<Vec<ArticleID>>(),
+            All => self.model_data.articles().clone(),
+            Current => self.get_current_article().iter().cloned().collect(),
+            Query(query) => self.model_data.get_queried_articles(query).to_vec(),
         })
+    }
+
+    pub(super) fn get_article_ids_by_action_scope(
+        &self,
+        action_scope: &ActionScope,
+    ) -> color_eyre::Result<Vec<ArticleID>> {
+        Ok(self
+            .get_articles_by_action_scope(action_scope)?
+            .into_iter()
+            .map(|article| article.article_id)
+            .collect())
     }
 
     pub(super) fn set_action_scope_read_status(
@@ -238,7 +218,7 @@ impl ArticlesList {
     ) -> color_eyre::Result<usize> {
         let amount = self
             .model_data
-            .set_read_status(self.get_articles_by_action_scope(action_scope)?, read)?;
+            .set_read_status(self.get_article_ids_by_action_scope(action_scope)?, read)?;
 
         tooltip(
             &self.message_sender,
@@ -264,7 +244,7 @@ impl ArticlesList {
     ) -> color_eyre::Result<usize> {
         let amount = self
             .model_data
-            .set_marked_status(self.get_articles_by_action_scope(action_scope)?, marked)?;
+            .set_marked_status(self.get_article_ids_by_action_scope(action_scope)?, marked)?;
 
         tooltip(
             &self.message_sender,
@@ -289,7 +269,7 @@ impl ArticlesList {
         tag: Tag,
         add: bool,
     ) -> color_eyre::Result<()> {
-        let article_ids = self.get_articles_by_action_scope(action_scope)?;
+        let article_ids = self.get_article_ids_by_action_scope(action_scope)?;
         if add {
             let amount = self
                 .model_data
@@ -322,7 +302,11 @@ impl ArticlesList {
     ) -> color_eyre::Result<()> {
         let offset = if skip_current { 1 } else { 0 };
         let Some(article_query) = self.filter_state.article_search_query().as_ref() else {
-            return Err(color_eyre::eyre::eyre!("no search query"));
+            return tooltip(
+                &self.message_sender,
+                "no search query",
+                TooltipFlavor::Warning,
+            );
         };
 
         if let Some(selected) = self.view_data.get_table_state_mut().selected() {
@@ -377,193 +361,198 @@ impl ArticlesList {
 
         Ok(())
     }
+
+    fn target_matches(&self, target: &ActionSetReadTarget) -> bool {
+        match target {
+            ActionSetReadTarget::Current if self.is_focused => true,
+            ActionSetReadTarget::ArticleList => true,
+            _ => false,
+        }
+    }
 }
 
 impl crate::messages::MessageReceiver for ArticlesList {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
-        use Command::*;
-        use Event::*;
-
         let current_article = self.get_current_article().map(|article| article.article_id);
         let mut model_needs_update = false;
         let mut view_needs_update = false;
 
-        // TODO refactor state mgmt
-        match message {
-            Message::Command(NavigateUp) if self.is_focused => {
-                self.view_data.get_table_state_mut().select_previous();
-                self.select_index_and_send_message(None)?;
-            }
-            Message::Command(NavigateDown) if self.is_focused => {
-                self.view_data.get_table_state_mut().select_next();
-                self.select_index_and_send_message(None)?;
-            }
-            Message::Command(NavigatePageUp) if self.is_focused => {
-                self.view_data
-                    .get_table_state_mut()
-                    .scroll_up_by(self.config.theme.articles_list_height_lines - 1);
-                self.select_index_and_send_message(None)?;
-            }
-            Message::Command(NavigatePageDown) if self.is_focused => {
-                self.view_data.get_table_state_mut().scroll_down_by(
-                    self.config.theme.articles_list_height_lines
-                        - self.config.articles_list_visible_articles_after_selection as u16,
-                );
-                self.select_index_and_send_message(None)?;
-            }
-            Message::Command(NavigateFirst) if self.is_focused => {
-                self.view_data.get_table_state_mut().select_first();
-                self.select_index_and_send_message(None)?;
-            }
-            Message::Command(NavigateLast) if self.is_focused => {
-                self.view_data.get_table_state_mut().select_last();
-                // manually "select" as select_last does not know the number of rows
-                self.select_index_and_send_message(Some(self.model_data.articles().len() - 1))?;
-            }
+        if let Message::Command(command) = message {
+            use Command::*;
+            match command {
+                NavigateUp if self.is_focused => {
+                    self.view_data.get_table_state_mut().select_previous();
+                    self.select_index_and_send_message(None)?;
+                }
+                NavigateDown if self.is_focused => {
+                    self.view_data.get_table_state_mut().select_next();
+                    self.select_index_and_send_message(None)?;
+                }
+                NavigatePageUp if self.is_focused => {
+                    self.view_data
+                        .get_table_state_mut()
+                        .scroll_up_by(self.config.theme.articles_list_height_lines - 1);
+                    self.select_index_and_send_message(None)?;
+                }
+                NavigatePageDown if self.is_focused => {
+                    self.view_data.get_table_state_mut().scroll_down_by(
+                        self.config.theme.articles_list_height_lines
+                            - self.config.articles_list_visible_articles_after_selection as u16,
+                    );
+                    self.select_index_and_send_message(None)?;
+                }
+                NavigateFirst if self.is_focused => {
+                    self.view_data.get_table_state_mut().select_first();
+                    self.select_index_and_send_message(None)?;
+                }
+                NavigateLast if self.is_focused => {
+                    self.view_data.get_table_state_mut().select_last();
+                    // manually "select" as select_last does not know the number of rows
+                    self.select_index_and_send_message(Some(self.model_data.articles().len() - 1))?;
+                }
 
-            Message::Event(AsyncOperationFailed(_, _)) => {
-                model_needs_update = true;
-            }
+                ArticleListSetScope(scope) => {
+                    *self.filter_state.article_scope_mut() = *scope;
+                    model_needs_update = true;
+                }
 
-            Message::Event(ArticlesSelected(augmented_article_filter)) => {
-                self.filter_state
-                    .on_new_article_filter(augmented_article_filter.clone());
-                model_needs_update = true;
-            }
+                // actions
+                ActionOpenInBrowser(action_scope) => {
+                    self.open_in_browser(action_scope)?;
+                }
 
-            Message::Command(ArticleListSetScope(scope)) => {
-                *self.filter_state.article_scope_mut() = *scope;
-                model_needs_update = true;
-            }
+                ActionSetRead(target, action_scope) if self.target_matches(target) => {
+                    // first we check if we can reroute this to feed list to make it quicker
+                    use ActionScope::*;
+                    match action_scope {
+                        // queries must be handled by article list
+                        Query(_) => {
+                            self.set_action_scope_read_status(action_scope, Read::Read)?;
+                            view_needs_update = true;
+                        }
 
-            Message::Event(ApplicationStateChanged(state)) => {
-                self.is_focused = *state == AppState::ArticleSelection;
-                view_needs_update = true;
-            }
+                        // if all articles must be set to read and no adhoc filter is applied, the
+                        // feed list can set the articles to read
+                        All if !self.filter_state.apply_article_adhoc_filter()
+                            && !matches!(target, ActionSetReadTarget::ArticleList) =>
+                        {
+                            info!("re-routing set read command to feed list");
+                            self.message_sender
+                                .send(Message::Command(Command::ActionSetRead(
+                                    ActionSetReadTarget::FeedList,
+                                    ActionScope::Current,
+                                )))?;
+                        }
 
-            Message::Command(ArticleCurrentOpenInBrowser) => {
-                self.open_in_browser()?;
-            }
-
-            Message::Command(ActionSetRead(action_scope)) if self.is_focused => {
-                self.set_action_scope_read_status(action_scope, Read::Read)?;
-                view_needs_update = true;
-            }
-
-            Message::Command(ActionSetUnread(action_scope)) if self.is_focused => {
-                self.set_action_scope_read_status(action_scope, Read::Unread)?;
-                view_needs_update = true;
-            }
-
-            Message::Command(ActionSetMarked(action_scope)) if self.is_focused => {
-                self.set_action_scope_marked_status(action_scope, Marked::Marked)?;
-                view_needs_update = true;
-            }
-
-            Message::Command(ActionSetUnmarked(action_scope)) if self.is_focused => {
-                self.set_action_scope_marked_status(action_scope, Marked::Unmarked)?;
-                view_needs_update = true;
-            }
-
-            tag_command @ (Message::Command(ActionTagArticle(action_scope, tag_name))
-            | Message::Command(ActionUntagArticle(action_scope, tag_name)))
-                if self.is_focused =>
-            {
-                match self
-                    .model_data
-                    .tag_map()
-                    .values()
-                    .find(|&tag| tag.label == *tag_name)
-                {
-                    Some(tag) => {
-                        self.change_tag(
-                            action_scope,
-                            tag.clone(),
-                            matches!(tag_command, Message::Command(ActionTagArticle(..))),
-                        )?;
-                    }
-                    None => {
-                        log::warn!("could not find tag with name {}", tag_name);
-                        tooltip(
-                            &self.message_sender,
-                            format!("unknown tag: {}", tag_name).as_str(),
-                            TooltipFlavor::Error,
-                        )?;
+                        _ => {
+                            self.set_action_scope_read_status(action_scope, Read::Read)?;
+                            view_needs_update = true;
+                        }
                     }
                 }
 
-                // self.set_action_scope_marked_status(action_scope, Marked::Unmarked)?;
-                view_needs_update = true;
-            }
+                ActionSetUnread(action_scope) => {
+                    self.set_action_scope_read_status(action_scope, Read::Unread)?;
+                    view_needs_update = true;
+                }
 
-            Message::Command(ArticleCurrentSetRead) => {
-                self.set_current_read_status(Read::Read)?;
-                view_needs_update = true;
-            }
+                ActionSetMarked(action_scope, marked) => {
+                    self.set_action_scope_marked_status(action_scope, *marked)?;
+                    view_needs_update = true;
+                }
 
-            Message::Command(ArticleCurrentSetUnread) => {
-                self.set_current_read_status(Read::Unread)?;
-                view_needs_update = true;
-            }
+                tag_command @ (ActionTagArticles(action_scope, tag_name)
+                | ActionUntagArticles(action_scope, tag_name))
+                    if self.is_focused =>
+                {
+                    match self
+                        .model_data
+                        .tag_map()
+                        .values()
+                        .find(|&tag| tag.label == *tag_name)
+                    {
+                        Some(tag) => {
+                            self.change_tag(
+                                action_scope,
+                                tag.clone(),
+                                matches!(tag_command, ActionTagArticles(..)),
+                            )?;
+                        }
+                        None => {
+                            log::warn!("could not find tag with name {}", tag_name);
+                            tooltip(
+                                &self.message_sender,
+                                format!("unknown tag: {}", tag_name).as_str(),
+                                TooltipFlavor::Error,
+                            )?;
+                        }
+                    }
 
-            Message::Command(ArticleListSetAllRead) => {
-                self.set_all_read_status(Read::Read)?;
-                view_needs_update = true;
-            }
+                    // self.set_action_scope_marked_status(action_scope, Marked::Unmarked)?;
+                    view_needs_update = true;
+                }
 
-            Message::Command(ArticleListSetAllUnread) => {
-                self.set_all_read_status(Read::Unread)?;
-                view_needs_update = true;
-            }
+                ArticleListSelectNextUnread => {
+                    self.select_next_unread()?;
+                }
 
-            Message::Event(AsyncMarkArticlesAsReadFinished)
-            | Message::Event(AsyncMarkArticlesAsMarkedFinished)
-            | Message::Event(AsyncTagRemoveFinished)
-            | Message::Event(AsyncTagEditFinished(_))
-            | Message::Event(AsyncTagArticleFinished) => {
-                model_needs_update = true;
-            }
+                ArticleListSearch(query) => {
+                    *self.filter_state.article_search_query_mut() = Some(query.clone());
+                    self.view_data.update(
+                        self.config.clone(),
+                        &self.model_data,
+                        &self.filter_state,
+                        self.is_focused,
+                    ); // manual here for highlighting only
+                    self.search_next(false, false)?;
+                }
 
-            Message::Command(ArticleListSelectNextUnread) => {
-                self.select_next_unread()?;
-            }
+                ArticleListSearchNext => {
+                    self.search_next(true, false)?;
+                }
 
-            Message::Command(ArticleListSearch(query)) => {
-                *self.filter_state.article_search_query_mut() = Some(query.clone());
-                self.view_data.update(
-                    self.config.clone(),
-                    &self.model_data,
-                    &self.filter_state,
-                    self.is_focused,
-                ); // manual here for highlighting only
-                self.search_next(false, false)?;
-            }
+                ArticleListSearchPrevious => {
+                    self.search_next(true, true)?;
+                }
 
-            Message::Command(ArticleListSearchNext) => {
-                self.search_next(true, false)?;
-            }
+                ArticleListFilterSet(article_adhoc_filter) => {
+                    self.filter_state
+                        .on_new_article_adhoc_filter(article_adhoc_filter.clone());
+                    model_needs_update = true;
+                }
 
-            Message::Command(ArticleListSearchPrevious) => {
-                self.search_next(true, true)?;
-            }
+                ArticleListFilterApply => {
+                    *self.filter_state.apply_article_adhoc_filter_mut() = true;
+                    model_needs_update = true;
+                }
 
-            Message::Command(ArticleListFilterSet(article_adhoc_filter)) => {
-                self.filter_state
-                    .on_new_article_adhoc_filter(article_adhoc_filter.clone());
-                model_needs_update = true;
-            }
+                ArticleListFilterClear => {
+                    *self.filter_state.apply_article_adhoc_filter_mut() = false;
+                    model_needs_update = true;
+                }
 
-            Message::Command(ArticleListFilterApply) => {
-                *self.filter_state.apply_article_adhoc_filter_mut() = true;
-                model_needs_update = true;
+                _ => {}
             }
+        }
 
-            Message::Command(ArticleListFilterClear) => {
-                *self.filter_state.apply_article_adhoc_filter_mut() = false;
-                model_needs_update = true;
+        if let Message::Event(event) = message {
+            use Event::*;
+            match event {
+                ArticlesSelected(augmented_article_filter) => {
+                    self.filter_state
+                        .on_new_article_filter(augmented_article_filter.clone());
+                    model_needs_update = true;
+                }
+
+                ApplicationStateChanged(state) => {
+                    self.is_focused = *state == AppState::ArticleSelection;
+                    view_needs_update = true;
+                }
+
+                event if event.caused_model_update() => model_needs_update = true,
+
+                _ => {}
             }
-
-            _ => {}
         }
 
         // update state where needed

@@ -278,4 +278,34 @@ impl FeedListModelData {
         self.news_flash_utils.edit_tag(tag_id, new_tag_title, color);
         Ok(())
     }
+
+    pub(super) fn set_all_read(&self) -> color_eyre::Result<()> {
+        self.news_flash_utils.set_all_read();
+        Ok(())
+    }
+
+    pub(super) fn set_feed_read(&self, feed_ids: Vec<FeedID>) -> color_eyre::Result<()> {
+        self.news_flash_utils.set_feed_read(feed_ids);
+        Ok(())
+    }
+
+    pub(super) fn set_category_read(
+        &self,
+        category_ids: Vec<CategoryID>,
+    ) -> color_eyre::Result<()> {
+        self.news_flash_utils.set_category_read(category_ids);
+        Ok(())
+    }
+
+    pub(super) fn set_tag_read(&self, tag_ids: Vec<TagID>) -> color_eyre::Result<()> {
+        self.news_flash_utils.set_tag_read(tag_ids);
+        Ok(())
+    }
+
+    pub(super) fn sync(&self) -> color_eyre::Result<()> {
+        self.news_flash_utils.sync();
+        Ok(())
+    }
+
+
 }

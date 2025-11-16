@@ -96,9 +96,19 @@ impl FilterState {
 
 impl Widget for &mut ArticlesList {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
+        let block = self.view_data.gen_block(
+            &self.config,
+            &self.filter_state,
+            &self.model_data,
+            self.is_focused,
+        );
+        let inner = block.inner(area);
+
+        block.render(area, buf);
+
         StatefulWidget::render(
             &self.view_data.table,
-            area,
+            inner,
             buf,
             &mut self.view_data.table_state,
         );
@@ -114,7 +124,7 @@ pub struct ArticleListViewData<'a> {
 }
 
 impl<'a> ArticleListViewData<'a> {
-    fn build_title(&self, filter_state: &FilterState) -> String {
+    fn build_title(&self, filter_state: &FilterState, model_data: &ArticleListModelData) -> String {
         let mut title = String::new();
 
         if let Some(article_scope) = filter_state.get_effective_scope() {
@@ -135,12 +145,18 @@ impl<'a> ArticleListViewData<'a> {
         }
 
         let filter_info = match filter_state.article_adhoc_filter {
-            Some(_) if filter_state.apply_article_adhoc_filter => " ",
+            Some(_) if filter_state.apply_article_adhoc_filter => "  ",
             Some(_) => "  ",
-            _ => "",
+            _ => " ",
         };
 
         title.push_str(filter_info);
+
+        let selected_row = self.table_state().selected().unwrap_or(0) + 1;
+        let rows = model_data.articles().len();
+        let percent = (100f32 * (selected_row as f32 / rows as f32)) as i32;
+        title.push_str(format!("{selected_row}/{rows} ({percent}%) ",).as_str());
+
         title
     }
 
@@ -299,18 +315,25 @@ impl<'a> ArticleListViewData<'a> {
                 .map(|placeholder| constraint_for_placeholder(placeholder))
                 .collect::<Vec<Constraint>>(),
         )
-        .row_highlight_style(selected_style)
-        .block(
-            Block::default()
-                .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
-                .title_top(self.build_title(filter_state))
-                .border_type(ratatui::widgets::BorderType::Rounded)
-                .border_style(if is_focused {
-                    config.theme.focused_border_style
-                } else {
-                    config.theme.border_style
-                }),
-        );
+        .row_highlight_style(selected_style);
+    }
+
+    pub(super) fn gen_block(
+        &self,
+        config: &Config,
+        filter_state: &FilterState,
+        model_data: &ArticleListModelData,
+        is_focused: bool,
+    ) -> Block<'static> {
+        Block::default()
+            .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
+            .title_top(self.build_title(filter_state, model_data))
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .border_style(if is_focused {
+                config.theme.focused_border_style
+            } else {
+                config.theme.border_style
+            })
     }
 
     pub(super) fn get_table_state_mut(&mut self) -> &mut TableState {

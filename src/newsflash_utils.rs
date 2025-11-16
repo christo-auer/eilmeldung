@@ -2,7 +2,7 @@ use crate::{messages::event::AsyncOperationError, prelude::*};
 use std::{collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
-    NewsFlash, error::NewsFlashError, models::{ArticleID, Marked, Read, Tag, TagID}
+    NewsFlash, error::NewsFlashError, models::{ArticleID, CategoryID, FeedID, Marked, Read, Tag, TagID}
 };
 
 use log::{debug, error, info};
@@ -100,7 +100,7 @@ impl NewsFlashUtils {
     }
 
     gen_async_call! {
-        method_name: sync_feeds,
+        method_name: sync,
         params: (),
         news_flash_var: news_flash,
         client_var: client,
@@ -138,11 +138,11 @@ impl NewsFlashUtils {
         params: (article_ids: Vec<ArticleID>, read: Read),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncMarkArticlesAsRead,
+        start_event: Event::AsyncSetArticlesAsRead,
         operation: news_flash
                     .set_article_read(&article_ids, read, &client)
                     .await?,
-        success_event: Event::AsyncMarkArticlesAsReadFinished,
+        success_event: Event::AsyncSetArticlesAsReadFinished,
     }
 
     gen_async_call! {
@@ -150,7 +150,7 @@ impl NewsFlashUtils {
         params: (article_ids: Vec<ArticleID>, marked: Marked),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncMarkArticlesAsRead,
+        start_event: Event::AsyncSetArticlesAsRead,
         operation: news_flash
                     .set_article_marked(&article_ids, marked, &client)
                     .await?,
@@ -224,6 +224,51 @@ impl NewsFlashUtils {
                 &color.map(|color| color.to_string()), &client).await?,
         success_event: Event::AsyncTagEditFinished(tag),
     }
+
+    gen_async_call! {
+        method_name: set_all_read,
+        params: (),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncSetFeedRead,
+        operation: 
+            news_flash.set_all_read(&client).await?,
+        success_event: Event::AsyncSetAllReadFinished,
+    }
+
+    gen_async_call! {
+        method_name: set_feed_read,
+        params: (feed_ids: Vec<FeedID>),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncSetFeedRead,
+        operation: 
+            news_flash.set_feed_read(&feed_ids, &client).await?,
+        success_event: Event::AsyncSetFeedReadFinished,
+    }
+
+    gen_async_call! {
+        method_name: set_category_read,
+        params: (category_ids: Vec<CategoryID>),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncSetCategoryRead,
+        operation: 
+            news_flash.set_category_read(&category_ids, &client).await?,
+        success_event: Event::AsyncSetCategoryReadFinished,
+    }
+
+    gen_async_call! {
+        method_name: set_tag_read,
+        params: (tag_ids: Vec<TagID>),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncSetTagRead,
+        operation: 
+            news_flash.set_tag_read(&tag_ids, &client).await?,
+        success_event: Event::AsyncSetTagReadFinished,
+    }
+
 
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(

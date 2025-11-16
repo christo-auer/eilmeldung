@@ -1,3 +1,4 @@
+use news_flash::models::Marked;
 use ratatui::crossterm::event::KeyCode;
 
 use crate::prelude::*;
@@ -24,7 +25,6 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         ("h".into(), NavigateLeft.into()),
         ("l".into(), NavigateRight.into()),
         ("q".into(), ApplicationQuit.into()),
-        ("r".into(), FeedsSync.into()),
         ("s".into(), ArticleCurrentScrape.into()),
         ("g f".into(), PanelFocus(AppState::FeedSelection).into()),
         ("g a".into(), PanelFocus(AppState::ArticleSelection).into()),
@@ -37,24 +37,59 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         (
             "o".into(),
             vec![
-                ArticleCurrentOpenInBrowser,
-                ArticleCurrentSetRead,
+                ActionOpenInBrowser(ActionScope::Current),
+                ActionSetRead(ActionSetReadTarget::ArticleList, ActionScope::Current),
                 ArticleListSelectNextUnread,
             ]
             .into(),
         ),
         (
             "J".into(),
-            vec![ArticleCurrentSetRead, ArticleListSelectNextUnread].into(),
+            vec![
+                ActionSetRead(ActionSetReadTarget::ArticleList, ActionScope::Current),
+                ArticleListSelectNextUnread,
+            ]
+            .into(),
         ),
-        ("u".into(), ArticleCurrentSetUnread.into()),
-        ("U".into(), ArticleCurrentToggleRead.into()),
-        ("m".into(), ArticleCurrentToggleMarked.into()),
-        ("M".into(), ArticleListSetAllMarked.into()),
-        ("M-m".into(), ArticleListSetAllUnmarked.into()),
-        ("U".into(), ArticleCurrentToggleRead.into()),
-        ("a".into(), ArticleListSetAllRead.into()),
-        ("A".into(), ArticleListSetAllUnread.into()),
+        ("s".into(), FeedListSync.into()),
+        (
+            "r".into(),
+            ActionSetRead(ActionSetReadTarget::Current, ActionScope::Current).into(),
+        ),
+        (
+            "R".into(),
+            ActionSetRead(ActionSetReadTarget::Current, ActionScope::All).into(),
+        ),
+        (
+            "C-r".into(),
+            CommandLineOpen(Some("read".to_owned())).into(),
+        ),
+        ("u".into(), ActionSetUnread(ActionScope::Current).into()),
+        ("U".into(), ActionSetUnread(ActionScope::All).into()),
+        (
+            "C-u".into(),
+            CommandLineOpen(Some("unread".to_owned())).into(),
+        ),
+        (
+            "m".into(),
+            ActionSetMarked(ActionScope::Current, Marked::Marked).into(),
+        ),
+        (
+            "M".into(),
+            ActionSetMarked(ActionScope::All, Marked::Marked).into(),
+        ),
+        (
+            "n".into(),
+            ActionSetMarked(ActionScope::Current, Marked::Unmarked).into(),
+        ),
+        (
+            "N".into(),
+            ActionSetMarked(ActionScope::All, Marked::Unmarked).into(),
+        ),
+        (
+            "C-n".into(),
+            CommandLineOpen(Some("unmark".to_owned())).into(),
+        ),
         ("1".into(), ArticleListSetScope(ArticleScope::All).into()),
         ("2".into(), ArticleListSetScope(ArticleScope::Unread).into()),
         ("3".into(), ArticleListSetScope(ArticleScope::Marked).into()),

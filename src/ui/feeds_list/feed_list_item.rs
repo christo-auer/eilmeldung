@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use std::fmt::Display;
 use std::str::FromStr;
 
 use news_flash::models::{ArticleFilter, Tag, TagID};
@@ -123,5 +124,21 @@ impl TryFrom<FeedListItem> for AugmentedArticleFilter {
             .into(),
             Query(query) => AugmentedArticleFilter::from_str(&query.query)?,
         })
+    }
+}
+
+impl Display for FeedListItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use FeedListItem::*;
+        match self {
+            All => write!(f, "all"),
+            Feed(feed) => write!(f, "feed {}", feed.label),
+            Category(category) => write!(f, "category {}", category.label),
+            Tags(_) => write!(f, "tags"),
+            Tag(tag) => write!(f, "tag #{}", tag.label),
+            Query(labeled_article_query) => {
+                write!(f, "article query {}", labeled_article_query.label)
+            }
+        }
     }
 }
