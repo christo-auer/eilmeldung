@@ -94,7 +94,20 @@ impl FeedListViewData {
         let mut root_items = Vec::new();
 
         for root in model_data.roots().iter() {
-            root_items.push(self.map_category_to_tree_item(config, root, model_data));
+            match root {
+                FeedOrCategory::Category(category_id) => {
+                    if let Some(category) = model_data.category_map().get(category_id) {
+                        root_items
+                            .push(self.map_category_to_tree_item(config, category, model_data))
+                    }
+                }
+
+                FeedOrCategory::Feed(feed_id) => {
+                    if let Some(feed) = model_data.feed_map().get(feed_id) {
+                        root_items.push(self.map_feed_to_tree_item(config, feed, model_data))
+                    }
+                }
+            }
         }
 
         match item_type {

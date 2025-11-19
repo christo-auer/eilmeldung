@@ -33,7 +33,7 @@ pub(super) struct FeedListModelData {
     unread_count_for_tag: HashMap<TagID, i64>,
     marked_count_for_feed_or_category: HashMap<FeedOrCategory, i64>,
     category_tree: HashMap<CategoryID, Vec<FeedOrCategory>>,
-    roots: Vec<Category>,
+    roots: Vec<FeedOrCategory>,
 
     tags: Vec<Tag>,
 }
@@ -171,17 +171,31 @@ impl FeedListModelData {
             })
         });
 
-        // TODO include feeds with no parents and check for category capability!
+        // the following has quadratic runtime but it should be fine as long as there are not
+        // hundreds of categories and even more feeds
         self.roots = self
             .categories
             .iter()
             .filter(|category| {
-                category_mappings
-                    .iter()
-                    .any(|category_mapping| category.category_id == category_mapping.category_id)
+                !category_mappings.iter().any(|category_mapping| {
+                    category.category_id == category_mapping.category_id
+                        && self.category_map.contains_key(&category_mapping.parent_id)
+                })
             })
-            .cloned()
+            .map(|category| FeedOrCategory::Category(category.category_id.to_owned()))
             .collect();
+        let mut feed_roots = self
+            .feeds
+            .iter()
+            .filter(|feed| {
+                !feed_mappings.iter().any(|feed_mapping| {
+                    feed_mapping.feed_id == feed.feed_id
+                        && self.category_map.contains_key(&feed_mapping.category_id)
+                })
+            })
+            .map(|feed| FeedOrCategory::Feed(feed.feed_id.to_owned()))
+            .collect::<Vec<FeedOrCategory>>();
+        self.roots.append(&mut feed_roots);
 
         // no we can build the tree structure
         self.unread_count_all = news_flash.unread_count_all()?;
@@ -198,19 +212,22 @@ impl FeedListModelData {
 
         drop(news_flash);
 
-        self.roots.iter().for_each(|category| {
+        self.roots.iter().for_each(|feed_or_category| {
             // count unread
-            Self::count_recursive(
-                &category.category_id,
-                &self.category_tree,
-                &mut unread_count_for_feed_or_category,
-            );
-            // count marked
-            Self::count_recursive(
-                &category.category_id,
-                &self.category_tree,
-                &mut marked_count_for_feed_or_category,
-            );
+            if let FeedOrCategory::Category(category_id) = feed_or_category {
+                Self::count_recursive(
+                    &category_id,
+                    &self.category_tree,
+                    &mut unread_count_for_feed_or_category,
+                );
+                //
+                // count marked
+                Self::count_recursive(
+                    &category_id,
+                    &self.category_tree,
+                    &mut marked_count_for_feed_or_category,
+                );
+            }
         });
 
         self.unread_count_for_feed_or_category = unread_count_for_feed_or_category;
