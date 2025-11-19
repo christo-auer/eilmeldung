@@ -3,8 +3,8 @@ use crate::prelude::*;
 use crate::ui::feeds_list::model::FeedListModelData;
 
 use getset::{Getters, MutGetters};
-use news_flash::models::TagID;
 use news_flash::models::{Category, Feed};
+use news_flash::models::{PluginCapabilities, TagID};
 use ratatui::widgets::Scrollbar;
 use ratatui::widgets::{Block, Borders};
 use ratatui::{
@@ -62,63 +62,111 @@ impl FeedListViewData {
         config: &Config,
         model_data: &FeedListModelData,
     ) -> color_eyre::Result<()> {
-        // let previously_selected = self.get_selected_path();
-        //
-        // {
-        // feeds under all
-        self.tree_items = vec![TreeItem::new(
-            FeedListItem::All,
-            FeedListItem::All.to_text(&config, Some(*model_data.unread_count_all()), None),
-            model_data
-                .feeds()
-                .iter()
-                .map(|feed| self.map_feed_to_tree_item(&config, feed, model_data))
-                .collect(),
-        )?];
+        self.tree_items = Vec::new();
 
-        // categories
-        for root in model_data.roots().iter() {
-            self.tree_items
-                .push(self.map_category_to_tree_item(&config, root, model_data));
+        for item in config.feed_list.iter() {
+            use FeedListContentIdentifier::*;
+            match item {
+                Feeds(item_type) => self.add_feeds_item(config, model_data, item_type)?,
+                Categories(item_type) => self.add_categories_item(config, model_data, item_type)?,
+                Tags(item_type) => self.add_tags_item(config, model_data, item_type).await?,
+                Query(labeled_query) => self.add_query_item(config, labeled_query),
+            }
         }
 
-        // tags
-        let tag_ids: Vec<TagID> = model_data
-            .tags()
-            .iter()
-            .map(|tag| tag.tag_id.clone())
-            .collect();
-        let tags_item = FeedListItem::Tags(tag_ids);
-        let tag_item_text = tags_item.to_text(&config, None, None);
-        //
-        self.tree_items.push(TreeItem::new(
-            tags_item,
-            tag_item_text,
-            model_data
+        Ok(())
+    }
+
+    fn add_query_item(&mut self, config: &Config, labeled_query: &LabeledQuery) {
+        // queries
+        let query_item = FeedListItem::Query(Box::new(labeled_query.clone()));
+        let query_item_text = query_item.to_text(config, None, None);
+        self.tree_items
+            .push(TreeItem::new_leaf(query_item, query_item_text));
+    }
+
+    fn add_categories_item(
+        &mut self,
+        config: &Config,
+        model_data: &FeedListModelData,
+        item_type: &FeedListItemType,
+    ) -> color_eyre::Result<()> {
+        let mut root_items = Vec::new();
+
+        for root in model_data.roots().iter() {
+            root_items.push(self.map_category_to_tree_item(config, root, model_data));
+        }
+
+        match item_type {
+            FeedListItemType::Tree => {
+                let categories_item = FeedListItem::Categories;
+                let categories_text = categories_item.to_text(config, None, None);
+                self.tree_items
+                    .push(TreeItem::new(categories_item, categories_text, root_items)?);
+            }
+            FeedListItemType::List => {
+                self.tree_items.append(&mut root_items);
+            }
+        }
+        Ok(())
+    }
+
+    async fn add_tags_item(
+        &mut self,
+        config: &Config,
+        model_data: &FeedListModelData,
+        item_type: &FeedListItemType,
+    ) -> Result<(), color_eyre::eyre::Error> {
+        if model_data
+            .features()
+            .await?
+            .contains(PluginCapabilities::SUPPORT_TAGS)
+        {
+            let tag_ids: Vec<TagID> = model_data
                 .tags()
                 .iter()
-                .map(|tag| {
-                    let tag_item = FeedListItem::Tag(Box::new(tag.clone()));
+                .map(|tag| tag.tag_id.clone())
+                .collect();
 
-                    // TODO this is ugly => refactor
-                    let tag_item_text = tag_item.to_text(
-                        &config,
-                        model_data.unread_count_for_tag().get(&tag.tag_id).copied(),
-                        None,
-                    );
-                    TreeItem::new_leaf(tag_item, tag_item_text)
-                })
-                .collect(),
-        )?);
+            let mut children = model_data
+                .tags()
+                .iter()
+                .map(|tag| self.gen_tag_item(config, model_data, tag.to_owned()))
+                .collect::<Vec<TreeItem<_>>>();
 
-        // queries
-        config.queries.iter().for_each(|labeled_query| {
-            let query_item = FeedListItem::Query(Box::new(labeled_query.clone()));
-            let query_item_text = query_item.to_text(&config, None, None);
-            self.tree_items
-                .push(TreeItem::new_leaf(query_item, query_item_text))
-        });
+            match item_type {
+                FeedListItemType::List => self.tree_items.append(&mut children),
+                FeedListItemType::Tree => {
+                    let tags_item = FeedListItem::Tags(tag_ids);
+                    let tag_item_text = tags_item.to_text(config, None, None);
 
+                    let tags_tree_item = TreeItem::new(tags_item, tag_item_text, children)?;
+                    self.tree_items.push(tags_tree_item);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn add_feeds_item(
+        &mut self,
+        config: &Config,
+        model_data: &FeedListModelData,
+        item_type: &FeedListItemType,
+    ) -> Result<(), color_eyre::eyre::Error> {
+        let mut children = model_data
+            .feeds()
+            .iter()
+            .map(|feed| self.map_feed_to_tree_item(config, feed, model_data))
+            .collect();
+        match item_type {
+            FeedListItemType::List => self.tree_items.append(&mut children),
+            FeedListItemType::Tree => self.tree_items.push(TreeItem::new(
+                FeedListItem::All,
+                FeedListItem::All.to_text(config, Some(*model_data.unread_count_all()), None),
+                children,
+            )?),
+        }
         Ok(())
     }
 
@@ -161,12 +209,12 @@ impl FeedListViewData {
             children.push(match child {
                 FeedOrCategory::Category(category_id) => {
                     let child_category = model_data.category_map().get(category_id).unwrap();
-                    self.map_category_to_tree_item(&config, child_category, model_data)
+                    self.map_category_to_tree_item(config, child_category, model_data)
                 }
 
                 FeedOrCategory::Feed(feed_id) => {
                     let feed = model_data.feed_map().get(feed_id).unwrap();
-                    self.map_feed_to_tree_item(&config, feed, model_data)
+                    self.map_feed_to_tree_item(config, feed, model_data)
                 }
             });
         }
@@ -180,7 +228,19 @@ impl FeedListViewData {
             .marked_count_for_feed_or_category()
             .get(&category.category_id.clone().into())
             .copied();
-        let text = identifier.to_text(&config, unread_category, marked_category);
+        let text = identifier.to_text(config, unread_category, marked_category);
         TreeItem::new(identifier, text, children).unwrap()
+    }
+
+    fn gen_tag_item(
+        &self,
+        config: &Config,
+        model_data: &FeedListModelData,
+        tag: news_flash::models::Tag,
+    ) -> TreeItem<'static, FeedListItem> {
+        let count = model_data.unread_count_for_tag().get(&tag.tag_id).copied();
+        let tag_item = FeedListItem::Tag(Box::new(tag));
+        let tag_item_text = tag_item.to_text(config, count, None);
+        TreeItem::new_leaf(tag_item, tag_item_text)
     }
 }

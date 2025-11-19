@@ -32,6 +32,7 @@ enum QueryAtom {
     FeedWebUrl(SearchTerm),
     All(SearchTerm),
     Tag(Vec<String>),
+    Tagged,
     Newer(DateTime<Utc>),
     Older(DateTime<Utc>),
     SyncedBefore(DateTime<Utc>),
@@ -125,6 +126,8 @@ impl QueryAtom {
         match self {
             Read(read) => article.unread == *read,
             Marked(marked) => article.marked == *marked,
+
+            Tagged => !tags.map(|tags| tags.is_empty()).unwrap_or(true),
 
             Feed(search_term)
             | Title(search_term)
@@ -234,6 +237,9 @@ enum QueryToken {
 
     #[token("unmarked", priority = 2)]
     KeyUnmarked,
+
+    #[token("tagged", priority = 2)]
+    KeyTagged,
 
     #[token("newer:")]
     KeyNewer,
@@ -411,6 +417,7 @@ fn parse_query(
                 }
                 None => Some(QueryAtom::Marked(Marked::Unmarked)),
             },
+            KeyTagged => Some(QueryAtom::Tagged),
 
             key @ (KeyTitle | KeySummary | KeyAuthor | KeyFeed | KeyFeedUrl | KeyFeedWebUrl
             | KeyAll) => match query_lexer.next() {

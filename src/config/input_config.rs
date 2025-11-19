@@ -100,6 +100,7 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         ("=".into(), CommandLineOpen(Some("=".into())).into()),
         ("+ r".into(), ArticleListFilterClear.into()),
         ("+ +".into(), ArticleListFilterApply.into()),
+        ("c w".into(), CommandLineOpen(Some("rename".into())).into()),
     ]
     .into_iter()
     .collect()

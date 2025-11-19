@@ -4,7 +4,7 @@ use getset::Getters;
 use log::info;
 use news_flash::models::{
     ArticleFilter, ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping,
-    Tag, TagID,
+    PluginCapabilities, Tag, TagID, Url,
 };
 use ratatui::style::Color;
 
@@ -97,6 +97,7 @@ impl FeedListModelData {
 
         self.category_map =
             NewsFlashUtils::generate_id_map(&self.categories, |c| c.category_id.clone());
+
         // tags
         let (tags, taggings) = news_flash.get_tags()?;
         self.tags = tags;
@@ -170,6 +171,7 @@ impl FeedListModelData {
             })
         });
 
+        // TODO include feeds with no parents and check for category capability!
         self.roots = self
             .categories
             .iter()
@@ -307,5 +309,46 @@ impl FeedListModelData {
         Ok(())
     }
 
+    pub(super) fn add_feed(
+        &self,
+        url: Url,
+        label: Option<String>,
+        category_id: Option<CategoryID>,
+    ) -> color_eyre::Result<()> {
+        self.news_flash_utils.add_feed(url, label, category_id);
+        Ok(())
+    }
 
+    pub(super) async fn add_category(
+        &self,
+        label: String,
+        category_id: Option<CategoryID>,
+    ) -> color_eyre::Result<()> {
+        self.news_flash_utils.add_category(label, category_id);
+        Ok(())
+    }
+
+    pub(super) fn rename_feed(&self, feed_id: FeedID, name: String) -> color_eyre::Result<()> {
+        self.news_flash_utils.rename_feed(feed_id, name);
+        Ok(())
+    }
+
+    pub(super) fn rename_category(
+        &self,
+        category_id: CategoryID,
+        name: String,
+    ) -> color_eyre::Result<()> {
+        self.news_flash_utils.rename_category(category_id, name);
+        Ok(())
+    }
+
+    pub(super) async fn features(&self) -> color_eyre::Result<PluginCapabilities> {
+        Ok(self
+            .news_flash_utils
+            .news_flash_lock
+            .read()
+            .await
+            .features()
+            .await?)
+    }
 }

@@ -2,7 +2,7 @@ use crate::{messages::event::AsyncOperationError, prelude::*};
 use std::{collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
-    NewsFlash, error::NewsFlashError, models::{ArticleID, CategoryID, FeedID, Marked, Read, Tag, TagID}
+    NewsFlash, error::NewsFlashError, models::{ArticleID, CategoryID, FeedID, Marked, Read, Tag, TagID, Url}
 };
 
 use log::{debug, error, info};
@@ -268,6 +268,56 @@ impl NewsFlashUtils {
             news_flash.set_tag_read(&tag_ids, &client).await?,
         success_event: Event::AsyncSetTagReadFinished,
     }
+
+    gen_async_call! {
+        method_name: add_feed,
+        params: (url: Url, title: Option<String>, category_id: Option<CategoryID>),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncAddFeed,
+        operation: 
+            let (feed, .. ) = news_flash.add_feed(&url, title, category_id, &client).await?,
+        success_event: Event::AsyncAddFeedFinished(feed),
+    }
+
+    gen_async_call! {
+        method_name: add_category,
+        params: (title: String, parent : Option<CategoryID>),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncAddCategory,
+        operation: 
+            let (category, .. ) = news_flash.add_category(&title, parent.as_ref(), &client).await?,
+        success_event: Event::AsyncAddCategoryFinished(category),
+    }
+
+    gen_async_call! {
+        method_name: rename_feed,
+        params: (feed_id: FeedID, title: String),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncRenameFeed,
+        operation: 
+            let feed = news_flash.rename_feed(&feed_id, title.as_str(), &client).await?,
+        success_event: Event::AsyncRenameFeedFinished(feed),
+    }
+
+    gen_async_call! {
+        method_name: rename_category,
+        params: (category_id: CategoryID, title: String),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncRenameCategory,
+        operation: 
+            let category = news_flash.rename_category(&category_id, title.as_str(), &client).await?,
+        success_event: Event::AsyncRenameCategoryFinished(category),
+    }
+
+
+      // remove_feed
+      // move_feed
+      // rename_feed
+      // edit_feed_url
 
 
 

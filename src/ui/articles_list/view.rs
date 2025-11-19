@@ -147,7 +147,7 @@ impl<'a> ArticleListViewData<'a> {
         let filter_info = match filter_state.article_adhoc_filter {
             Some(_) if filter_state.apply_article_adhoc_filter => "  ",
             Some(_) => "  ",
-            _ => " ",
+            _ => "",
         };
 
         title.push_str(filter_info);

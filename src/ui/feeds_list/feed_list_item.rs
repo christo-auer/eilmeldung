@@ -10,6 +10,7 @@ use ratatui::text::Text;
 pub enum FeedListItem {
     All,
     Feed(Box<Feed>),
+    Categories,
     Category(Box<Category>),
     Tags(Vec<TagID>),
     Tag(Box<Tag>),
@@ -30,18 +31,19 @@ impl FeedListItem {
         let marked_count_str = marked_count.map(|c| c.to_string()).unwrap_or_default();
 
         let (label, mut style) = match self {
-            All => (config.all_label.to_string(), config.theme.header),
+            All => (config.all_label.to_owned(), config.theme.header),
             Feed(feed) => (
                 config.feed_label.replace("{label}", feed.label.as_str()),
                 config.theme.feed,
             ),
+            Categories => (config.categories_label.to_owned(), config.theme.category),
             Category(category) => (
                 config
                     .category_label
                     .replace("{label}", category.label.as_str()),
                 config.theme.category,
             ),
-            Tags(_) => (config.tags_label.to_string(), config.theme.header),
+            Tags(_) => (config.tags_label.to_owned(), config.theme.header),
             Tag(tag) => {
                 let mut style = config.theme.tag;
 
@@ -76,8 +78,9 @@ impl FeedListItem {
     pub(super) fn to_tooltip(&self, _config: &Config) -> String {
         use FeedListItem::*;
         match self {
-            All => "all feeds".to_string(),
-            Category(category) => format!("Category: {}", category.label).to_string(),
+            All => "all feeds".to_owned(),
+            Categories => "all categories".to_owned(),
+            Category(category) => format!("Category: {}", category.label).to_owned(),
             Feed(feed) => {
                 format!(
                     "Feed: {} ({})",
@@ -107,6 +110,7 @@ impl TryFrom<FeedListItem> for AugmentedArticleFilter {
                 ..Default::default()
             }
             .into(),
+            Categories => ArticleFilter::default().into(),
             Category(category) => ArticleFilter {
                 categories: vec![category.category_id].into(),
                 ..Default::default()
@@ -133,6 +137,7 @@ impl Display for FeedListItem {
         match self {
             All => write!(f, "all"),
             Feed(feed) => write!(f, "feed {}", feed.label),
+            Categories => write!(f, "categories"),
             Category(category) => write!(f, "category {}", category.label),
             Tags(_) => write!(f, "tags"),
             Tag(tag) => write!(f, "tag #{}", tag.label),
