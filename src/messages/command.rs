@@ -102,8 +102,8 @@ pub enum Command {
 
     // feed list
     FeedListSync,
-    FeedListAddCategory(String),
-    FeedListAddFeed(String, Url),
+    FeedListCategoryAdd(String),
+    FeedListFeedAdd(Url, Option<String>),
     FeedListRenameEntity(String),
     FeedListRemoveEntity,
     FeedListRemoveEntityWithChildren,
@@ -142,6 +142,9 @@ pub enum Command {
 
     // command line
     CommandLineOpen(Option<String>),
+
+    // redraw command
+    Redraw,
 }
 
 impl Display for Command {
@@ -162,8 +165,9 @@ impl Display for Command {
             PanelFocusNextCyclic => write!(f, "focus next"),
             PanelFocusPreviousCyclic => write!(f, "focus next"),
             ToggleDistractionFreeMode => write!(f, "distraction free mode"),
-            FeedListAddCategory(name) => write!(f, "add category {name}"),
-            FeedListAddFeed(name, url) => write!(f, "add feed {name} with url {url}"),
+            FeedListCategoryAdd(name) => write!(f, "add category {name}"),
+            FeedListFeedAdd(url, Some(name)) => write!(f, "add feed {name} with url {url}"),
+            FeedListFeedAdd(url, None) => write!(f, "add feed with url {url}"),
             FeedListRenameEntity(name) => write!(f, "rename selected to {name}"),
             FeedListRemoveEntity => write!(f, "remove selected"),
             FeedListRemoveEntityWithChildren => write!(f, "remove selected and its children"),
@@ -176,6 +180,7 @@ impl Display for Command {
             ArticleListSetScope(ArticleScope::All) => write!(f, "show all"),
             ArticleCurrentScrape => write!(f, "scrape content"),
             ApplicationQuit => write!(f, "quit"),
+            Redraw => write!(f, "redraw ui"),
             CommandLineOpen(input) => write!(f, "command line {}", input.unwrap_or_default()),
             ArticleListSearch(query) => write!(f, "search article {}", query.query_string()),
             ArticleListSearchNext => write!(f, "article search next"),
@@ -279,6 +284,11 @@ fn expect_word(s: &mut Option<String>, to_expect: &str) -> color_eyre::Result<St
     Ok(word)
 }
 
+fn expect_url(s: &mut Option<String>) -> color_eyre::Result<Url> {
+    let word = expect_word(s, "feed URL")?;
+    Ok(Url::new(reqwest::Url::from_str(word.as_str())?))
+}
+
 fn expect_color(s: &mut Option<String>) -> color_eyre::Result<Color> {
     let word = expect_word(s, "color")?;
     Ok(Color::from_str(word.as_str())?)
@@ -366,6 +376,22 @@ impl FromStr for Command {
                     _ => unreachable!(),
                 }
             }
+
+            "feedadd" => {
+                let url = expect_url(&mut args)?;
+                let name = args;
+                FeedListFeedAdd(url, name)
+            }
+
+            "categoryadd" => match args {
+                Some(name) => FeedListCategoryAdd(name),
+                None => return Err(color_eyre::eyre::eyre!("expected name")),
+            },
+
+            "rename" => match args {
+                Some(name) => FeedListRenameEntity(name),
+                None => return Err(color_eyre::eyre::eyre!("expected name")),
+            },
 
             "tagchangecolor" => {
                 let tag_title = expect_word(&mut args, "tag name")?;

@@ -10,18 +10,22 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use log::{info, trace};
-use ratatui::crossterm::event::KeyCode;
+use ratatui::crossterm::event;
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use tokio::sync::mpsc::UnboundedSender;
 
 pub fn input_reader(message_sender: UnboundedSender<Message>) -> color_eyre::Result<()> {
-    info!("staring input reader loop");
+    info!("starting input reader loop");
     loop {
-        match ratatui::crossterm::event::read()? {
-            ratatui::crossterm::event::Event::Key(key_event) => {
+        match event::read()? {
+            event::Event::Key(key_event) => {
                 trace!("crossterm input event: {:?}", key_event);
                 message_sender.send(Message::Event(Event::Key(key_event)))?;
+            }
+            event::Event::Resize(width, height) => {
+                trace!("resized to {width} {height}");
+                message_sender.send(Message::Event(Event::Resized(width, height)))?;
             }
             event => trace!("ignoring event {:?}", event),
         }
@@ -103,11 +107,12 @@ impl InputCommandGenerator {
         self.last_input_instant = now;
 
         match key {
-            Some(Key::Just(KeyCode::Esc)) => aborted = true,
+            Some(Key::Just(event::KeyCode::Esc)) => aborted = true,
             Some(key) => {
                 self.key_sequence.keys.push(key);
                 trace!("current key_sequence: {:?}", self.key_sequence);
             }
+            None if !timeout => return Ok(()),
             _ => {}
         }
 

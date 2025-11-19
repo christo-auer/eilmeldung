@@ -373,6 +373,10 @@ impl ArticlesList {
 
 impl crate::messages::MessageReceiver for ArticlesList {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+        if matches!(message, Message::Event(Event::Tick)) {
+            return Ok(());
+        }
+
         let current_article = self.get_current_article().map(|article| article.article_id);
         let mut model_needs_update = false;
         let mut view_needs_update = false;
@@ -568,6 +572,8 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 self.is_focused,
             );
             self.restore_sensible_selection(current_article.as_ref())?;
+            self.message_sender
+                .send(Message::Command(Command::Redraw))?;
         }
 
         Ok(())

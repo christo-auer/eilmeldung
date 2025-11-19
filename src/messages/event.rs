@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use news_flash::{
     error::NewsFlashError,
-    models::{Article, FatArticle, Feed, FeedID, Tag, Thumbnail},
+    models::{Article, Category, FatArticle, Feed, FeedID, Tag, Thumbnail},
 };
 use ratatui::crossterm::event::KeyEvent;
 
@@ -47,6 +47,18 @@ pub enum Event {
     AsyncTagRemove,
     AsyncTagRemoveFinished,
 
+    AsyncAddFeed,
+    AsyncAddFeedFinished(Feed),
+
+    AsyncAddCategory,
+    AsyncAddCategoryFinished(Category),
+
+    AsyncRenameFeed,
+    AsyncRenameFeedFinished(Feed),
+
+    AsyncRenameCategory,
+    AsyncRenameCategoryFinished(Category),
+
     AsyncTagEdit,
     AsyncTagEditFinished(Tag),
 
@@ -82,6 +94,9 @@ pub enum Event {
     // raw key event
     Key(KeyEvent),
 
+    // terminal resized
+    Resized(u16, u16),
+
     // connectivity
     ConnectionAvailable,
     ConnectionLost(ConnectionLostReason),
@@ -91,23 +106,26 @@ impl Event {
     pub fn caused_model_update(&self) -> bool {
         use Event::*;
 
-        match self {
+        matches!(
+            self,
             AsyncSyncFinished(_)
-            | AsyncFetchFatArticleFinished(_)
-            | AsyncMarkArticlesAsMarkedFinished
-            | AsyncTagArticleFinished
-            | AsyncUntagArticleFinished
-            | AsyncTagAddFinished(_)
-            | AsyncTagRemoveFinished
-            | AsyncTagEditFinished(_)
-            | AsyncOperationFailed(..)
-            | AsyncSetOfflineFinished(_)
-            | AsyncSetAllReadFinished
-            | AsyncSetFeedReadFinished
-            | AsyncSetCategoryReadFinished
-            | AsyncSetTagReadFinished
-            | AsyncSetArticlesAsReadFinished => true,
-            _ => false,
-        }
+                | AsyncAddFeedFinished(_)
+                | AsyncRenameFeedFinished(_)
+                | AsyncRenameCategoryFinished(_)
+                | AsyncFetchFatArticleFinished(_)
+                | AsyncMarkArticlesAsMarkedFinished
+                | AsyncTagArticleFinished
+                | AsyncUntagArticleFinished
+                | AsyncTagAddFinished(_)
+                | AsyncTagRemoveFinished
+                | AsyncTagEditFinished(_)
+                | AsyncOperationFailed(..)
+                | AsyncSetOfflineFinished(_)
+                | AsyncSetAllReadFinished
+                | AsyncSetFeedReadFinished
+                | AsyncSetCategoryReadFinished
+                | AsyncSetTagReadFinished
+                | AsyncSetArticlesAsReadFinished
+        )
     }
 }

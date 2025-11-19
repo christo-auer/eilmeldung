@@ -16,6 +16,8 @@ pub struct ArticleContent {
     view_data: ArticleContentViewData,
     model_data: ArticleContentModelData,
 
+    message_sender: UnboundedSender<Message>,
+
     is_focused: bool,
 }
 
@@ -26,9 +28,10 @@ impl ArticleContent {
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {
-            config: config.clone(),
+            config,
             view_data: ArticleContentViewData::default(),
             model_data: ArticleContentModelData::new(news_flash_utils, message_sender.clone()),
+            message_sender,
             is_focused: false,
         }
     }
@@ -194,6 +197,8 @@ impl crate::messages::MessageReceiver for ArticleContent {
 
         if view_needs_update {
             self.view_data.update(&self.model_data, self.config.clone());
+            self.message_sender
+                .send(Message::Command(Command::Redraw))?;
         }
 
         Ok(())
