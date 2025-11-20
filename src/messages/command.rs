@@ -142,6 +142,7 @@ pub enum Command {
 
     // command line
     CommandLineOpen(Option<String>),
+    CommandConfirm(Box<Command>),
 
     // redraw command
     Redraw,
@@ -179,7 +180,7 @@ impl Display for Command {
             ArticleListSetScope(ArticleScope::Unread) => write!(f, "show unread"),
             ArticleListSetScope(ArticleScope::All) => write!(f, "show all"),
             ArticleCurrentScrape => write!(f, "scrape content"),
-            ApplicationQuit => write!(f, "quit"),
+            ApplicationQuit => write!(f, "quit application"),
             Redraw => write!(f, "redraw ui"),
             CommandLineOpen(input) => write!(f, "command line {}", input.unwrap_or_default()),
             ArticleListSearch(query) => write!(f, "search article {}", query.query_string()),
@@ -217,6 +218,7 @@ impl Display for Command {
             TagChangeColor(tag_title, color) => {
                 write!(f, "change color of #{} to #{}", tag_title, color)
             }
+            CommandConfirm(command) => write!(f, "confirm command: {}", command),
         }
     }
 }
@@ -311,12 +313,19 @@ impl FromStr for Command {
 
         use Command::*;
         Ok(match command {
+            "?" | "confirm" => {
+                let Some(args) = args else {
+                    return Err(color_eyre::eyre::eyre!("exepected command"));
+                };
+                CommandConfirm(Box::new(Command::from_str(&args)?))
+            }
+
             "up" => NavigateUp,
             "down" => NavigateDown,
-            "page_up" => NavigatePageUp,
-            "page_down" => NavigatePageDown,
-            "goto_first" => NavigateFirst,
-            "goto_last" => NavigateLast,
+            "pageup" => NavigatePageUp,
+            "pagedown" => NavigatePageDown,
+            "gotofirst" => NavigateFirst,
+            "gotolast" => NavigateLast,
             "left" => NavigateLeft,
             "right" => NavigateRight,
 

@@ -1,0 +1,88 @@
+use std::sync::Arc;
+
+use ratatui::{
+    crossterm::event::KeyCode,
+    style::Stylize,
+    text::{Line, Span, Text},
+    widgets::{Block, BorderType, Borders, Padding, Widget},
+};
+use tokio::sync::mpsc::UnboundedSender;
+
+use crate::prelude::*;
+
+#[derive(getset::CopyGetters)]
+pub struct CommandConfirm {
+    config: Arc<Config>,
+    message_sender: UnboundedSender<Message>,
+
+    command_to_confirm: Option<Command>,
+
+    #[getset(get_copy = "pub")]
+    is_active: bool,
+}
+
+impl CommandConfirm {
+    pub fn new(config: Arc<Config>, message_sender: UnboundedSender<Message>) -> Self {
+        Self {
+            config,
+            message_sender,
+            command_to_confirm: None,
+            is_active: false,
+        }
+    }
+}
+
+impl Widget for &CommandConfirm {
+    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(if self.is_active {
+                self.config.theme.focused_border_style
+            } else {
+                self.config.theme.border_style
+            })
+            .padding(Padding::horizontal(1))
+            .border_type(BorderType::Thick);
+
+        let inner = block.inner(area);
+
+        if let Some(command) = self.command_to_confirm.as_ref() {
+            let prompt = Line::from(vec![
+                Span::from(format!(" {command}? ")).style(self.config.theme.accent_color),
+                Span::from("(y/n)")
+                    .style(self.config.theme.accent_color)
+                    .bold(),
+            ]);
+            prompt.render(inner, buf);
+        }
+        block.render(area, buf);
+    }
+}
+
+impl MessageReceiver for CommandConfirm {
+    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+        if let Message::Command(Command::CommandConfirm(command)) = message {
+            self.is_active = true;
+            self.command_to_confirm = Some(command.as_ref().clone());
+        }
+
+        if let Message::Event(Event::Key(key_event)) = message {
+            match key_event.code {
+                KeyCode::Char('y') if self.is_active => {
+                    self.is_active = false;
+                    self.message_sender
+                        .send(Message::Command(self.command_to_confirm.take().unwrap()))?;
+                }
+
+                KeyCode::Char('n') | KeyCode::Esc if self.is_active => {
+                    self.is_active = false;
+                    self.command_to_confirm = None;
+                }
+
+                _ => {}
+            }
+        }
+
+        Ok(())
+    }
+}

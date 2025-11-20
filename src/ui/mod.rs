@@ -1,5 +1,6 @@
 pub mod article_content;
 pub mod articles_list;
+pub mod command_confirm;
 pub mod command_input;
 pub mod feeds_list;
 pub mod tooltip;
@@ -9,6 +10,7 @@ use crate::prelude::*;
 pub mod prelude {
     pub use super::article_content::ArticleContent;
     pub use super::articles_list::prelude::*;
+    pub use super::command_confirm::CommandConfirm;
     pub use super::command_input::CommandInput;
     pub use super::feeds_list::prelude::*;
     pub use super::tooltip::{Tooltip, TooltipFlavor, tooltip};
@@ -36,12 +38,15 @@ impl Widget for &mut App {
 
         let articles_width = 100 - feeds_width;
 
+        let command_line_visible =
+            self.command_input.is_active() || self.command_confirm.is_active();
+
         let [top, middle, command_line, bottom] = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(1), // Top: fixed 1 line
                 Constraint::Min(0),    // Middle: takes remaining space
-                Constraint::Length(if self.command_line.is_active() { 3 } else { 0 }),
+                Constraint::Length(if command_line_visible { 3 } else { 0 }),
                 Constraint::Length(1), // Bottom: fixed 1 line
             ])
             .areas(area);
@@ -103,8 +108,10 @@ impl Widget for &mut App {
         let title = Text::from("+++ eilmeldung +++").style(self.config.theme.statusbar);
         title.render(title_chunk, buf);
 
-        if self.command_line.is_active() {
-            self.command_line.render(command_line, buf);
+        if self.command_input.is_active() {
+            self.command_input.render(command_line, buf);
+        } else if self.command_confirm.is_active() {
+            self.command_confirm.render(command_line, buf);
         }
 
         let bottom_line = self.tooltip.to_line(&self.config);

@@ -6,6 +6,15 @@ pub struct Theme {
     pub articles_list_focused_width_percent: u16,
     pub articles_list_height_lines: u16,
 
+    pub background_color: Color,
+    pub muted_color: Color,
+    pub normal_color: Color,
+    pub highlight_color: Color,
+    pub accent_color: Color,
+    pub accent_color_2: Color,
+    pub accent_color_3: Color,
+    pub accent_color_4: Color,
+
     pub category: Style,
     pub feed: Style,
     pub header: Style,
@@ -18,7 +27,7 @@ pub struct Theme {
     pub tooltip_info: Style,
     pub tooltip_warning: Style,
     pub tooltip_error: Style,
-    pub command_line: Style,
+    pub command_input: Style,
     pub inactive: Style,
 
     pub border_style: Style,
@@ -30,28 +39,54 @@ pub struct Theme {
 impl Default for Theme {
     fn default() -> Self {
         use Color::*;
+        let background_color = Black;
+        let muted_color = DarkGray;
+        let normal_color = White;
+        let normal_color_2 = Magenta;
+        let highlight_color = Yellow;
+        let accent_color = Magenta;
+        let accent_color_2 = Blue;
+        let accent_color_3 = Cyan;
+        let accent_color_4 = Yellow;
+
+        let info_color = Magenta;
+        let warning_color = Yellow;
+        let error_color = Red;
+
         Self {
             feeds_list_focus_width_percent: 33,
             articles_list_focused_width_percent: 67,
             articles_list_height_lines: 6,
 
-            category: Style::default().fg(Blue),
-            feed: Style::default().fg(White),
-            header: Style::default().fg(Magenta),
-            paragraph: Style::default().fg(Gray),
-            article: Style::default().fg(Gray),
-            article_highlighted: Style::default().fg(Yellow).bold(),
-            tag: Style::default().fg(Blue),
-            query: Style::default().fg(Yellow),
-            statusbar: Style::default().fg(Black).bg(Magenta).bold(),
-            tooltip_info: Style::default().fg(Black).bg(Magenta),
-            tooltip_warning: Style::default().fg(Black).bg(Yellow).bold(),
-            tooltip_error: Style::default().fg(Black).bg(Red).bold(),
-            command_line: Style::default().bg(DarkGray).fg(Magenta),
-            inactive: Style::default().fg(DarkGray),
+            background_color,
+            muted_color,
+            normal_color,
+            highlight_color,
+            accent_color,
+            accent_color_2,
+            accent_color_3,
+            accent_color_4,
 
-            border_style: Style::default().fg(DarkGray),
-            focused_border_style: Style::default().fg(Magenta),
+            paragraph: Style::default().fg(normal_color),
+            article: Style::default().fg(normal_color),
+            header: Style::default().fg(normal_color_2),
+            feed: Style::default().fg(accent_color),
+            category: Style::default().fg(accent_color_2),
+            article_highlighted: Style::default().fg(highlight_color).bold(),
+            tag: Style::default().fg(accent_color_3),
+            query: Style::default().fg(accent_color_4),
+            statusbar: Style::default().fg(normal_color_2).bg(muted_color).bold(),
+            tooltip_info: Style::default().fg(background_color).bg(info_color),
+            tooltip_warning: Style::default()
+                .fg(background_color)
+                .bg(warning_color)
+                .bold(),
+            tooltip_error: Style::default().fg(background_color).bg(error_color).bold(),
+            command_input: Style::default().bg(muted_color).fg(normal_color),
+            inactive: Style::default().fg(muted_color),
+
+            border_style: Style::default().fg(muted_color),
+            focused_border_style: Style::default().fg(accent_color),
 
             unread_modifier: Modifier::BOLD,
         }

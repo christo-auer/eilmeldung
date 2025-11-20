@@ -100,7 +100,8 @@ pub struct App {
     pub feed_list: FeedList,
     pub articles_list: ArticlesList,
     pub article_content: ArticleContent,
-    pub command_line: CommandInput,
+    pub command_input: CommandInput,
+    pub command_confirm: CommandConfirm,
     pub async_operation_throbber: ThrobberState,
 
     pub is_offline: bool,
@@ -143,11 +144,12 @@ impl App {
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
-            command_line: CommandInput::new(
+            command_input: CommandInput::new(
                 config_arc.clone(),
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
+            command_confirm: CommandConfirm::new(config_arc.clone(), message_sender.clone()),
             tooltip: Tooltip::new(
                 "Welcome to eilmeldung".into(),
                 crate::ui::tooltip::TooltipFlavor::Info,
@@ -243,7 +245,7 @@ impl App {
                         }
 
 
-                        if !self.command_line.is_active() {
+                        if !self.command_input.is_active() && !self.command_confirm.is_active() {
                             self.input_command_generator.process_command(&message).await?;
                         }
 
@@ -251,7 +253,8 @@ impl App {
                         self.feed_list.process_command(&message).await?;
                         self.articles_list.process_command(&message).await?;
                         self.article_content.process_command(&message).await?;
-                        self.command_line.process_command(&message).await?;
+                        self.command_input.process_command(&message).await?;
+                        self.command_confirm.process_command(&message).await?;
 
                     } else {
                         debug!("Message channel closed, stopping message processing");

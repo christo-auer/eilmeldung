@@ -123,7 +123,7 @@ impl Widget for &mut CommandInput {
             .spacing(1)
             .constraints(vec![Constraint::Length(1), Constraint::Min(1)])
             .areas(inner_area);
-        self.text_input.set_style(self.config.theme.command_line);
+        self.text_input.set_style(self.config.theme.command_input);
 
         block.render(area, buf);
         Text::from(self.config.command_line_prompt_icon.to_string())

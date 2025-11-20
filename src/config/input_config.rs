@@ -24,7 +24,8 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         ("k".into(), NavigateUp.into()),
         ("h".into(), NavigateLeft.into()),
         ("l".into(), NavigateRight.into()),
-        ("q".into(), ApplicationQuit.into()),
+        ("q".into(), CommandConfirm(Box::new(ApplicationQuit)).into()),
+        ("C-c".into(), ApplicationQuit.into()),
         ("s".into(), ArticleCurrentScrape.into()),
         ("g f".into(), PanelFocus(AppState::FeedSelection).into()),
         ("g a".into(), PanelFocus(AppState::ArticleSelection).into()),
@@ -58,14 +59,21 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         ),
         (
             "R".into(),
-            ActionSetRead(ActionSetReadTarget::Current, ActionScope::All).into(),
+            CommandConfirm(Box::new(ActionSetRead(
+                ActionSetReadTarget::Current,
+                ActionScope::All,
+            )))
+            .into(),
         ),
         (
             "C-r".into(),
             CommandLineOpen(Some("read".to_owned())).into(),
         ),
         ("u".into(), ActionSetUnread(ActionScope::Current).into()),
-        ("U".into(), ActionSetUnread(ActionScope::All).into()),
+        (
+            "U".into(),
+            CommandConfirm(Box::new(ActionSetUnread(ActionScope::All))).into(),
+        ),
         (
             "C-u".into(),
             CommandLineOpen(Some("unread".to_owned())).into(),
@@ -76,7 +84,7 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         ),
         (
             "M".into(),
-            ActionSetMarked(ActionScope::All, Marked::Marked).into(),
+            CommandConfirm(Box::new(ActionSetMarked(ActionScope::All, Marked::Marked))).into(),
         ),
         (
             "n".into(),
@@ -84,7 +92,11 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         ),
         (
             "N".into(),
-            ActionSetMarked(ActionScope::All, Marked::Unmarked).into(),
+            CommandConfirm(Box::new(ActionSetMarked(
+                ActionScope::All,
+                Marked::Unmarked,
+            )))
+            .into(),
         ),
         (
             "C-n".into(),
