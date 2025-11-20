@@ -1,4 +1,3 @@
-use news_flash::models::Marked;
 use ratatui::crossterm::event::KeyCode;
 
 use crate::prelude::*;
@@ -13,109 +12,61 @@ pub struct InputConfig {
     pub command_line: CommandLineInputConfig,
 }
 
+// a macro for pleasure
+macro_rules! cmd_mappings {
+    [$($key_seq:literal => $($command_seq:literal)*),*] => {
+        vec![$(($key_seq.into(), [$($command_seq),*].into()),)*].into_iter().collect()
+    };
+}
+
 fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
-    use Command::*;
-    vec![
-        ("j".into(), NavigateDown.into()),
-        ("C-f".into(), NavigatePageDown.into()),
-        ("C-b".into(), NavigatePageUp.into()),
-        ("g g".into(), NavigateFirst.into()),
-        ("G".into(), NavigateLast.into()),
-        ("k".into(), NavigateUp.into()),
-        ("h".into(), NavigateLeft.into()),
-        ("l".into(), NavigateRight.into()),
-        ("q".into(), CommandConfirm(Box::new(ApplicationQuit)).into()),
-        ("C-c".into(), ApplicationQuit.into()),
-        ("s".into(), ArticleCurrentScrape.into()),
-        ("g f".into(), PanelFocus(AppState::FeedSelection).into()),
-        ("g a".into(), PanelFocus(AppState::ArticleSelection).into()),
-        ("g c".into(), PanelFocus(AppState::ArticleContent).into()),
-        (":".into(), CommandLineOpen(None).into()),
-        ("space".into(), PanelFocusNext.into()),
-        ("backspace".into(), PanelFocusPrevious.into()),
-        ("tab".into(), PanelFocusNextCyclic.into()),
-        ("backtab".into(), PanelFocusPreviousCyclic.into()),
-        (
-            "o".into(),
-            vec![
-                ActionOpenInBrowser(ActionScope::Current),
-                ActionSetRead(ActionSetReadTarget::ArticleList, ActionScope::Current),
-                ArticleListSelectNextUnread,
-            ]
-            .into(),
-        ),
-        (
-            "J".into(),
-            vec![
-                ActionSetRead(ActionSetReadTarget::ArticleList, ActionScope::Current),
-                ArticleListSelectNextUnread,
-            ]
-            .into(),
-        ),
-        ("s".into(), FeedListSync.into()),
-        (
-            "r".into(),
-            ActionSetRead(ActionSetReadTarget::Current, ActionScope::Current).into(),
-        ),
-        (
-            "R".into(),
-            CommandConfirm(Box::new(ActionSetRead(
-                ActionSetReadTarget::Current,
-                ActionScope::All,
-            )))
-            .into(),
-        ),
-        (
-            "C-r".into(),
-            CommandLineOpen(Some("read".to_owned())).into(),
-        ),
-        ("u".into(), ActionSetUnread(ActionScope::Current).into()),
-        (
-            "U".into(),
-            CommandConfirm(Box::new(ActionSetUnread(ActionScope::All))).into(),
-        ),
-        (
-            "C-u".into(),
-            CommandLineOpen(Some("unread".to_owned())).into(),
-        ),
-        (
-            "m".into(),
-            ActionSetMarked(ActionScope::Current, Marked::Marked).into(),
-        ),
-        (
-            "M".into(),
-            CommandConfirm(Box::new(ActionSetMarked(ActionScope::All, Marked::Marked))).into(),
-        ),
-        (
-            "n".into(),
-            ActionSetMarked(ActionScope::Current, Marked::Unmarked).into(),
-        ),
-        (
-            "N".into(),
-            CommandConfirm(Box::new(ActionSetMarked(
-                ActionScope::All,
-                Marked::Unmarked,
-            )))
-            .into(),
-        ),
-        (
-            "C-n".into(),
-            CommandLineOpen(Some("unmark".to_owned())).into(),
-        ),
-        ("1".into(), ArticleListSetScope(ArticleScope::All).into()),
-        ("2".into(), ArticleListSetScope(ArticleScope::Unread).into()),
-        ("3".into(), ArticleListSetScope(ArticleScope::Marked).into()),
-        ("z".into(), ToggleDistractionFreeMode.into()),
-        ("/".into(), CommandLineOpen(Some("/".into())).into()),
-        ("n".into(), ArticleListSearchNext.into()),
-        ("N".into(), ArticleListSearchPrevious.into()),
-        ("=".into(), CommandLineOpen(Some("=".into())).into()),
-        ("+ r".into(), ArticleListFilterClear.into()),
-        ("+ +".into(), ArticleListFilterApply.into()),
-        ("c w".into(), CommandLineOpen(Some("rename".into())).into()),
+    cmd_mappings! [
+        "j"         => "down",
+        "k"         => "up",
+        "h"         => "left",
+        "l"         => "right",
+        "C-f"       => "pagedown",
+        "C-b"       => "pagedown",
+        "g g"       => "gotofirst",
+        "G"         => "gotolast",
+        "q"         => "confirm quit",
+        "C-c"       => "quit",
+        "s"         => "scrape",
+        "g f"       => "focus feeds",
+        "g a"       => "focus articles",
+        "g c"       => "focus content",
+        ":"         => ":",
+        "space"     => "next",
+        "backspace" => "prev",
+        "tab"       => "nextc",
+        "backtab"   => "prevc",
+        "o"         => "open" "read" "nextu",
+        "O"         => "open unread" "confirm read %",
+        "J"         => "read" "nextu",
+        "s"         => "sync",
+        "r"         => "read",
+        "R"         => "confirm read %",
+        "C-r"       => ": read",
+        "u"         => "unread",
+        "U"         => "confirm unread %",
+        "C-u"       => ": unread",
+        "m"         => "mark",
+        "M"         => "confirm mark %",
+        "n"         => "unmark",
+        "N"         => "confirm unmark %",
+        "C-n"       => ": unmark",
+        "1"         => "scope all",
+        "2"         => "scope unread",
+        "3"         => "scope marked",
+        "z"         => "zen",
+        "/"         => ": /",
+        "n"         => "/next",
+        "N"         => "/prev",
+        "= "        => ": = ",
+        "+ r"       =>   "= clear",
+        "+ +"       =>   "= apply",
+        "c w"       => ": rename"
     ]
-    .into_iter()
-    .collect()
 }
 
 impl Default for InputConfig {

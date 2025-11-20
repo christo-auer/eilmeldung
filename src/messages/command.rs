@@ -242,6 +242,22 @@ impl From<Vec<Command>> for CommandSequence {
     }
 }
 
+impl<const N: usize> From<[&str; N]> for CommandSequence {
+    fn from(value: [&str; N]) -> Self {
+        value
+            .iter()
+            .map(|s| Command::from_str(s).unwrap()) // <- if this fails it should fail hard
+            .collect::<Vec<Command>>()
+            .into()
+    }
+}
+
+impl From<&str> for CommandSequence {
+    fn from(value: &str) -> Self {
+        Command::from_str(value).unwrap().into() // <- if this fails it should fail hard
+    }
+}
+
 impl Display for CommandSequence {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut first = true;
@@ -343,7 +359,7 @@ impl FromStr for Command {
             "prevc" => PanelFocusPreviousCyclic,
             "zen" => ToggleDistractionFreeMode,
 
-            "syncall" => FeedListSync,
+            "sync" => FeedListSync,
 
             "read" => {
                 let old_args = args.clone();
@@ -461,6 +477,8 @@ impl FromStr for Command {
             "=clear" => ArticleListFilterClear,
 
             "=apply" => ArticleListFilterApply,
+
+            ":" => CommandLineOpen(args),
 
             _ => {
                 return Err(color_eyre::eyre::eyre!("Invalid command: {}", command));
