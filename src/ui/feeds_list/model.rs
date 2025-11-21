@@ -270,7 +270,7 @@ impl FeedListModelData {
         Ok(())
     }
 
-    pub(super) async fn remove_tag(&self, tag_id: TagID) -> color_eyre::Result<()> {
+    pub(super) fn remove_tag(&self, tag_id: TagID) -> color_eyre::Result<()> {
         info!("removing {}", tag_id);
         self.news_flash_utils.remove_tag(tag_id);
 
@@ -350,6 +350,21 @@ impl FeedListModelData {
         Ok(())
     }
 
+    pub(super) fn remove_feed(&self, feed_id: FeedID) -> color_eyre::Result<()> {
+        self.news_flash_utils.remove_feed(feed_id);
+        Ok(())
+    }
+
+    pub(super) fn remove_category(
+        &self,
+        category_id: CategoryID,
+        remove_children: bool,
+    ) -> color_eyre::Result<()> {
+        self.news_flash_utils
+            .remove_category(category_id, remove_children);
+        Ok(())
+    }
+
     pub(super) fn rename_category(
         &self,
         category_id: CategoryID,
@@ -367,5 +382,10 @@ impl FeedListModelData {
             .await
             .features()
             .await?)
+    }
+
+    pub(super) fn change_feed_url(&self, feed_id: FeedID, url: String) -> color_eyre::Result<()> {
+        self.news_flash_utils.edit_feed_url(feed_id, url);
+        Ok(())
     }
 }

@@ -26,20 +26,20 @@ pub enum Event {
     AsyncSync,
     AsyncSyncFinished(HashMap<FeedID, i64>),
 
-    AsyncFetchThumbnail,
-    AsyncFetchThumbnailFinished(Option<Thumbnail>),
+    AsyncArticleThumbnailFetch,
+    AsyncArticleThumbnailFetchFinished(Option<Thumbnail>),
 
-    AsyncFetchFatArticle,
-    AsyncFetchFatArticleFinished(FatArticle),
+    AsyncArticleFatFetch,
+    AsyncArticleFatFetchFinished(FatArticle),
 
-    AsyncMarkArticlesAsMarked,
-    AsyncMarkArticlesAsMarkedFinished,
+    AsyncArticlesMark,
+    AsyncArticlesMarkFinished,
 
-    AsyncTagArticle,
-    AsyncTagArticleFinished,
+    AsyncArticleTag,
+    AsyncArticleTagFinished,
 
-    AsyncUntagArticle,
-    AsyncUntagArticleFinished,
+    AsyncArticleUntag,
+    AsyncArticleUntagFinished,
 
     AsyncTagAdd,
     AsyncTagAddFinished(Tag),
@@ -47,17 +47,26 @@ pub enum Event {
     AsyncTagRemove,
     AsyncTagRemoveFinished,
 
-    AsyncAddFeed,
-    AsyncAddFeedFinished(Feed),
+    AsyncFeedAdd,
+    AsyncFeedAddFinished(Feed),
 
-    AsyncAddCategory,
-    AsyncAddCategoryFinished(Category),
+    AsyncCategoryAdd,
+    AsyncCategoryAddFinished(Category),
 
-    AsyncRenameFeed,
+    AsyncFeedRename,
     AsyncRenameFeedFinished(Feed),
 
-    AsyncRenameCategory,
-    AsyncRenameCategoryFinished(Category),
+    AsyncCategoryRename,
+    AsyncCategoryRenameFinished(Category),
+
+    AsyncCategoryRemove,
+    AsyncCategoryRemoveFinished,
+
+    AsyncFeedRemove,
+    AsyncFeedRemoveFinished,
+
+    AsyncFeedUrlChange,
+    AsyncFeedUrlChangeFinished,
 
     AsyncTagEdit,
     AsyncTagEditFinished(Tag),
@@ -70,17 +79,17 @@ pub enum Event {
     AsyncSetAllRead,
     AsyncSetAllReadFinished,
 
-    AsyncSetFeedRead,
-    AsyncSetFeedReadFinished,
+    AsyncFeedSetRead,
+    AsyncFeedSetReadFinished,
 
-    AsyncSetCategoryRead,
-    AsyncSetCategoryReadFinished,
+    AsyncCategorySetRead,
+    AsyncCategorySetReadFinished,
 
-    AsyncSetTagRead,
-    AsyncSetTagReadFinished,
+    AsyncTagSetRead,
+    AsyncTagSetReadFinished,
 
-    AsyncSetArticlesAsRead,
-    AsyncSetArticlesAsReadFinished,
+    AsyncArticlesSetRead,
+    AsyncArticlesSetReadFinished,
 
     Tick, // general tick for animations and regular updates
 
@@ -109,23 +118,23 @@ impl Event {
         matches!(
             self,
             AsyncSyncFinished(_)
-                | AsyncAddFeedFinished(_)
+                | AsyncFeedAddFinished(_)
                 | AsyncRenameFeedFinished(_)
-                | AsyncRenameCategoryFinished(_)
-                | AsyncFetchFatArticleFinished(_)
-                | AsyncMarkArticlesAsMarkedFinished
-                | AsyncTagArticleFinished
-                | AsyncUntagArticleFinished
+                | AsyncCategoryRenameFinished(_)
+                | AsyncArticleFatFetchFinished(_)
+                | AsyncArticlesMarkFinished
+                | AsyncArticleTagFinished
+                | AsyncArticleUntagFinished
                 | AsyncTagAddFinished(_)
                 | AsyncTagRemoveFinished
                 | AsyncTagEditFinished(_)
                 | AsyncOperationFailed(..)
                 | AsyncSetOfflineFinished(_)
                 | AsyncSetAllReadFinished
-                | AsyncSetFeedReadFinished
-                | AsyncSetCategoryReadFinished
-                | AsyncSetTagReadFinished
-                | AsyncSetArticlesAsReadFinished
+                | AsyncFeedSetReadFinished
+                | AsyncCategorySetReadFinished
+                | AsyncTagSetReadFinished
+                | AsyncArticlesSetReadFinished
         )
     }
 }

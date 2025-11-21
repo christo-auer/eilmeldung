@@ -408,6 +408,12 @@ impl FromStr for Command {
                 FeedListFeedAdd(url, name)
             }
 
+            "feedchangeurl" => {
+                let url = expect_url(&mut args)?;
+                expect_nothing(args)?;
+                FeedListFeedChangeUrl(url)
+            }
+
             "categoryadd" => match args {
                 Some(name) => FeedListCategoryAdd(name),
                 None => return Err(color_eyre::eyre::eyre!("expected name")),
@@ -417,6 +423,10 @@ impl FromStr for Command {
                 Some(name) => FeedListRenameEntity(name),
                 None => return Err(color_eyre::eyre::eyre!("expected name")),
             },
+
+            "remove" => FeedListRemoveEntity,
+
+            "removeall" => FeedListRemoveEntityWithChildren,
 
             "tagchangecolor" => {
                 let tag_title = expect_word(&mut args, "tag name")?;

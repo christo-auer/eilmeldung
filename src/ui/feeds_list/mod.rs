@@ -7,7 +7,7 @@ pub mod prelude {
 }
 
 use feed_list_item::FeedListItem;
-use news_flash::models::{CategoryID, PluginCapabilities};
+use news_flash::models::{CategoryID, PluginCapabilities, Url};
 
 use crate::{
     prelude::*,
@@ -161,6 +161,64 @@ impl FeedList {
         Ok(())
     }
 
+    async fn remove_current(&mut self, remove_children: bool) -> color_eyre::Result<()> {
+        use FeedListItem::*;
+        if let Some(selected) = self.selected().as_ref() {
+            match selected {
+                not_supported @ (All | Tags(_) | Query(_) | Categories) => {
+                    tooltip(
+                        &self.message_sender,
+                        format!("removing not supported for {not_supported}").as_str(),
+                        TooltipFlavor::Warning,
+                    )?;
+                    return Ok(());
+                }
+                Feed(feed) => {
+                    if !self
+                        .model_data
+                        .features()
+                        .await?
+                        .contains(PluginCapabilities::ADD_REMOVE_FEEDS)
+                    {
+                        tooltip(
+                            &self.message_sender,
+                            "provider does not support modifying feeds",
+                            TooltipFlavor::Error,
+                        )?;
+                    } else {
+                        self.model_data.remove_feed(feed.feed_id.clone())?;
+                    }
+                }
+                Category(category) => {
+                    if !self
+                        .model_data
+                        .features()
+                        .await?
+                        .contains(PluginCapabilities::MODIFY_CATEGORIES)
+                    {
+                        tooltip(
+                            &self.message_sender,
+                            "provider does not support modifying categories",
+                            TooltipFlavor::Error,
+                        )?;
+                    } else {
+                        self.model_data
+                            .remove_category(category.category_id.clone(), remove_children)?;
+                    }
+                }
+                Tag(tag) => self.model_data.remove_tag(tag.tag_id.clone())?,
+            }
+
+            tooltip(
+                &self.message_sender,
+                format!("removing {}", selected).as_str(),
+                TooltipFlavor::Info,
+            )?;
+        }
+
+        Ok(())
+    }
+
     fn target_matches(&self, target: &ActionSetReadTarget) -> bool {
         match target {
             ActionSetReadTarget::Current if self.is_focused => true,
@@ -226,6 +284,36 @@ impl FeedList {
             return Ok(false);
         }
         Ok(true)
+    }
+
+    async fn change_feed_url(&self, url: &Url) -> color_eyre::Result<()> {
+        if !self
+            .model_data
+            .features()
+            .await?
+            .contains(PluginCapabilities::EDIT_FEED_URLS)
+        {
+            tooltip(
+                &self.message_sender,
+                "provider does not support changeing the URL of a feed",
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        }
+
+        let Some(FeedListItem::Feed(feed)) = self.selected() else {
+            tooltip(
+                &self.message_sender,
+                "no feed selected",
+                TooltipFlavor::Warning,
+            )?;
+            return Ok(());
+        };
+
+        self.model_data
+            .change_feed_url(feed.feed_id.to_owned(), url.to_string())?;
+
+        Ok(())
     }
 }
 
@@ -310,6 +398,8 @@ impl MessageReceiver for FeedList {
                     self.add_category(name).await?;
                 }
 
+                FeedListFeedChangeUrl(url) => self.change_feed_url(url).await?,
+
                 TagAdd(name, color) if self.check_tag_capability().await? => {
                     if self.model_data.tags().iter().any(|tag| *tag.label == *name) {
                         tooltip(
@@ -325,7 +415,7 @@ impl MessageReceiver for FeedList {
                 TagRemove(name) if self.check_tag_capability().await? => {
                     self.check_tag_capability().await?;
                     match self.model_data.get_tag_by_label(name) {
-                        Some(tag) => self.model_data.remove_tag(tag.tag_id).await?,
+                        Some(tag) => self.model_data.remove_tag(tag.tag_id)?,
                         None => tooltip(
                             &self.message_sender,
                             format!("no tag with name {} exists", name).as_str(),
@@ -380,6 +470,14 @@ impl MessageReceiver for FeedList {
                     self.rename_current(name.to_owned()).await?;
                 }
 
+                FeedListRemoveEntity => {
+                    self.remove_current(false).await?;
+                }
+
+                FeedListRemoveEntityWithChildren => {
+                    self.remove_current(true).await?;
+                }
+
                 _ => {}
             }
         };
@@ -396,7 +494,7 @@ impl MessageReceiver for FeedList {
                     self.is_focused = *state == AppState::FeedSelection;
                 }
 
-                AsyncAddFeedFinished(feed) => {
+                AsyncFeedAddFinished(feed) => {
                     tooltip(
                         &self.message_sender,
                         format!("successfully added feed {}", feed.label).as_str(),
@@ -405,7 +503,7 @@ impl MessageReceiver for FeedList {
                     self.model_data.sync()?;
                 }
 
-                AsyncAddCategoryFinished(category) => {
+                AsyncCategoryAddFinished(category) => {
                     tooltip(
                         &self.message_sender,
                         format!("successfully added category {}", category.label).as_str(),
@@ -415,11 +513,20 @@ impl MessageReceiver for FeedList {
                 }
 
                 AsyncRenameFeedFinished(_)
-                | AsyncRenameCategoryFinished(_)
+                | AsyncCategoryRenameFinished(_)
                 | AsyncTagEditFinished(_) => {
                     tooltip(
                         &self.message_sender,
                         "successfully renamed",
+                        TooltipFlavor::Info,
+                    )?;
+                    self.model_data.sync()?;
+                }
+
+                AsyncFeedRemoveFinished | AsyncCategoryRemoveFinished | AsyncTagRemoveFinished => {
+                    tooltip(
+                        &self.message_sender,
+                        "removal successful",
                         TooltipFlavor::Info,
                     )?;
                     self.model_data.sync()?;

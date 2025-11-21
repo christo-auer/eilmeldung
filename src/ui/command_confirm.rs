@@ -3,7 +3,7 @@ use std::sync::Arc;
 use ratatui::{
     crossterm::event::KeyCode,
     style::Stylize,
-    text::{Line, Span, Text},
+    text::{Line, Span},
     widgets::{Block, BorderType, Borders, Padding, Widget},
 };
 use tokio::sync::mpsc::UnboundedSender;

@@ -114,11 +114,11 @@ impl NewsFlashUtils {
         params: (article_id: ArticleID),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncFetchThumbnail,
+        start_event: Event::AsyncArticleThumbnailFetch,
         operation: let thumbnail = news_flash
                     .get_article_thumbnail(&article_id, &client)
                     .await?,
-        success_event: Event::AsyncFetchThumbnailFinished(thumbnail),
+        success_event: Event::AsyncArticleThumbnailFetchFinished(thumbnail),
     }
 
     gen_async_call! {
@@ -126,11 +126,11 @@ impl NewsFlashUtils {
         params: (article_id: ArticleID),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncFetchFatArticle,
+        start_event: Event::AsyncArticleFatFetch,
         operation: let fat_article = news_flash
                     .scrap_content_article(&article_id, &client, None)
                     .await?,
-        success_event: Event::AsyncFetchFatArticleFinished(fat_article),
+        success_event: Event::AsyncArticleFatFetchFinished(fat_article),
     }
 
     gen_async_call! {
@@ -138,11 +138,11 @@ impl NewsFlashUtils {
         params: (article_ids: Vec<ArticleID>, read: Read),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncSetArticlesAsRead,
+        start_event: Event::AsyncArticlesSetRead,
         operation: news_flash
                     .set_article_read(&article_ids, read, &client)
                     .await?,
-        success_event: Event::AsyncSetArticlesAsReadFinished,
+        success_event: Event::AsyncArticlesSetReadFinished,
     }
 
     gen_async_call! {
@@ -150,11 +150,11 @@ impl NewsFlashUtils {
         params: (article_ids: Vec<ArticleID>, marked: Marked),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncSetArticlesAsRead,
+        start_event: Event::AsyncArticlesSetRead,
         operation: news_flash
                     .set_article_marked(&article_ids, marked, &client)
                     .await?,
-        success_event: Event::AsyncMarkArticlesAsMarkedFinished,
+        success_event: Event::AsyncArticlesMarkFinished,
     }
 
     gen_async_call! {
@@ -162,14 +162,14 @@ impl NewsFlashUtils {
         params: (article_ids: Vec<ArticleID>, tag_id: TagID),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncTagArticle,
+        start_event: Event::AsyncArticleTag,
         operation: 
             for article_id in article_ids {
                     news_flash
                         .tag_article(&article_id, &tag_id, &client)
                         .await?; 
             },
-        success_event: Event::AsyncTagArticleFinished,
+        success_event: Event::AsyncArticleTagFinished,
     }
 
     gen_async_call! {
@@ -177,14 +177,14 @@ impl NewsFlashUtils {
         params: (article_ids: Vec<ArticleID>, tag_id: TagID),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncUntagArticle,
+        start_event: Event::AsyncArticleUntag,
         operation: 
             for article_id in article_ids {
                 news_flash
                     .untag_article(&article_id, &tag_id, &client)
                     .await?;
             },
-        success_event: Event::AsyncUntagArticleFinished,
+        success_event: Event::AsyncArticleUntagFinished,
     }
 
     gen_async_call! {
@@ -230,7 +230,7 @@ impl NewsFlashUtils {
         params: (),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncSetFeedRead,
+        start_event: Event::AsyncFeedSetRead,
         operation: 
             news_flash.set_all_read(&client).await?,
         success_event: Event::AsyncSetAllReadFinished,
@@ -241,10 +241,10 @@ impl NewsFlashUtils {
         params: (feed_ids: Vec<FeedID>),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncSetFeedRead,
+        start_event: Event::AsyncFeedSetRead,
         operation: 
             news_flash.set_feed_read(&feed_ids, &client).await?,
-        success_event: Event::AsyncSetFeedReadFinished,
+        success_event: Event::AsyncFeedSetReadFinished,
     }
 
     gen_async_call! {
@@ -252,10 +252,10 @@ impl NewsFlashUtils {
         params: (category_ids: Vec<CategoryID>),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncSetCategoryRead,
+        start_event: Event::AsyncCategorySetRead,
         operation: 
             news_flash.set_category_read(&category_ids, &client).await?,
-        success_event: Event::AsyncSetCategoryReadFinished,
+        success_event: Event::AsyncCategorySetReadFinished,
     }
 
     gen_async_call! {
@@ -263,10 +263,10 @@ impl NewsFlashUtils {
         params: (tag_ids: Vec<TagID>),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncSetTagRead,
+        start_event: Event::AsyncTagSetRead,
         operation: 
             news_flash.set_tag_read(&tag_ids, &client).await?,
-        success_event: Event::AsyncSetTagReadFinished,
+        success_event: Event::AsyncTagSetReadFinished,
     }
 
     gen_async_call! {
@@ -274,10 +274,10 @@ impl NewsFlashUtils {
         params: (url: Url, title: Option<String>, category_id: Option<CategoryID>),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncAddFeed,
+        start_event: Event::AsyncFeedAdd,
         operation: 
             let (feed, .. ) = news_flash.add_feed(&url, title, category_id, &client).await?,
-        success_event: Event::AsyncAddFeedFinished(feed),
+        success_event: Event::AsyncFeedAddFinished(feed),
     }
 
     gen_async_call! {
@@ -285,10 +285,10 @@ impl NewsFlashUtils {
         params: (title: String, parent : Option<CategoryID>),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncAddCategory,
+        start_event: Event::AsyncCategoryAdd,
         operation: 
             let (category, .. ) = news_flash.add_category(&title, parent.as_ref(), &client).await?,
-        success_event: Event::AsyncAddCategoryFinished(category),
+        success_event: Event::AsyncCategoryAddFinished(category),
     }
 
     gen_async_call! {
@@ -296,7 +296,7 @@ impl NewsFlashUtils {
         params: (feed_id: FeedID, title: String),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncRenameFeed,
+        start_event: Event::AsyncFeedRename,
         operation: 
             let feed = news_flash.rename_feed(&feed_id, title.as_str(), &client).await?,
         success_event: Event::AsyncRenameFeedFinished(feed),
@@ -307,17 +307,46 @@ impl NewsFlashUtils {
         params: (category_id: CategoryID, title: String),
         news_flash_var: news_flash,
         client_var: client,
-        start_event: Event::AsyncRenameCategory,
+        start_event: Event::AsyncCategoryRename,
         operation: 
             let category = news_flash.rename_category(&category_id, title.as_str(), &client).await?,
-        success_event: Event::AsyncRenameCategoryFinished(category),
+        success_event: Event::AsyncCategoryRenameFinished(category),
     }
 
+    gen_async_call! {
+        method_name: remove_category,
+        params: (category_id: CategoryID, remove_children: bool),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncCategoryRemove,
+        operation: 
+            news_flash.remove_category(&category_id, remove_children, &client).await?,
+        success_event: Event::AsyncCategoryRemoveFinished,
+    }
 
-      // remove_feed
-      // move_feed
-      // rename_feed
-      // edit_feed_url
+    gen_async_call! {
+        method_name: remove_feed,
+        params: (feed_id: FeedID),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncFeedRemove,
+        operation: 
+            news_flash.remove_feed(&feed_id, &client).await?,
+        success_event: Event::AsyncFeedRemoveFinished,
+    }
+
+    gen_async_call! {
+        method_name: edit_feed_url,
+        params: (feed_id: FeedID, new_url: String),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncFeedUrlChange,
+        operation: 
+            news_flash.edit_feed_url(&feed_id, &new_url, &client).await?,
+        success_event: Event::AsyncFeedUrlChangeFinished,
+    }
+
+    // edit_feed_url
 
 
 

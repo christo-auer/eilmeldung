@@ -233,7 +233,7 @@ impl App {
                                 redraw = true;
                             }
 
-                            Message::Event(Event::AsyncFetchThumbnailFinished(_)) => {
+                            Message::Event(Event::AsyncArticleThumbnailFetchFinished(_)) => {
                                 trace!("Processing message: AsyncFetchThumbnailFinished");
                             }
 
@@ -326,7 +326,6 @@ impl MessageReceiver for App {
                 }
             }
 
-            // TODO refactor redundant code!
             Message::Command(PanelFocus(next_state)) => {
                 self.switch_state(*next_state)?;
             }

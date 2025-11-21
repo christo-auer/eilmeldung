@@ -59,13 +59,16 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "2"         => "scope unread",
         "3"         => "scope marked",
         "z"         => "zen",
-        "/"         => ": /",
+        "/"         => ": / ",
         "n"         => "/next",
         "N"         => "/prev",
-        "= "        => ": = ",
-        "+ r"       =>   "= clear",
-        "+ +"       =>   "= apply",
-        "c w"       => ": rename"
+        "="         => ": = ",
+        "+ r"       => "= clear",
+        "+ +"       => "= apply",
+        "c w"       => ": rename",
+        "d d"       => "confirm remove",
+        "D D"       => "confirm removeall",
+        "c u"       => ": feedchangeurl"
     ]
 }
 

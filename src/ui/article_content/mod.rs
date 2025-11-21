@@ -141,7 +141,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     view_needs_update = true;
                 }
 
-                AsyncFetchThumbnailFinished(thumbnail) => {
+                AsyncArticleThumbnailFetchFinished(thumbnail) => {
                     self.model_data
                         .on_thumbnail_fetch_finished(thumbnail.as_ref());
                     match thumbnail {
@@ -158,7 +158,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 }
 
                 AsyncOperationFailed(err, reason) => {
-                    if let Event::AsyncFetchThumbnail = *reason.as_ref() {
+                    if let Event::AsyncArticleThumbnailFetch = *reason.as_ref() {
                         log::debug!("fetching thumbnail not successful: {err}");
                         self.view_data.clear_image();
                         self.model_data.on_thumbnail_fetch_failed();
@@ -166,7 +166,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     }
                 }
 
-                AsyncFetchFatArticleFinished(fat_article) => {
+                AsyncArticleFatFetchFinished(fat_article) => {
                     self.model_data.set_fat_article(fat_article.clone());
                     // Process markdown content if needed
                     self.model_data.get_or_create_markdown_content(&self.config);
