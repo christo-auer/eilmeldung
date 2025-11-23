@@ -80,6 +80,34 @@ impl Display for ActionSetReadTarget {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum PastePosition {
+    Before,
+    After,
+}
+
+impl Display for PastePosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use PastePosition::*;
+        match self {
+            Before => write!(f, "before"),
+            After => write!(f, "after"),
+        }
+    }
+}
+
+impl FromStr for PastePosition {
+    type Err = color_eyre::Report;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "before" => PastePosition::Before,
+            "after" => PastePosition::After,
+            _ => return Err(color_eyre::eyre::eyre!("invalid paste position")),
+        })
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum Command {
     // general navigation
@@ -109,7 +137,8 @@ pub enum Command {
     FeedListRemoveEntityWithChildren,
     FeedListFeedChangeUrl(Url),
     FeedListHighlightEntity,
-    FeedListMoveHighlightedEntityHere,
+    FeedListYankFeedOrCategory,
+    FeedListPasteFeedOrCategory(PastePosition),
 
     ActionSetRead(ActionSetReadTarget, ActionScope),
     ActionSetUnread(ActionScope),
@@ -174,7 +203,13 @@ impl Display for Command {
             FeedListRemoveEntityWithChildren => write!(f, "remove selected and its children"),
             FeedListFeedChangeUrl(url) => write!(f, "change url of selected feed to {url}"),
             FeedListHighlightEntity => write!(f, "highlight entity"),
-            FeedListMoveHighlightedEntityHere => write!(f, "move highlighted entity here"),
+            FeedListYankFeedOrCategory => write!(f, "yank selected feed or category"),
+            FeedListPasteFeedOrCategory(position) => {
+                write!(
+                    f,
+                    "paste yanked feed or category {position} selected element"
+                )
+            }
             ArticleListSelectNextUnread => write!(f, "select next unread"),
             ArticleListSetScope(ArticleScope::Marked) => write!(f, "show marked"),
             ArticleListSetScope(ArticleScope::Unread) => write!(f, "show unread"),
@@ -302,14 +337,12 @@ fn expect_word(s: &mut Option<String>, to_expect: &str) -> color_eyre::Result<St
     Ok(word)
 }
 
-fn expect_url(s: &mut Option<String>) -> color_eyre::Result<Url> {
-    let word = expect_word(s, "feed URL")?;
-    Ok(Url::new(reqwest::Url::from_str(word.as_str())?))
-}
-
-fn expect_color(s: &mut Option<String>) -> color_eyre::Result<Color> {
-    let word = expect_word(s, "color")?;
-    Ok(Color::from_str(word.as_str())?)
+fn expect_from_str<T: FromStr>(s: &mut Option<String>, to_expect: &str) -> color_eyre::Result<T>
+where
+    T::Err: Into<color_eyre::Report>,
+{
+    let word = expect_word(s, to_expect)?;
+    T::from_str(word.as_str()).map_err(|e| e.into())
 }
 
 fn expect_nothing(s: Option<String>) -> color_eyre::Result<()> {
@@ -403,15 +436,23 @@ impl FromStr for Command {
             }
 
             "feedadd" => {
-                let url = expect_url(&mut args)?;
+                let url = Url::new(expect_from_str::<reqwest::Url>(&mut args, "feed URL")?);
                 let name = args;
                 FeedListFeedAdd(url, name)
             }
 
             "feedchangeurl" => {
-                let url = expect_url(&mut args)?;
+                let url = Url::new(expect_from_str::<reqwest::Url>(&mut args, "feed URL")?);
                 expect_nothing(args)?;
                 FeedListFeedChangeUrl(url)
+            }
+
+            "yank" => FeedListYankFeedOrCategory,
+
+            "paste" => {
+                let position = expect_from_str::<PastePosition>(&mut args, "paste position")?;
+                expect_nothing(args)?;
+                FeedListPasteFeedOrCategory(position)
             }
 
             "categoryadd" => match args {
@@ -430,16 +471,16 @@ impl FromStr for Command {
 
             "tagchangecolor" => {
                 let tag_title = expect_word(&mut args, "tag name")?;
-                let color = expect_color(&mut args)?;
+                let color: Color = expect_from_str(&mut args, "tag color")?;
                 expect_nothing(args)?;
                 TagChangeColor(tag_title, color)
             }
 
             "tagadd" => {
                 let tag_title = expect_word(&mut args, "tag name")?;
-                let color = match args {
+                let color: Option<Color> = match args {
                     None => None,
-                    _ => Some(expect_color(&mut args)?),
+                    _ => Some(expect_from_str(&mut args, "tag color")?),
                 };
                 expect_nothing(args)?;
                 TagAdd(tag_title, color)

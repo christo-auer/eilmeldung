@@ -91,6 +91,12 @@ pub enum Event {
     AsyncArticlesSetRead,
     AsyncArticlesSetReadFinished,
 
+    AsyncFeedMove,
+    AsyncFeedMoveFinished,
+
+    AsyncCategoryMove,
+    AsyncCategoryMoveFinished,
+
     Tick, // general tick for animations and regular updates
 
     // messaging/status

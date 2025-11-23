@@ -2,7 +2,7 @@ use crate::{messages::event::AsyncOperationError, prelude::*};
 use std::{collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
-    NewsFlash, error::NewsFlashError, models::{ArticleID, CategoryID, FeedID, Marked, Read, Tag, TagID, Url}
+    NewsFlash, error::NewsFlashError, models::{ArticleID, CategoryID, FeedID, FeedMapping, CategoryMapping, Marked, NEWSFLASH_TOPLEVEL, Read, Tag, TagID, Url}
 };
 
 use log::{debug, error, info};
@@ -346,8 +346,27 @@ impl NewsFlashUtils {
         success_event: Event::AsyncFeedUrlChangeFinished,
     }
 
-    // edit_feed_url
+    gen_async_call! {
+        method_name: move_feed,
+        params: (from_feed_mapping: FeedMapping, to_feed_mapping: FeedMapping),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncFeedMove,
+        operation: 
+            news_flash.move_feed(&from_feed_mapping, &to_feed_mapping, &client).await?,
+        success_event: Event::AsyncFeedMoveFinished,
+    }
 
+    gen_async_call! {
+        method_name: move_category,
+        params: (category_mapping: CategoryMapping),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncCategoryMove,
+        operation: 
+            news_flash.move_category(&category_mapping, &client).await?,
+        success_event: Event::AsyncCategoryMoveFinished,
+    }
 
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(

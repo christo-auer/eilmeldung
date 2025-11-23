@@ -3,7 +3,8 @@ use crate::prelude::*;
 use crate::ui::feeds_list::model::FeedListModelData;
 
 use getset::{Getters, MutGetters};
-use news_flash::models::{Category, Feed};
+use log::info;
+use news_flash::models::{Category, Feed, UnifiedMapping};
 use news_flash::models::{PluginCapabilities, TagID};
 use ratatui::widgets::Scrollbar;
 use ratatui::widgets::{Block, Borders};
@@ -21,6 +22,9 @@ pub struct FeedListViewData {
     tree_state: TreeState<FeedListItem>,
     #[getset(get = "pub")]
     tree_items: Vec<TreeItem<'static, FeedListItem>>,
+
+    #[getset(get = "pub")]
+    yanked_unified_mapping: Option<UnifiedMapping>,
 }
 
 impl Widget for &mut FeedList {
@@ -190,7 +194,7 @@ impl FeedListViewData {
         model_data: &FeedListModelData,
     ) -> TreeItem<'a, FeedListItem> {
         let identifier = FeedListItem::Feed(Box::new(feed.clone()));
-        let identifier_text = identifier.to_text(
+        let mut identifier_text = identifier.to_text(
             config,
             model_data
                 .unread_count_for_feed_or_category()
@@ -202,10 +206,18 @@ impl FeedListViewData {
                 .copied(),
         );
 
+        if let Some(UnifiedMapping::Feed(feed_mapping)) = self.yanked_unified_mapping()
+            && feed_mapping.feed_id == feed.feed_id
+        {
+            identifier_text = identifier_text
+                .style(config.theme.highlight_color)
+                .italic()
+                .reversed();
+        }
+
         TreeItem::new_leaf(identifier, identifier_text)
     }
 
-    #[allow(clippy::too_many_arguments)] // yes, yes, I know
     fn map_category_to_tree_item<'a>(
         &self,
         config: &Config,
@@ -241,8 +253,18 @@ impl FeedListViewData {
             .marked_count_for_feed_or_category()
             .get(&category.category_id.clone().into())
             .copied();
-        let text = identifier.to_text(config, unread_category, marked_category);
-        TreeItem::new(identifier, text, children).unwrap()
+        let mut identifier_text = identifier.to_text(config, unread_category, marked_category);
+
+        if let Some(UnifiedMapping::Category(category_mapping)) = self.yanked_unified_mapping()
+            && category_mapping.category_id == category.category_id
+        {
+            identifier_text = identifier_text
+                .style(config.theme.highlight_color)
+                .italic()
+                .reversed();
+        }
+
+        TreeItem::new(identifier, identifier_text, children).unwrap()
     }
 
     fn gen_tag_item(
@@ -255,5 +277,34 @@ impl FeedListViewData {
         let tag_item = FeedListItem::Tag(Box::new(tag));
         let tag_item_text = tag_item.to_text(config, count, None);
         TreeItem::new_leaf(tag_item, tag_item_text)
+    }
+
+    pub(super) fn take_yanked_unified_mapping(&mut self) -> Option<UnifiedMapping> {
+        self.yanked_unified_mapping.take()
+    }
+
+    pub(super) fn set_yanked_unified_mapping(&mut self, unified_mapping: Option<UnifiedMapping>) {
+        self.yanked_unified_mapping = unified_mapping;
+    }
+
+    pub(super) fn yank_feed_or_category(
+        &mut self,
+        feed_or_category: FeedOrCategory,
+        model_data: &FeedListModelData,
+    ) {
+        info!("yanked {:?}", feed_or_category);
+        // self.yanked_feed_or_category = Some(feed_or_category);
+
+        use FeedOrCategory::*;
+        self.yanked_unified_mapping = match feed_or_category {
+            Feed(feed_id) => model_data
+                .feed_mapping_for_feed()
+                .get(&feed_id)
+                .map(|mapping| UnifiedMapping::Feed(mapping.to_owned())),
+            Category(category_id) => model_data
+                .category_mapping_for_category()
+                .get(&category_id)
+                .map(|mapping| UnifiedMapping::Category(mapping.to_owned())),
+        };
     }
 }

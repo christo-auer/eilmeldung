@@ -66,9 +66,14 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "+ r"       => "= clear",
         "+ +"       => "= apply",
         "c w"       => ": rename",
-        "d d"       => "confirm remove",
-        "D D"       => "confirm removeall",
-        "c u"       => ": feedchangeurl"
+        "c d"       => "confirm remove",
+        "c x"       => "confirm removeall",
+        "c f"       => ": feedadd",
+        "c c"       => ": categoryadd",
+        "c u"       => ": feedchangeurl",
+        "c y"       => "yank",
+        "c p"       => "paste after",
+        "c P"       => "paste before"
     ]
 }
 

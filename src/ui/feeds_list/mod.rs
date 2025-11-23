@@ -7,12 +7,15 @@ pub mod prelude {
 }
 
 use feed_list_item::FeedListItem;
-use news_flash::models::{CategoryID, PluginCapabilities, Url};
+use news_flash::models::{CategoryID, NEWSFLASH_TOPLEVEL, PluginCapabilities, UnifiedMapping, Url};
 
 use crate::{
     prelude::*,
     ui::{
-        feeds_list::{model::FeedListModelData, view::FeedListViewData},
+        feeds_list::{
+            model::{FeedListModelData, FeedOrCategory},
+            view::FeedListViewData,
+        },
         tooltip,
     },
 };
@@ -315,6 +318,128 @@ impl FeedList {
 
         Ok(())
     }
+
+    fn yank_feed_or_category(&mut self) -> color_eyre::Result<()> {
+        match self.selected() {
+            Some(FeedListItem::Feed(feed)) => self.view_data.yank_feed_or_category(
+                FeedOrCategory::Feed(feed.feed_id.to_owned()),
+                &self.model_data,
+            ),
+            Some(FeedListItem::Category(category)) => self.view_data.yank_feed_or_category(
+                FeedOrCategory::Category(category.category_id.to_owned()),
+                &self.model_data,
+            ),
+            _ => {
+                tooltip(
+                    &self.message_sender,
+                    "can only yank feed or category",
+                    TooltipFlavor::Warning,
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn paste_feed_or_category(&mut self, position: PastePosition) -> color_eyre::Result<()> {
+        use FeedListItem::*;
+
+        let mut yanked_unified_mapping = self.view_data.take_yanked_unified_mapping();
+
+        let Some(to_unified_mapping) = yanked_unified_mapping.as_mut() else {
+            return tooltip(
+                &self.message_sender,
+                "cannot paste as there is no item yanked",
+                TooltipFlavor::Warning,
+            );
+        };
+
+        // manual clone
+        let from_unified_mapping = match to_unified_mapping {
+            UnifiedMapping::Category(category_mapping) => {
+                UnifiedMapping::Category(category_mapping.clone())
+            }
+            UnifiedMapping::Feed(feed_mapping) => UnifiedMapping::Feed(feed_mapping.clone()),
+        };
+
+        let Some((mut new_parent_category_id, dest_unified_mapping)) = (match self.selected() {
+            Some(Category(category)) => self
+                .model_data
+                .category_mapping_for_category()
+                .get(&category.category_id)
+                .cloned()
+                .map(|mapping| {
+                    (
+                        mapping.parent_id.to_owned(),
+                        UnifiedMapping::Category(mapping),
+                    )
+                }),
+
+            Some(Feed(feed)) => self
+                .model_data
+                .feed_mapping_for_feed()
+                .get(&feed.feed_id)
+                .cloned()
+                .map(|mapping| {
+                    (
+                        mapping.category_id.to_owned(),
+                        UnifiedMapping::Feed(mapping),
+                    )
+                }),
+            _ => {
+                self.view_data
+                    .set_yanked_unified_mapping(yanked_unified_mapping);
+                return tooltip(
+                    &self.message_sender,
+                    "pasting does not work here",
+                    TooltipFlavor::Warning,
+                );
+            }
+        }) else {
+            self.view_data
+                .set_yanked_unified_mapping(yanked_unified_mapping);
+            return tooltip(
+                &self.message_sender,
+                "selected item has no category mapping",
+                TooltipFlavor::Error,
+            );
+        };
+
+        to_unified_mapping.set_sort_index(
+            dest_unified_mapping
+                .sort_index()
+                .unwrap_or(i32::MAX)
+                .saturating_add(match position {
+                    PastePosition::Before => -1,
+                    PastePosition::After => 1,
+                }),
+        );
+
+        if let UnifiedMapping::Category(dest_category_mapping) = dest_unified_mapping
+            && matches!(position, PastePosition::After)
+        {
+            new_parent_category_id = dest_category_mapping.category_id;
+            to_unified_mapping.set_sort_index(0);
+        }
+
+        match (from_unified_mapping, to_unified_mapping) {
+            (UnifiedMapping::Feed(from_feed_mapping), UnifiedMapping::Feed(to_feed_mapping)) => {
+                to_feed_mapping.category_id = new_parent_category_id;
+                self.model_data
+                    .move_feed(from_feed_mapping, to_feed_mapping.to_owned())?;
+            }
+
+            (UnifiedMapping::Category(_), UnifiedMapping::Category(to_category_mapping)) => {
+                to_category_mapping.parent_id = new_parent_category_id;
+                self.model_data
+                    .move_category(to_category_mapping.to_owned())?;
+            }
+
+            _ => unreachable!(),
+        }
+
+        Ok(())
+    }
 }
 
 impl MessageReceiver for FeedList {
@@ -325,7 +450,8 @@ impl MessageReceiver for FeedList {
 
         // get selection before
         let selected_before_item = self.selected().clone();
-        let mut models_need_update = false;
+        let mut model_needs_update = false;
+        let mut view_needs_update = false;
 
         // commands
         if let Message::Command(command) = message {
@@ -478,6 +604,15 @@ impl MessageReceiver for FeedList {
                     self.remove_current(true).await?;
                 }
 
+                FeedListYankFeedOrCategory => {
+                    self.yank_feed_or_category()?;
+                    view_needs_update = true;
+                }
+
+                FeedListPasteFeedOrCategory(position) => {
+                    self.paste_feed_or_category(*position)?;
+                }
+
                 _ => {}
             }
         };
@@ -487,7 +622,7 @@ impl MessageReceiver for FeedList {
             use Event::*;
             match event {
                 ApplicationStarted => {
-                    models_need_update = true;
+                    model_needs_update = true;
                 }
 
                 ApplicationStateChanged(state) => {
@@ -512,6 +647,11 @@ impl MessageReceiver for FeedList {
                     self.model_data.sync()?;
                 }
 
+                AsyncFeedMoveFinished | AsyncCategoryMoveFinished => {
+                    tooltip(&self.message_sender, "move successful", TooltipFlavor::Info)?;
+                    self.model_data.sync()?;
+                }
+
                 AsyncRenameFeedFinished(_)
                 | AsyncCategoryRenameFinished(_)
                 | AsyncTagEditFinished(_) => {
@@ -532,7 +672,7 @@ impl MessageReceiver for FeedList {
                     self.model_data.sync()?;
                 }
 
-                event if event.caused_model_update() => models_need_update = true,
+                event if event.caused_model_update() => model_needs_update = true,
                 _ => {}
             }
         }
@@ -544,18 +684,27 @@ impl MessageReceiver for FeedList {
             selected_after_item = self.selected();
         }
 
-        if models_need_update {
+        if selected_before_item.as_ref() != selected_after_item.as_ref() {
+            if self.view_data.yanked_unified_mapping().is_some() {
+                view_needs_update = true;
+            }
+            self.update_tooltip(selected_after_item.as_ref())?;
+            self.generate_articles_selected_command()?;
+        }
+
+        if model_needs_update {
             self.model_data.update().await?;
             self.view_data
                 .update(&self.config, &self.model_data)
                 .await?;
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
-        }
-
-        if selected_before_item.as_ref() != selected_after_item.as_ref() {
-            self.update_tooltip(selected_after_item.as_ref())?;
-            self.generate_articles_selected_command()?;
+        } else if view_needs_update {
+            self.view_data
+                .update(&self.config, &self.model_data)
+                .await?;
+            self.message_sender
+                .send(Message::Command(Command::Redraw))?;
         }
 
         Ok(())

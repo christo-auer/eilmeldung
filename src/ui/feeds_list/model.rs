@@ -4,13 +4,13 @@ use getset::Getters;
 use log::info;
 use news_flash::models::{
     ArticleFilter, ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping,
-    PluginCapabilities, Tag, TagID, Url,
+    PluginCapabilities, Tag, TagID, UnifiedMapping, Url,
 };
 use ratatui::style::Color;
 
 use crate::prelude::*;
 
-#[derive(Hash, Eq, PartialEq)]
+#[derive(Hash, Eq, PartialEq, Debug)]
 pub enum FeedOrCategory {
     Feed(FeedID),
     Category(CategoryID),
@@ -34,6 +34,8 @@ pub(super) struct FeedListModelData {
     marked_count_for_feed_or_category: HashMap<FeedOrCategory, i64>,
     category_tree: HashMap<CategoryID, Vec<FeedOrCategory>>,
     roots: Vec<FeedOrCategory>,
+    category_mapping_for_category: HashMap<CategoryID, CategoryMapping>,
+    feed_mapping_for_feed: HashMap<FeedID, FeedMapping>,
 
     tags: Vec<Tag>,
 }
@@ -66,6 +68,8 @@ impl FeedListModelData {
             marked_count_for_feed_or_category: HashMap::default(),
             category_tree: HashMap::default(),
             roots: Vec::default(),
+            category_mapping_for_category: HashMap::default(),
+            feed_mapping_for_feed: HashMap::default(),
         }
     }
 
@@ -74,7 +78,7 @@ impl FeedListModelData {
 
         // feeds
         let (feeds, feed_mappings) = news_flash.get_feeds()?;
-        let feed_mapping_for_feed: HashMap<FeedID, FeedMapping> =
+        self.feed_mapping_for_feed =
             NewsFlashUtils::generate_id_map(&feed_mappings, |feed_mapping| {
                 feed_mapping.feed_id.clone()
             })
@@ -87,7 +91,7 @@ impl FeedListModelData {
         // categories
         let (categories, category_mappings) = news_flash.get_categories()?;
         self.categories = categories;
-        let category_mapping_for_category: HashMap<CategoryID, CategoryMapping> =
+        self.category_mapping_for_category =
             NewsFlashUtils::generate_id_map(&category_mappings, |category_mapping| {
                 category_mapping.category_id.clone()
             })
@@ -149,19 +153,23 @@ impl FeedListModelData {
                     (Category(_), Feed(_)) => Ordering::Less,
                     (Feed(_), Category(_)) => Ordering::Greater,
                     (Category(category_a), Category(category_b)) => {
-                        let category_a_sort_index = category_mapping_for_category
+                        let category_a_sort_index = self
+                            .category_mapping_for_category
                             .get(category_a)
                             .map(|mapping| mapping.sort_index);
-                        let category_b_sort_index = category_mapping_for_category
+                        let category_b_sort_index = self
+                            .category_mapping_for_category
                             .get(category_b)
                             .map(|mapping| mapping.sort_index);
                         category_a_sort_index.cmp(&category_b_sort_index)
                     }
                     (Feed(feed_a), Feed(feed_b)) => {
-                        let feed_a_sort_index = feed_mapping_for_feed
+                        let feed_a_sort_index = self
+                            .feed_mapping_for_feed
                             .get(feed_a)
                             .map(|mapping| mapping.sort_index);
-                        let feed_b_sort_index = feed_mapping_for_feed
+                        let feed_b_sort_index = self
+                            .feed_mapping_for_feed
                             .get(feed_b)
                             .map(|mapping| mapping.sort_index);
 
@@ -386,6 +394,24 @@ impl FeedListModelData {
 
     pub(super) fn change_feed_url(&self, feed_id: FeedID, url: String) -> color_eyre::Result<()> {
         self.news_flash_utils.edit_feed_url(feed_id, url);
+        Ok(())
+    }
+
+    pub(super) fn move_feed(
+        &self,
+        from_feed_mapping: FeedMapping,
+        to_feed_mapping: FeedMapping,
+    ) -> color_eyre::Result<()> {
+        self.news_flash_utils
+            .move_feed(from_feed_mapping, to_feed_mapping);
+        Ok(())
+    }
+
+    pub(super) fn move_category(
+        &self,
+        category_mapping: CategoryMapping,
+    ) -> color_eyre::Result<()> {
+        self.news_flash_utils.move_category(category_mapping);
         Ok(())
     }
 }

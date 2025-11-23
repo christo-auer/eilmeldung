@@ -2,7 +2,7 @@
 
 - [ ] filter
   - [x] filter syntax -> `ArticleFilter`
-  - [ ] ad-hoc filtering (ala = in vifm)
+  - [X] ad-hoc filtering (ala = in vifm)
   - [X] fixed filters (via config file, available in tree)
   - [ ] actions
 
