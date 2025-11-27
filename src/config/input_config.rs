@@ -21,10 +21,15 @@ macro_rules! cmd_mappings {
 
 fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
     cmd_mappings! [
+        "up"        => "up",
+        "down"      => "down",
+        "C-h"       => "left",
+        "C-l"       => "right",
+        "left"      => "left",
+        "right"     => "right",
         "j"         => "down",
         "k"         => "up",
-        "h"         => "left",
-        "l"         => "right",
+        "space"     => "toggleexpand",
         "C-f"       => "pagedown",
         "C-b"       => "pagedown",
         "g g"       => "gotofirst",
@@ -36,8 +41,8 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "g a"       => "focus articles",
         "g c"       => "focus content",
         ":"         => ":",
-        "space"     => "next",
-        "backspace" => "prev",
+        "l"          => "next",
+        "h"         => "prev",
         "tab"       => "nextc",
         "backtab"   => "prevc",
         "o"         => "open" "read" "nextu",
@@ -45,6 +50,7 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "J"         => "read" "nextu",
         "s"         => "sync",
         "r"         => "read",
+        "t"         => ": tag",
         "R"         => "confirm read %",
         "C-r"       => ": read",
         "u"         => "unread",
@@ -63,8 +69,8 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "n"         => "/next",
         "N"         => "/prev",
         "="         => ": = ",
-        "+ r"       => "= clear",
-        "+ +"       => "= apply",
+        "+ r"       => "=clear",
+        "+ +"       => "=apply",
         "c w"       => ": rename",
         "c d"       => "confirm remove",
         "c x"       => "confirm removeall",
@@ -73,7 +79,8 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "c u"       => ": feedchangeurl",
         "c y"       => "yank",
         "c p"       => "paste after",
-        "c P"       => "paste before"
+        "c P"       => "paste before",
+        "c c"       => ": tagchangecolor"
     ]
 }
 

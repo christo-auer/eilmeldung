@@ -4,7 +4,7 @@ use news_flash::{
     error::NewsFlashError,
     models::{Article, Category, FatArticle, Feed, FeedID, Tag, Thumbnail},
 };
-use ratatui::crossterm::event::KeyEvent;
+use ratatui::{crossterm::event::KeyEvent, text::Line, widgets::Paragraph};
 
 use crate::prelude::*;
 
@@ -101,6 +101,10 @@ pub enum Event {
 
     // messaging/status
     Tooltip(Tooltip<'static>),
+
+    // help popup
+    ShowHelpPopup(String, Vec<Line<'static>>),
+    HideHelpPopup,
 
     // application
     ApplicationStarted,

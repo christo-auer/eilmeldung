@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, collections::HashMap, hash::Hash, sync::Arc};
 
 use getset::Getters;
-use log::info;
+use log::{info, trace};
 use news_flash::models::{
     ArticleFilter, ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping,
     PluginCapabilities, Tag, TagID, UnifiedMapping, Url,
@@ -288,6 +288,7 @@ impl FeedListModelData {
     pub(super) fn get_tag_by_label(&self, tag_label: &String) -> Option<Tag> {
         self.tags()
             .iter()
+            .inspect(|tag| info!("tag: {}", tag.label))
             .find(|tag| *tag.label == *tag_label)
             .cloned()
     }

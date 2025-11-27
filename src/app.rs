@@ -102,6 +102,7 @@ pub struct App {
     pub article_content: ArticleContent,
     pub command_input: CommandInput,
     pub command_confirm: CommandConfirm,
+    pub help_popup: HelpPopup<'static>,
     pub async_operation_throbber: ThrobberState,
 
     pub is_offline: bool,
@@ -149,6 +150,7 @@ impl App {
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
+            help_popup: HelpPopup::new(config_arc.clone()),
             command_confirm: CommandConfirm::new(config_arc.clone(), message_sender.clone()),
             tooltip: Tooltip::new(
                 "Welcome to eilmeldung".into(),
@@ -255,6 +257,7 @@ impl App {
                         self.article_content.process_command(&message).await?;
                         self.command_input.process_command(&message).await?;
                         self.command_confirm.process_command(&message).await?;
+                        self.help_popup.process_command(&message).await?;
 
                     } else {
                         debug!("Message channel closed, stopping message processing");

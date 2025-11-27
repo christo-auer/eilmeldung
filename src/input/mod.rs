@@ -11,7 +11,6 @@ use std::time::{Duration, Instant};
 
 use log::{info, trace};
 use ratatui::crossterm::event;
-use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -43,7 +42,7 @@ impl MessageReceiver for InputCommandGenerator {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         match message {
             Message::Event(Event::Key(key_event)) => {
-                self.process_key_event(Some(key_event.clone().into()))
+                self.process_key_event(Some((*key_event).into()))
             }
 
             Message::Event(Event::Tick) => self.process_key_event(None),
@@ -63,40 +62,39 @@ impl InputCommandGenerator {
         }
     }
 
-    fn generate_input_tooltip(
+    fn generate_input_help(
         &self,
         key_sequence: &KeySequence,
         prefix_matches: &Vec<(&KeySequence, &CommandSequence)>,
-    ) {
+    ) -> color_eyre::Result<()> {
         if key_sequence.keys.is_empty() {
-            return;
+            return Ok(());
         }
 
-        let spans: Vec<Span> = prefix_matches
+        let lines: Vec<Line> = prefix_matches
             .iter()
-            .flat_map(|(ks, cs)| {
+            .map(|(ks, cs)| {
                 let mut keys_reduced = ks.keys.clone();
                 keys_reduced.drain(0..key_sequence.keys.len());
 
-                vec![
+                Line::from(vec![
                     Span::styled(
-                        KeySequence { keys: keys_reduced }
-                            .to_string()
-                            .replace(" ", ""),
-                        self.config.theme.tooltip_info.add_modifier(Modifier::BOLD),
+                        KeySequence { keys: keys_reduced }.to_string(),
+                        self.config.theme.accent_color,
                     ),
-                    Span::styled("", self.config.theme.tooltip_info),
-                    Span::styled(cs.to_string(), self.config.theme.tooltip_info),
-                    Span::styled("  ", self.config.theme.tooltip_info),
-                ]
+                    Span::styled("  ", self.config.theme.normal_color),
+                    Span::styled(cs.to_string(), self.config.theme.normal_color),
+                ])
             })
             .collect();
 
-        let tooltip = Tooltip::new(Line::from(spans), crate::ui::tooltip::TooltipFlavor::Info);
+        self.message_sender
+            .send(Message::Event(Event::ShowHelpPopup(
+                format!("Input: {}", key_sequence),
+                lines,
+            )))?;
 
-        let _ = self
-            .message_sender
-            .send(Message::Event(Event::Tooltip(tooltip)));
+        Ok(())
     }
 
     fn process_key_event(&mut self, key: Option<Key>) -> color_eyre::Result<()> {
@@ -135,12 +133,8 @@ impl InputCommandGenerator {
                     .send(Message::Command(command.clone()))?;
             }
             self.key_sequence.keys.clear();
-            let _ = self
-                .message_sender
-                .send(Message::Event(Event::Tooltip(Tooltip::from_str(
-                    " ",
-                    TooltipFlavor::Info,
-                ))));
+            self.message_sender
+                .send(Message::Event(Event::HideHelpPopup))?;
         } else if !self.key_sequence.keys.is_empty()
             && (aborted || timeout || prefix_matches.is_empty())
         {
@@ -153,14 +147,16 @@ impl InputCommandGenerator {
                 )
             };
 
+            self.message_sender
+                .send(Message::Event(Event::HideHelpPopup))?;
+
             self.key_sequence.keys.clear();
 
-            let _ = self
-                .message_sender
-                .send(Message::Event(Event::Tooltip(tooltip)));
+            self.message_sender
+                .send(Message::Event(Event::Tooltip(tooltip)))?;
         }
 
-        self.generate_input_tooltip(&self.key_sequence, &prefix_matches);
+        self.generate_input_help(&self.key_sequence, &prefix_matches)?;
         Ok(())
     }
 }

@@ -132,6 +132,7 @@ pub enum Command {
     FeedListSync,
     FeedListCategoryAdd(String),
     FeedListFeedAdd(Url, Option<String>),
+    FeedListTagChangeColor(Color),
     FeedListRenameEntity(String),
     FeedListRemoveEntity,
     FeedListRemoveEntityWithChildren,
@@ -139,6 +140,7 @@ pub enum Command {
     FeedListHighlightEntity,
     FeedListYankFeedOrCategory,
     FeedListPasteFeedOrCategory(PastePosition),
+    FeedListToggleExpand,
 
     ActionSetRead(ActionSetReadTarget, ActionScope),
     ActionSetUnread(ActionScope),
@@ -149,9 +151,6 @@ pub enum Command {
     ActionUntagArticles(ActionScope, String),
 
     TagAdd(String, Option<Color>),
-    TagRemove(String),
-    TagRename(String, String),
-    TagChangeColor(String, Color),
 
     // article list commands
     ArticleListSelectNextUnread,
@@ -195,6 +194,7 @@ impl Display for Command {
             PanelFocusNextCyclic => write!(f, "focus next"),
             PanelFocusPreviousCyclic => write!(f, "focus next"),
             ToggleDistractionFreeMode => write!(f, "distraction free mode"),
+            FeedListToggleExpand => write!(f, "toggle selected node"),
             FeedListCategoryAdd(name) => write!(f, "add category {name}"),
             FeedListFeedAdd(url, Some(name)) => write!(f, "add feed {name} with url {url}"),
             FeedListFeedAdd(url, None) => write!(f, "add feed with url {url}"),
@@ -210,6 +210,9 @@ impl Display for Command {
                     "paste yanked feed or category {position} selected element"
                 )
             }
+            FeedListTagChangeColor(color) => {
+                write!(f, "change color of tag to {}", color)
+            }
             ArticleListSelectNextUnread => write!(f, "select next unread"),
             ArticleListSetScope(ArticleScope::Marked) => write!(f, "show marked"),
             ArticleListSetScope(ArticleScope::Unread) => write!(f, "show unread"),
@@ -217,7 +220,7 @@ impl Display for Command {
             ArticleCurrentScrape => write!(f, "scrape content"),
             ApplicationQuit => write!(f, "quit application"),
             Redraw => write!(f, "redraw ui"),
-            CommandLineOpen(input) => write!(f, "command line {}", input.unwrap_or_default()),
+            CommandLineOpen(input) => write!(f, ":{}", input.unwrap_or_default()),
             ArticleListSearch(query) => write!(f, "search article {}", query.query_string()),
             ArticleListSearchNext => write!(f, "article search next"),
             ArticleListSearchPrevious => write!(f, "article search previous"),
@@ -244,16 +247,7 @@ impl Display for Command {
             TagAdd(tag_title, _) => {
                 write!(f, "add tag #{}", tag_title)
             }
-            TagRemove(tag_title) => {
-                write!(f, "remove tag {}", tag_title)
-            }
-            TagRename(tag_title, new_tag_title) => {
-                write!(f, "rename #{} to #{}", tag_title, new_tag_title)
-            }
-            TagChangeColor(tag_title, color) => {
-                write!(f, "change color of #{} to #{}", tag_title, color)
-            }
-            CommandConfirm(command) => write!(f, "confirm command: {}", command),
+            CommandConfirm(command) => write!(f, "{}?", command),
         }
     }
 }
@@ -322,7 +316,7 @@ fn split_off_first(s: &str) -> (String, Option<String>) {
         .map(|pos| (trimmed[pos + 1..]).to_owned())
         .to_owned();
 
-    (first.to_owned(), args)
+    (first.trim().to_owned(), args)
 }
 
 fn expect_word(s: &mut Option<String>, to_expect: &str) -> color_eyre::Result<String> {
@@ -379,18 +373,16 @@ impl FromStr for Command {
             "right" => NavigateRight,
 
             "next" => PanelFocusNext,
-            "focus" => match args {
-                Some(args) => PanelFocus(AppState::from_str(args.as_str())?),
-                None => {
-                    return Err(color_eyre::eyre::eyre!(
-                        "expected panel: feeds, articles, content or zen"
-                    ));
-                }
-            },
+            "focus" => {
+                let panel: AppState =
+                    expect_from_str(&mut args, "expected panel: feeds, articles, content or zen")?;
+                PanelFocus(panel)
+            }
             "prev" => PanelFocusPrevious,
             "nextc" => PanelFocusNextCyclic,
             "prevc" => PanelFocusPreviousCyclic,
             "zen" => ToggleDistractionFreeMode,
+            "toggleexpand" => FeedListToggleExpand,
 
             "sync" => FeedListSync,
 
@@ -402,7 +394,7 @@ impl FromStr for Command {
                     .map(|word| match ActionSetReadTarget::from_str(word.as_str()) {
                         Ok(target) => target,
                         Err(_) => {
-                            args = old_args; // restore old version of arggs
+                            args = old_args; // restore old version of args
                             ActionSetReadTarget::Current
                         }
                     })
@@ -470,10 +462,9 @@ impl FromStr for Command {
             "removeall" => FeedListRemoveEntityWithChildren,
 
             "tagchangecolor" => {
-                let tag_title = expect_word(&mut args, "tag name")?;
                 let color: Color = expect_from_str(&mut args, "tag color")?;
                 expect_nothing(args)?;
-                TagChangeColor(tag_title, color)
+                FeedListTagChangeColor(color)
             }
 
             "tagadd" => {
@@ -484,19 +475,6 @@ impl FromStr for Command {
                 };
                 expect_nothing(args)?;
                 TagAdd(tag_title, color)
-            }
-
-            "tagrename" => {
-                let tag_title = expect_word(&mut args, "old tag name")?;
-                let new_tag_title = expect_word(&mut args, "new tag name")?;
-                expect_nothing(args)?;
-                TagRename(tag_title, new_tag_title)
-            }
-
-            "tagremove" => {
-                let tag_title = expect_word(&mut args, "tag name")?;
-                expect_nothing(args)?;
-                TagRemove(tag_title)
             }
 
             "nextu" | "nextunread" => ArticleListSelectNextUnread,

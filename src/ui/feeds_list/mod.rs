@@ -122,12 +122,11 @@ impl FeedList {
         if let Some(selected) = self.selected().as_ref() {
             match selected {
                 not_supported @ (All | Tags(_) | Query(_) | Categories) => {
-                    tooltip(
+                    return tooltip(
                         &self.message_sender,
                         format!("renaming not supported for {not_supported}").as_str(),
                         TooltipFlavor::Warning,
-                    )?;
-                    return Ok(());
+                    );
                 }
                 Feed(feed) => self
                     .model_data
@@ -139,19 +138,28 @@ impl FeedList {
                         .await?
                         .contains(PluginCapabilities::MODIFY_CATEGORIES)
                     {
-                        tooltip(
+                        return tooltip(
                             &self.message_sender,
                             "provider does not support modifying categories",
                             TooltipFlavor::Error,
-                        )?;
+                        );
                     } else {
                         self.model_data
                             .rename_category(category.category_id.clone(), name.clone())?;
                     }
                 }
-                Tag(tag) => self
-                    .model_data
-                    .edit_tag(tag.tag_id.clone(), name.clone(), None)?,
+                Tag(tag) => match self.model_data.get_tag_by_label(&name) {
+                    Some(_) => {
+                        return tooltip(
+                            &self.message_sender,
+                            format!("tag with name #{name} already exists").as_str(),
+                            TooltipFlavor::Error,
+                        );
+                    }
+                    None => self
+                        .model_data
+                        .edit_tag(tag.tag_id.clone(), name.clone(), None)?,
+                },
             }
 
             tooltip(
@@ -206,10 +214,10 @@ impl FeedList {
                         )?;
                     } else {
                         self.model_data
-                            .remove_category(category.category_id.clone(), remove_children)?;
+                            .remove_category(category.category_id.to_owned(), remove_children)?;
                     }
                 }
-                Tag(tag) => self.model_data.remove_tag(tag.tag_id.clone())?,
+                Tag(tag) => self.model_data.remove_tag(tag.tag_id.to_owned())?,
             }
 
             tooltip(
@@ -463,17 +471,20 @@ impl MessageReceiver for FeedList {
                 NavigateDown if self.is_focused => {
                     self.view_data.tree_state_mut().key_down();
                 }
+                NavigateRight if self.is_focused => {
+                    self.view_data.tree_state_mut().key_right();
+                }
+                NavigateLeft if self.is_focused => {
+                    self.view_data.tree_state_mut().key_left();
+                }
                 NavigateFirst if self.is_focused => {
                     self.view_data.tree_state_mut().select_first();
                 }
                 NavigateLast if self.is_focused => {
                     self.view_data.tree_state_mut().select_last();
                 }
-                NavigateLeft if self.is_focused => {
-                    self.view_data.tree_state_mut().key_left();
-                }
-                NavigateRight if self.is_focused => {
-                    self.view_data.tree_state_mut().key_right();
+                FeedListToggleExpand if self.is_focused => {
+                    self.view_data.tree_state_mut().toggle_selected();
                 }
                 NavigatePageDown if self.is_focused => {
                     self.view_data
@@ -538,55 +549,20 @@ impl MessageReceiver for FeedList {
                     }
                 }
 
-                TagRemove(name) if self.check_tag_capability().await? => {
-                    self.check_tag_capability().await?;
-                    match self.model_data.get_tag_by_label(name) {
-                        Some(tag) => self.model_data.remove_tag(tag.tag_id)?,
-                        None => tooltip(
-                            &self.message_sender,
-                            format!("no tag with name {} exists", name).as_str(),
-                            TooltipFlavor::Error,
-                        )?,
-                    }
-                }
-
-                TagRename(old_name, new_name) => {
-                    match (
-                        self.model_data.get_tag_by_label(old_name),
-                        self.model_data.get_tag_by_label(new_name),
-                    ) {
-                        (Some(tag), None) => {
-                            self.model_data
-                                .edit_tag(tag.tag_id, new_name.to_owned(), None)?;
-                        }
-                        (None, _) => tooltip(
-                            &self.message_sender,
-                            format!("no tag with name {} exists", old_name).as_str(),
-                            TooltipFlavor::Error,
-                        )?,
-                        (_, Some(_)) => tooltip(
-                            &self.message_sender,
-                            format!("tag with name {} already exists", new_name).as_str(),
-                            TooltipFlavor::Error,
-                        )?,
-                    }
-                }
-
-                TagChangeColor(name, color) => match self.model_data.get_tag_by_label(name) {
-                    Some(tag) => {
+                FeedListTagChangeColor(color) => match self.selected() {
+                    Some(FeedListItem::Tag(tag)) => {
                         self.model_data.edit_tag(
                             tag.tag_id.to_owned(),
-                            name.to_owned(),
+                            tag.label.to_owned(),
                             Some(color.to_owned()),
                         )?;
                     }
-                    None => tooltip(
+                    _ => tooltip(
                         &self.message_sender,
-                        format!("no tag with name {} exists", name).as_str(),
+                        "no tag select, cannot change color",
                         TooltipFlavor::Error,
                     )?,
                 },
-
                 FeedListSync => {
                     tooltip(&self.message_sender, "syncing all", TooltipFlavor::Info)?;
                     self.model_data.sync()?;
