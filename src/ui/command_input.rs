@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{messages::command::CommandParseError, prelude::*};
 
 use std::{str::FromStr, sync::Arc};
 
@@ -16,6 +16,7 @@ pub struct CommandInput {
     message_sender: UnboundedSender<Message>,
 
     text_input: TextArea<'static>,
+    command_hint: Option<Line<'static>>,
 
     history: Vec<String>,
     history_index: usize,
@@ -35,6 +36,7 @@ impl CommandInput {
             message_sender,
             text_input: TextArea::default(),
             history: Vec::default(),
+            command_hint: None,
             history_index: 0,
             is_active: false,
         }
@@ -44,10 +46,14 @@ impl CommandInput {
         self.is_active
     }
 
-    fn on_submit(&mut self) -> color_eyre::Result<()> {
+    fn to_command(&self) -> Result<Command, CommandParseError> {
         let input = self.text_input.lines()[0].as_str();
 
-        match <Command>::from_str(input) {
+        Ok(Command::parse(input)?)
+    }
+
+    fn on_submit(&mut self) -> color_eyre::Result<()> {
+        match self.to_command() {
             Ok(command) => {
                 self.is_active = false;
                 self.message_sender
@@ -98,6 +104,23 @@ impl CommandInput {
             self.on_history(index + self.history_index + 1);
         }
     }
+    //
+    fn on_parse_error(&mut self, error: &CommandParseError) {
+        use CommandParseError as E;
+        let message = match error {
+            E::WordExpected(expected) => expected.to_owned(),
+            E::SomethingExpected(expected) => expected.to_owned(),
+            E::NothingExcepted(not_expected) => format!("expected nothing but got {not_expected}"),
+            E::ArticleQueryExpected(query_parse_error) => query_parse_error.to_string(),
+
+            error => error.to_string(),
+        };
+
+        self.command_hint = Some(Line::styled(
+            format!(" {message} "),
+            self.config.theme.highlight_color,
+        ));
+    }
 }
 
 impl Widget for &mut CommandInput {
@@ -112,6 +135,7 @@ impl Widget for &mut CommandInput {
             } else {
                 self.config.theme.border_style
             })
+            .title_bottom(self.command_hint.clone().unwrap_or_default())
             .border_type(BorderType::Rounded);
 
         let inner_area = block.inner(area);
@@ -154,6 +178,16 @@ impl crate::messages::MessageReceiver for CommandInput {
                 } else if self.text_input.input(*key_event) {
                     self.history_index = self.history.len() - 1;
                     *self.history.last_mut().unwrap() = self.text_input.lines()[0].to_string();
+
+                    match self.to_command() {
+                        Ok(command) => {
+                            self.command_hint = Some(Line::styled(
+                                command.to_string(),
+                                self.config.theme.normal_color,
+                            ))
+                        }
+                        Err(error) => self.on_parse_error(&error),
+                    }
                 }
             }
 

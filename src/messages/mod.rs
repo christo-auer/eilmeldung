@@ -3,7 +3,7 @@ pub mod event;
 
 pub mod prelude {
     pub use super::command::{
-        ActionScope, ActionSetReadTarget, Command, CommandSequence, PastePosition,
+        ActionScope, ActionSetReadTarget, Command, CommandSequence, PastePosition, Panel,
     };
     pub use super::event::{AsyncOperationError, Event};
     pub use super::{Message, MessageReceiver};

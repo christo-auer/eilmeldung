@@ -14,8 +14,8 @@ pub struct InputConfig {
 
 // a macro for pleasure
 macro_rules! cmd_mappings {
-    [$($key_seq:literal => $($command_seq:literal)*),*] => {
-        vec![$(($key_seq.into(), [$($command_seq),*].into()),)*].into_iter().collect()
+    [$($key_seq:literal => $($command_seq:literal)*),*,] => {
+        vec![$(($key_seq.into(), [$(Command::parse($command_seq).unwrap()),*].into()),)*].into_iter().collect()
     };
 }
 
@@ -29,7 +29,7 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "right"     => "right",
         "j"         => "down",
         "k"         => "up",
-        "space"     => "toggleexpand",
+        "space"     => "toggle",
         "C-f"       => "pagedown",
         "C-b"       => "pagedown",
         "g g"       => "gotofirst",
@@ -41,13 +41,13 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "g a"       => "focus articles",
         "g c"       => "focus content",
         ":"         => ":",
-        "l"          => "next",
+        "l"         => "next",
         "h"         => "prev",
         "tab"       => "nextc",
         "backtab"   => "prevc",
-        "o"         => "open" "read" "nextu",
+        "o"         => "open" "read" "nextunread",
         "O"         => "open unread" "confirm read %",
-        "J"         => "read" "nextu",
+        "J"         => "read" "nextunread",
         "s"         => "sync",
         "r"         => "read",
         "t"         => ": tag",
@@ -61,9 +61,9 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "n"         => "unmark",
         "N"         => "confirm unmark %",
         "C-n"       => ": unmark",
-        "1"         => "scope all",
-        "2"         => "scope unread",
-        "3"         => "scope marked",
+        "1"         => "show all",
+        "2"         => "show unread",
+        "3"         => "show marked",
         "z"         => "zen",
         "/"         => ": / ",
         "n"         => "/next",
@@ -73,14 +73,14 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "+ +"       => "=apply",
         "c w"       => ": rename",
         "c d"       => "confirm remove",
-        "c x"       => "confirm removeall",
+        "c x"       => "confirm remove!",
         "c f"       => ": feedadd",
         "c c"       => ": categoryadd",
         "c u"       => ": feedchangeurl",
         "c y"       => "yank",
         "c p"       => "paste after",
         "c P"       => "paste before",
-        "c c"       => ": tagchangecolor"
+        "c c"       => ": tagchangecolor",
     ]
 }
 

@@ -7,7 +7,7 @@ pub mod prelude {
 }
 
 use feed_list_item::FeedListItem;
-use news_flash::models::{CategoryID, NEWSFLASH_TOPLEVEL, PluginCapabilities, UnifiedMapping, Url};
+use news_flash::models::{CategoryID, PluginCapabilities, UnifiedMapping, Url};
 
 use crate::{
     prelude::*,
@@ -463,41 +463,41 @@ impl MessageReceiver for FeedList {
 
         // commands
         if let Message::Command(command) = message {
-            use Command::*;
+            use Command as C;
             match command {
-                NavigateUp if self.is_focused => {
+                C::NavigateUp if self.is_focused => {
                     self.view_data.tree_state_mut().key_up();
                 }
-                NavigateDown if self.is_focused => {
+                C::NavigateDown if self.is_focused => {
                     self.view_data.tree_state_mut().key_down();
                 }
-                NavigateRight if self.is_focused => {
+                C::NavigateRight if self.is_focused => {
                     self.view_data.tree_state_mut().key_right();
                 }
-                NavigateLeft if self.is_focused => {
+                C::NavigateLeft if self.is_focused => {
                     self.view_data.tree_state_mut().key_left();
                 }
-                NavigateFirst if self.is_focused => {
+                C::NavigateFirst if self.is_focused => {
                     self.view_data.tree_state_mut().select_first();
                 }
-                NavigateLast if self.is_focused => {
+                C::NavigateLast if self.is_focused => {
                     self.view_data.tree_state_mut().select_last();
                 }
-                FeedListToggleExpand if self.is_focused => {
+                C::FeedListToggleExpand if self.is_focused => {
                     self.view_data.tree_state_mut().toggle_selected();
                 }
-                NavigatePageDown if self.is_focused => {
+                C::NavigatePageDown if self.is_focused => {
                     self.view_data
                         .tree_state_mut()
                         .scroll_down(self.config.input_config.scroll_amount);
                 }
-                NavigatePageUp if self.is_focused => {
+                C::NavigatePageUp if self.is_focused => {
                     self.view_data
                         .tree_state_mut()
                         .scroll_up(self.config.input_config.scroll_amount);
                 }
 
-                ActionSetRead(target, action_scope) if self.target_matches(target) => {
+                C::ActionSetRead(target, action_scope) if self.target_matches(target) => {
                     match action_scope {
                         ActionScope::All => self.model_data.set_all_read()?,
                         ActionScope::Current => self.set_current_read()?,
@@ -513,7 +513,7 @@ impl MessageReceiver for FeedList {
                     }
                 }
 
-                FeedListFeedAdd(url, name) => {
+                C::FeedListFeedAdd(url, name) => {
                     let features = self.model_data.features().await?;
                     if !features.contains(PluginCapabilities::ADD_REMOVE_FEEDS) {
                         tooltip(
@@ -523,7 +523,9 @@ impl MessageReceiver for FeedList {
                         )?;
                     } else {
                         self.model_data.add_feed(
-                            url.to_owned(),
+                            url.as_ref()
+                                .ok_or(color_eyre::eyre::eyre!("no url defined"))?
+                                .to_owned(),
                             name.clone(),
                             self.maybe_selected_category(),
                         )?;
@@ -531,13 +533,19 @@ impl MessageReceiver for FeedList {
                     }
                 }
 
-                FeedListCategoryAdd(name) => {
+                C::FeedListCategoryAdd(name) => {
                     self.add_category(name).await?;
                 }
 
-                FeedListFeedChangeUrl(url) => self.change_feed_url(url).await?,
+                C::FeedListFeedChangeUrl(url) => {
+                    self.change_feed_url(
+                        url.as_ref()
+                            .ok_or(color_eyre::eyre::eyre!("no url defined"))?,
+                    )
+                    .await?
+                }
 
-                TagAdd(name, color) if self.check_tag_capability().await? => {
+                C::TagAdd(name, color) if self.check_tag_capability().await? => {
                     if self.model_data.tags().iter().any(|tag| *tag.label == *name) {
                         tooltip(
                             &self.message_sender,
@@ -549,7 +557,7 @@ impl MessageReceiver for FeedList {
                     }
                 }
 
-                FeedListTagChangeColor(color) => match self.selected() {
+                C::FeedListTagChangeColor(color) => match self.selected() {
                     Some(FeedListItem::Tag(tag)) => {
                         self.model_data.edit_tag(
                             tag.tag_id.to_owned(),
@@ -563,29 +571,29 @@ impl MessageReceiver for FeedList {
                         TooltipFlavor::Error,
                     )?,
                 },
-                FeedListSync => {
+                C::FeedListSync => {
                     tooltip(&self.message_sender, "syncing all", TooltipFlavor::Info)?;
                     self.model_data.sync()?;
                 }
 
-                FeedListRenameEntity(name) => {
+                C::FeedListRenameEntity(name) => {
                     self.rename_current(name.to_owned()).await?;
                 }
 
-                FeedListRemoveEntity => {
+                C::FeedListRemoveEntity => {
                     self.remove_current(false).await?;
                 }
 
-                FeedListRemoveEntityWithChildren => {
+                C::FeedListRemoveEntityWithChildren => {
                     self.remove_current(true).await?;
                 }
 
-                FeedListYankFeedOrCategory => {
+                C::FeedListYankFeedOrCategory => {
                     self.yank_feed_or_category()?;
                     view_needs_update = true;
                 }
 
-                FeedListPasteFeedOrCategory(position) => {
+                C::FeedListPasteFeedOrCategory(position) => {
                     self.paste_feed_or_category(*position)?;
                 }
 
@@ -595,17 +603,17 @@ impl MessageReceiver for FeedList {
 
         // messages
         if let Message::Event(event) = message {
-            use Event::*;
+            use Event as E;
             match event {
-                ApplicationStarted => {
+                E::ApplicationStarted => {
                     model_needs_update = true;
                 }
 
-                ApplicationStateChanged(state) => {
+                E::ApplicationStateChanged(state) => {
                     self.is_focused = *state == AppState::FeedSelection;
                 }
 
-                AsyncFeedAddFinished(feed) => {
+                E::AsyncFeedAddFinished(feed) => {
                     tooltip(
                         &self.message_sender,
                         format!("successfully added feed {}", feed.label).as_str(),
@@ -614,7 +622,7 @@ impl MessageReceiver for FeedList {
                     self.model_data.sync()?;
                 }
 
-                AsyncCategoryAddFinished(category) => {
+                E::AsyncCategoryAddFinished(category) => {
                     tooltip(
                         &self.message_sender,
                         format!("successfully added category {}", category.label).as_str(),
@@ -623,14 +631,14 @@ impl MessageReceiver for FeedList {
                     self.model_data.sync()?;
                 }
 
-                AsyncFeedMoveFinished | AsyncCategoryMoveFinished => {
+                E::AsyncFeedMoveFinished | E::AsyncCategoryMoveFinished => {
                     tooltip(&self.message_sender, "move successful", TooltipFlavor::Info)?;
                     self.model_data.sync()?;
                 }
 
-                AsyncRenameFeedFinished(_)
-                | AsyncCategoryRenameFinished(_)
-                | AsyncTagEditFinished(_) => {
+                E::AsyncRenameFeedFinished(_)
+                | E::AsyncCategoryRenameFinished(_)
+                | E::AsyncTagEditFinished(_) => {
                     tooltip(
                         &self.message_sender,
                         "successfully renamed",
@@ -639,7 +647,9 @@ impl MessageReceiver for FeedList {
                     self.model_data.sync()?;
                 }
 
-                AsyncFeedRemoveFinished | AsyncCategoryRemoveFinished | AsyncTagRemoveFinished => {
+                E::AsyncFeedRemoveFinished
+                | E::AsyncCategoryRemoveFinished
+                | E::AsyncTagRemoveFinished => {
                     tooltip(
                         &self.message_sender,
                         "removal successful",

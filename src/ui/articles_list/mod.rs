@@ -382,50 +382,50 @@ impl crate::messages::MessageReceiver for ArticlesList {
         let mut view_needs_update = false;
 
         if let Message::Command(command) = message {
-            use Command::*;
+            use Command as C;
             match command {
-                NavigateUp if self.is_focused => {
+                C::NavigateUp if self.is_focused => {
                     self.view_data.get_table_state_mut().select_previous();
                     self.select_index_and_send_message(None)?;
                 }
-                NavigateDown if self.is_focused => {
+                C::NavigateDown if self.is_focused => {
                     self.view_data.get_table_state_mut().select_next();
                     self.select_index_and_send_message(None)?;
                 }
-                NavigatePageUp if self.is_focused => {
+                C::NavigatePageUp if self.is_focused => {
                     self.view_data
                         .get_table_state_mut()
                         .scroll_up_by(self.config.theme.articles_list_height_lines - 1);
                     self.select_index_and_send_message(None)?;
                 }
-                NavigatePageDown if self.is_focused => {
+                C::NavigatePageDown if self.is_focused => {
                     self.view_data.get_table_state_mut().scroll_down_by(
                         self.config.theme.articles_list_height_lines
                             - self.config.articles_list_visible_articles_after_selection as u16,
                     );
                     self.select_index_and_send_message(None)?;
                 }
-                NavigateFirst if self.is_focused => {
+                C::NavigateFirst if self.is_focused => {
                     self.view_data.get_table_state_mut().select_first();
                     self.select_index_and_send_message(None)?;
                 }
-                NavigateLast if self.is_focused => {
+                C::NavigateLast if self.is_focused => {
                     self.view_data.get_table_state_mut().select_last();
                     // manually "select" as select_last does not know the number of rows
                     self.select_index_and_send_message(Some(self.model_data.articles().len() - 1))?;
                 }
 
-                ArticleListSetScope(scope) => {
+                C::ArticleListSetScope(scope) => {
                     *self.filter_state.article_scope_mut() = *scope;
                     model_needs_update = true;
                 }
 
                 // actions
-                ActionOpenInBrowser(action_scope) => {
+                C::ActionOpenInBrowser(action_scope) => {
                     self.open_in_browser(action_scope)?;
                 }
 
-                ActionSetRead(target, action_scope) if self.target_matches(target) => {
+                C::ActionSetRead(target, action_scope) if self.target_matches(target) => {
                     // first we check if we can reroute this to feed list to make it quicker
                     use ActionScope::*;
                     match action_scope {
@@ -441,11 +441,10 @@ impl crate::messages::MessageReceiver for ArticlesList {
                             && !matches!(target, ActionSetReadTarget::ArticleList) =>
                         {
                             info!("re-routing set read command to feed list");
-                            self.message_sender
-                                .send(Message::Command(Command::ActionSetRead(
-                                    ActionSetReadTarget::FeedList,
-                                    ActionScope::Current,
-                                )))?;
+                            self.message_sender.send(Message::Command(C::ActionSetRead(
+                                ActionSetReadTarget::FeedList,
+                                ActionScope::Current,
+                            )))?;
                         }
 
                         _ => {
@@ -455,18 +454,23 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     }
                 }
 
-                ActionSetUnread(action_scope) => {
+                C::ActionSetUnread(action_scope) => {
                     self.set_action_scope_read_status(action_scope, Read::Unread)?;
                     view_needs_update = true;
                 }
 
-                ActionSetMarked(action_scope, marked) => {
-                    self.set_action_scope_marked_status(action_scope, *marked)?;
+                C::ActionSetMarked(action_scope) => {
+                    self.set_action_scope_marked_status(action_scope, Marked::Marked)?;
                     view_needs_update = true;
                 }
 
-                tag_command @ (ActionTagArticles(action_scope, tag_name)
-                | ActionUntagArticles(action_scope, tag_name))
+                C::ActionSetUnmarked(action_scope) => {
+                    self.set_action_scope_marked_status(action_scope, Marked::Unmarked)?;
+                    view_needs_update = true;
+                }
+
+                tag_command @ (C::ActionTagArticles(action_scope, tag_name)
+                | C::ActionUntagArticles(action_scope, tag_name))
                     if self.is_focused =>
                 {
                     match self
@@ -479,7 +483,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                             self.change_tag(
                                 action_scope,
                                 tag.clone(),
-                                matches!(tag_command, ActionTagArticles(..)),
+                                matches!(tag_command, C::ActionTagArticles(..)),
                             )?;
                         }
                         None => {
@@ -496,11 +500,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     view_needs_update = true;
                 }
 
-                ArticleListSelectNextUnread => {
+                C::ArticleListSelectNextUnread => {
                     self.select_next_unread()?;
                 }
 
-                ArticleListSearch(query) => {
+                C::ArticleListSearch(query) => {
                     *self.filter_state.article_search_query_mut() = Some(query.clone());
                     self.view_data.update(
                         self.config.clone(),
@@ -511,26 +515,26 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.search_next(false, false)?;
                 }
 
-                ArticleListSearchNext => {
+                C::ArticleListSearchNext => {
                     self.search_next(true, false)?;
                 }
 
-                ArticleListSearchPrevious => {
+                C::ArticleListSearchPrevious => {
                     self.search_next(true, true)?;
                 }
 
-                ArticleListFilterSet(article_adhoc_filter) => {
+                C::ArticleListFilterSet(article_adhoc_filter) => {
                     self.filter_state
                         .on_new_article_adhoc_filter(article_adhoc_filter.clone());
                     model_needs_update = true;
                 }
 
-                ArticleListFilterApply => {
+                C::ArticleListFilterApply => {
                     *self.filter_state.apply_article_adhoc_filter_mut() = true;
                     model_needs_update = true;
                 }
 
-                ArticleListFilterClear => {
+                C::ArticleListFilterClear => {
                     *self.filter_state.apply_article_adhoc_filter_mut() = false;
                     model_needs_update = true;
                 }

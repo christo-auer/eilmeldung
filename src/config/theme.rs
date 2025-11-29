@@ -81,6 +81,7 @@ impl Default for Theme {
                 .fg(background_color)
                 .bg(warning_color)
                 .bold(),
+
             tooltip_error: Style::default().fg(background_color).bg(error_color).bold(),
             command_input: Style::default().bg(muted_color).fg(normal_color),
             inactive: Style::default().fg(muted_color),

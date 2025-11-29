@@ -29,6 +29,7 @@ rig-core = { version = "0.20.0", features = ["derive", "rmcp"] }
 serde = { version = "1.0.226", features = ["derive"] }
 serde_json = "1.0.145"
 strfmt = "0.2.5"
+strum = { version = "0.27.2", features = [ "derive", "strum_macros" ] }
 termimad = "0.34.0"
 text-splitter = { version = "0.28.0", features = ["markdown"] }
 thiserror = "2.0.17"
@@ -39,4 +40,5 @@ tui-markdown = "0.3.5"
 tui-prompts = "0.5.2"
 tui-textarea = "0.7.0"
 tui-tree-widget = "0.23.1"
+url = "2.5.7"
 webbrowser = "1.0.5"

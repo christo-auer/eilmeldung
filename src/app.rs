@@ -6,12 +6,23 @@ use std::{fmt::Display, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, serde::Serialize, serde::Deserialize, Default)]
 pub enum AppState {
+    #[default]
     FeedSelection,
     ArticleSelection,
     ArticleContent,
     ArticleContentDistractionFree,
+}
+
+impl From<Panel> for AppState {
+    fn from(value: Panel) -> Self {
+        match value {
+            Panel::FeedList => Self::FeedSelection,
+            Panel::ArticleList => Self::ArticleSelection,
+            Panel::ArticleContent => Self::ArticleContent,
+        }
+    }
 }
 
 impl FromStr for AppState {
@@ -184,9 +195,7 @@ impl App {
             .send(Message::Event(Event::ApplicationStarted))?;
         debug!("Select feeds panel");
         self.message_sender
-            .send(Message::Command(Command::PanelFocus(
-                AppState::FeedSelection,
-            )))?;
+            .send(Message::Command(Command::PanelFocus(Panel::FeedList)))?;
 
         info!("Starting command processing loop");
         self.process_commands(message_receiver, terminal).await?;
@@ -330,7 +339,7 @@ impl MessageReceiver for App {
             }
 
             Message::Command(PanelFocus(next_state)) => {
-                self.switch_state(*next_state)?;
+                self.switch_state((*next_state).into())?;
             }
 
             Message::Command(PanelFocusNext) => {

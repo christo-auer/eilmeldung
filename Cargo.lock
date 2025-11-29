@@ -1394,6 +1394,7 @@ dependencies = [
  "serde",
  "serde_json",
  "strfmt",
+ "strum 0.27.2",
  "termimad",
  "text-splitter",
  "thiserror 2.0.17",
@@ -1404,6 +1405,7 @@ dependencies = [
  "tui-prompts",
  "tui-textarea",
  "tui-tree-widget",
+ "url",
  "webbrowser",
 ]
 

@@ -91,30 +91,30 @@ impl crate::messages::MessageReceiver for ArticleContent {
         let mut view_needs_update = false;
 
         if let Message::Command(command) = message {
-            use Command::*;
+            use Command as C;
             match command {
-                NavigateDown if self.is_focused => {
+                C::NavigateDown if self.is_focused => {
                     self.view_data.scroll_down();
                 }
-                NavigateUp if self.is_focused => {
+                C::NavigateUp if self.is_focused => {
                     self.view_data.scroll_up();
                 }
-                NavigatePageUp if self.is_focused => {
+                C::NavigatePageUp if self.is_focused => {
                     self.view_data
                         .scroll_page_up(self.config.input_config.scroll_amount as u16);
                 }
-                NavigatePageDown if self.is_focused => {
+                C::NavigatePageDown if self.is_focused => {
                     self.view_data
                         .scroll_page_down(self.config.input_config.scroll_amount as u16);
                 }
-                NavigateFirst if self.is_focused => {
+                C::NavigateFirst if self.is_focused => {
                     self.view_data.scroll_to_top();
                 }
-                NavigateLast if self.is_focused => {
+                C::NavigateLast if self.is_focused => {
                     self.view_data.scroll_to_bottom();
                 }
 
-                Command::ArticleCurrentScrape if self.is_focused => {
+                C::ArticleCurrentScrape if self.is_focused => {
                     self.scrape_article()?;
                 }
 
