@@ -2,11 +2,11 @@ use crate::{messages::event::AsyncOperationError, prelude::*};
 use std::{collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
-    NewsFlash, error::NewsFlashError, models::{ArticleID, CategoryID, FeedID, FeedMapping, CategoryMapping, Marked, NEWSFLASH_TOPLEVEL, Read, Tag, TagID, Url}
+    NewsFlash, error::NewsFlashError, models::{ArticleID, CategoryID, FeedID, FeedMapping, CategoryMapping, Marked, Read, Tag, TagID, Url}
 };
 
 use log::{debug, error, info};
-use ratatui::style::Color;
+use ratatui::{style::{Color, Stylize}, text::{Line, Span}};
 use reqwest::Client;
 use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
 
@@ -408,6 +408,18 @@ impl NewsFlashUtils {
         }
 
         None
+    }
+
+    pub fn tag_to_line<'a>(tag: &Tag, config: &Config, override_color: Option<Color>) -> Line<'a>{
+        let color = override_color.or(Self::tag_color(tag)).or(config.theme.tag.fg).unwrap_or(config.theme.normal_color);
+        let style = config.theme.tag.fg(color);
+        Line::from(
+            vec![
+            Span::styled("", style),
+            Span::styled(tag.label.to_owned(), style.reversed()),
+            Span::styled("", style),
+            ])
+
     }
 
     fn get_root_cause_message(error: &dyn Error) -> String {

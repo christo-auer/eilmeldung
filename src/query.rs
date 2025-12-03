@@ -254,65 +254,156 @@ impl QueryParseError {
     }
 }
 
-#[derive(Logos, Debug, PartialEq)]
+#[derive(Logos, Debug, PartialEq, strum::EnumIter, strum::EnumMessage, strum::AsRefStr)]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(error(QueryParseError, QueryParseError::from_lexer))]
-enum QueryToken {
+pub enum QueryToken {
     #[token("~", priority = 2)]
+    #[strum(serialize = "~", message = "~", detailed_message = "negation ('not')")]
     Negate,
 
     #[token("read", priority = 2)]
+    #[strum(
+        serialize = "read",
+        message = "read",
+        detailed_message = "read articles"
+    )]
     KeyRead,
 
     #[token("unread", priority = 2)]
+    #[strum(
+        serialize = "unread",
+        message = "unread",
+        detailed_message = "unread articles"
+    )]
     KeyUnread,
 
     #[token("marked", priority = 2)]
+    #[strum(
+        serialize = "marked",
+        message = "marked",
+        detailed_message = "marked articles"
+    )]
     KeyMarked,
 
     #[token("unmarked", priority = 2)]
+    #[strum(
+        serialize = "unmarked",
+        message = "unmarked",
+        detailed_message = "unmarked articles"
+    )]
     KeyUnmarked,
 
     #[token("tagged", priority = 2)]
+    #[strum(
+        serialize = "tagged",
+        message = "tagged",
+        detailed_message = "articles with a tag"
+    )]
     KeyTagged,
 
     #[token("newer:")]
+    #[strum(
+        serialize = "newer",
+        message = "newer:<time>",
+        detailed_message = "articles newer than the defined time"
+    )]
     KeyNewer,
 
     #[token("older:")]
+    #[strum(
+        serialize = "older",
+        message = "older:<time>",
+        detailed_message = "articles older than the defined time"
+    )]
     KeyOlder,
 
     #[token("today")]
+    #[strum(
+        serialize = "today",
+        message = "today",
+        detailed_message = "articles from today"
+    )]
     KeyToday,
 
     #[token("syncedbefore:")]
+    #[strum(
+        serialize = "syncedbefore",
+        message = "syncedbefore:<time>",
+        detailed_message = "articles synced before the defined time"
+    )]
     KeySyncedBefore,
 
     #[token("syncedafter:")]
+    #[strum(
+        serialize = "syncedafter",
+        message = "syncedafter:<time>",
+        detailed_message = "articles synced after the defined time"
+    )]
     KeySyncedAfter,
 
     #[token("feed:")]
+    #[strum(
+        serialize = "feedafter",
+        message = "feed:<search term>",
+        detailed_message = "articles with a feed matching the search term"
+    )]
     KeyFeed,
 
     #[token("title:")]
+    #[strum(
+        serialize = "title",
+        message = "title:<search term>",
+        detailed_message = "articles with a title matching the search term"
+    )]
     KeyTitle,
 
     #[token("summary:")]
+    #[strum(
+        serialize = "summary",
+        message = "summary:<search term>",
+        detailed_message = "articles with a summary matching the search term"
+    )]
     KeySummary,
 
     #[token("author:")]
+    #[strum(
+        serialize = "author",
+        message = "author:<search term>",
+        detailed_message = "articles with an author matching the search term"
+    )]
     KeyAuthor,
 
     #[token("all:")]
+    #[strum(
+        serialize = "all",
+        message = "all:<search term>",
+        detailed_message = "articles with any field containing the search term"
+    )]
     KeyAll,
 
     #[token("feedurl:")]
+    #[strum(
+        serialize = "feedurl",
+        message = "feedurl:<search term>",
+        detailed_message = "articles with a feed URL containing the search term"
+    )]
     KeyFeedUrl,
 
     #[token("feedweburl:")]
+    #[strum(
+        serialize = "feedweburl",
+        message = "feedweburl:<search term>",
+        detailed_message = "articles with a feed web URL containing the search term"
+    )]
     KeyFeedWebUrl,
 
     #[token("tag:")]
+    #[strum(
+        serialize = "tag",
+        message = "tag:<tag list>",
+        detailed_message = "articles containing all listed tags"
+    )]
     KeyTag,
 
     #[regex(r#""[^"\n\r\\]*(?:\\.[^"\n\r\\]*)*""#)]

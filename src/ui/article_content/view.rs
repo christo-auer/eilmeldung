@@ -7,7 +7,6 @@ use getset::{Getters, MutGetters};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Flex, Layout, Rect},
-    style::{Color, Stylize},
     text::{Line, Span, Text},
     widgets::{Block, Borders, Paragraph, StatefulWidget, Widget, Wrap},
 };
@@ -157,17 +156,7 @@ impl ArticleContentViewData {
             .as_deref()
             .unwrap_or_default()
             .iter()
-            .flat_map(|tag| {
-                let color = NewsFlashUtils::tag_color(tag)
-                    .unwrap_or(config.theme.tag.fg.unwrap_or(Color::Gray));
-                let style = config.theme.tag.fg(color);
-
-                vec![
-                    Span::styled("", style),
-                    Span::styled(&tag.label, style.reversed()),
-                    Span::styled("", style),
-                ]
-            })
+            .flat_map(|tag| NewsFlashUtils::tag_to_line(tag, config, None))
             .collect::<Vec<Span>>();
 
         let date_string: String = article
@@ -179,7 +168,7 @@ impl ArticleContentViewData {
         let mut summary_lines = vec![
             Line::from(vec![
                 Span::from(date_string).style(config.theme.feed),
-                Span::from(" --- ").style(config.theme.feed),
+                Span::from("  ").style(config.theme.feed),
                 Span::from(feed_label).style(config.theme.feed),
             ]),
             Line::from(Span::from(title).style(config.theme.header)),

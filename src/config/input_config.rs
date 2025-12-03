@@ -15,7 +15,7 @@ pub struct InputConfig {
 // a macro for pleasure
 macro_rules! cmd_mappings {
     [$($key_seq:literal => $($command_seq:literal)*),*,] => {
-        vec![$(($key_seq.into(), [$(Command::parse($command_seq).unwrap()),*].into()),)*].into_iter().collect()
+        vec![$(($key_seq.into(), [$(Command::parse($command_seq, false).unwrap()),*].into()),)*].into_iter().collect()
     };
 }
 
@@ -40,7 +40,7 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "g f"       => "focus feeds",
         "g a"       => "focus articles",
         "g c"       => "focus content",
-        ":"         => ":",
+        ":"         => "cmd",
         "l"         => "next",
         "h"         => "prev",
         "tab"       => "nextc",
@@ -50,37 +50,37 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "J"         => "read" "nextunread",
         "s"         => "sync",
         "r"         => "read",
-        "t"         => ": tag",
+        "t"         => "cmd tag",
         "R"         => "confirm read %",
-        "C-r"       => ": read",
+        "C-r"       => "cmd read",
         "u"         => "unread",
         "U"         => "confirm unread %",
-        "C-u"       => ": unread",
+        "C-u"       => "cmd unread",
         "m"         => "mark",
         "M"         => "confirm mark %",
         "n"         => "unmark",
         "N"         => "confirm unmark %",
-        "C-n"       => ": unmark",
+        "C-n"       => "cmd unmark",
         "1"         => "show all",
         "2"         => "show unread",
         "3"         => "show marked",
         "z"         => "zen",
-        "/"         => ": / ",
-        "n"         => "/next",
-        "N"         => "/prev",
-        "="         => ": = ",
-        "+ r"       => "=clear",
-        "+ +"       => "=apply",
-        "c w"       => ": rename",
+        "/"         => "cmd search ",
+        "n"         => "searchnext",
+        "N"         => "searchprev",
+        "="         => "cmd filter ",
+        "+ r"       => "filterclear",
+        "+ +"       => "filterapply",
+        "c w"       => "cmd rename",
         "c d"       => "confirm remove",
-        "c x"       => "confirm remove!",
-        "c f"       => ": feedadd",
-        "c c"       => ": categoryadd",
-        "c u"       => ": feedchangeurl",
+        "c x"       => "confirm removeall",
+        "c f"       => "cmd feedadd",
+        "c c"       => "cmd categoryadd",
+        "c u"       => "cmd feedchangeurl",
         "c y"       => "yank",
         "c p"       => "paste after",
         "c P"       => "paste before",
-        "c c"       => ": tagchangecolor",
+        "c c"       => "cmd tagchangecolor",
     ]
 }
 

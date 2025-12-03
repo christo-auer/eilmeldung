@@ -20,7 +20,7 @@ pub mod prelude {
 
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Direction, Flex, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     text::Text,
     widgets::{StatefulWidget, Widget},
 };
@@ -117,15 +117,7 @@ impl Widget for &mut App {
         }
 
         if self.help_popup.is_visible() {
-            let height = self.help_popup.needed_height();
-            let horizontal_popup_area =
-                Layout::horizontal([Constraint::Percentage(60)]).flex(Flex::Center);
-            let vertical_popup_area = Layout::vertical([Constraint::Length(height)])
-                .flex(Flex::Start)
-                .margin(3);
-            let [popup_area] = horizontal_popup_area.areas(area);
-            let [popup_area] = vertical_popup_area.areas(popup_area);
-            self.help_popup.render(popup_area, buf);
+            self.help_popup.render(area, buf);
         }
 
         let bottom_line = self.tooltip.to_line(&self.config);

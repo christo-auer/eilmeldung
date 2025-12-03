@@ -1,16 +1,17 @@
-use std::{borrow::Cow, sync::Arc};
+use std::sync::Arc;
 
 use crate::prelude::*;
 use ratatui::{
-    text::Line,
-    widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
+    layout::{Constraint, Flex, Layout},
+    text::{Line, Text},
+    widgets::{Block, BorderType, Borders, Clear, Padding, Widget},
 };
 
 #[derive(Default)]
 pub struct HelpPopup<'a> {
     config: Arc<Config>,
     title: Option<String>,
-    contents: Option<Vec<Line<'a>>>,
+    contents: Option<Text<'a>>,
 }
 
 impl<'a> HelpPopup<'a> {
@@ -25,19 +26,21 @@ impl<'a> HelpPopup<'a> {
     pub fn is_visible(&self) -> bool {
         self.contents.is_some()
     }
-
-    pub fn needed_height(&self) -> u16 {
-        self.contents
-            .as_ref()
-            .map(|lines| lines.len() as u16)
-            .unwrap_or(0)
-            + 2
-    }
 }
 
 impl<'a> Widget for &HelpPopup<'a> {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        if let (Some(contents), Some(title)) = (self.contents.as_ref(), self.title.as_ref()) {
+        if let (Some(text), Some(title)) = (self.contents.as_ref(), self.title.as_ref()) {
+            let (width, height) = (text.width() + 4, text.height() + 2);
+
+            let [popup_area] = Layout::horizontal([Constraint::Length(width as u16)])
+                .flex(Flex::Center)
+                .areas::<1>(area);
+            let [popup_area, _] =
+                Layout::vertical([Constraint::Length(height as u16), Constraint::Length(6)])
+                    .flex(Flex::End)
+                    .areas::<2>(popup_area);
+
             let block = Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
@@ -45,13 +48,12 @@ impl<'a> Widget for &HelpPopup<'a> {
                 .title_top(Line::styled(format!(" {title} "), self.config.theme.header))
                 .padding(Padding::horizontal(1));
 
-            let inner_area = block.inner(area);
+            let inner_area = block.inner(popup_area);
 
-            Widget::render(Clear, area, buf);
-            block.render(area, buf);
+            Widget::render(Clear, popup_area, buf);
+            block.render(popup_area, buf);
 
-            let paragraph = Paragraph::new(contents.to_owned());
-            paragraph.render(inner_area, buf);
+            text.render(inner_area, buf);
         }
     }
 }
@@ -61,8 +63,8 @@ impl<'a> MessageReceiver for HelpPopup<'a> {
         if let Message::Event(event) = message {
             use Event::*;
             match event {
-                ShowHelpPopup(title, lines) => {
-                    self.contents = Some(lines.to_owned());
+                ShowHelpPopup(title, text) => {
+                    self.contents = Some(text.to_owned());
                     self.title = Some(title.to_owned());
                 }
                 HideHelpPopup => self.contents = None,

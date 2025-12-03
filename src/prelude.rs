@@ -4,7 +4,9 @@ pub use super::input::prelude::*;
 
 pub use super::messages::prelude::*;
 pub use super::newsflash_utils::NewsFlashUtils;
-pub use super::query::{ArticleQuery, AugmentedArticleFilter, QueryParseError};
+pub use super::query::{
+    ArticleQuery, AugmentedArticleFilter, QueryParseError, QueryToken,
+};
 pub use super::ui::prelude::*;
 
 pub use super::login::LoginSetup;

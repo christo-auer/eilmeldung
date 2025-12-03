@@ -567,7 +567,7 @@ impl MessageReceiver for FeedList {
                     }
                     _ => tooltip(
                         &self.message_sender,
-                        "no tag select, cannot change color",
+                        "select a tag to change its color",
                         TooltipFlavor::Error,
                     )?,
                 },
@@ -641,7 +641,7 @@ impl MessageReceiver for FeedList {
                 | E::AsyncTagEditFinished(_) => {
                     tooltip(
                         &self.message_sender,
-                        "successfully renamed",
+                        "successfully changed",
                         TooltipFlavor::Info,
                     )?;
                     self.model_data.sync()?;

@@ -8,8 +8,17 @@ use strum::EnumMessage;
 
 use crate::prelude::*;
 
-#[derive(Clone, Copy, Debug, Default, strum::EnumString, strum::EnumMessage)]
-#[strum(serialize_all="snake_case",
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    strum::EnumString,
+    strum::EnumMessage,
+    strum::EnumIter,
+    strum::AsRefStr,
+)]
+#[strum(
     parse_err_fn = CommandParseError::panel_expected,
     parse_err_ty = CommandParseError)]
 pub enum Panel {
@@ -35,7 +44,7 @@ pub enum Panel {
 }
 impl Display for Panel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.get_detailed_message().unwrap().fmt(f) // <- if this fails, it must fail hard
+        self.get_message().unwrap().fmt(f) // <- if this fails, it must fail hard
     }
 }
 
@@ -45,12 +54,16 @@ impl CommandParseError {
     }
 }
 
-#[derive(Clone, Debug, Default, strum::EnumIter, strum::EnumMessage)]
+#[derive(Clone, Debug, Default, strum::EnumIter, strum::EnumMessage, strum::AsRefStr)]
 pub enum ActionScope {
     #[default]
-    #[strum(message = "current", detailed_message = "currently selected article")]
+    #[strum(
+        serialize = "current",
+        message = "current",
+        detailed_message = "currently selected item"
+    )]
     Current,
-    #[strum(message = "all", detailed_message = "all articles")]
+    #[strum(serialize = "all", message = "all", detailed_message = "all items")]
     All,
     #[strum(
         message = "query",
@@ -93,14 +106,15 @@ impl Display for ActionScope {
     }
 }
 
-#[derive(Debug, Clone, Default, strum::EnumIter, strum::EnumMessage)]
+#[derive(Debug, Clone, Default, strum::EnumIter, strum::EnumMessage, strum::AsRefStr)]
+#[strum(serialize_all = "lowercase")]
 pub enum ActionSetReadTarget {
     #[default]
-    #[strum(message = "current", detailed_message = "currently selected panel")]
+    #[strum(message = ".", detailed_message = "currently selected panel")]
     Current,
-    #[strum(message = "feed list", detailed_message = "feed list")]
+    #[strum(message = "feeds", detailed_message = "feed list")]
     FeedList,
-    #[strum(message = "article list", detailed_message = "article list")]
+    #[strum(message = "articles", detailed_message = "article list")]
     ArticleList,
 }
 
@@ -120,12 +134,12 @@ impl FromStr for ActionSetReadTarget {
 
 impl Display for ActionSetReadTarget {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.get_detailed_message().unwrap().fmt(f) // <- if this fails, it must fail hard
+        self.get_message().unwrap().fmt(f) // <- if this fails, it must fail hard
     }
 }
 
 #[derive(Debug, Clone, Copy, Default, strum::EnumString, strum::EnumIter, strum::EnumMessage)]
-#[strum(serialize_all = "snake_case")]
+#[strum(serialize_all = "lowercase")]
 pub enum PastePosition {
     #[default]
     #[strum(
@@ -142,14 +156,20 @@ pub enum PastePosition {
 
 impl Display for PastePosition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.get_detailed_message().unwrap().fmt(f) // <- if this fails, it must fail hard
+        self.get_message().unwrap().fmt(f) // <- if this fails, it must fail hard
     }
 }
 
-#[derive(Clone, Debug, Default, strum::EnumString, strum::EnumIter, strum::EnumMessage)]
+#[derive(
+    Clone, Debug, Default, strum::AsRefStr, strum::EnumString, strum::EnumIter, strum::EnumMessage,
+)]
 pub enum Command {
     #[default]
-    #[strum(serialize = "nop")]
+    #[strum(
+        serialize = "nop",
+        message = "nop",
+        detailed_message = "no operation (for unmapping key bindings)"
+    )]
     NoOperation,
 
     // general navigation
@@ -195,13 +215,13 @@ pub enum Command {
     #[strum(
         serialize = "left",
         message = "left",
-        detailed_message = "nagivates left in the current context (all)"
+        detailed_message = "nagivate left in the current context (all)"
     )]
     NavigateLeft,
     #[strum(
         serialize = "right",
         message = "right",
-        detailed_message = "nagivates right in the current context (all)"
+        detailed_message = "nagivate right in the current context (all)"
     )]
     NavigateRight,
 
@@ -209,25 +229,25 @@ pub enum Command {
     #[strum(
         serialize = "next",
         message = "next",
-        detailed_message = "focuses the next panel until article content (all)"
+        detailed_message = "focus next panel until article content (all)"
     )]
     PanelFocusNext,
     #[strum(
         serialize = "prev",
         message = "prev",
-        detailed_message = "focuses the previous panel until feed list (all)"
+        detailed_message = "focus previous panel until feed list (all)"
     )]
     PanelFocusPrevious,
     #[strum(
         serialize = "nextc",
         message = "nextc",
-        detailed_message = "focuses the next panel, cycling back to feed list (all)"
+        detailed_message = "focus next panel, cycling back to feed list (all)"
     )]
     PanelFocusNextCyclic,
     #[strum(
         serialize = "prevc",
         message = "prevc",
-        detailed_message = "focuses the previous panel, cycling back to article content (all)"
+        detailed_message = "focus previous panel, cycling back to article content (all)"
     )]
     PanelFocusPreviousCyclic,
 
@@ -288,8 +308,8 @@ pub enum Command {
     FeedListRemoveEntity,
 
     #[strum(
-        serialize = "remove!",
-        message = "remove!",
+        serialize = "removeall",
+        message = "removeall",
         detailed_message = "remove the selected item with children (feed list)"
     )]
     FeedListRemoveEntityWithChildren,
@@ -324,7 +344,7 @@ pub enum Command {
 
     #[strum(
         serialize = "read",
-        message = "read <target> <scope>",
+        message = "read [[<target>] <scope>]",
         detailed_message = "set all articles matching the scope in the target to read (feed list, article list)"
     )]
     ActionSetRead(ActionSetReadTarget, ActionScope),
@@ -359,14 +379,14 @@ pub enum Command {
 
     #[strum(
         serialize = "tag",
-        message = "tag <tag name> <scope>",
+        message = "tag <tag name> [<scope>]",
         detailed_message = "adds the tag to all articles matching the scope (article list)"
     )]
     ActionTagArticles(ActionScope, String),
 
     #[strum(
         serialize = "untag",
-        message = "untag <tag name> <scope>",
+        message = "untag <tag name> [<scope>]",
         detailed_message = "removes the tag from all articles matching the scope (article list)"
     )]
     ActionUntagArticles(ActionScope, String),
@@ -402,43 +422,43 @@ pub enum Command {
 
     // article list searching
     #[strum(
-        serialize = "/",
-        message = "/ <article query>",
+        serialize = "search",
+        message = "search <article query>",
         detailed_message = "search for articles matching the query (article list)"
     )]
     ArticleListSearch(ArticleQuery),
 
     #[strum(
-        serialize = "/next",
-        message = "/next",
+        serialize = "searchnext",
+        message = "searchnext",
         detailed_message = "search for the next article matching the query (article list)"
     )]
     ArticleListSearchNext,
 
     #[strum(
-        serialize = "/prev",
-        message = "/prev",
+        serialize = "searchprev",
+        message = "searchprev",
         detailed_message = "search for the previous article matching the query (article list)"
     )]
     ArticleListSearchPrevious,
 
     #[strum(
-        serialize = "=",
-        message = "= <article query>",
+        serialize = "filter",
+        message = "filter <article query>",
         detailed_message = "filter articles by query (article list)"
     )]
     ArticleListFilterSet(ArticleQuery),
 
     #[strum(
-        serialize = "=apply",
-        message = "=apply",
+        serialize = "filterapply",
+        message = "filterapply",
         detailed_message = "apply current filter (article list)"
     )]
     ArticleListFilterApply,
 
     #[strum(
-        serialize = "=clear",
-        message = "=clear",
+        serialize = "filterclear",
+        message = "filterclear",
         detailed_message = "clear current filter (article list)"
     )]
     ArticleListFilterClear,
@@ -453,14 +473,13 @@ pub enum Command {
 
     // command line
     #[strum(
-        serialize = ":",
-        message = ": [<command line content>]",
+        serialize = "cmd",
+        message = "cmd [<command line content>]",
         detailed_message = "open command line with optional content (all)"
     )]
     CommandLineOpen(Option<String>),
 
     #[strum(
-        serialize = "?",
         serialize = "confirm",
         message = "confirm <command>",
         detailed_message = "ask user for confirmation to execute command and, if positive, execute command (all)"
@@ -490,6 +509,9 @@ pub enum CommandParseError {
     #[error("expecting article scope")]
     ArticleScopeExpected,
 
+    #[error("expecting target or article scope")]
+    TargetOrArticleScopeExpected,
+
     #[error("expecting color")]
     ColorExpected(#[from] ParseColorError),
 
@@ -498,6 +520,9 @@ pub enum CommandParseError {
 
     #[error("expecting panel")]
     PanelExpected,
+
+    #[error("expecting position")]
+    PositionExpected,
 
     #[error("expecting article search query")]
     ArticleQueryExpected(#[from] QueryParseError),
@@ -559,7 +584,9 @@ impl Display for Command {
             ApplicationQuit => write!(f, "quit application"),
             Redraw => write!(f, "redraw ui"),
             CommandLineOpen(input) => write!(f, ":{}", input.unwrap_or_default()),
-            ArticleListSearch(query) => write!(f, "search article by query: {}", query.query_string()),
+            ArticleListSearch(query) => {
+                write!(f, "search article by query: {}", query.query_string())
+            }
             ArticleListSearchNext => write!(f, "article search next"),
             ArticleListSearchPrevious => write!(f, "article search previous"),
             ArticleListFilterSet(query) => {
@@ -570,7 +597,13 @@ impl Display for Command {
 
             FeedListSync => write!(f, "sync all"),
             ActionSetRead(target, action_scope) => {
-                write!(f, "mark {action_scope} as read in {target}",)
+                write!(
+                    f,
+                    "mark {action_scope} as read in {}",
+                    target
+                        .get_detailed_message()
+                        .unwrap_or(target.to_string().as_str())
+                )
             }
             ActionSetUnread(action_scope) => write!(f, "mark {} as unread", action_scope),
             ActionSetMarked(action_scope) => write!(f, "mark {}", action_scope),
@@ -686,8 +719,8 @@ fn expect_from_str<T: FromStr>(
 where
     T::Err: Into<CommandParseError>,
 {
-    let word = expect_word(s, to_expect)?;
-    T::from_str(word.as_str()).map_err(|e| e.into())
+    let word = expect_word(s, to_expect);
+    T::from_str(word.as_deref().unwrap_or_default()).map_err(|e| e.into())
 }
 
 fn expect_nothing(s: Option<String>) -> Result<(), CommandParseError> {
@@ -698,7 +731,7 @@ fn expect_nothing(s: Option<String>) -> Result<(), CommandParseError> {
 }
 
 impl Command {
-    pub fn parse(s: &str) -> Result<Self, CommandParseError> {
+    pub fn parse(s: &str, eager: bool) -> Result<Self, CommandParseError> {
         use CommandParseError as E;
 
         let mut args = if s.is_empty() {
@@ -715,7 +748,7 @@ impl Command {
                 let Some(args) = args else {
                     return Err(E::CommandExpected);
                 };
-                C::CommandConfirm(Box::new(Command::parse(&args)?))
+                C::CommandConfirm(Box::new(Command::parse(&args, eager)?))
             }
 
             C::PanelFocus(_) => {
@@ -726,7 +759,12 @@ impl Command {
 
             C::ActionSetRead(..) => {
                 let old_args = args.clone();
-                let word = expect_word(&mut args, "target or scope");
+                let word = expect_word(&mut args, "target or scope")
+                    .map_err(|_| E::TargetOrArticleScopeExpected);
+
+                if eager && let Err(error) = word {
+                    return Err(error);
+                };
 
                 let target = word
                     .map(|word| match ActionSetReadTarget::from_str(word.as_str()) {
@@ -754,7 +792,8 @@ impl Command {
                 C::ActionSetMarked(ActionScope::from_option_string(args.as_deref())?)
             }
             tag_command @ (C::ActionTagArticles(..) | C::ActionUntagArticles(..)) => {
-                let tag = expect_word(&mut args, "tag name")?;
+                let tag =
+                    expect_word(&mut args, "expecting tag name").map_err(|_| E::TagExpected)?;
 
                 match tag_command {
                     C::ActionTagArticles(..) => {
@@ -769,19 +808,27 @@ impl Command {
             }
 
             C::FeedListFeedAdd(..) => {
-                let url = Url::new(expect_from_str::<reqwest::Url>(&mut args, "feed URL")?);
+                let url = Url::new(expect_from_str::<reqwest::Url>(
+                    &mut args,
+                    "expecting feed URL",
+                )?);
                 let name = args;
                 C::FeedListFeedAdd(Some(url), name)
             }
 
             C::FeedListFeedChangeUrl(..) => {
-                let url = Url::new(expect_from_str::<reqwest::Url>(&mut args, "feed URL")?);
+                let url = Url::new(expect_from_str::<reqwest::Url>(
+                    &mut args,
+                    "expecting feed URL",
+                )?);
                 expect_nothing(args)?;
                 C::FeedListFeedChangeUrl(Some(url))
             }
 
             C::FeedListPasteFeedOrCategory(..) => {
-                let position = expect_from_str::<PastePosition>(&mut args, "paste position")?;
+                let position =
+                    expect_from_str::<PastePosition>(&mut args, "expecting paste position")
+                        .map_err(|_| E::PositionExpected)?;
                 expect_nothing(args)?;
                 C::FeedListPasteFeedOrCategory(position)
             }
@@ -795,32 +842,46 @@ impl Command {
             }
 
             C::FeedListTagChangeColor(..) => {
-                let color: Color = expect_from_str(&mut args, "tag color")?;
+                let color: Color = expect_from_str(&mut args, "expecting tag color")
+                    .map_err(|_| E::ColorExpected(ParseColorError))?;
                 expect_nothing(args)?;
                 C::FeedListTagChangeColor(color)
             }
 
             C::TagAdd(..) => {
-                let tag_title = expect_word(&mut args, "tag name")?;
+                let tag_title = expect_word(&mut args, "expecting tag name")?;
                 let color: Option<Color> = match args {
-                    None => None,
-                    _ => Some(expect_from_str(&mut args, "tag color")?),
+                    None => {
+                        if eager {
+                            return Err(E::ColorExpected(ParseColorError));
+                        } else {
+                            None
+                        }
+                    }
+                    _ => Some(expect_from_str(&mut args, "expecting tag color")?),
                 };
                 expect_nothing(args)?;
                 C::TagAdd(tag_title, color)
             }
 
-            C::ArticleListSetScope(..) => C::ArticleListSetScope(expect_from_str::<ArticleScope>(
-                &mut args,
-                "scope expected",
-            )?),
+            C::ArticleListSetScope(..) => C::ArticleListSetScope(
+                expect_from_str::<ArticleScope>(&mut args, "expecting article scope")
+                    .map_err(|_| E::ArticleScopeExpected)?,
+            ),
 
             C::ArticleListSearch(..) => C::ArticleListSearch(ArticleQuery::from_str(
-                expect_something(args, "query expected")?.as_str(),
+                expect_something(args, "expecting article query")?.as_str(),
             )?),
 
             C::ArticleListFilterSet(..) => C::ArticleListFilterSet(ArticleQuery::from_str(
-                expect_something(args, "article query expected")?.as_str(),
+                expect_something(args, "expecting article query")
+                    .map_err(|_| {
+                        E::ArticleQueryExpected(QueryParseError::KeyOrWordExpected(
+                            0,
+                            "".to_owned(),
+                        ))
+                    })?
+                    .as_str(),
             )?),
 
             C::CommandLineOpen(..) => C::CommandLineOpen(args),

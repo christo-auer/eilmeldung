@@ -1,10 +1,10 @@
 use std::{cmp::Ordering, collections::HashMap, hash::Hash, sync::Arc};
 
 use getset::Getters;
-use log::{info, trace};
+use log::info;
 use news_flash::models::{
     ArticleFilter, ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping,
-    PluginCapabilities, Tag, TagID, UnifiedMapping, Url,
+    PluginCapabilities, Tag, TagID, Url,
 };
 use ratatui::style::Color;
 

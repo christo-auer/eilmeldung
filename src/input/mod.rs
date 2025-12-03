@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use log::{info, trace};
 use ratatui::crossterm::event;
-use ratatui::text::{Line, Span};
+use ratatui::text::{Line, Span, Text};
 use tokio::sync::mpsc::UnboundedSender;
 
 pub fn input_reader(message_sender: UnboundedSender<Message>) -> color_eyre::Result<()> {
@@ -71,22 +71,24 @@ impl InputCommandGenerator {
             return Ok(());
         }
 
-        let lines: Vec<Line> = prefix_matches
-            .iter()
-            .map(|(ks, cs)| {
-                let mut keys_reduced = ks.keys.clone();
-                keys_reduced.drain(0..key_sequence.keys.len());
+        let lines = Text::from(
+            prefix_matches
+                .iter()
+                .map(|(ks, cs)| {
+                    let mut keys_reduced = ks.keys.clone();
+                    keys_reduced.drain(0..key_sequence.keys.len());
 
-                Line::from(vec![
-                    Span::styled(
-                        KeySequence { keys: keys_reduced }.to_string(),
-                        self.config.theme.accent_color,
-                    ),
-                    Span::styled("  ", self.config.theme.normal_color),
-                    Span::styled(cs.to_string(), self.config.theme.normal_color),
-                ])
-            })
-            .collect();
+                    Line::from(vec![
+                        Span::styled(
+                            KeySequence { keys: keys_reduced }.to_string(),
+                            self.config.theme.accent_color,
+                        ),
+                        Span::styled("  ", self.config.theme.normal_color),
+                        Span::styled(cs.to_string(), self.config.theme.normal_color),
+                    ])
+                })
+                .collect::<Vec<Line<'_>>>(),
+        );
 
         self.message_sender
             .send(Message::Event(Event::ShowHelpPopup(

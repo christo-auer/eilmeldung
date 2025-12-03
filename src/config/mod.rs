@@ -122,8 +122,8 @@ impl<'de> Deserialize<'de> for FeedListContentIdentifier {
     {
         let content = String::deserialize(deserializer)?;
 
-        Ok(FeedListContentIdentifier::from_str(&content)
-            .map_err(|err| serde::de::Error::custom(err.to_string()))?)
+        FeedListContentIdentifier::from_str(&content)
+            .map_err(|err| serde::de::Error::custom(err.to_string()))
     }
 }
 
@@ -144,12 +144,25 @@ impl From<(String, String)> for LabeledQuery {
     Default,
     strum::EnumIter,
     strum::EnumString,
+    strum::EnumMessage,
+    strum::AsRefStr,
 )]
 #[strum(serialize_all = "snake_case")]
 pub enum ArticleScope {
     #[default]
+    #[strum(serialize = "all", message = "all", detailed_message = "all articles")]
     All,
+    #[strum(
+        serialize = "unread",
+        message = "unread",
+        detailed_message = "only unread articles"
+    )]
     Unread,
+    #[strum(
+        serialize = "marked",
+        message = "marked",
+        detailed_message = "only marked articles"
+    )]
     Marked,
 }
 
