@@ -1,6 +1,7 @@
 use ratatui::style::{Color, Modifier, Style, Stylize};
 
-#[derive(Debug, Clone, Copy, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
+#[serde(default)]
 pub struct Theme {
     pub feeds_list_focus_width_percent: u16,
     pub articles_list_focused_width_percent: u16,
@@ -14,6 +15,9 @@ pub struct Theme {
     pub accent_color_2: Color,
     pub accent_color_3: Color,
     pub accent_color_4: Color,
+    pub info_color: Color,
+    pub warning_color: Color,
+    pub error_color: Color,
 
     pub category: Style,
     pub feed: Style,
@@ -38,20 +42,20 @@ pub struct Theme {
 
 impl Default for Theme {
     fn default() -> Self {
-        use Color::*;
-        let background_color = Black;
-        let muted_color = DarkGray;
-        let normal_color = White;
-        let normal_color_2 = Magenta;
-        let highlight_color = Yellow;
-        let accent_color = Magenta;
-        let accent_color_2 = Blue;
-        let accent_color_3 = Cyan;
-        let accent_color_4 = Yellow;
+        use Color as C;
+        let background_color = C::Black;
+        let muted_color = C::DarkGray;
+        let normal_color = C::White;
+        let normal_color_2 = C::Magenta;
+        let highlight_color = C::Yellow;
+        let accent_color = C::Magenta;
+        let accent_color_2 = C::Blue;
+        let accent_color_3 = C::Cyan;
+        let accent_color_4 = C::Yellow;
 
-        let info_color = Magenta;
-        let warning_color = Yellow;
-        let error_color = Red;
+        let info_color = C::Magenta;
+        let warning_color = C::Yellow;
+        let error_color = C::Red;
 
         Self {
             feeds_list_focus_width_percent: 33,
@@ -66,6 +70,10 @@ impl Default for Theme {
             accent_color_2,
             accent_color_3,
             accent_color_4,
+
+            warning_color,
+            info_color,
+            error_color,
 
             paragraph: Style::default().fg(normal_color),
             article: Style::default().fg(normal_color),

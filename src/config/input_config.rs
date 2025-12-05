@@ -4,7 +4,7 @@ use crate::prelude::*;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", default)]
 pub struct InputConfig {
     pub scroll_amount: usize,
     pub input_timeout_millis: u64,
@@ -92,6 +92,19 @@ impl Default for InputConfig {
             input_commands: generate_default_input_commands(),
             command_line: CommandLineInputConfig::default(),
         }
+    }
+}
+
+impl InputConfig {
+    pub fn validate(&mut self) -> color_eyre::Result<()> {
+        Self::default()
+            .input_commands
+            .into_iter()
+            .for_each(|(key_seq, cmd_seq)| {
+                self.input_commands.entry(key_seq).or_insert(cmd_seq);
+            });
+
+        Ok(())
     }
 }
 

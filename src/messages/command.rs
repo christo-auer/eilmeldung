@@ -624,6 +624,7 @@ impl Display for Command {
 }
 
 #[derive(Clone, Debug, serde::Deserialize, Default)]
+#[serde(transparent)]
 pub struct CommandSequence {
     pub commands: Vec<Command>,
 }
@@ -898,6 +899,6 @@ impl<'de> Deserialize<'de> for Command {
     {
         let s = String::deserialize(deserializer)?;
 
-        Command::from_str(&s).map_err(|err| serde::de::Error::custom(err.to_string()))
+        Command::parse(&s, false).map_err(|err| serde::de::Error::custom(err.to_string()))
     }
 }
