@@ -44,8 +44,11 @@ impl<'a> Widget for &HelpPopup<'a> {
             let block = Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(self.config.theme.focused_border_style)
-                .title_top(Line::styled(format!(" {title} "), self.config.theme.header))
+                .border_style(self.config.theme.border_focused())
+                .title_top(Line::styled(
+                    format!(" {title} "),
+                    self.config.theme.header(),
+                ))
                 .padding(Padding::horizontal(1));
 
             let inner_area = block.inner(popup_area);

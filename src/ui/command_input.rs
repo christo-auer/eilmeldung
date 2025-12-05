@@ -271,7 +271,8 @@ impl CommandInput {
                 NewsFlashUtils::tag_to_line(
                     &tag,
                     &self.config,
-                    (!tag.label.starts_with(current_part)).then_some(self.config.theme.muted_color),
+                    (!tag.label.starts_with(current_part))
+                        .then_some(self.config.theme.inactive().fg.unwrap_or_default()),
                 )
             })
             .collect::<Vec<Line<'_>>>();
@@ -340,13 +341,11 @@ impl CommandInput {
             vec![
                 Line::from(Span::styled(
                     id,
-                    Style::default()
-                        .fg(self.config.theme.accent_color)
-                        .add_modifier(modifier),
+                    self.config.theme.header().add_modifier(modifier),
                 )),
                 Line::from(Span::styled(
                     to_value(&enum_message),
-                    Style::default().fg(self.config.theme.normal_color),
+                    self.config.theme.paragraph(),
                 )),
             ]
         })
@@ -418,17 +417,15 @@ impl CommandInput {
                     vec![
                         Line::from(Span::styled(
                             token.as_ref().to_owned(),
-                            Style::default()
-                                .fg(self.config.theme.accent_color)
-                                .add_modifier(modifier),
+                            self.config.theme.header().add_modifier(modifier),
                         )),
                         Line::from(Span::styled(
                             token.get_message().unwrap_or_default().to_owned(),
-                            Style::default().fg(self.config.theme.accent_color_2),
+                            self.config.theme.paragraph(),
                         )),
                         Line::from(Span::styled(
                             token.get_detailed_message().unwrap_or_default().to_owned(),
-                            Style::default().fg(self.config.theme.normal_color),
+                            self.config.theme.paragraph(),
                         )),
                     ]
                 })
@@ -450,13 +447,10 @@ impl CommandInput {
 
     fn generate_help_content_url(&mut self, _current_part: &str) -> color_eyre::Result<()> {
         let line = Text::from(Line::from(vec![
-            Span::styled(
-                "URL expected ".to_owned(),
-                Style::default().fg(self.config.theme.accent_color),
-            ),
+            Span::styled("URL expected ".to_owned(), self.config.theme.header()),
             Span::styled(
                 "e.g., https://www.feedprovider.com/rss".to_owned(),
-                Style::default().fg(self.config.theme.normal_color),
+                self.config.theme.paragraph(),
             ),
         ]));
         self.show_help_dialog("URL".to_owned(), line)?;
@@ -473,7 +467,7 @@ impl CommandInput {
             .collect::<Vec<Command>>();
 
         let text = if commands.is_empty() {
-            Text::styled("no matches", self.config.theme.normal_color)
+            Text::styled("no matches", self.config.theme.header())
         } else if commands.len() < 15 {
             Self::distribute_in_columns(
                 self.generate_help_tab_std(commands, current_part)
@@ -493,9 +487,7 @@ impl CommandInput {
                         };
                         Line::from(Span::styled(
                             id,
-                            Style::default()
-                                .fg(self.config.theme.accent_color)
-                                .add_modifier(modifier),
+                            self.config.theme.header().add_modifier(modifier),
                         ))
                     })
                     .collect(),
@@ -562,9 +554,7 @@ impl CommandInput {
                     Span::raw(" "),
                     Span::styled(
                         color_name,
-                        Style::default()
-                            .fg(self.config.theme.accent_color)
-                            .add_modifier(modifier),
+                        self.config.theme.header().add_modifier(modifier),
                     ),
                 ])
             })
@@ -641,13 +631,10 @@ impl CommandInput {
         let current_input = self.get_current_input();
         if let Ok(command) = Command::parse(current_input, false) {
             self.command_hint = Some(Line::from(vec![
-                Span::styled(
-                    command.to_string(),
-                    Style::default().fg(self.config.theme.accent_color),
-                ),
+                Span::styled(command.to_string(), self.config.theme.header()),
                 Span::styled(
                     format!(" ({})", command.get_message().unwrap_or_default()),
-                    Style::default().fg(self.config.theme.normal_color),
+                    self.config.theme.paragraph(),
                 ),
             ]));
             return;
@@ -657,11 +644,11 @@ impl CommandInput {
             self.command_hint = Some(Line::from(vec![
                 Span::styled(
                     command.get_message().unwrap_or(command.as_ref()).to_owned(),
-                    Style::default().fg(self.config.theme.accent_color),
+                    self.config.theme.header(),
                 ),
                 Span::styled(
                     format!("  {}", command.get_detailed_message().unwrap_or_default()),
-                    Style::default().fg(self.config.theme.normal_color),
+                    self.config.theme.paragraph(),
                 ),
             ]));
             return;
@@ -669,7 +656,7 @@ impl CommandInput {
 
         self.command_hint = Some(Line::from(Span::styled(
             "Press <TAB> for help.",
-            Style::default().fg(self.config.theme.accent_color),
+            self.config.theme.paragraph(),
         )));
     }
 }
@@ -682,9 +669,9 @@ impl Widget for &mut CommandInput {
         let block = Block::default()
             .borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
             .border_style(if self.is_active {
-                self.config.theme.focused_border_style
+                self.config.theme.border_focused()
             } else {
-                self.config.theme.border_style
+                self.config.theme.border()
             })
             .border_type(BorderType::Rounded);
 
@@ -701,12 +688,11 @@ impl Widget for &mut CommandInput {
             .spacing(1)
             .constraints(vec![Constraint::Length(1), Constraint::Min(1)])
             .areas(command_input_chunk);
-        self.text_input
-            .set_style(self.config.theme.command_input.not_underlined());
+        self.text_input.set_style(self.config.theme.command_input());
 
         block.render(area, buf);
         Text::from(self.config.command_line_prompt_icon.to_string())
-            .style(Style::default().fg(self.config.theme.accent_color))
+            .style(self.config.theme.header())
             .render(preset_command_chunk, buf);
         self.text_input.render(text_input_chunk, buf);
 

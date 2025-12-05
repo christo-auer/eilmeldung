@@ -411,8 +411,8 @@ impl NewsFlashUtils {
     }
 
     pub fn tag_to_line<'a>(tag: &Tag, config: &Config, override_color: Option<Color>) -> Line<'a>{
-        let color = override_color.or(Self::tag_color(tag)).or(config.theme.tag.fg).unwrap_or(config.theme.normal_color);
-        let style = config.theme.tag.fg(color);
+        let color = override_color.or(Self::tag_color(tag)).or(config.theme.tag().fg).unwrap_or_default();
+        let style = config.theme.tag().fg(color);
         Line::from(
             vec![
             Span::styled("", style),

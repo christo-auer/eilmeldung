@@ -111,9 +111,9 @@ impl ArticleContentViewData {
             .borders(Borders::all())
             .border_type(ratatui::widgets::BorderType::Rounded)
             .border_style(if is_focused {
-                config.theme.focused_border_style
+                config.theme.border_focused()
             } else {
-                config.theme.border_style
+                config.theme.border()
             });
 
         if is_focused {
@@ -167,17 +167,17 @@ impl ArticleContentViewData {
 
         let mut summary_lines = vec![
             Line::from(vec![
-                Span::from(date_string).style(config.theme.feed),
-                Span::from("  ").style(config.theme.feed),
-                Span::from(feed_label).style(config.theme.feed),
+                Span::from(date_string).style(config.theme.feed()),
+                Span::from("  ").style(config.theme.feed()),
+                Span::from(feed_label).style(config.theme.feed()),
             ]),
-            Line::from(Span::from(title).style(config.theme.header)),
+            Line::from(Span::from(title).style(config.theme.header())),
             Line::from(tag_texts),
         ];
 
         if render_summary_content {
             summary_lines.push(Line::from(
-                Span::from(summary).style(config.theme.paragraph),
+                Span::from(summary).style(config.theme.paragraph()),
             ));
         }
 
@@ -244,7 +244,7 @@ impl ArticleContentViewData {
             }
             None if *model_data.thumbnail_fetch_running() => {
                 let throbber = Throbber::default()
-                    .throbber_style(config.theme.feed)
+                    .throbber_style(config.theme.header())
                     .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
                     .use_type(WhichUse::Spin);
                 let [centered_chunk] = centered_layout
@@ -267,7 +267,7 @@ impl ArticleContentViewData {
                 let block = Block::default()
                     .borders(Borders::all())
                     .border_type(ratatui::widgets::BorderType::Plain)
-                    .border_style(config.theme.inactive);
+                    .border_style(config.theme.inactive());
 
                 let question_mark = Text::from(vec![
                     " ___  ".into(),
@@ -276,7 +276,7 @@ impl ArticleContentViewData {
                     " |_|  ".into(),
                     " (_)  ".into(),
                 ])
-                .style(config.theme.inactive)
+                .style(config.theme.inactive())
                 .alignment(ratatui::layout::Alignment::Center);
                 Widget::render(question_mark, block.inner(centered_chunk), buf);
                 block.render(centered_chunk, buf);

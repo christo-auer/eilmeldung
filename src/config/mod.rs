@@ -206,6 +206,10 @@ pub struct Config {
     pub article_content_preferred_type: ArticleContentType,
 
     pub feed_list: Vec<FeedListContentIdentifier>,
+
+    pub feeds_list_focus_width_percent: u16,
+    pub articles_list_focused_width_percent: u16,
+    pub articles_list_height_lines: u16,
 }
 
 impl Config {
@@ -248,6 +252,10 @@ impl Default for Config {
             article_thumbnail_fetch_debounce_millis: 500,
             article_content_max_chars_per_line: 66,
             article_content_preferred_type: ArticleContentType::Markdown,
+
+            feeds_list_focus_width_percent: 33,
+            articles_list_focused_width_percent: 67,
+            articles_list_height_lines: 6,
 
             feed_list: vec![
                 FeedListContentIdentifier::Query(LabeledQuery {

@@ -30,9 +30,9 @@ impl<'a> Tooltip<'a> {
 
     pub fn to_line(&self, config: &Config) -> Line<'a> {
         let style = match self.flavor {
-            TooltipFlavor::Info => config.theme.tooltip_info,
-            TooltipFlavor::Warning => config.theme.tooltip_warning,
-            TooltipFlavor::Error => config.theme.tooltip_error,
+            TooltipFlavor::Info => config.theme.tooltip_info(),
+            TooltipFlavor::Warning => config.theme.tooltip_warning(),
+            TooltipFlavor::Error => config.theme.tooltip_error(),
         };
         Line::from(self.contents.clone()).style(style)
     }

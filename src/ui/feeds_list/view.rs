@@ -43,9 +43,9 @@ impl Widget for &mut FeedList {
                     .borders(Borders::TOP | Borders::LEFT | Borders::BOTTOM)
                     .border_type(ratatui::widgets::BorderType::Rounded)
                     .border_style(if self.is_focused {
-                        self.config.theme.focused_border_style
+                        self.config.theme.border_focused()
                     } else {
-                        self.config.theme.border_style
+                        self.config.theme.border()
                     }),
             )
             .experimental_scrollbar(Some(
@@ -209,10 +209,7 @@ impl FeedListViewData {
         if let Some(UnifiedMapping::Feed(feed_mapping)) = self.yanked_unified_mapping()
             && feed_mapping.feed_id == feed.feed_id
         {
-            identifier_text = identifier_text
-                .style(config.theme.highlight_color)
-                .italic()
-                .reversed();
+            identifier_text = identifier_text.style(config.theme.yanked());
         }
 
         TreeItem::new_leaf(identifier, identifier_text)
@@ -258,10 +255,7 @@ impl FeedListViewData {
         if let Some(UnifiedMapping::Category(category_mapping)) = self.yanked_unified_mapping()
             && category_mapping.category_id == category.category_id
         {
-            identifier_text = identifier_text
-                .style(config.theme.highlight_color)
-                .italic()
-                .reversed();
+            identifier_text = identifier_text.style(config.theme.yanked());
         }
 
         TreeItem::new(identifier, identifier_text, children).unwrap()

@@ -37,9 +37,9 @@ impl Widget for &CommandConfirm {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_style(if self.is_active {
-                self.config.theme.focused_border_style
+                self.config.theme.border_focused()
             } else {
-                self.config.theme.border_style
+                self.config.theme.border()
             })
             .padding(Padding::horizontal(1))
             .border_type(BorderType::Thick);
@@ -48,10 +48,8 @@ impl Widget for &CommandConfirm {
 
         if let Some(command) = self.command_to_confirm.as_ref() {
             let prompt = Line::from(vec![
-                Span::from(format!(" {command}? ")).style(self.config.theme.accent_color),
-                Span::from("(y/n)")
-                    .style(self.config.theme.accent_color)
-                    .bold(),
+                Span::from(format!(" {command}? ")).style(self.config.theme.paragraph()),
+                Span::from("(y/n)").style(self.config.theme.header()),
             ]);
             prompt.render(inner, buf);
         }

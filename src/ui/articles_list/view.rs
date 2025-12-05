@@ -209,8 +209,8 @@ impl<'a> ArticleListViewData<'a> {
                                             };
 
                                             let style = match NewsFlashUtils::tag_color(tag) {
-                                                Some(color) => config.theme.article.fg(color),
-                                                None => config.theme.article,
+                                                Some(color) => config.theme.tag().fg(color),
+                                                None => config.theme.tag(),
                                             };
                                             Span::styled(config.tag_icon.to_string(), style)
                                         })
@@ -287,9 +287,9 @@ impl<'a> ArticleListViewData<'a> {
                             model_data.tag_map(),
                         ) =>
                     {
-                        config.theme.article_highlighted
+                        config.theme.article_highlighted()
                     }
-                    _ => config.theme.article,
+                    _ => config.theme.article(),
                 };
 
                 Row::new(row_vec).style(style)
@@ -332,9 +332,9 @@ impl<'a> ArticleListViewData<'a> {
             .title_top(self.build_title(filter_state, model_data))
             .border_type(ratatui::widgets::BorderType::Rounded)
             .border_style(if is_focused {
-                config.theme.focused_border_style
+                config.theme.border_focused()
             } else {
-                config.theme.border_style
+                config.theme.border()
             })
     }
 

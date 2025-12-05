@@ -81,10 +81,10 @@ impl InputCommandGenerator {
                     Line::from(vec![
                         Span::styled(
                             KeySequence { keys: keys_reduced }.to_string(),
-                            self.config.theme.accent_color,
+                            self.config.theme.header(),
                         ),
-                        Span::styled("  ", self.config.theme.normal_color),
-                        Span::styled(cs.to_string(), self.config.theme.normal_color),
+                        Span::styled("  ", self.config.theme.paragraph()),
+                        Span::styled(cs.to_string(), self.config.theme.paragraph()),
                     ])
                 })
                 .collect::<Vec<Line<'_>>>(),

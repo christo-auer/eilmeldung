@@ -34,8 +34,8 @@ impl Widget for &mut App {
         }
 
         let feeds_width = match self.state {
-            AppState::FeedSelection => self.config.theme.feeds_list_focus_width_percent,
-            _ => 100 - self.config.theme.articles_list_focused_width_percent,
+            AppState::FeedSelection => self.config.feeds_list_focus_width_percent,
+            _ => 100 - self.config.articles_list_focused_width_percent,
         };
 
         let articles_width = 100 - feeds_width;
@@ -64,7 +64,7 @@ impl Widget for &mut App {
         let [articles_list_chunk, article_content_chunk] = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(self.config.theme.articles_list_height_lines + 1),
+                Constraint::Length(self.config.articles_list_height_lines + 1),
                 Constraint::Fill(1),
             ])
             .areas(articles_chunk);
@@ -84,7 +84,7 @@ impl Widget for &mut App {
             // when offline display offline icon
             let offline_text = Text::from(format!("{}", self.config.offline_icon))
                 .alignment(Alignment::Center)
-                .style(self.config.theme.statusbar);
+                .style(self.config.theme.statusbar());
             offline_text.render(throbber_chunk, buf);
         } else {
             // when online display throbber
@@ -94,8 +94,8 @@ impl Widget for &mut App {
                 throbber_widgets_tui::WhichUse::Full
             };
             let throbber = Throbber::default()
-                .throbber_style(self.config.theme.statusbar)
-                .style(self.config.theme.statusbar)
+                .throbber_style(self.config.theme.statusbar())
+                .style(self.config.theme.statusbar())
                 .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
                 .use_type(use_type);
 
@@ -107,7 +107,7 @@ impl Widget for &mut App {
             );
         }
 
-        let title = Text::from("+++ eilmeldung +++").style(self.config.theme.statusbar);
+        let title = Text::from("+++ eilmeldung +++").style(self.config.theme.statusbar());
         title.render(title_chunk, buf);
 
         if self.command_input.is_active() {

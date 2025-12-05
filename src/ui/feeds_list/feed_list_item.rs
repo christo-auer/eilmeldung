@@ -31,21 +31,21 @@ impl FeedListItem {
         let marked_count_str = marked_count.map(|c| c.to_string()).unwrap_or_default();
 
         let (label, mut style) = match self {
-            All => (config.all_label.to_owned(), config.theme.header),
+            All => (config.all_label.to_owned(), config.theme.feed()),
             Feed(feed) => (
                 config.feed_label.replace("{label}", feed.label.as_str()),
-                config.theme.feed,
+                config.theme.feed(),
             ),
-            Categories => (config.categories_label.to_owned(), config.theme.category),
+            Categories => (config.categories_label.to_owned(), config.theme.category()),
             Category(category) => (
                 config
                     .category_label
                     .replace("{label}", category.label.as_str()),
-                config.theme.category,
+                config.theme.category(),
             ),
-            Tags(_) => (config.tags_label.to_owned(), config.theme.header),
+            Tags(_) => (config.tags_label.to_owned(), config.theme.tag()),
             Tag(tag) => {
-                let mut style = config.theme.tag;
+                let mut style = config.theme.tag();
 
                 let color = NewsFlashUtils::tag_color(tag).unwrap_or(style.fg.unwrap());
                 style = style.fg(color);
@@ -57,14 +57,14 @@ impl FeedListItem {
 
             Query(query) => (
                 config.query_label.replace("{label}", &query.label),
-                config.theme.query,
+                config.theme.query(),
             ),
         };
 
         if let Some(unread_count) = unread_count
             && unread_count > 0
         {
-            style = style.add_modifier(config.theme.unread_modifier);
+            style = style.add_modifier(config.theme.unread_modifier());
         }
 
         Text::styled(

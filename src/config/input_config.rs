@@ -104,6 +104,16 @@ impl InputConfig {
                 self.input_commands.entry(key_seq).or_insert(cmd_seq);
             });
 
+        self.input_commands
+            .iter()
+            .filter_map(|(key_seq, command_seq)| command_seq.commands.is_empty().then_some(key_seq))
+            .cloned()
+            .collect::<Vec<KeySequence>>()
+            .into_iter()
+            .for_each(|key| {
+                self.input_commands.remove(&key);
+            });
+
         Ok(())
     }
 }
