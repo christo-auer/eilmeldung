@@ -177,7 +177,7 @@ impl App {
 
     pub async fn run(
         mut self,
-        message_receiver: UnboundedReceiver<Message>,
+        mut message_receiver: UnboundedReceiver<Message>,
         terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
         info!("Starting application run loop");
@@ -198,7 +198,11 @@ impl App {
             .send(Message::Command(Command::PanelFocus(Panel::FeedList)))?;
 
         info!("Starting command processing loop");
-        self.process_commands(message_receiver, terminal).await?;
+        self.process_commands(&mut message_receiver, terminal)
+            .await?;
+
+        // closing receiver
+        drop(message_receiver);
 
         info!("Application run loop completed");
         Ok(())
@@ -213,7 +217,7 @@ impl App {
 
     async fn process_commands(
         mut self,
-        mut rx: UnboundedReceiver<Message>,
+        rx: &mut UnboundedReceiver<Message>,
         mut terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
         let mut render_interval =

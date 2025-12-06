@@ -1,9 +1,4 @@
-use std::str::FromStr;
-
-use ratatui::{
-    style::{Color, Modifier, ParseColorError, Style, Stylize},
-    widgets::BorderType,
-};
+use ratatui::style::{Color, Modifier, Style};
 
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(default)]

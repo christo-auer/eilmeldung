@@ -18,6 +18,13 @@ use tokio::sync::mpsc::UnboundedSender;
 pub fn input_reader(message_sender: UnboundedSender<Message>) -> color_eyre::Result<()> {
     info!("starting input reader loop");
     loop {
+        if !event::poll(Duration::from_millis(100))? {
+            if message_sender.is_closed() {
+                return Ok(());
+            }
+            continue;
+        }
+
         match event::read()? {
             event::Event::Key(key_event) => {
                 trace!("crossterm input event: {:?}", key_event);

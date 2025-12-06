@@ -16,7 +16,7 @@ pub mod prelude {
 }
 
 use config::FileFormat;
-use log::{debug, error, info};
+use log::{debug, info};
 use logos::Logos;
 use serde::Deserialize;
 

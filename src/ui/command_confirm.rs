@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use ratatui::{
     crossterm::event::KeyCode,
-    style::Stylize,
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Padding, Widget},
 };

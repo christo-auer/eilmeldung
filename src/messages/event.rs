@@ -4,10 +4,7 @@ use news_flash::{
     error::NewsFlashError,
     models::{Article, Category, FatArticle, Feed, FeedID, Tag, Thumbnail},
 };
-use ratatui::{
-    crossterm::event::KeyEvent,
-    text::Text,
-};
+use ratatui::{crossterm::event::KeyEvent, text::Text};
 
 use crate::prelude::*;
 
