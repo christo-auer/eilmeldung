@@ -790,7 +790,7 @@ impl Command {
                 C::ActionSetMarked(ActionScope::from_option_string(args.as_deref())?)
             }
             C::ActionSetUnmarked(..) => {
-                C::ActionSetMarked(ActionScope::from_option_string(args.as_deref())?)
+                C::ActionSetUnmarked(ActionScope::from_option_string(args.as_deref())?)
             }
             tag_command @ (C::ActionTagArticles(..) | C::ActionUntagArticles(..)) => {
                 let tag =

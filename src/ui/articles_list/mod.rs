@@ -249,7 +249,7 @@ impl ArticlesList {
         tooltip(
             &self.message_sender,
             format!(
-                "set status of {} articles to {:?}",
+                "set status of {} articles to {}",
                 amount,
                 match marked {
                     Marked::Marked => "marked",
