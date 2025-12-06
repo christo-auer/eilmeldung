@@ -7,8 +7,8 @@ use std::collections::HashMap;
 #[serde(rename_all = "snake_case", default)]
 pub struct InputConfig {
     pub scroll_amount: usize,
-    pub input_timeout_millis: u64,
-    pub input_commands: HashMap<KeySequence, CommandSequence>,
+    pub timeout_millis: u64,
+    pub mappings: HashMap<KeySequence, CommandSequence>,
     pub command_line: CommandLineInputConfig,
 }
 
@@ -46,7 +46,7 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "tab"       => "nextc",
         "backtab"   => "prevc",
         "o"         => "open" "read" "nextunread",
-        "O"         => "open unread" "confirm read %",
+        "O"         => "open unread" "confirm read articles %",
         "J"         => "read" "nextunread",
         "s"         => "sync",
         "r"         => "read",
@@ -88,8 +88,8 @@ impl Default for InputConfig {
     fn default() -> Self {
         Self {
             scroll_amount: 10,
-            input_timeout_millis: 5000,
-            input_commands: generate_default_input_commands(),
+            timeout_millis: 5000,
+            mappings: generate_default_input_commands(),
             command_line: CommandLineInputConfig::default(),
         }
     }
@@ -98,20 +98,20 @@ impl Default for InputConfig {
 impl InputConfig {
     pub fn validate(&mut self) -> color_eyre::Result<()> {
         Self::default()
-            .input_commands
+            .mappings
             .into_iter()
             .for_each(|(key_seq, cmd_seq)| {
-                self.input_commands.entry(key_seq).or_insert(cmd_seq);
+                self.mappings.entry(key_seq).or_insert(cmd_seq);
             });
 
-        self.input_commands
+        self.mappings
             .iter()
             .filter_map(|(key_seq, command_seq)| command_seq.commands.is_empty().then_some(key_seq))
             .cloned()
             .collect::<Vec<KeySequence>>()
             .into_iter()
             .for_each(|key| {
-                self.input_commands.remove(&key);
+                self.mappings.remove(&key);
             });
 
         Ok(())

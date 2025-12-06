@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 use log::{info, trace};
 use ratatui::crossterm::event;
 use ratatui::text::{Line, Span, Text};
+use throbber_widgets_tui::{Throbber, ThrobberState, VERTICAL_BLOCK};
 use tokio::sync::mpsc::UnboundedSender;
 
 pub fn input_reader(message_sender: UnboundedSender<Message>) -> color_eyre::Result<()> {
@@ -44,14 +45,12 @@ impl MessageReceiver for InputCommandGenerator {
             Message::Event(Event::Key(key_event)) => {
                 self.process_key_event(Some((*key_event).into()))
             }
-
             Message::Event(Event::Tick) => self.process_key_event(None),
 
             _ => Ok(()),
         }
     }
 }
-
 impl InputCommandGenerator {
     pub fn new(config: Arc<Config>, message_sender: UnboundedSender<Message>) -> Self {
         Self {
@@ -66,6 +65,7 @@ impl InputCommandGenerator {
         &self,
         key_sequence: &KeySequence,
         prefix_matches: &Vec<(&KeySequence, &CommandSequence)>,
+        timeout_ratio: f32,
     ) -> color_eyre::Result<()> {
         if key_sequence.keys.is_empty() {
             return Ok(());
@@ -78,12 +78,26 @@ impl InputCommandGenerator {
                     let mut keys_reduced = ks.keys.clone();
                     keys_reduced.drain(0..key_sequence.keys.len());
 
+                    let key_entry = if keys_reduced.is_empty() {
+                        let throbber_set = VERTICAL_BLOCK;
+                        let len = throbber_set.symbols.len();
+                        let throbber = Throbber::default()
+                            .throbber_style(self.config.theme.header())
+                            .throbber_set(throbber_set)
+                            .use_type(throbber_widgets_tui::WhichUse::Spin);
+                        let mut throbber_state = ThrobberState::default();
+                        throbber_state.calc_step(len as i8);
+                        throbber_state
+                            .calc_step(-((len as f32 * timeout_ratio + 1.0).floor()) as i8);
+                        throbber.to_symbol_span(&throbber_state)
+                    } else {
+                        let mut keys = KeySequence { keys: keys_reduced }.to_string();
+                        keys.push(' ');
+                        Span::styled(keys, self.config.theme.header())
+                    };
+
                     Line::from(vec![
-                        Span::styled(
-                            KeySequence { keys: keys_reduced }.to_string(),
-                            self.config.theme.header(),
-                        ),
-                        Span::styled("  ", self.config.theme.paragraph()),
+                        key_entry,
                         Span::styled(cs.to_string(), self.config.theme.paragraph()),
                     ])
                 })
@@ -102,32 +116,42 @@ impl InputCommandGenerator {
     fn process_key_event(&mut self, key: Option<Key>) -> color_eyre::Result<()> {
         let mut aborted = false;
         let now = Instant::now();
-        let timeout = now.duration_since(self.last_input_instant) > Duration::from_millis(5000);
-
-        self.last_input_instant = now;
 
         match key {
-            Some(Key::Just(event::KeyCode::Esc)) => aborted = true,
+            Some(Key::Just(event::KeyCode::Esc)) => {
+                aborted = true;
+                self.last_input_instant = now;
+            }
             Some(key) => {
+                self.last_input_instant = now;
                 self.key_sequence.keys.push(key);
                 trace!("current key_sequence: {:?}", self.key_sequence);
             }
-            None if !timeout => return Ok(()),
             _ => {}
         }
+
+        let duration = now.duration_since(self.last_input_instant);
+        let timeout = duration > Duration::from_millis(5000);
+        let timeout_ratio =
+            duration.as_millis() as f32 / self.config.input_config.timeout_millis as f32;
 
         // get key sequences which have a matching prefix
         let mut prefix_matches = self
             .config
             .input_config
-            .input_commands
+            .mappings
             .iter()
             .filter(|(other_key_sequence, _)| self.key_sequence.is_prefix_of(other_key_sequence))
             .collect::<Vec<_>>();
         prefix_matches.sort_by(|(ks_1, _), (ks_2, _)| ks_1.keys.len().cmp(&ks_2.keys.len()));
 
+        if key.is_none() && !timeout && !self.key_sequence.keys.is_empty() {
+            self.generate_input_help(&self.key_sequence, &prefix_matches, timeout_ratio)?;
+            return Ok(());
+        }
+
         if let Some(command_sequence) =
-            self.config.input_config.input_commands.get(&self.key_sequence) // direct match
+            self.config.input_config.mappings.get(&self.key_sequence) // direct match
                 && (prefix_matches.len() == 1 || timeout)
         {
             for command in command_sequence.commands.iter() {
@@ -158,7 +182,8 @@ impl InputCommandGenerator {
                 .send(Message::Event(Event::Tooltip(tooltip)))?;
         }
 
-        self.generate_input_help(&self.key_sequence, &prefix_matches)?;
+        self.generate_input_help(&self.key_sequence, &prefix_matches, timeout_ratio)?;
+
         Ok(())
     }
 }
