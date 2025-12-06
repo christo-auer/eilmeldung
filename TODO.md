@@ -11,19 +11,13 @@
  - [ ] summarize article/s
  - [ ] template prompts (ala configs)
 
-- [ ] Offline mode
- - [ ] toggle of mode
- - [ ] auto offline if provider not available
-
-- [ ] article list
- - [ ] scroll bar or counter
- - [ ] keep cursor in the middle/at the top
-
 - [ ] share functionality
 
+- [ ] input help
 
-# Issues
+- [ ] refactoring
+  [ ] article content -> remove data from event
+  [ ] refactor article content view/model
+  [ ] app and ui/mod -> unify with rest
+  [ ] 
 
-- [ ] gracefully handle errors (unwraps)
-- [ ] handle empty feed lists
-- [ ] jump to next unread jumps to first unread
