@@ -16,8 +16,5 @@
 - [ ] input help
 
 - [ ] refactoring
-  [ ] article content -> remove data from event
-  [ ] refactor article content view/model
   [ ] app and ui/mod -> unify with rest
-  [ ] 
 

@@ -90,19 +90,7 @@ impl ArticlesList {
             self.view_data.table_state_mut().select(Some(index));
             self.message_sender
                 .send(Message::Event(Event::ArticleSelected(
-                    article.clone(),
-                    self.model_data.feed_map().get(&article.feed_id).cloned(),
-                    self.model_data
-                        .tags_for_article()
-                        .get(&article.article_id)
-                        .map(|tag_ids| {
-                            tag_ids
-                                .iter()
-                                .filter_map(|tag_id| self.model_data.tag_map().get(tag_id))
-                                .cloned()
-                                .collect()
-                        })
-                        .clone(),
+                    article.article_id.to_owned(),
                 )))?;
         }
 

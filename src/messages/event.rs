@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use news_flash::{
     error::NewsFlashError,
-    models::{Article, Category, FatArticle, Feed, FeedID, Tag, Thumbnail},
+    models::{ArticleID, Category, FatArticle, Feed, FeedID, Tag, Thumbnail},
 };
 use ratatui::{crossterm::event::KeyEvent, text::Text};
 
@@ -20,8 +20,8 @@ pub enum AsyncOperationError {
 #[derive(Debug)]
 pub enum Event {
     ArticlesSelected(AugmentedArticleFilter),
-    ArticleSelected(Article, Option<Feed>, Option<Vec<Tag>>),
-    FatArticleSelected(Article, Option<Feed>, Option<Vec<Tag>>),
+    ArticleSelected(ArticleID),
+    FatArticleSelected(ArticleID),
 
     AsyncSync,
     AsyncSyncFinished(HashMap<FeedID, i64>),

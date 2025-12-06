@@ -9,7 +9,7 @@ use std::{
 use getset::Getters;
 use image::ImageReader;
 use news_flash::{
-    models::{Article, FatArticle, Feed, Tag, Thumbnail},
+    models::{Article, ArticleID, FatArticle, Feed, Tag, Thumbnail},
     util::html2text,
 };
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
@@ -65,13 +65,11 @@ impl ArticleContentModelData {
 
     pub(super) async fn on_article_selected(
         &mut self,
-        article: &Article,
-        feed: &Option<Feed>,
-        tags: &Option<Vec<Tag>>,
+        article_id: &ArticleID,
         is_focused: bool,
     ) -> color_eyre::Result<()> {
         if let Some(current_article) = self.article.as_ref()
-            && current_article.article_id == article.article_id
+            && current_article.article_id == *article_id
         {
             return Ok(());
         }
@@ -88,16 +86,32 @@ impl ArticleContentModelData {
         self.feed = None;
         self.tags = None;
 
-        self.article = Some(article.clone());
-        self.feed = feed.clone();
-        self.tags = tags.clone();
+        let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+
+        let article = news_flash.get_article(article_id)?;
+
+        self.feed = news_flash
+            .get_feeds()?
+            .0
+            .into_iter()
+            .find(|feed| feed.feed_id == article.feed_id);
+
+        let (tags, taggings) = news_flash.get_tags()?;
+        let mut tag_for_tag_id = NewsFlashUtils::generate_id_map(&tags, |tag| tag.tag_id.clone());
+        self.tags = Some(
+            taggings
+                .into_iter()
+                .filter(|tagging| tagging.article_id == article.article_id)
+                .filter_map(|tagging| tag_for_tag_id.remove(&tagging.tag_id))
+                .collect::<Vec<Tag>>(),
+        );
+
+        self.article = Some(article);
 
         if is_focused {
             self.message_sender
                 .send(Message::Event(Event::FatArticleSelected(
-                    article.clone(),
-                    self.feed.clone(),
-                    self.tags.clone(),
+                    article_id.clone(),
                 )))?;
         }
 
@@ -228,4 +242,3 @@ impl ArticleContentModelData {
         string.replace("\r", "").replace("\n", "")
     }
 }
-

@@ -7,7 +7,7 @@ use view::ArticleContentViewData;
 use crate::prelude::*;
 use std::sync::Arc;
 
-use news_flash::models::Thumbnail;
+use news_flash::models::{ArticleID, Thumbnail};
 use tokio::sync::mpsc::UnboundedSender;
 
 pub struct ArticleContent {
@@ -36,14 +36,9 @@ impl ArticleContent {
         }
     }
 
-    async fn on_article_selected(
-        &mut self,
-        article: &news_flash::models::Article,
-        feed: &Option<news_flash::models::Feed>,
-        tags: &Option<Vec<news_flash::models::Tag>>,
-    ) -> color_eyre::Result<()> {
+    async fn on_article_selected(&mut self, article_id: &ArticleID) -> color_eyre::Result<()> {
         self.model_data
-            .on_article_selected(article, feed, tags, self.is_focused)
+            .on_article_selected(article_id, self.is_focused)
             .await?;
         self.view_data.clear_image();
         self.view_data.scroll_to_top();
@@ -125,14 +120,14 @@ impl crate::messages::MessageReceiver for ArticleContent {
         if let Message::Event(event) = message {
             use Event::*;
             match event {
-                // TODO fetch article data directly instead of using command
-                ArticleSelected(article, feed, tags) => {
-                    self.on_article_selected(article, feed, tags).await?;
+                ArticleSelected(article_id) => {
+                    self.on_article_selected(article_id).await?;
+                    view_needs_update = true;
                 }
 
-                FatArticleSelected(article, feed, tags) => {
+                FatArticleSelected(article) => {
                     self.model_data
-                        .on_article_selected(article, feed, tags, self.is_focused)
+                        .on_article_selected(article, self.is_focused)
                         .await?;
 
                     if self.is_focused && self.config.article_auto_scrape {
