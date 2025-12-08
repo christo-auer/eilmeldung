@@ -1,7 +1,9 @@
 mod model;
 mod view;
 
+use arboard::Clipboard;
 use model::ArticleContentModelData;
+use url::Url;
 use view::ArticleContentViewData;
 
 use crate::prelude::*;
@@ -79,6 +81,67 @@ impl ArticleContent {
         }
         Ok(())
     }
+
+    fn share_article(&self, target_str: &String) -> color_eyre::Result<()> {
+        let Some(target) = self
+            .config
+            .share_targets
+            .iter()
+            .find(|target| target.as_ref() == *target_str)
+        else {
+            tooltip(
+                &self.message_sender,
+                &*format!("unknown share target {target_str}"),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        let Some(article) = self.model_data.article() else {
+            tooltip(
+                &self.message_sender,
+                "no article loaded",
+                TooltipFlavor::Warning,
+            )?;
+            return Ok(());
+        };
+
+        let Some(url) = article.url.as_ref() else {
+            tooltip(
+                &self.message_sender,
+                "article has no URL",
+                TooltipFlavor::Warning,
+            )?;
+            return Ok(());
+        };
+
+        let title: &str = article.title.as_deref().unwrap_or("no title");
+        let url: &Url = url.as_ref();
+
+        match target {
+            ShareTarget::Clipboard => {
+                let mut clipboard = Clipboard::new()?;
+                clipboard.set_text(url.to_string())?;
+                tooltip(
+                    &self.message_sender,
+                    &*format!("copied URL to clipboard ({url})"),
+                    TooltipFlavor::Info,
+                )?;
+                Ok(())
+            }
+
+            target => {
+                let share_url = target.to_url(title, url)?;
+                webbrowser::open(share_url.to_string().as_str())?;
+                tooltip(
+                    &self.message_sender,
+                    format!("shared article to {target}").as_str(),
+                    TooltipFlavor::Info,
+                )?;
+                Ok(())
+            }
+        }
+    }
 }
 
 impl crate::messages::MessageReceiver for ArticleContent {
@@ -111,6 +174,10 @@ impl crate::messages::MessageReceiver for ArticleContent {
 
                 C::ArticleCurrentScrape if self.is_focused => {
                     self.scrape_article()?;
+                }
+
+                C::ArticleShare(target) => {
+                    self.share_article(target)?;
                 }
 
                 _ => {}

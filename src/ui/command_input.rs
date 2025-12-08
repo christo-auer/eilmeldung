@@ -163,6 +163,10 @@ impl CommandInput {
             Err(E::PanelExpected) => self.generate_help_content_panel(&current_part)?,
             Err(E::ColorExpected(..)) => self.generate_help_content_color(&current_part)?,
 
+            Err(E::ShareTargetExpected) => {
+                self.generate_help_content_share_target(&current_part)?
+            }
+
             Err(other_err) => self.generate_help_content_error(other_err, &current_part)?,
             Ok(command) => self.generate_help_content_complete_command(command, &current_part)?,
         }
@@ -574,6 +578,29 @@ impl CommandInput {
         Ok(())
     }
 
+    fn generate_help_content_share_target(&mut self, current_part: &str) -> color_eyre::Result<()> {
+        let text = Self::distribute_in_columns(
+            self.generate_help_tab_std(self.config.share_targets.clone(), current_part)
+                .collect::<Vec<Line<'_>>>(),
+            2,
+        );
+
+        let targets = self
+            .config
+            .share_targets
+            .iter()
+            .map(|target| match target {
+                ShareTarget::Custom(name, ..) => name.to_owned(),
+                target => target.as_ref().to_owned(),
+            })
+            .collect::<Vec<String>>();
+        self.completion_targets = Some(targets);
+
+        self.show_help_dialog("Share Targets".to_owned(), text)?;
+
+        Ok(())
+    }
+
     fn generate_help_content_error(
         &mut self,
         _other_err: CommandParseError,
@@ -710,40 +737,49 @@ impl Widget for &mut CommandInput {
 
 impl crate::messages::MessageReceiver for CommandInput {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
-        let config = &self.config.input_config.command_line;
         match message {
             Message::Event(Event::Key(key_event)) if self.is_active => {
                 let key: Key = (*key_event).into();
 
-                if config.abort.contains(&key) {
-                    if self.help_dialog_open {
-                        self.hide_help_dialog()?;
-                    } else {
-                        self.history.remove(self.history.len() - 1);
-                        self.is_active = false;
+                match key {
+                    Key::Just(KeyCode::Esc) | Key::Ctrl(KeyCode::Char('g')) => {
+                        if self.help_dialog_open {
+                            self.hide_help_dialog()?;
+                        } else {
+                            self.history.remove(self.history.len() - 1);
+                            self.is_active = false;
+                        }
                     }
-                } else if config.submit.contains(&key) {
-                    if self.help_dialog_open {
-                        self.hide_help_dialog()?;
+                    Key::Just(KeyCode::Enter) => {
+                        if self.help_dialog_open {
+                            self.hide_help_dialog()?;
+                        }
+                        self.on_submit()?;
                     }
-                    self.on_submit()?;
-                } else if config.clear.contains(&key) {
-                    self.clear("");
-                } else if config.history_next.contains(&key) {
-                    self.on_history_next();
-                } else if config.history_previous.contains(&key) {
-                    self.on_history_previous();
-                } else if matches!(key, Key::Just(KeyCode::Tab)) {
-                    self.update_command_help().await?;
-                    self.on_complete(true);
-                } else if matches!(key, Key::Just(KeyCode::BackTab)) {
-                    self.update_command_help().await?;
-                    self.on_complete(false);
-                } else if self.text_input.input(*key_event) {
-                    self.update_completion_prefix();
-                    self.update_current_history_entry();
-                }
 
+                    Key::Ctrl(KeyCode::Char('u')) => self.clear(""),
+
+                    Key::Just(KeyCode::Down) | Key::Ctrl(KeyCode::Char('j')) => {
+                        self.on_history_next()
+                    }
+                    Key::Just(KeyCode::Up) | Key::Ctrl(KeyCode::Char('k')) => {
+                        self.on_history_previous()
+                    }
+                    Key::Just(KeyCode::Tab) => {
+                        self.update_command_help().await?;
+                        self.on_complete(true);
+                    }
+                    Key::Just(KeyCode::BackTab) => {
+                        self.update_command_help().await?;
+                        self.on_complete(false);
+                    }
+                    _ => {
+                        if self.text_input.input(*key_event) {
+                            self.update_completion_prefix();
+                            self.update_current_history_entry();
+                        }
+                    }
+                }
                 if self.help_dialog_open {
                     self.update_command_help().await?;
                 }

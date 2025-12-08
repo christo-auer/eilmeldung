@@ -1,5 +1,3 @@
-use ratatui::crossterm::event::KeyCode;
-
 use crate::prelude::*;
 use std::collections::HashMap;
 
@@ -9,7 +7,6 @@ pub struct InputConfig {
     pub scroll_amount: usize,
     pub timeout_millis: u64,
     pub mappings: HashMap<KeySequence, CommandSequence>,
-    pub command_line: CommandLineInputConfig,
 }
 
 // a macro for pleasure
@@ -81,6 +78,11 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "c p"       => "paste after",
         "c P"       => "paste before",
         "c c"       => "cmd tagchangecolor",
+        "S c"       => "share clipboard",
+        "S r"       => "share reddit",
+        "S m"       => "share mastodon",
+        "S t"       => "share telegram",
+        "S i"       => "share instapaper",
     ]
 }
 
@@ -90,7 +92,6 @@ impl Default for InputConfig {
             scroll_amount: 10,
             timeout_millis: 5000,
             mappings: generate_default_input_commands(),
-            command_line: CommandLineInputConfig::default(),
         }
     }
 }
@@ -115,27 +116,5 @@ impl InputConfig {
             });
 
         Ok(())
-    }
-}
-
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct CommandLineInputConfig {
-    pub history_previous: Vec<Key>,
-    pub history_next: Vec<Key>,
-    pub clear: Vec<Key>,
-    pub abort: Vec<Key>,
-    pub submit: Vec<Key>,
-}
-
-impl Default for CommandLineInputConfig {
-    fn default() -> Self {
-        Self {
-            history_previous: [Key::Ctrl(KeyCode::Char('p')), Key::Just(KeyCode::Up)].into(),
-            history_next: [Key::Ctrl(KeyCode::Char('n')), Key::Just(KeyCode::Down)].into(),
-            clear: [Key::Ctrl(KeyCode::Char('g'))].into(),
-            abort: [Key::Just(KeyCode::Esc)].into(),
-            submit: [Key::Just(KeyCode::Enter)].into(),
-        }
     }
 }

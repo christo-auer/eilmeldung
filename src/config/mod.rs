@@ -1,140 +1,43 @@
+pub mod feed_list_content_identfier;
 pub mod input_config;
 pub mod paths;
+pub mod share_target;
 pub mod theme;
-
-use std::str::FromStr;
 
 use crate::prelude::*;
 
 pub mod prelude {
-    pub use super::FeedListContentIdentifier;
-    pub use super::FeedListItemType;
+    pub use super::feed_list_content_identfier::{
+        FeedListContentIdentifier, FeedListItemType, LabeledQuery,
+    };
     pub use super::input_config::InputConfig;
     pub use super::paths::{CONFIG_FILE, PROJECT_DIRS};
+    pub use super::share_target::ShareTarget;
     pub use super::theme::Theme;
-    pub use super::{ArticleContentType, ArticleScope, Config, LabeledQuery, load_config};
+    pub use super::{ArticleContentType, ArticleScope, Config, ConfigError, load_config};
 }
 
 use config::FileFormat;
 use log::{debug, info};
-use logos::Logos;
-use serde::Deserialize;
+
+#[derive(thiserror::Error, Debug)]
+pub enum ConfigError {
+    #[error("configuration could not be validated")]
+    ValidationError(String),
+    #[error("feed list content identifier could not be parsed")]
+    FeedListContentIdentifierParseError(String),
+    #[error("share target could not be parsed")]
+    ShareTargetParseError(String),
+    #[error("invalid URL template for share target")]
+    ShareTargetInvalidUrlError(#[from] url::ParseError),
+    #[error("invalid target")]
+    ShareTargetInvalid,
+}
 
 #[derive(Debug, Clone, serde::Deserialize, Eq, PartialEq)]
 pub enum ArticleContentType {
     PlainText,
     Markdown,
-}
-
-#[derive(Clone, Hash, Eq, PartialEq, Debug, serde::Deserialize)]
-pub struct LabeledQuery {
-    pub label: String,
-    pub query: String,
-}
-
-#[derive(Debug, Clone)]
-pub enum FeedListItemType {
-    Tree,
-    List,
-}
-
-#[derive(Clone, Debug)]
-pub enum FeedListContentIdentifier {
-    Feeds(FeedListItemType),
-    Categories(FeedListItemType),
-    Tags(FeedListItemType),
-    Query(LabeledQuery),
-}
-
-#[derive(Logos, Debug, PartialEq)]
-#[logos(skip r"[ \t\n\f]+")]
-pub enum FeedListContentIdentifierToken {
-    #[token("*")]
-    KeyList,
-
-    #[token("feeds")]
-    KeyFeeds,
-
-    #[token("categories")]
-    KeyCategories,
-
-    #[token("tags")]
-    KeyTags,
-
-    #[token("query:")]
-    KeyQuery,
-
-    #[regex(r#""[^"\n\r\\]*(?:\\.[^"\n\r\\]*)*""#)]
-    QuotedString,
-
-    #[regex(r#"#[a-zA-Z][a-zA-Z0-9]*"#)]
-    Tag,
-}
-
-impl FeedListContentIdentifier {
-    fn coerce_to_list(self) -> Self {
-        use FeedListContentIdentifier::*;
-        match self {
-            Feeds(_) => Feeds(FeedListItemType::List),
-            Tags(_) => Tags(FeedListItemType::List),
-            Categories(_) => Categories(FeedListItemType::List),
-            other => other,
-        }
-    }
-}
-
-impl FromStr for FeedListContentIdentifier {
-    type Err = color_eyre::Report;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut lexer = FeedListContentIdentifierToken::lexer(s);
-
-        use FeedListContentIdentifier::*;
-        use FeedListContentIdentifierToken::*;
-        Ok(match lexer.next() {
-            Some(Ok(KeyList)) => {
-                let identifier = Self::from_str(lexer.remainder())?;
-                identifier.coerce_to_list()
-            }
-            Some(Ok(KeyFeeds)) => Feeds(FeedListItemType::Tree),
-            Some(Ok(KeyCategories)) => Categories(FeedListItemType::Tree),
-            Some(Ok(KeyTags)) => Tags(FeedListItemType::Tree),
-            Some(Ok(KeyQuery)) => {
-                let Some(Ok(QuotedString)) = lexer.next() else {
-                    return Err(color_eyre::eyre::eyre!(
-                        "expected query label in double quotes"
-                    ));
-                };
-                let label_slice = lexer.slice();
-                let label = label_slice[1..label_slice.len() - 1].to_owned();
-                let query = lexer.remainder().trim().to_owned();
-                Query(LabeledQuery { label, query })
-            }
-            _ => {
-                return Err(color_eyre::eyre::eyre!(
-                    "unknown feed list content id: {}",
-                    lexer.slice()
-                ));
-            }
-        })
-    }
-}
-
-impl<'de> Deserialize<'de> for FeedListContentIdentifier {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let content = String::deserialize(deserializer)?;
-
-        FeedListContentIdentifier::from_str(&content)
-            .map_err(|err| serde::de::Error::custom(err.to_string()))
-    }
-}
-
-impl From<(String, String)> for LabeledQuery {
-    fn from((label, query): (String, String)) -> Self {
-        Self { label, query }
-    }
 }
 
 #[derive(
@@ -205,11 +108,13 @@ pub struct Config {
     pub article_content_max_chars_per_line: u16,
     pub article_content_preferred_type: ArticleContentType,
 
-    pub feed_list: Vec<FeedListContentIdentifier>,
-
     pub feeds_list_focus_width_percent: u16,
     pub articles_list_focused_width_percent: u16,
     pub articles_list_height_lines: u16,
+
+    pub feed_list: Vec<FeedListContentIdentifier>,
+
+    pub share_targets: Vec<ShareTarget>,
 }
 
 impl Config {
@@ -269,6 +174,14 @@ impl Default for Config {
                 FeedListContentIdentifier::Feeds(FeedListItemType::Tree),
                 FeedListContentIdentifier::Categories(FeedListItemType::List),
                 FeedListContentIdentifier::Tags(FeedListItemType::Tree),
+            ],
+
+            share_targets: vec![
+                ShareTarget::Clipboard,
+                ShareTarget::Reddit,
+                ShareTarget::Mastodon,
+                ShareTarget::Instapaper,
+                ShareTarget::Telegram,
             ],
         }
     }

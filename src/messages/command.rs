@@ -29,12 +29,14 @@ pub enum Panel {
         detailed_message = "panel with tree of feeds, categories, tags, etc."
     )]
     FeedList,
+
     #[strum(serialize = "articles")]
     #[strum(
         message = "article list",
         detailed_message = "panel with the list of articles"
     )]
     ArticleList,
+
     #[strum(serialize = "content")]
     #[strum(
         message = "article content",
@@ -463,6 +465,13 @@ pub enum Command {
     )]
     ArticleListFilterClear,
 
+    #[strum(
+        serialize = "share",
+        message = "share <target>",
+        detailed_message = "shares title and url with target (article list, article content)"
+    )]
+    ArticleShare(String),
+
     // application
     #[strum(
         serialize = "quit",
@@ -527,6 +536,9 @@ pub enum CommandParseError {
     #[error("expecting article search query")]
     ArticleQueryExpected(#[from] QueryParseError),
 
+    #[error("expecting share target")]
+    ShareTargetExpected,
+
     #[error("expecting a word")]
     WordExpected(String),
 
@@ -580,7 +592,10 @@ impl Display for Command {
             ArticleListSetScope(ArticleScope::Marked) => write!(f, "show marked"),
             ArticleListSetScope(ArticleScope::Unread) => write!(f, "show unread"),
             ArticleListSetScope(ArticleScope::All) => write!(f, "show all"),
+            ArticleShare(share_target) => write!(f, "share article to {share_target}"),
+
             ArticleCurrentScrape => write!(f, "scrape content"),
+
             ApplicationQuit => write!(f, "quit application"),
             Redraw => write!(f, "redraw ui"),
             CommandLineOpen(input) => write!(f, ":{}", input.unwrap_or_default()),
@@ -884,6 +899,11 @@ impl Command {
                     })?
                     .as_str(),
             )?),
+
+            C::ArticleShare(..) => C::ArticleShare(
+                expect_word(&mut args, "expecting share target")
+                    .map_err(|_| E::ShareTargetExpected)?,
+            ),
 
             C::CommandLineOpen(..) => C::CommandLineOpen(args),
 
