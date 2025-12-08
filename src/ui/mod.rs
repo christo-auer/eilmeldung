@@ -22,7 +22,7 @@ use crate::prelude::*;
 
 use log::{debug, error, info, trace};
 use ratatui::DefaultTerminal;
-use std::{fmt::Display, str::FromStr, sync::Arc, time::Duration};
+use std::{fmt::Display, path::Path, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
@@ -320,6 +320,40 @@ impl App {
 
         Ok(())
     }
+
+    async fn import_opml(&self, path_str: &str) -> color_eyre::Result<()> {
+        let opml = match tokio::fs::read_to_string(Path::new(path_str)).await {
+            Ok(opml) => opml,
+            Err(error) => {
+                tooltip(
+                    &self.message_sender,
+                    &*format!("Unable to read OPML file: {error}"),
+                    TooltipFlavor::Error,
+                )?;
+                return Ok(());
+            }
+        };
+
+        self.news_flash_utils.import_opml(opml, true);
+
+        Ok(())
+    }
+
+    async fn export_opml(&self, path_str: &str) -> color_eyre::Result<()> {
+        let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+
+        let opml = news_flash.export_opml().await?;
+
+        if let Err(error) = tokio::fs::write(Path::new(path_str), opml).await {
+            tooltip(
+                &self.message_sender,
+                &*format!("Unable to write OPML file: {error}"),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        }
+        Ok(())
+    }
 }
 
 impl MessageReceiver for App {
@@ -332,6 +366,14 @@ impl MessageReceiver for App {
                 self.is_running = false;
             }
 
+            Message::Command(ImportOpml(path_str)) => {
+                self.import_opml(path_str).await?;
+            }
+
+            Message::Command(ExportOpml(path_str)) => {
+                self.export_opml(path_str).await?;
+            }
+
             Message::Event(Tooltip(tooltip)) => {
                 trace!("Tooltip updated");
                 self.tooltip = tooltip.clone();
@@ -339,6 +381,14 @@ impl MessageReceiver for App {
 
             Message::Event(Tick) => {
                 self.tick();
+            }
+
+            Message::Event(Event::AsyncImportOpmlFinished) => {
+                tooltip(
+                    &self.message_sender,
+                    "OPML imported --- you should sync now",
+                    TooltipFlavor::Info,
+                )?;
             }
 
             Message::Event(AsyncOperationFailed(error, starting_event)) => {

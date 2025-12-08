@@ -41,6 +41,9 @@ pub enum CommandParseError {
     #[error("expecting share target")]
     ShareTargetExpected,
 
+    #[error("expecting file path")]
+    FilePathExpected,
+
     #[error("expecting a word")]
     WordExpected(String),
 
@@ -259,6 +262,17 @@ impl Command {
                 expect_word(&mut args, "expecting share target")
                     .map_err(|_| E::ShareTargetExpected)?,
             ),
+
+            cmd @ (C::ExportOpml(..) | C::ImportOpml(..)) => {
+                let path = expect_something(args, "expecting file path")
+                    .map_err(|_| E::FilePathExpected)?;
+
+                match cmd {
+                    C::ExportOpml(..) => C::ExportOpml(path),
+                    C::ImportOpml(..) => C::ImportOpml(path),
+                    _ => unreachable!(),
+                }
+            }
 
             C::CommandLineOpen(..) => C::CommandLineOpen(args),
 

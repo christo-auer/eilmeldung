@@ -115,13 +115,13 @@ impl CommandInput {
         }
     }
 
-    fn get_current_input(&self) -> &str {
+    fn get_curent_input_to_cursor(&self) -> &str {
         let col = self.text_input.cursor().1;
         &self.text_input.lines()[0][..col]
     }
 
     fn get_current_word(&self) -> (&str, &str) {
-        let current_input = self.get_current_input();
+        let current_input = self.get_curent_input_to_cursor();
         match current_input.rsplit_once(|c: char| c.is_whitespace()) {
             None => ("", current_input),
             Some(split) => split,
@@ -129,7 +129,7 @@ impl CommandInput {
     }
 
     fn get_first_word(&self) -> &str {
-        let current_input = self.get_current_input();
+        let current_input = self.get_curent_input_to_cursor();
         match current_input.split_once(|c: char| c.is_whitespace()) {
             None => "",
             Some((word, _)) => word,
@@ -166,6 +166,8 @@ impl CommandInput {
             Err(E::ShareTargetExpected) => {
                 self.generate_help_content_share_target(&current_part)?
             }
+
+            Err(E::FilePathExpected) => self.generate_help_content_file_path(&current_part)?,
 
             Err(other_err) => self.generate_help_content_error(other_err, &current_part)?,
             Ok(command) => self.generate_help_content_complete_command(command, &current_part)?,
@@ -655,7 +657,7 @@ impl CommandInput {
     }
 
     fn update_command_hint(&mut self) {
-        let current_input = self.get_current_input();
+        let current_input = self.text_input.lines()[0].as_str();
         if let Ok(command) = Command::parse(current_input, false) {
             self.command_hint = Some(Line::from(vec![
                 Span::styled(command.to_string(), self.config.theme.header()),
@@ -685,6 +687,12 @@ impl CommandInput {
             "Press <TAB> for help.",
             self.config.theme.paragraph(),
         )));
+    }
+
+    fn generate_help_content_file_path(&mut self, _current_part: &str) -> color_eyre::Result<()> {
+        self.hide_help_dialog()?;
+        self.completion_targets = None;
+        Ok(())
     }
 }
 

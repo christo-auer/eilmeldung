@@ -368,6 +368,17 @@ impl NewsFlashUtils {
         success_event: Event::AsyncCategoryMoveFinished,
     }
 
+    gen_async_call! {
+        method_name: import_opml,
+        params: (opml: String, parse_all_feeds: bool),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncImportOpml,
+        operation: 
+            news_flash.import_opml(&opml, parse_all_feeds, &client).await?,
+        success_event: Event::AsyncImportOpmlFinished,
+    }
+
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(
         items: &[V],

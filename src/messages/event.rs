@@ -97,6 +97,9 @@ pub enum Event {
     AsyncCategoryMove,
     AsyncCategoryMoveFinished,
 
+    AsyncImportOpml,
+    AsyncImportOpmlFinished,
+
     Tick, // general tick for animations and regular updates
 
     // messaging/status
@@ -145,6 +148,7 @@ impl Event {
                 | AsyncCategorySetReadFinished
                 | AsyncTagSetReadFinished
                 | AsyncArticlesSetReadFinished
+                | AsyncImportOpmlFinished,
         )
     }
 }

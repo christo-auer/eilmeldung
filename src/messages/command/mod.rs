@@ -480,6 +480,20 @@ pub enum Command {
     )]
     ArticleShare(String),
 
+    #[strum(
+        serialize = "importopml",
+        message = "importopml <path>",
+        detailed_message = "imports an OPML file from the given path (all)"
+    )]
+    ImportOpml(String),
+
+    #[strum(
+        serialize = "exportopml",
+        message = "exportopml <path>",
+        detailed_message = "exports an OPML file to the given path (all)"
+    )]
+    ExportOpml(String),
+
     // application
     #[strum(
         serialize = "quit",
@@ -558,6 +572,9 @@ impl Display for Command {
             ArticleShare(share_target) => write!(f, "share article to {share_target}"),
 
             ArticleCurrentScrape => write!(f, "scrape content"),
+
+            ImportOpml(path) => write!(f, "import OPML file from {path}"),
+            ExportOpml(path) => write!(f, "export OPML file to {path}"),
 
             ApplicationQuit => write!(f, "quit application"),
             Redraw => write!(f, "redraw ui"),
