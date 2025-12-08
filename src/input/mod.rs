@@ -172,11 +172,11 @@ impl InputCommandGenerator {
             && (aborted || timeout || prefix_matches.is_empty())
         {
             let tooltip = if aborted {
-                Tooltip::from_str("Aborted", crate::ui::tooltip::TooltipFlavor::Info)
+                Tooltip::from_str("Aborted", TooltipFlavor::Info)
             } else {
                 Tooltip::from_str(
                     format!("Unknown key sequence: {}", self.key_sequence).as_str(),
-                    crate::ui::tooltip::TooltipFlavor::Warning,
+                    TooltipFlavor::Warning,
                 )
             };
 

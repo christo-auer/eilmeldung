@@ -1,13 +1,3 @@
-use std::sync::Arc;
-
-use log::{debug, error, info};
-use news_flash::{NewsFlash, models::LoginData};
-use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
-
-mod prelude;
-use crate::{connectivity::ConnectivityMonitor, prelude::*};
-
-mod app;
 mod config;
 mod connectivity;
 mod input;
@@ -17,6 +7,15 @@ mod messages;
 mod newsflash_utils;
 mod query;
 mod ui;
+
+use std::sync::Arc;
+
+use log::{debug, error, info};
+use news_flash::{NewsFlash, models::LoginData};
+use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
+
+mod prelude;
+use crate::{connectivity::ConnectivityMonitor, prelude::*};
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
@@ -79,7 +78,7 @@ async fn main() -> color_eyre::Result<()> {
         ConnectivityMonitor::new(news_flash_utils.clone(), message_sender.clone());
 
     // create the main app
-    let app = crate::app::App::new(config, news_flash_utils.clone(), message_sender);
+    let app = App::new(config, news_flash_utils.clone(), message_sender);
 
     info!("Initializing terminal");
     let terminal = ratatui::init();

@@ -1,6 +1,10 @@
 mod model;
 mod view;
 
+pub mod prelude {
+    pub use super::ArticleContent;
+}
+
 use arboard::Clipboard;
 use model::ArticleContentModelData;
 use url::Url;
