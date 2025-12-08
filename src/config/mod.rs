@@ -18,7 +18,7 @@ pub mod prelude {
 }
 
 use config::FileFormat;
-use log::{debug, info};
+use log::{debug, info, warn};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConfigError {
@@ -198,10 +198,16 @@ pub fn load_config() -> color_eyre::Result<Config> {
     info!("Loading config from {}", config_path);
     debug!("Config directory: {:?}", PROJECT_DIRS.config_dir());
 
-    let mut config = config::Config::builder()
+    let mut config = match config::Config::builder()
         .add_source(config::File::new(config_path.as_str(), FileFormat::Toml))
-        .build()?
-        .try_deserialize::<Config>()?;
+        .build()
+    {
+        Ok(config) => config.try_deserialize::<Config>()?,
+        Err(err) => {
+            warn!("unable to read config file: {err}");
+            Config::default()
+        }
+    };
 
     config.validate()?;
 
