@@ -8,7 +8,6 @@ arboard = { version = "3.6.1", default-features = false, features = ["wayland-da
 chrono = "0.4.42"
 color-eyre = "0.6.5"
 config = "0.15.17"
-# crossterm = "0.29.0"
 derive = "1.0.0"
 directories = "6.0.0"
 env_logger = "0.11.8"

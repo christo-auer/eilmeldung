@@ -7,10 +7,7 @@ use tokio::task::JoinHandle;
 
 use crate::prelude::*;
 use network_connectivity::{Connectivity, ConnectivityState};
-use tokio::sync::{
-    Mutex,
-    mpsc::UnboundedSender,
-};
+use tokio::sync::{Mutex, mpsc::UnboundedSender};
 
 pub struct ConnectivityMonitor {
     message_sender: UnboundedSender<Message>,

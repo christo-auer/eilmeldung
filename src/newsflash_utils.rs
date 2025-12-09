@@ -2,11 +2,18 @@ use crate::{messages::event::AsyncOperationError, prelude::*};
 use std::{collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc};
 
 use news_flash::{
-    NewsFlash, error::NewsFlashError, models::{ArticleID, CategoryID, FeedID, FeedMapping, CategoryMapping, Marked, Read, Tag, TagID, Url}
+    NewsFlash,
+    error::NewsFlashError,
+    models::{
+        ArticleID, CategoryID, CategoryMapping, FeedID, FeedMapping, Marked, Read, Tag, TagID, Url,
+    },
 };
 
 use log::{debug, error, info};
-use ratatui::{style::{Color, Stylize}, text::{Line, Span}};
+use ratatui::{
+    style::{Color, Stylize},
+    text::{Line, Span},
+};
 use reqwest::Client;
 use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
 
@@ -18,7 +25,6 @@ pub struct NewsFlashUtils {
 
     async_operation_mutex: Arc<Mutex<()>>,
 }
-
 
 // macro to wrap news flash async calls into spawns and send messages at the beginning and end
 macro_rules! gen_async_call {
@@ -41,34 +47,31 @@ macro_rules! gen_async_call {
                 let _lock = async_operation_mutex.lock().await;
 
                 if let Err(e) = async {
-                    command_sender.send(Message::Event($start_event)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+                    command_sender.send(Message::Event($start_event)).map_err(|send_error|
+                        color_eyre::eyre::eyre!(send_error))?;
 
                     let $news_flash_var = news_flash_lock.read().await;
                     let $client_var = client_lock.read().await;
 
-                    info!("Async call {}", stringify!($method_name));
                     $operation
-                    info!("Async call finished {}", stringify!($method_name));
 
-                    command_sender.send(Message::Event($success_event)).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+                    command_sender.send(Message::Event($success_event)).map_err(|send_error|
+                        color_eyre::eyre::eyre!(send_error))?;
                     Ok::<(), AsyncOperationError>(())
-                }
-                .await
-                {
+                }.await{
                     error!("Async call {} failed: {}", stringify!(&method_name), e,);
-                    let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed(
-                                e,
-                                Box::new($start_event),
-                    )));
+                    let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed( e,
+                                Box::new($start_event),)));
                 }
             });
-    }
+        }
 
     }
 
 
 }
 
+#[rustfmt::skip]        
 impl NewsFlashUtils {
     pub fn new(
         news_flash: NewsFlash,
@@ -115,9 +118,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncArticleThumbnailFetch,
-        operation: let thumbnail = news_flash
-                    .get_article_thumbnail(&article_id, &client)
-                    .await?,
+        operation: let thumbnail = news_flash.get_article_thumbnail(&article_id, &client).await?,
         success_event: Event::AsyncArticleThumbnailFetchFinished(thumbnail),
     }
 
@@ -139,9 +140,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncArticlesSetRead,
-        operation: news_flash
-                    .set_article_read(&article_ids, read, &client)
-                    .await?,
+        operation: news_flash.set_article_read(&article_ids, read, &client).await?,
         success_event: Event::AsyncArticlesSetReadFinished,
     }
 
@@ -151,9 +150,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncArticlesSetRead,
-        operation: news_flash
-                    .set_article_marked(&article_ids, marked, &client)
-                    .await?,
+        operation: news_flash.set_article_marked(&article_ids, marked, &client).await?,
         success_event: Event::AsyncArticlesMarkFinished,
     }
 
@@ -163,11 +160,9 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncArticleTag,
-        operation: 
+        operation:
             for article_id in article_ids {
-                    news_flash
-                        .tag_article(&article_id, &tag_id, &client)
-                        .await?; 
+                    news_flash.tag_article(&article_id, &tag_id, &client).await?;
             },
         success_event: Event::AsyncArticleTagFinished,
     }
@@ -178,11 +173,9 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncArticleUntag,
-        operation: 
+        operation:
             for article_id in article_ids {
-                news_flash
-                    .untag_article(&article_id, &tag_id, &client)
-                    .await?;
+                news_flash.untag_article(&article_id, &tag_id, &client).await?;
             },
         success_event: Event::AsyncArticleUntagFinished,
     }
@@ -193,10 +186,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncTagAdd,
-        operation: 
-            let tag = news_flash.add_tag(
-                tag_title.as_str(), 
-                color.map(|color| color.to_string()), &client).await?,
+        operation: let tag = news_flash.add_tag( tag_title.as_str(), color.map(|color| color.to_string()), &client).await?,
         success_event: Event::AsyncTagAddFinished(tag),
     }
 
@@ -206,8 +196,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncTagRemove,
-        operation: 
-            news_flash.remove_tag(&tag_id, &client).await?,
+        operation: news_flash.remove_tag(&tag_id, &client).await?,
         success_event: Event::AsyncTagRemoveFinished,
     }
 
@@ -217,11 +206,8 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncTagEdit,
-        operation: 
-            let tag = news_flash.edit_tag(
-                &tag_id,
-                new_tag_title.as_str(),
-                &color.map(|color| color.to_string()), &client).await?,
+        operation:
+            let tag = news_flash.edit_tag( &tag_id, new_tag_title.as_str(), &color.map(|color| color.to_string()), &client).await?,
         success_event: Event::AsyncTagEditFinished(tag),
     }
 
@@ -231,8 +217,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncFeedSetRead,
-        operation: 
-            news_flash.set_all_read(&client).await?,
+        operation: news_flash.set_all_read(&client).await?,
         success_event: Event::AsyncSetAllReadFinished,
     }
 
@@ -242,8 +227,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncFeedSetRead,
-        operation: 
-            news_flash.set_feed_read(&feed_ids, &client).await?,
+        operation: news_flash.set_feed_read(&feed_ids, &client).await?,
         success_event: Event::AsyncFeedSetReadFinished,
     }
 
@@ -253,8 +237,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncCategorySetRead,
-        operation: 
-            news_flash.set_category_read(&category_ids, &client).await?,
+        operation: news_flash.set_category_read(&category_ids, &client).await?,
         success_event: Event::AsyncCategorySetReadFinished,
     }
 
@@ -264,8 +247,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncTagSetRead,
-        operation: 
-            news_flash.set_tag_read(&tag_ids, &client).await?,
+        operation: news_flash.set_tag_read(&tag_ids, &client).await?,
         success_event: Event::AsyncTagSetReadFinished,
     }
 
@@ -275,8 +257,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncFeedAdd,
-        operation: 
-            let (feed, .. ) = news_flash.add_feed(&url, title, category_id, &client).await?,
+        operation: let (feed, .. ) = news_flash.add_feed(&url, title, category_id, &client).await?,
         success_event: Event::AsyncFeedAddFinished(feed),
     }
 
@@ -286,8 +267,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncCategoryAdd,
-        operation: 
-            let (category, .. ) = news_flash.add_category(&title, parent.as_ref(), &client).await?,
+        operation: let (category, .. ) = news_flash.add_category(&title, parent.as_ref(), &client).await?,
         success_event: Event::AsyncCategoryAddFinished(category),
     }
 
@@ -297,8 +277,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncFeedRename,
-        operation: 
-            let feed = news_flash.rename_feed(&feed_id, title.as_str(), &client).await?,
+        operation: let feed = news_flash.rename_feed(&feed_id, title.as_str(), &client).await?,
         success_event: Event::AsyncRenameFeedFinished(feed),
     }
 
@@ -308,8 +287,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncCategoryRename,
-        operation: 
-            let category = news_flash.rename_category(&category_id, title.as_str(), &client).await?,
+        operation: let category = news_flash.rename_category(&category_id, title.as_str(), &client).await?,
         success_event: Event::AsyncCategoryRenameFinished(category),
     }
 
@@ -319,8 +297,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncCategoryRemove,
-        operation: 
-            news_flash.remove_category(&category_id, remove_children, &client).await?,
+        operation: news_flash.remove_category(&category_id, remove_children, &client).await?,
         success_event: Event::AsyncCategoryRemoveFinished,
     }
 
@@ -330,8 +307,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncFeedRemove,
-        operation: 
-            news_flash.remove_feed(&feed_id, &client).await?,
+        operation: news_flash.remove_feed(&feed_id, &client).await?,
         success_event: Event::AsyncFeedRemoveFinished,
     }
 
@@ -341,8 +317,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncFeedUrlChange,
-        operation: 
-            news_flash.edit_feed_url(&feed_id, &new_url, &client).await?,
+        operation: news_flash.edit_feed_url(&feed_id, &new_url, &client).await?,
         success_event: Event::AsyncFeedUrlChangeFinished,
     }
 
@@ -352,8 +327,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncFeedMove,
-        operation: 
-            news_flash.move_feed(&from_feed_mapping, &to_feed_mapping, &client).await?,
+        operation: news_flash.move_feed(&from_feed_mapping, &to_feed_mapping, &client).await?,
         success_event: Event::AsyncFeedMoveFinished,
     }
 
@@ -363,8 +337,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncCategoryMove,
-        operation: 
-            news_flash.move_category(&category_mapping, &client).await?,
+        operation: news_flash.move_category(&category_mapping, &client).await?,
         success_event: Event::AsyncCategoryMoveFinished,
     }
 
@@ -374,8 +347,7 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncImportOpml,
-        operation: 
-            news_flash.import_opml(&opml, parse_all_feeds, &client).await?,
+        operation: news_flash.import_opml(&opml, parse_all_feeds, &client).await?,
         success_event: Event::AsyncImportOpmlFinished,
     }
 
@@ -385,12 +357,9 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncLogout,
-        operation: 
-            news_flash.logout(&client).await?,
+        operation: news_flash.logout(&client).await?,
         success_event: Event::AsyncLogoutFinished,
     }
-
-
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(
         items: &[V],
@@ -413,14 +382,12 @@ impl NewsFlashUtils {
     where
         V: Clone,
     {
-        mappings
-            .iter()
-            .fold(HashMap::new(), |mut acc, mapping| {
-                acc.entry(id_extractor(mapping).clone())
-                    .or_default()
-                    .push(value_extractor(mapping).clone());
-                acc
-            })
+        mappings.iter().fold(HashMap::new(), |mut acc, mapping| {
+            acc.entry(id_extractor(mapping).clone())
+                .or_default()
+                .push(value_extractor(mapping).clone());
+            acc
+        })
     }
 
     pub fn tag_color(tag: &Tag) -> Option<Color> {
@@ -433,16 +400,17 @@ impl NewsFlashUtils {
         None
     }
 
-    pub fn tag_to_line<'a>(tag: &Tag, config: &Config, override_color: Option<Color>) -> Line<'a>{
-        let color = override_color.or(Self::tag_color(tag)).or(config.theme.tag().fg).unwrap_or_default();
+    pub fn tag_to_line<'a>(tag: &Tag, config: &Config, override_color: Option<Color>) -> Line<'a> {
+        let color = override_color
+            .or(Self::tag_color(tag))
+            .or(config.theme.tag().fg)
+            .unwrap_or_default();
         let style = config.theme.tag().fg(color);
-        Line::from(
-            vec![
+        Line::from(vec![
             Span::styled("", style),
             Span::styled(tag.label.to_owned(), style.reversed()),
             Span::styled("", style),
-            ])
-
+        ])
     }
 
     fn get_root_cause_message(error: &dyn Error) -> String {
@@ -516,5 +484,4 @@ impl NewsFlashUtils {
             }
         }
     }
-
 }
