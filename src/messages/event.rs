@@ -100,6 +100,9 @@ pub enum Event {
     AsyncImportOpml,
     AsyncImportOpmlFinished,
 
+    AsyncLogout,
+    AsyncLogoutFinished,
+
     Tick, // general tick for animations and regular updates
 
     // messaging/status

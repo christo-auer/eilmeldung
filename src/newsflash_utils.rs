@@ -379,6 +379,18 @@ impl NewsFlashUtils {
         success_event: Event::AsyncImportOpmlFinished,
     }
 
+    gen_async_call! {
+        method_name: logout,
+        params: (),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncLogout,
+        operation: 
+            news_flash.logout(&client).await?,
+        success_event: Event::AsyncLogoutFinished,
+    }
+
+
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(
         items: &[V],

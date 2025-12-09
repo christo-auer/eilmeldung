@@ -44,6 +44,9 @@ pub enum CommandParseError {
     #[error("expecting file path")]
     FilePathExpected,
 
+    #[error("expecting `NOW` as parameter for confirmation")]
+    ConfirmationExpected,
+
     #[error("expecting a word")]
     WordExpected(String),
 
@@ -272,6 +275,16 @@ impl Command {
                     C::ImportOpml(..) => C::ImportOpml(path),
                     _ => unreachable!(),
                 }
+            }
+
+            C::Logout(..) => {
+                let word = expect_word(
+                    &mut args,
+                    "expecting confirmation `NOW` if you are really sure",
+                )
+                .map_err(|_| E::ConfirmationExpected)?;
+                expect_nothing(args)?;
+                C::Logout(word)
             }
 
             C::CommandLineOpen(..) => C::CommandLineOpen(args),

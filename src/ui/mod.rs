@@ -354,6 +354,10 @@ impl App {
         }
         Ok(())
     }
+
+    fn logout(&self) {
+        self.news_flash_utils.logout();
+    }
 }
 
 impl MessageReceiver for App {
@@ -361,6 +365,18 @@ impl MessageReceiver for App {
         use Command::*;
         use Event::*;
         match message {
+            Message::Command(Logout(confirmation)) => {
+                if confirmation.as_str() != "NOW" {
+                    tooltip(
+                        &self.message_sender,
+                        "not logging out, expected parameter `NOW` for confirmation",
+                        TooltipFlavor::Warning,
+                    )?;
+                } else {
+                    self.logout();
+                }
+            }
+
             Message::Command(ApplicationQuit) => {
                 info!("Application quit requested");
                 self.is_running = false;
@@ -368,6 +384,11 @@ impl MessageReceiver for App {
 
             Message::Command(ImportOpml(path_str)) => {
                 self.import_opml(path_str).await?;
+            }
+
+            Message::Event(Event::AsyncLogoutFinished) => {
+                self.message_sender
+                    .send(Message::Command(Command::ApplicationQuit))?;
             }
 
             Message::Command(ExportOpml(path_str)) => {

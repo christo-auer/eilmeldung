@@ -511,6 +511,13 @@ pub enum Command {
     CommandLineOpen(Option<String>),
 
     #[strum(
+        serialize = "LOGOUT",
+        message = "LOGOUT <confirmation>",
+        detailed_message = "logout, NOTE: this will remove ALL LOCAL DATA! Pass `NOW` as parameter to confirm."
+    )]
+    Logout(String),
+
+    #[strum(
         serialize = "confirm",
         message = "confirm <command>",
         detailed_message = "ask user for confirmation to execute command and, if positive, execute command (all)"
@@ -610,6 +617,10 @@ impl Display for Command {
             ActionUntagArticles(action_scope, tag) => {
                 write!(f, "remove #{} from {}", tag, &action_scope)
             }
+            Logout(_) => write!(
+                f,
+                "logout from provider, NOTE: this will remove ALL LOCAL DATA!"
+            ),
             TagAdd(tag_title, _) => {
                 write!(f, "add tag #{}", tag_title)
             }
