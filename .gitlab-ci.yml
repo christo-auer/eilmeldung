@@ -3,5 +3,5 @@ include:
     inputs:
       before:
         - apt update
-        - apt install --yes openssl libssl-dev pkg-config libxml2
+        - apt install --yes openssl libssl-dev pkg-config libxml2-dev
 
