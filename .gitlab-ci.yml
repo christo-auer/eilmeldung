@@ -1,0 +1,3 @@
+include:
+  - component: $CI_SERVER_FQDN/rust-ci/rust-ci/base-pipeline@1.4.0
+
