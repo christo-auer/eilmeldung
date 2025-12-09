@@ -3,5 +3,5 @@ include:
     inputs:
       before:
         - apt update
-        - apt install -Y openssl libssl-dev pkg-config
+        - apt install --yes openssl libssl-dev pkg-config
 
