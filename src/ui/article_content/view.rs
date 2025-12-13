@@ -312,8 +312,7 @@ impl ArticleContentViewData {
             return;
         };
 
-        let text: Text<'_> = if config.content_preferred_type
-            == ArticleContentType::Markdown
+        let text: Text<'_> = if config.content_preferred_type == ArticleContentType::Markdown
             && let Some(html) = fat_article.scraped_content.as_deref()
         {
             // Use the cached markdown content from model
