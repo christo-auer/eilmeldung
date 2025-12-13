@@ -13,7 +13,7 @@ eilmeldung is a *TUI RSS reader* based on the awesome [news-flash](https://gitla
 
 ## Queries for Filtering, Searching and Bulk-Operations
 
-![video showing of article queries](demos/filter-demo.mkv) 
+![video showing of article queries](demos/filter-demo.webm) 
 
 
 ## Interactive Commandline
