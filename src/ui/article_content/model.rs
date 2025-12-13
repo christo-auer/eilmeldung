@@ -155,7 +155,7 @@ impl ArticleContentModelData {
 
     pub(super) fn get_or_create_markdown_content(&mut self, config: &Config) -> Option<&str> {
         if self.markdown_content.is_none() {
-            if config.article_content_preferred_type == ArticleContentType::Markdown {
+            if config.content_preferred_type == ArticleContentType::Markdown {
                 if let Some(fat_article) = self.fat_article.as_ref() {
                     if let Some(html) = fat_article.scraped_content.as_deref() {
                         self.markdown_content = Some(html2text::html2text(html));
@@ -167,7 +167,7 @@ impl ArticleContentModelData {
     }
 
     pub(super) fn should_fetch_thumbnail(&self, config: &Config) -> bool {
-        if !config.article_thumbnail_show || self.thumbnail_fetch_running {
+        if !config.thumbnail_show || self.thumbnail_fetch_running {
             return false;
         }
 
@@ -187,7 +187,7 @@ impl ArticleContentModelData {
         let long_enough_current_article = match self.instant_since_article_selected {
             Some(article_selected_instant) => {
                 let duration = current_instant.duration_since(article_selected_instant);
-                duration >= Duration::from_millis(config.article_thumbnail_fetch_debounce_millis)
+                duration >= Duration::from_millis(config.thumbnail_fetch_debounce_millis)
             }
             None => true,
         };
@@ -195,7 +195,7 @@ impl ArticleContentModelData {
         let long_enough = match self.duration_since_last_article_change {
             None => true,
             Some(duration) => {
-                duration > Duration::from_millis(config.article_thumbnail_fetch_debounce_millis)
+                duration > Duration::from_millis(config.thumbnail_fetch_debounce_millis)
                     || long_enough_current_article
             }
         };

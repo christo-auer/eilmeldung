@@ -201,7 +201,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                         .on_article_selected(article, self.is_focused)
                         .await?;
 
-                    if self.is_focused && self.config.article_auto_scrape {
+                    if self.is_focused && self.config.auto_scrape {
                         self.scrape_article()?;
                     }
                     view_needs_update = true;
@@ -243,7 +243,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.is_focused = *state == AppState::ArticleContent
                         || *state == AppState::ArticleContentDistractionFree;
 
-                    if self.is_focused && self.config.article_auto_scrape {
+                    if self.is_focused && self.config.auto_scrape {
                         self.scrape_article()?;
                     }
                     view_needs_update = true;

@@ -168,8 +168,8 @@ impl ArticlesList {
             return;
         };
         let offset = self.view_data.get_table_state_mut().offset_mut();
-        let max_lines_above = self.config.articles_list_height_lines as usize
-            - (self.config.articles_list_visible_articles_after_selection + 1);
+        let max_lines_above = self.config.article_list_height_lines as usize
+            - (self.config.articles_after_selection + 1);
 
         if index.saturating_sub(*offset) > max_lines_above {
             *offset = index.saturating_sub(max_lines_above);
@@ -383,13 +383,13 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 C::NavigatePageUp if self.is_focused => {
                     self.view_data
                         .get_table_state_mut()
-                        .scroll_up_by(self.config.articles_list_height_lines - 1);
+                        .scroll_up_by(self.config.article_list_height_lines - 1);
                     self.select_index_and_send_message(None)?;
                 }
                 C::NavigatePageDown if self.is_focused => {
                     self.view_data.get_table_state_mut().scroll_down_by(
-                        self.config.articles_list_height_lines
-                            - self.config.articles_list_visible_articles_after_selection as u16,
+                        self.config.article_list_height_lines
+                            - self.config.articles_after_selection as u16,
                     );
                     self.select_index_and_send_message(None)?;
                 }

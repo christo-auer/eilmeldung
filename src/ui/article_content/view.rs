@@ -192,8 +192,8 @@ impl ArticleContentViewData {
         inner_area: Rect,
         buf: &mut Buffer,
     ) {
-        let thumbnail_width = if config.article_thumbnail_show {
-            config.article_thumbnail_width
+        let thumbnail_width = if config.thumbnail_show {
+            config.thumbnail_width
         } else {
             0
         };
@@ -209,7 +209,7 @@ impl ArticleContentViewData {
             .spacing(2)
             .areas(inner_area);
 
-        if config.article_thumbnail_show {
+        if config.thumbnail_show {
             self.render_thumbnail(model_data, config, thumbnail_chunk, buf);
         }
 
@@ -234,7 +234,7 @@ impl ArticleContentViewData {
         match &mut self.image {
             Some(image) => {
                 let mut stateful_image = StatefulImage::new();
-                if config.article_thumbnail_resize {
+                if config.thumbnail_resize {
                     stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Nearest)))
                 }
                 let [centered_chunk] = centered_layout
@@ -304,7 +304,7 @@ impl ArticleContentViewData {
             .direction(Direction::Horizontal)
             .flex(ratatui::layout::Flex::Center)
             .constraints([
-                Constraint::Max(config.article_content_max_chars_per_line), // Middle content
+                Constraint::Max(config.text_max_width), // Middle content
             ])
             .areas(content_area);
 
@@ -312,7 +312,7 @@ impl ArticleContentViewData {
             return;
         };
 
-        let text: Text<'_> = if config.article_content_preferred_type
+        let text: Text<'_> = if config.content_preferred_type
             == ArticleContentType::Markdown
             && let Some(html) = fat_article.scraped_content.as_deref()
         {

@@ -9,7 +9,7 @@ use news_flash::{
     },
 };
 
-use log::{debug, error, info};
+use log::{debug, error};
 use ratatui::{
     style::{Color, Stylize},
     text::{Line, Span},
