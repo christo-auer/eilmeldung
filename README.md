@@ -20,10 +20,6 @@ eilmeldung is a *TUI RSS reader* based on the awesome [news-flash](https://gitla
 
 ## Keybindings
 
-### Defaults
-
-### Customization
-
 
 # Installation and Setup
 
@@ -34,7 +30,7 @@ eilmeldung is a *TUI RSS reader* based on the awesome [news-flash](https://gitla
 <details>
 <summary>Click to expand configuration reference</summary>
 
-**eilmeldung** uses a TOML configuration file to customize behavior, appearance, and key bindings. The configuration file is optional—eilmeldung works out-of-the-box with sensible defaults.
+**eilmeldung** uses a TOML configuration file to customize behavior, appearance, and key bindings. The configuration file is optional, eilmeldung works out-of-the-box with sensible defaults.
 
 **Note:** Icons and special characters require a terminal and font that support [Nerd Fonts](https://www.nerdfonts.com/).
 
@@ -52,48 +48,48 @@ The configuration file location depends on your operating system:
 
 ### Basic Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `refresh_fps` | integer | `10` | UI refresh rate in frames per second |
-| `article_scope` | string | `"unread"` | Default article scope: `"all"`, `"unread"`, or `"marked"` |
-| `offline_icon` | char | `''` | Icon displayed when offline |
-| `read_icon` | char | `''` | Icon for read articles |
-| `unread_icon` | char | `''` | Icon for unread articles |
-| `marked_icon` | char | `''` | Icon for marked articles |
-| `unmarked_icon` | char | `' '` | Icon for unmarked articles |
-| `tag_icon` | char | `'󰓹'` | Icon for tags |
-| `command_line_prompt_icon` | char | `''` | Icon for command line prompt |
-| `all_label` | string | `"󱀂 All {unread_count}"` | Label format for "All" in feed list |
-| `feed_label` | string | `" {label} {unread_count}"` | Label format for feeds |
-| `category_label` | string | `"󰉋 {label} {unread_count}"` | Label format for categories |
-| `categories_label` | string | `"󰉓 Categories {unread_count}"` | Label format for categories section |
-| `tags_label` | string | `"󰓻 Tags {unread_count}"` | Label format for tags section |
-| `tag_label` | string | `"󰓹 {label} {unread_count}"` | Label format for individual tags |
-| `query_label` | string | `" {label}"` | Label format for query items |
-| `article_table` | string | `"{read},{marked},{tag_icons},{age},{title}"` | Article list column format |
-| `date_format` | string | `"%m/%d %H:%M"` | Date format (strftime syntax) |
-| `articles_after_selection` | integer | `3` | Number of articles to show after selection |
-| `auto_scrape` | boolean | `true` | Automatically scrape full article content |
-| `thumbnail_show` | boolean | `true` | Show article thumbnails |
-| `thumbnail_width` | integer | `20` | Thumbnail width in characters |
-| `thumbnail_resize` | boolean | `true` | Resize thumbnails to fit (**this may cause slowdowns**) |
-| `thumbnail_fetch_debounce_millis` | integer | `500` | Delay before fetching thumbnail (ms) |
-| `text_max_width` | integer | `66` | Maximum text width for article content |
-| `content_preferred_type` | string | `"Markdown"` | Preferred content type: `"PlainText"` or `"Markdown"` |
-| `feed_list_width_percent` | integer | `33` | Feed list panel width (percentage) |
-| `article_list_width_percent` | integer | `67` | Article list panel width (percentage) |
-| `article_list_height_lines` | integer | `6` | Article list height in lines |
+| Option                            | Type    | Description                                               |
+| --------                          | ------  | -------------                                             |
+| `refresh_fps`                     | integer | UI refresh rate in frames per second                      |
+| `article_scope`                   | string  | Default article scope: `"all"`, `"unread"`, or `"marked"` |
+| `offline_icon`                    | char    | Icon displayed when offline                               |
+| `read_icon`                       | char    | Icon for read articles                                    |
+| `unread_icon`                     | char    | Icon for unread articles                                  |
+| `marked_icon`                     | char    | Icon for marked articles                                  |
+| `unmarked_icon`                   | char    | Icon for unmarked articles                                |
+| `tag_icon`                        | char    | Icon for tags                                             |
+| `command_line_prompt_icon`        | char    | Icon for command line prompt                              |
+| `all_label`                       | string  | Label format for "All" in feed list                       |
+| `feed_label`                      | string  | Label format for feeds                                    |
+| `category_label`                  | string  | Label format for categories                               |
+| `categories_label`                | string  | Label format for categories section                       |
+| `tags_label`                      | string  | Label format for tags section                             |
+| `tag_label`                       | string  | Label format for individual tags                          |
+| `query_label`                     | string  | Label format for query items                              |
+| `article_table`                   | string  | Article list column format                                |
+| `date_format`                     | string  | Date format (strftime syntax)                             |
+| `articles_after_selection`        | integer | Number of articles to show after selection                |
+| `auto_scrape`                     | boolean | Automatically scrape full article content                 |
+| `thumbnail_show`                  | boolean | Show article thumbnails                                   |
+| `thumbnail_width`                 | integer | Thumbnail width in characters                             |
+| `thumbnail_resize`                | boolean | Resize thumbnails to fit (**this may cause slowdowns**)   |
+| `thumbnail_fetch_debounce_millis` | integer | Delay before fetching thumbnail (ms)                      |
+| `text_max_width`                  | integer | Maximum text width for article content                    |
+| `content_preferred_type`          | string  | Preferred content type: `"PlainText"` or `"Markdown"`     |
+| `feed_list_width_percent`         | integer | Feed list panel width (percentage)                        |
+| `article_list_width_percent`      | integer | Article list panel width (percentage)                     |
+| `article_list_height_lines`       | integer | Article list height in lines                              |
 
 **Label Placeholders:**
-- `{label}` — Item name
-- `{unread_count}` — Number of unread articles
+- `{label}`: Item name
+- `{unread_count}`: Number of unread articles
 
 **Article Table Columns:**
-- `{read}` — Read/unread icon
-- `{marked}` — Marked/unmarked icon
-- `{tag_icons}` — Tag icons
-- `{age}` — Article age/date
-- `{title}` — Article title
+- `{read}`: Read/unread icon
+- `{marked}`: Marked/unmarked icon
+- `{tag_icons}`: Tag icons
+- `{age}`: Article age/date
+- `{title}`: Article title
 
 ---
 
@@ -174,9 +170,9 @@ accent_secondary = "#89b4fa"
 #### Component Styles
 
 Component styles define how UI elements appear. Each component can have:
-- `fg` — Foreground color (from palette or custom)
-- `bg` — Background color (from palette or custom)
-- `mods` — Array of modifiers
+- `fg`: Foreground color (from palette or custom)
+- `bg`: Background color (from palette or custom)
+- `mods`: Array of modifiers
 
 **Color References:**
 - Palette colors: `"background"`, `"foreground"`, `"muted"`, `"highlight"`, `"accent_primary"`, `"accent_secondary"`, `"accent_tertiary"`, `"accent_quaternary"`, `"info"`, `"warning"`, `"error"`
@@ -187,24 +183,24 @@ Component styles define how UI elements appear. Each component can have:
 
 | Component | Default FG | Default BG | Default Mods | Description |
 |-----------|-----------|------------|--------------|-------------|
-| `header` | `accent_primary` | `none` | — | Section headers |
-| `paragraph` | `foreground` | `none` | — | Regular text |
-| `article` | `foreground` | `none` | — | Article items |
+| `header` | `accent_primary` | `none` |: | Section headers |
+| `paragraph` | `foreground` | `none` |: | Regular text |
+| `article` | `foreground` | `none` |: | Article items |
 | `article_highlighted` | `highlight` | `none` | `["bold"]` | Selected article |
-| `feed` | `accent_primary` | `none` | — | Feed items |
-| `category` | `accent_secondary` | `none` | — | Category items |
-| `tag` | `accent_tertiary` | `none` | — | Tag items |
-| `query` | `accent_quaternary` | `none` | — | Query items |
+| `feed` | `accent_primary` | `none` |: | Feed items |
+| `category` | `accent_secondary` | `none` |: | Category items |
+| `tag` | `accent_tertiary` | `none` |: | Tag items |
+| `query` | `accent_quaternary` | `none` |: | Query items |
 | `yanked` | `highlight` | `none` | `["reversed"]` | Yanked items (for moving) |
-| `border` | `muted` | `none` | — | Panel borders |
-| `border_focused` | `accent_primary` | `none` | — | Focused panel border |
-| `statusbar` | `background` | `accent_primary` | — | Status bar |
-| `command_input` | `foreground` | `muted` | — | Command line input |
-| `inactive` | `muted` | `none` | — | Inactive elements |
-| `tooltip_info` | `background` | `info` | — | Info tooltips |
-| `tooltip_warning` | `background` | `warning` | — | Warning tooltips |
-| `tooltip_error` | `background` | `error` | — | Error tooltips |
-| `unread_modifier` | — | — | `"bold"` | Modifier applied to unread items |
+| `border` | `muted` | `none` |: | Panel borders |
+| `border_focused` | `accent_primary` | `none` |: | Focused panel border |
+| `statusbar` | `background` | `accent_primary` |: | Status bar |
+| `command_input` | `foreground` | `muted` |: | Command line input |
+| `inactive` | `muted` | `none` |: | Inactive elements |
+| `tooltip_info` | `background` | `info` |: | Info tooltips |
+| `tooltip_warning` | `background` | `warning` |: | Warning tooltips |
+| `tooltip_error` | `background` | `error` |: | Error tooltips |
+| `unread_modifier` |: |: | `"bold"` | Modifier applied to unread items |
 
 **Example:**
 ```toml
@@ -222,13 +218,13 @@ unread_modifier = "bold"
 The `feed_list` array defines what appears in the feed list panel and in what order. Each entry is a string that specifies the type and display format.
 
 **Syntax:**
-- `"feeds"` — Show feeds as a tree (hierarchical)
-- `"categories"` — Show categories as a tree
-- `"tags"` — Show tags as a tree
-- `"* feeds"` — Show feeds as a flat list (prefix with `*`)
-- `"* categories"` — Show categories as a flat list
-- `"* tags"` — Show tags as a flat list
-- `'query: "<label>" <query>'` — Custom query with label (label must be in double quotes)
+- `"feeds"`: Show feeds as a tree (hierarchical)
+- `"categories"`: Show categories as a tree
+- `"tags"`: Show tags as a tree
+- `"* feeds"`: Show feeds as a flat list (prefix with `*`)
+- `"* categories"`: Show categories as a flat list
+- `"* tags"`: Show tags as a flat list
+- `'query: "<label>" <query>'`: Custom query with label (label must be in double quotes)
 
 **Default:**
 ```toml
@@ -259,16 +255,16 @@ feed_list = [
 The `share_targets` array defines available sharing targets. Each entry can be a built-in target name or a custom target definition.
 
 **Built-in Targets:**
-- `"clipboard"` — Copy URL to clipboard
-- `"reddit"` — Share on Reddit
-- `"mastodon"` — Share on Mastodon
-- `"telegram"` — Share on Telegram
-- `"instapaper"` — Save to Instapaper
+- `"clipboard"`: Copy URL to clipboard
+- `"reddit"`: Share on Reddit
+- `"mastodon"`: Share on Mastodon
+- `"telegram"`: Share on Telegram
+- `"instapaper"`: Save to Instapaper
 
 **Custom Target Syntax:**
 `'<name> <url_template>'` where:
-- `<name>` — Target name used in commands
-- `<url_template>` — URL with `{url}` and `{title}` placeholders (both are URL-encoded automatically)
+- `<name>`: Target name used in commands
+- `<url_template>`: URL with `{url}` and `{title}` placeholders (both are URL-encoded automatically)
 
 **Default:**
 ```toml
@@ -294,176 +290,9 @@ share_targets = [
 
 ---
 
-### Complete Default Configuration
+### Default Configuration
 
-Below is the complete default configuration with all options explicitly set:
-
-```toml
-# Basic Configuration
-refresh_fps = 10
-article_scope = "unread"
-
-# Icons
-offline_icon = ''
-read_icon = ''
-unread_icon = ''
-marked_icon = ''
-unmarked_icon = ' '
-tag_icon = '󰓹'
-command_line_prompt_icon = ''
-
-# Labels
-all_label = "󱀂 All {unread_count}"
-feed_label = " {label} {unread_count}"
-category_label = "󰉋 {label} {unread_count}"
-categories_label = "󰉓 Categories {unread_count}"
-tags_label = "󰓻 Tags {unread_count}"
-tag_label = "󰓹 {label} {unread_count}"
-query_label = " {label}"
-
-# Article Display
-article_table = "{read},{marked},{tag_icons},{age},{title}"
-date_format = "%m/%d %H:%M"
-articles_after_selection = 3
-
-# Content
-auto_scrape = true
-thumbnail_show = true
-thumbnail_width = 20
-thumbnail_resize = true
-thumbnail_fetch_debounce_millis = 500
-text_max_width = 66
-content_preferred_type = "Markdown"
-
-# Layout
-feed_list_width_percent = 33
-article_list_width_percent = 67
-article_list_height_lines = 6
-
-# Feed List
-feed_list = [
-  'query: "Today Unread" today unread',
-  'query: "Today Marked" today marked',
-  "feeds",
-  "* categories",
-  "tags",
-]
-
-# Share Targets
-share_targets = [
-  "clipboard",
-  "reddit",
-  "mastodon",
-  "instapaper",
-  "telegram",
-]
-
-# Input Configuration
-[input_config]
-scroll_amount = 10
-timeout_millis = 5000
-
-[input_config.mappings]
-"up" = "up"
-"down" = "down"
-"C-h" = "left"
-"C-l" = "right"
-"left" = "left"
-"right" = "right"
-"j" = "down"
-"k" = "up"
-"space" = "toggle"
-"C-f" = "pagedown"
-"C-b" = "pagedown"
-"g g" = "gotofirst"
-"G" = "gotolast"
-"q" = "confirm quit"
-"C-c" = "quit"
-"x" = "scrape"
-"g f" = "focus feeds"
-"g a" = "focus articles"
-"g c" = "focus content"
-":" = "cmd"
-"l" = "next"
-"h" = "prev"
-"tab" = "nextc"
-"backtab" = "prevc"
-"o" = ["open", "read", "nextunread"]
-"O" = ["open unread", "confirm read articles %"]
-"J" = ["read", "nextunread"]
-"s" = "sync"
-"r" = "read"
-"t" = "cmd tag"
-"R" = "confirm read %"
-"C-r" = "cmd read"
-"u" = "unread"
-"U" = "confirm unread %"
-"C-u" = "cmd unread"
-"m" = "mark"
-"M" = "confirm mark %"
-"b" = "unmark"
-"B" = "confirm unmark %"
-"C-b" = "cmd unmark"
-"1" = "show all"
-"2" = "show unread"
-"3" = "show marked"
-"z" = "zen"
-"/" = "cmd search "
-"n" = "searchnext"
-"N" = "searchprev"
-"=" = "cmd filter "
-"+ r" = "filterclear"
-"+ +" = "filterapply"
-"c w" = "cmd rename"
-"c d" = "confirm remove"
-"c x" = "confirm removeall"
-"c f" = "cmd feedadd"
-"c a" = "cmd categoryadd"
-"c u" = "cmd feedchangeurl"
-"c y" = "yank"
-"c p" = "paste after"
-"c P" = "paste before"
-"c c" = "cmd tagchangecolor"
-"S c" = "share clipboard"
-"S r" = "share reddit"
-"S m" = "share mastodon"
-"S t" = "share telegram"
-"S i" = "share instapaper"
-
-# Theme Configuration
-[theme.color_palette]
-background = "black"
-foreground = "white"
-muted = "dark_gray"
-highlight = "yellow"
-accent_primary = "magenta"
-accent_secondary = "blue"
-accent_tertiary = "cyan"
-accent_quaternary = "yellow"
-info = "magenta"
-warning = "yellow"
-error = "red"
-
-[theme.style_set]
-header = { fg = "accent_primary" }
-paragraph = { fg = "foreground" }
-article = { fg = "foreground" }
-article_highlighted = { fg = "highlight", mods = ["bold"] }
-feed = { fg = "accent_primary" }
-category = { fg = "accent_secondary" }
-tag = { fg = "accent_tertiary" }
-query = { fg = "accent_quaternary" }
-yanked = { fg = "highlight", mods = ["reversed"] }
-border = { fg = "muted" }
-border_focused = { fg = "accent_primary" }
-statusbar = { fg = "background", bg = "accent_primary" }
-command_input = { fg = "foreground", bg = "muted" }
-inactive = { fg = "muted" }
-tooltip_info = { fg = "background", bg = "info" }
-tooltip_warning = { fg = "background", bg = "warning" }
-tooltip_error = { fg = "background", bg = "error" }
-unread_modifier = "bold"
-```
+You can find the default configuration in `examples/default-config.toml`
 
 </details>
 
@@ -535,9 +364,9 @@ Commands may accept parameters such as scopes, queries, names, URLs, and colors.
 ### Article Actions
 
 These commands support a **scope parameter** to target specific articles:
-- `.` or omitted — current article only
-- `%` — all articles  
-- Any query — all articles matching the query
+- `.` or omitted: current article only
+- `%`: all articles  
+- Any query: all articles matching the query
 
 | Command | Syntax | Context | Description |
 |---------|--------|---------|-------------|
@@ -643,16 +472,16 @@ Query elements are **conjunctive** (AND-ed together), i.e., all specified condit
 
 ### Search Term Types
 
-- **Word**: Case-insensitive word match — `title:rust`
-- **Quoted String**: Exact phrase match — `title:"Rust programming"`
-- **Regular Expression**: Regex pattern match (see [regex syntax documentation](https://docs.rs/regex/latest/regex/#syntax)) — `title:/^rust.*guide$/`
+- **Word**: Case-insensitive word match: `title:rust`
+- **Quoted String**: Exact phrase match: `title:"Rust programming"`
+- **Regular Expression**: Regex pattern match (see [regex syntax documentation](https://docs.rs/regex/latest/regex/#syntax)): `title:/^rust.*guide$/`
 
 ### Advanced Features
 
 - **Negation**: Use `~` to negate any query (e.g., `~read` matches unread articles, `~title:politics` excludes articles with "politics" in title)
-- **Multiple Criteria**: Combine multiple queries with spaces — all conditions must be satisfied (AND logic)
-- **Relative Time**: Use natural language for time-based queries — `"1 week ago"`, `"yesterday"`, `"3 days ago"` (see [`parse_datetime` documentation](https://lib.rs/crates/parse_datetime) for more information)
-- **Regular Expression OR**: Use the `|` operator in regex patterns for OR logic — `title:/(rust|python|javascript)/i` matches articles with any of these languages in the title
+- **Multiple Criteria**: Combine multiple queries with spaces: all conditions must be satisfied (AND logic)
+- **Relative Time**: Use natural language for time-based queries: `"1 week ago"`, `"yesterday"`, `"3 days ago"` (see [`parse_datetime` documentation](https://lib.rs/crates/parse_datetime) for more information)
+- **Regular Expression OR**: Use the `|` operator in regex patterns for OR logic: `title:/(rust|python|javascript)/i` matches articles with any of these languages in the title
 
 ### Example Queries
 
