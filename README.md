@@ -11,9 +11,9 @@ eilmeldung is a *TUI RSS reader* based on the awesome [news-flash](https://gitla
 
 # Features at a Glance
 
-## Slick and Configurable TUI
+## Queries for Filtering, Searching and Bulk-Operations
 
-## Powerful Search and Filter
+![video showing of article queries](demos/filter-demo.mkv) 
 
 
 ## Interactive Commandline
