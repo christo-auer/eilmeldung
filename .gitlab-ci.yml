@@ -19,7 +19,7 @@ default:
       - target
   before_script:
     - apt update
-    - apt install -y openssl pkg-config libxml2-dev libsqlite3-dev
+    - apt install -y openssl pkg-config libxml2-dev libsqlite3-dev llvm
 
 cargo:fmt:
   stage: verify
