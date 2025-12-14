@@ -101,9 +101,21 @@ jobs:
 
       - name: Install build dependencies (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          choco install -y openssl sqlite llvm libxml2
-          echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $GITHUB_ENV
+          # Install chocolatey packages
+          choco install -y openssl sqlite llvm pkgconfiglite
+          
+          # Install libxml2 via vcpkg
+          vcpkg install libxml2:x64-windows
+          
+          # Set environment variables for the build
+          echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $env:GITHUB_ENV
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_PATH=C:\vcpkg\installed\x64-windows\lib\pkgconfig" >> $env:GITHUB_ENV
+          
+          # Add vcpkg to PATH for pkg-config
+          echo "C:\vcpkg\installed\x64-windows\bin" >> $env:GITHUB_PATH
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
