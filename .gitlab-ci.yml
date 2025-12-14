@@ -69,6 +69,7 @@ release_job:
     tag_name: '$CI_COMMIT_TAG'
     description: './CHANGELOG.md'
     assets:
-      - name: 'Linux binaries'
-        filepath: './eilmeldung-$CI_COMMIT_TAG.tar.gz'
-        linktype: 'package'
+      links:
+        - name: 'Linux binaries'
+          filepath: './eilmeldung-$CI_COMMIT_TAG.tar.gz'
+          link_type: 'package'
