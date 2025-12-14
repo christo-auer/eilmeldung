@@ -34,7 +34,7 @@ impl<'a> Tooltip<'a> {
             TooltipFlavor::Warning => config.theme.tooltip_warning(),
             TooltipFlavor::Error => config.theme.tooltip_error(),
         };
-        Line::from(self.contents.clone()).style(style)
+        self.contents.clone().style(style)
     }
 }
 
