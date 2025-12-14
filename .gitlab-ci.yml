@@ -41,10 +41,11 @@ cargo:test:
 
 cargo:build:
   stage: build
-  stage: build
+  script:
     - cargo build --release
   artifacts:
-    - target/release/eilmeldung
+    paths:
+      - target/release/eilmeldung
 
 package:
   stage: build
