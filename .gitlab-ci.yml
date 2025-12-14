@@ -46,7 +46,7 @@ build:
     - if: $CI_COMMIT_TAG
   script:
     - VERSION="$CI_COMMIT_TAG"
-    - sed -i "s/v0\.0\.0/$VERSION/" Cargo.toml
+    - sed -i "s/0\.0\.0/$VERSION/" Cargo.toml
     - cargo build --release
     - mkdir -p eilmeldung-$VERSION
     - cp target/release/eilmeldung eilmeldung-$VERSION/
