@@ -224,14 +224,14 @@ impl FeedListModelData {
             // count unread
             if let FeedOrCategory::Category(category_id) = feed_or_category {
                 Self::count_recursive(
-                    &category_id,
+                    category_id,
                     &self.category_tree,
                     &mut unread_count_for_feed_or_category,
                 );
                 //
                 // count marked
                 Self::count_recursive(
-                    &category_id,
+                    category_id,
                     &self.category_tree,
                     &mut marked_count_for_feed_or_category,
                 );
