@@ -11,7 +11,7 @@ use crate::prelude::*;
 
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)] // OK in this case as the number of allocation is
-                                     // comparatively small and the enums are short-lived
+// comparatively small and the enums are short-lived
 pub enum Message {
     Command(Command),
     Event(Event),
