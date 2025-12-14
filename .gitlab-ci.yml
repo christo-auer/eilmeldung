@@ -73,6 +73,8 @@ package:
 publish:
   stage: deploy
   needs: ["package"]
+  rules:
+    - if: $CI_COMMIT_TAG
   script:
     - |
       curl --location --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
