@@ -10,6 +10,7 @@ stages:
   - test
   - build
   - release
+  - deploy
 
 .build_deps:
   interruptible: true
