@@ -9,8 +9,8 @@ stages:
   - verify
   - test
   - build
-  - release
   - deploy
+  - release
 
 .build_deps:
   interruptible: true
@@ -68,11 +68,11 @@ package:
   artifacts:
     paths:
       - eilmeldung-${CI_COMMIT_TAG}.tar.gz
-    expire_in: never
+    expire_in: "1 week"
 
 publish:
   stage: deploy
-  needs: ["package"]
+  needs: package
   script:
     - |
       curl --location --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
@@ -81,6 +81,7 @@ publish:
 
 release:
   stage: release
+  needs: publish
   image: registry.gitlab.com/gitlab-org/cli:latest
   rules:
     - if: $CI_COMMIT_TAG
