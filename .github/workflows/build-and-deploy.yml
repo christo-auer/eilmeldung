@@ -102,7 +102,7 @@ jobs:
       - name: Install build dependencies (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install -y openssl sqlite llvm
+          choco install -y openssl sqlite llvm libxml2
           echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $GITHUB_ENV
 
       - name: Install Rust toolchain
