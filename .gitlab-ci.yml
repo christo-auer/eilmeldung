@@ -1,7 +1,0 @@
-include:
-  - component: $CI_SERVER_FQDN/rust-ci/rust-ci/base-pipeline@1.4.0
-    inputs:
-      before:
-        - apt update
-        - apt install --yes openssl libssl-dev pkg-config libxml2-dev libclang-dev sqlite3
-
