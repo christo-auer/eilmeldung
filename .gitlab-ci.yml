@@ -64,7 +64,7 @@ package:
       - eilmeldung-*.tar.gz
     expire_in: never
 
-release_job:
+release:
   stage: release
   image: registry.gitlab.com/gitlab-org/cli:latest
   rules:
