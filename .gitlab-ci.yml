@@ -30,6 +30,7 @@ cargo:fmt:
 
 cargo:clippy:
   stage: verify
+  extends: .build_deps
   script:
     - rustup component add clippy
     - cargo clippy --all-targets
