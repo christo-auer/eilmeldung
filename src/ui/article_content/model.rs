@@ -154,14 +154,12 @@ impl ArticleContentModelData {
     }
 
     pub(super) fn get_or_create_markdown_content(&mut self, config: &Config) -> Option<&str> {
-        if self.markdown_content.is_none() {
-            if config.content_preferred_type == ArticleContentType::Markdown {
-                if let Some(fat_article) = self.fat_article.as_ref() {
-                    if let Some(html) = fat_article.scraped_content.as_deref() {
-                        self.markdown_content = Some(html2text::html2text(html));
-                    }
-                }
-            }
+        if self.markdown_content.is_none()
+            && config.content_preferred_type == ArticleContentType::Markdown
+            && let Some(fat_article) = self.fat_article.as_ref()
+            && let Some(html) = fat_article.scraped_content.as_deref()
+        {
+            self.markdown_content = Some(html2text::html2text(html));
         }
         self.markdown_content.as_deref()
     }
