@@ -3,7 +3,7 @@ image: "rust:latest"
 variables:
   CARGO_HOME: ${CI_PROJECT_DIR}/.cargo
   RUSTFLAGS: -Dwarnings
-  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/eilmeldung/"
+  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/eilmeldung"
 
 stages:
   - verify
@@ -70,16 +70,14 @@ package:
       - eilmeldung-${CI_COMMIT_TAG}.tar.gz
     expire_in: "1 week"
 
-publish:
+deploy:
   stage: deploy
   needs: ["package"]
   rules:
     - if: $CI_COMMIT_TAG
   script:
     - |
-      curl --location --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-           --upload-file eilmeldung-${CI_COMMIT_TAG}.tar.gz \
-           "${PACKAGE_REGISTRY_URL}/eilmeldung-${CI_COMMIT_TAG}.tar.gz"
+      curl --location --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "eilmeldung-${CI_COMMIT_TAG}.tar.gz" "${PACKAGE_REGISTRY_URL}/eilmeldung-${CI_COMMIT_TAG}.tar.gz"
 
 release:
   stage: release
@@ -96,5 +94,5 @@ release:
       links:
         - name: 'Linux executable'
           url: "${PACKAGE_REGISTRY_URL}"
-          filepath: '/eilmeldung-${CI_COMMIT_TAG}.tar.gz'
+          direct_asset_path: '/eilmeldung-${CI_COMMIT_TAG}.tar.gz'
           link_type: 'package'
