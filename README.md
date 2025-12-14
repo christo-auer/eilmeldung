@@ -1,13 +1,18 @@
-# +++ eilmeldung +++
+
+![Logo of eilmeldung](doc/images/logo.png) 
+
+
+  
 
 ![Screenshot of eilmeldung](doc/images/hero-shot.jpg) 
 
-eilmeldung is a *TUI RSS reader* based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.
-
+*eilmeldung* is a *TUI RSS reader* based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.  
 - *fast* in every aspect: non-blocking terminal user interface, (neo)vim-inspried keybindings, instant start-up and no clutter
 - *stands* on the shoulder of *giants*: based on the news-flash library, *eilmeldung* supports many RSS providers, is efficient and reliable
 - *powerful* and yet *easy to use out-of-the-box*: sane defaults which work for most, and yet configurable to meet anyones requirements, from keybindings to colors, from displayed content to RSS provider
 - read news like a pro: filter and search news with a easy-to-learn powerful *query language*, activate *zen mode* to con
+
+*eilmeldung* is German for *breaking news*
 
 # Features at a Glance
 
