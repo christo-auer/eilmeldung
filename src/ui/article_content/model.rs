@@ -190,15 +190,13 @@ impl ArticleContentModelData {
             None => true,
         };
 
-        let long_enough = match self.duration_since_last_article_change {
+        match self.duration_since_last_article_change {
             None => true,
             Some(duration) => {
                 duration > Duration::from_millis(config.thumbnail_fetch_debounce_millis)
                     || long_enough_current_article
             }
-        };
-
-        long_enough
+        }
     }
 
     pub(super) fn fetch_thumbnail(&mut self) -> color_eyre::Result<()> {
