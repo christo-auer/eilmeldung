@@ -81,7 +81,7 @@ deploy:
 
 release:
   stage: release
-  needs: ["publish"]
+  needs: ["deploy"]
   image: registry.gitlab.com/gitlab-org/cli:latest
   rules:
     - if: $CI_COMMIT_TAG
