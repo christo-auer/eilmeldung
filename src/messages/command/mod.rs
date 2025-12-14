@@ -508,6 +508,7 @@ pub enum Command {
         message = "cmd [<command line content>]",
         detailed_message = "open command line with optional content (all)"
     )]
+    #[allow(clippy::enum_variant_names)]
     CommandLineOpen(Option<String>),
 
     #[strum(
@@ -522,6 +523,7 @@ pub enum Command {
         message = "confirm <command>",
         detailed_message = "ask user for confirmation to execute command and, if positive, execute command (all)"
     )]
+    #[allow(clippy::enum_variant_names)]
     CommandConfirm(Box<Command>),
 
     // redraw command
