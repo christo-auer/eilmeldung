@@ -1,0 +1,155 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test and Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssl libssl-dev pkg-config libxml2-dev libclang-dev sqlite3
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache target directory
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests
+        run: cargo test --locked
+
+      - name: Run clippy
+        run: cargo clippy --locked -- -D warnings
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+
+  release:
+    name: Release - ${{ matrix.platform.os-name }}
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/')
+    strategy:
+      matrix:
+        platform:
+          - os-name: Linux-x86_64
+            runs-on: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            apt-deps: true
+
+          - os-name: Linux-aarch64
+            runs-on: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            apt-deps: true
+
+          - os-name: Windows-x86_64
+            runs-on: windows-latest
+            target: x86_64-pc-windows-msvc
+            apt-deps: false
+
+          - os-name: macOS-x86_64
+            runs-on: macOS-latest
+            target: x86_64-apple-darwin
+            apt-deps: false
+
+          - os-name: macOS-aarch64
+            runs-on: macOS-latest
+            target: aarch64-apple-darwin
+            apt-deps: false
+
+    runs-on: ${{ matrix.platform.runs-on }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies (Linux)
+        if: matrix.platform.apt-deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssl libssl-dev pkg-config libxml2-dev libclang-dev sqlite3
+
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install openssl pkg-config libxml2 sqlite llvm
+
+      - name: Install build dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install -y openssl sqlite llvm
+          echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> $GITHUB_ENV
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform.target }}
+
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: build
+          target: ${{ matrix.platform.target }}
+          args: "--locked --release"
+          strip: true
+
+      - name: Package release assets
+        shell: bash
+        run: |
+          BIN_NAME="eilmeldung"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            BIN_NAME="${BIN_NAME}.exe"
+          fi
+          
+          # Create release directory
+          RELEASE_DIR="eilmeldung-${{ github.ref_name }}-${{ matrix.platform.os-name }}"
+          mkdir -p "$RELEASE_DIR"
+          
+          # Copy binary
+          cp "target/${{ matrix.platform.target }}/release/$BIN_NAME" "$RELEASE_DIR/"
+          
+          # Copy examples directory
+          cp -r examples "$RELEASE_DIR/"
+          
+          # Create archive
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            7z a "${RELEASE_DIR}.zip" "$RELEASE_DIR"
+            echo "ASSET=${RELEASE_DIR}.zip" >> $GITHUB_ENV
+          else
+            tar czf "${RELEASE_DIR}.tar.gz" "$RELEASE_DIR"
+            echo "ASSET=${RELEASE_DIR}.tar.gz" >> $GITHUB_ENV
+          fi
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
