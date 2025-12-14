@@ -10,7 +10,7 @@ stages:
   - build
   - release
 
-default:
+.build_deps:
   interruptible: true
   cache:
     key: ${CI_COMMIT_REF_SLUG}
@@ -35,12 +35,14 @@ cargo:clippy:
 
 cargo:test:
   stage: test
+  extends: .build_deps
   needs: ["cargo:clippy"]
   script:
     - cargo test
 
 cargo:build:
   stage: build
+  extends: .build_deps
   script:
     - cargo build --release
   artifacts:
