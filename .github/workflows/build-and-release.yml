@@ -70,15 +70,25 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
   build:
-    name: Build x86_64-unknown-linux-gnu
-    runs-on: ubuntu-latest
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os}}
     if: startsWith(github.ref, 'refs/tags/')
     needs: lint
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install system dependencies
+      - name: Install system dependencies (Ubuntu Linux)
+        if: runner.os == "Linux"
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -89,10 +99,15 @@ jobs:
             llvm \
             clang
 
+      - name: Install system dependencies (macOS)
+        if: runner.os == "macOS"
+        run: |
+          brew install openssl libxml2 
+
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-unknown-linux-gnu
+          targets: ${{ matrix.target  }}
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -119,7 +134,7 @@ jobs:
             ${{ runner.os }}-cargo-build-target-release-
 
       - name: Build release binary
-        run: cargo build --release --target x86_64-unknown-linux-gnu
+        run: cargo build --release --target ${{ matrix.target  }}
 
       - name: Extract tag name
         id: tag
@@ -128,19 +143,19 @@ jobs:
       - name: Create package directory
         run: |
           mkdir -p package/eilmeldung
-          cp target/x86_64-unknown-linux-gnu/release/eilmeldung package/eilmeldung/
+          cp target/${{ matrix.target }}/release/eilmeldung package/eilmeldung/
           cp -r examples package/eilmeldung/
 
       - name: Create tarball
         run: |
           cd package
-          tar -czf eilmeldung-x86_64-linux-${{ steps.tag.outputs.TAG_NAME }}.tar.gz eilmeldung/
+          tar -czf eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}.tar.gz eilmeldung/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: eilmeldung-x86_64-linux-${{ steps.tag.outputs.TAG_NAME }}
-          path: package/eilmeldung-x86_64-linux-${{ steps.tag.outputs.TAG_NAME }}.tar.gz
+          name: eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}
+          path: package/eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}.tar.gz
 
   release:
     name: Create GitHub Release
@@ -170,7 +185,6 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: eilmeldung-x86_64-linux-${{ steps.tag.outputs.TAG_NAME }}
           path: ./artifacts
 
       - name: Create GitHub Release
@@ -182,6 +196,6 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            ./artifacts/eilmeldung-x86_64-linux-${{ steps.tag.outputs.TAG_NAME }}.tar.gz
+            ./artifacts/**/eilmeldung-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
