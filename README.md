@@ -1,3 +1,4 @@
+This is still **WIP**!
 
 ![Logo of eilmeldung](doc/images/logo.png) 
 
