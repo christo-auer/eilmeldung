@@ -17,14 +17,7 @@ This is still **WIP**!
 
 # Features at a Glance
 
-## Queries for Filtering, Searching and Bulk-Operations
-
-![video showing of article queries](demos/filter-demo.webm) 
-
-
-## Interactive Commandline
-
-## Keybindings
+**TODO**
 
 
 # Installation 
@@ -599,4 +592,4 @@ title:/(feature|bug|fix)/ feed:/github|gitlab/  # Development-related articles f
 
 # On the use of AI in this Project 
 
-Some context: I am a programming tutor 
+TODO
