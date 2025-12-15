@@ -6,8 +6,10 @@ use reqwest::Client;
 use tokio::task::JoinHandle;
 
 use crate::prelude::*;
-use network_connectivity::{Connectivity, ConnectivityState};
 use tokio::sync::{Mutex, mpsc::UnboundedSender};
+
+#[cfg(not(target_os = "macos"))]
+use network_connectivity::{Connectivity, ConnectivityState};
 
 pub struct ConnectivityMonitor {
     message_sender: UnboundedSender<Message>,
@@ -60,6 +62,7 @@ impl ConnectivityMonitor {
         Ok(())
     }
 
+    #[cfg(not(target_os = "macos"))]
     async fn on_connectivity_changed(&self, connectivity: &Connectivity) -> color_eyre::Result<()> {
         use ConnectivityState::*;
         match (connectivity.ipv4, connectivity.ipv6) {
@@ -76,6 +79,7 @@ impl ConnectivityMonitor {
         Ok(())
     }
 
+    #[cfg(not(target_os = "macos"))]
     pub fn spawn(self) -> color_eyre::Result<JoinHandle<color_eyre::Result<()>>> {
         let (driver, mut receiver) =
             network_connectivity::new().map_err(|error| color_eyre::eyre::eyre!(error))?;
@@ -88,6 +92,7 @@ impl ConnectivityMonitor {
                     _ = tokio::time::sleep(tokio::time::Duration::from_secs(60)) => {
                         self.check_reachability().await?;
                     },
+
                     connectivity = receiver.recv() => {
                         match connectivity {
                             None => *self.is_running.lock().await = false,
@@ -104,9 +109,28 @@ impl ConnectivityMonitor {
                 }
             }
             drop(receiver);
+
             driver
                 .await?
                 .map_err(|error| color_eyre::eyre::eyre!(error))?;
+
+            Ok(())
+        }))
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn spawn(self) -> color_eyre::Result<JoinHandle<color_eyre::Result<()>>> {
+        Ok(tokio::spawn(async move {
+            *self.is_running.lock().await = true;
+            while *self.is_running.lock().await {
+                tokio::select! {
+                    _ = tokio::time::sleep(tokio::time::Duration::from_secs(60)) => {
+                        self.check_reachability().await?;
+                    },
+
+
+                }
+            }
 
             Ok(())
         }))
