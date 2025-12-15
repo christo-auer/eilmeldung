@@ -64,7 +64,7 @@ jobs:
             ${{ runner.os }}-cargo-build-target-
 
       - name: Run cargo fmt
-        run: cargo fmt --check .
+        run: cargo fmt --check
 
       - name: Run clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
