@@ -128,20 +128,10 @@ programs.eilmeldung = {
 <summary>Click to expand configuration reference</summary>
 
 **eilmeldung** uses a TOML configuration file to customize behavior, appearance, and key bindings. The configuration file is optional, eilmeldung works out-of-the-box with sensible defaults.
+The configuration file location is `~/.config/eilmeldung/config.toml`.
 
 **Note:** Icons and special characters require a terminal and font that support [Nerd Fonts](https://www.nerdfonts.com/).
 
-### Configuration File Location
-
-The configuration file location depends on your operating system:
-
-| Operating System | Configuration Path |
-|-----------------|-------------------|
-| Linux | `~/.config/eilmeldung/config.toml` |
-| macOS | `~/Library/Application Support/org.christo-auer.eilmeldung/config.toml` |
-| Windows | `%APPDATA%\christo-auer\eilmeldung\config\config.toml` |
-
----
 
 ### Basic Configuration Options
 
@@ -596,3 +586,16 @@ title:/(feature|bug|fix)/ feed:/github|gitlab/  # Development-related articles f
 </details>
 
 # Standing on the Shoulders of Giants
+
+*eilmeldung* was inspired by other awesome programs and libraries of which I want to mention some:
+
+- [news-flash](https://gitlab.com/news-flash/news_flash) library and [news-flash GTK](https://gitlab.com/news-flash/news_flash_gtk), a modern Gnome/GTK RSS reader, both implemented in rust
+- [newsboat](https://newsboat.org/) which has been me TUI RSS reader of choice for many years
+- [spotify-player](https://github.com/aome510/spotify-player), a TUI spotify music player written in rust. In particular, the theming system and how input is handled has been a great inspiration for *eilmeldung*
+- [vifm](https://vifm.info/), [neomutt](https://neomutt.org/) with [notmuch](https://notmuchmail.org/) inspired the filtering and article query systems
+- [neovim](https://neovim.io/) and [vim](https://www.vim.org/) for their philosophy on user input
+- [ratatui](https://ratatui.rs/) and all its supporting libraries for creating the TUI
+
+# On the use of AI in this Project 
+
+Some context: I am a programming tutor 
