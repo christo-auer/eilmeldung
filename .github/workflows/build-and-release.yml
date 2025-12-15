@@ -136,8 +136,9 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target  }}
         env:
-          PKG_CONFIG_PATH: ${{ runner.os == 'macOS' && '/opt/homebrew/opt/libxml2/lib/pkgconfig' || '' }}
+          PKG_CONFIG_PATH: ${{ matrix.target == 'x86_64-apple-darwin' && '/usr/local/opt/libxml2/lib/pkgconfig:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/pkgconfig' || (runner.os == 'macOS' && '/opt/homebrew/opt/libxml2/lib/pkgconfig' || '') }}
           PKG_CONFIG_ALLOW_CROSS: ${{ runner.os == 'macOS' && '1' || '' }}
+          XML2_CONFIG: ${{ matrix.target == 'x86_64-apple-darwin' && '/Library/Developer/CommandLineTools/usr/bin/xml2-config' || '' }}
 
       - name: Extract tag name
         id: tag
