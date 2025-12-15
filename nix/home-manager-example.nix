@@ -15,7 +15,11 @@
 
   outputs = { nixpkgs, home-manager, eilmeldung, ... }: {
     homeConfigurations."youruser" = home-manager.lib.homeManagerConfiguration {
-      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      # Apply the overlay so pkgs.eilmeldung is available
+      pkgs = import nixpkgs {
+        system = "x86_64-linux";
+        overlays = [ eilmeldung.overlays.default ];
+      };
       
       modules = [
         # Import the eilmeldung Home Manager module
@@ -24,25 +28,21 @@
         # Your home configuration
         ./home.nix
       ];
-      
-      # Make the eilmeldung package available in pkgs
-      extraSpecialArgs = {
-        inherit eilmeldung;
-      };
     };
   };
 }
 
 # home.nix
-{ config, pkgs, eilmeldung, ... }:
+{ config, pkgs, ... }:
 
 {
   # Method 1: Use the Home Manager module (Recommended)
   programs.eilmeldung = {
     enable = true;
     
-    # Optional: Override the package if you want a specific version
-    # package = eilmeldung.packages.${pkgs.system}.default;
+    # The package comes from pkgs.eilmeldung (via overlay)
+    # Optional: Override if needed
+    # package = pkgs.eilmeldung.override { ... };
     
     # Optional: Configure via Nix instead of manually editing config.toml
     settings = {

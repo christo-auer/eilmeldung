@@ -46,7 +46,11 @@ Add eilmeldung as an input to your Home Manager flake:
 
   outputs = { nixpkgs, home-manager, eilmeldung, ... }: {
     homeConfigurations."youruser" = home-manager.lib.homeManagerConfiguration {
-      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      # IMPORTANT: Apply the overlay so pkgs.eilmeldung is available
+      pkgs = import nixpkgs {
+        system = "x86_64-linux";
+        overlays = [ eilmeldung.overlays.default ];
+      };
       
       modules = [
         eilmeldung.homeManagerModules.default
@@ -92,6 +96,23 @@ Then in your `home.nix`:
 ```
 
 See [home-manager-example.nix](./home-manager-example.nix) for a complete example.
+
+### Important: The Overlay
+
+The Home Manager module expects `pkgs.eilmeldung` to exist. To make this work, you **must** apply the overlay when creating your pkgs:
+
+```nix
+# ✅ Correct - with overlay
+pkgs = import nixpkgs {
+  system = "x86_64-linux";
+  overlays = [ eilmeldung.overlays.default ];
+};
+
+# ❌ Wrong - pkgs.eilmeldung won't exist
+pkgs = nixpkgs.legacyPackages.x86_64-linux;
+```
+
+The overlay adds `eilmeldung` to the package set, making it available as `pkgs.eilmeldung`.
 
 ## File Structure
 
