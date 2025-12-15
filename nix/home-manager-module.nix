@@ -1,23 +1,14 @@
-# Home Manager module for eilmeldung
-# This provides a programs.eilmeldung interface for Home Manager users
 { config, lib, pkgs, ... }:
 
 with lib;
 
 let
   cfg = config.programs.eilmeldung;
-  
-  # TOML format for serializing settings
   settingsFormat = pkgs.formats.toml { };
-  
-  # Helper to convert Nix settings to TOML config file
   configFile = settingsFormat.generate "config.toml" cfg.settings;
-
 in {
-  # Module metadata
-  meta.maintainers = [ ];
+  meta.maintainers = [ "christo-auer" ];
 
-  # Define the options users can set
   options.programs.eilmeldung = {
     enable = mkEnableOption "eilmeldung, a feature-rich TUI RSS reader";
 
@@ -59,18 +50,15 @@ in {
       description = ''
         Configuration written to {file}`$XDG_CONFIG_HOME/eilmeldung/config.toml`.
         
-        See <https://gitlab.com/christo-auer/eilmeldung#configuration-options>
+        See <https://github.com/christo-auer/eilmeldung#configuration-options>
         for the full list of options.
       '';
     };
   };
 
-  # What happens when the module is enabled
   config = mkIf cfg.enable {
-    # Install the package
     home.packages = [ cfg.package ];
 
-    # Create the config file
     xdg.configFile."eilmeldung/config.toml" = mkIf (cfg.settings != { }) {
       source = configFile;
     };

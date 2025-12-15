@@ -1,5 +1,3 @@
-# Development shell for eilmeldung
-# This provides all tools needed for development (not just building)
 { pkgs }:
 
 pkgs.mkShell {
@@ -19,8 +17,6 @@ pkgs.mkShell {
     # Debugging and profiling
     llvmPackages_19.libclang
     llvmPackages_19.clang
-    gdb
-    valgrind
   ];
 
   # Libraries needed for building
@@ -46,9 +42,4 @@ pkgs.mkShell {
     ]
   );
   
-  # Shell hook - runs when entering the dev shell
-  shellHook = ''
-    echo "🦀 Rust development environment for eilmeldung"
-    echo "Run 'cargo build' to build, 'cargo run' to run"
-  '';
 }

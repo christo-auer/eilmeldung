@@ -8,16 +8,14 @@
 
   outputs = { self, nixpkgs, flake-utils, ... }:
     {
-      # Overlay - adds eilmeldung to pkgs
       overlays.default = final: prev: {
         eilmeldung = final.callPackage ./nix/package.nix {
           inherit (final) llvmPackages_19;
         };
       };
       
-      # Home Manager module - exposed at the top level (not per-system)
-      homeManagerModules.default = import ./nix/home-manager-module.nix;
-      homeManagerModules.eilmeldung = self.outputs.homeManagerModules.default;
+      homeManager.default = import ./nix/home-manager-module.nix;
+      homeManager.eilmeldung = self.outputs.homeManager.default;
     }
     // flake-utils.lib.eachDefaultSystem (system:
       let
