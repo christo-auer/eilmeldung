@@ -102,7 +102,7 @@ jobs:
       - name: Install system dependencies (macOS)
         if: ${{ runner.os == 'macOS' }}
         run: |
-          brew install openssl libxml2 
+          brew install libxml2
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -135,6 +135,8 @@ jobs:
 
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target  }}
+        env:
+          PKG_CONFIG_PATH: ${{ runner.os == 'macOS' && '/opt/homebrew/opt/libxml2/lib/pkgconfig' || '' }}
 
       - name: Extract tag name
         id: tag
