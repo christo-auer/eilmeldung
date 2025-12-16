@@ -24,13 +24,17 @@ This is still **WIP**!
 
 Follow any of the installation methods below, then run *eilmeldung*. It will guide you through the setup process.
 
+## Important: Nerd Fonts
+
+You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!
+
 ## Via Cargo
 
-In order to compile `eilmeldung` from source, you need `cargo` with a `rust` compiler (e.g., use `rustup`) and some build deps. On Debian/Unbuntu-based systems its:
+In order to compile `eilmeldung` from source, you need `cargo` with a `rust` compiler with at least edition 2024 (e.g., use `rustup`) and some build deps. On Debian/Unbuntu-based systems its:
 
 ```bash
 apt update
-apt install --yes sudo apt-get install -y openssl pkg-config libxml2-dev libsqlite3-dev llvm clang
+apt install --yes sudo apt-get install -y build-essential libssl-dev pkg-config libxml2-dev clang libsqlite3-dev
 
 ```
 
