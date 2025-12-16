@@ -29,10 +29,10 @@ async fn main() -> color_eyre::Result<()> {
     let config = load_config()?;
 
     let config_dir = PROJECT_DIRS.config_dir();
-    let state_dir = PROJECT_DIRS.state_dir();
+    let state_dir = PROJECT_DIRS.state_dir().unwrap_or(PROJECT_DIRS.data_dir());
 
     info!("Initializing NewsFlash");
-    let news_flash_attempt = NewsFlash::try_load(state_dir.unwrap(), config_dir);
+    let news_flash_attempt = NewsFlash::try_load(state_dir, config_dir);
 
     let client = reqwest::Client::new();
 
@@ -49,7 +49,7 @@ async fn main() -> color_eyre::Result<()> {
             while !logged_in {
                 login_data = Some(login_setup.inquire_login_data(&login_data).await?);
                 news_flash = Some(NewsFlash::new(
-                    state_dir.unwrap(),
+                    state_dir,
                     config_dir,
                     &login_data.as_ref().unwrap().id(),
                     None,
