@@ -1,4 +1,3 @@
-```toml
 # Basic Configuration
 refresh_fps = 10
 article_scope = "unread"
