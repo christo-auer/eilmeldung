@@ -28,6 +28,15 @@ Follow any of the installation methods below, then run *eilmeldung*. It will gui
 
 You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!
 
+## Via Homebrew
+
+To install the *binaries* via [homebrew](https://brew.sh), tap this repository and install *eilmeldung*:
+
+```bash
+brew tap christo-auer/eilmeldung https://github.com/christo-auer/eilmeldung
+brew install eilmeldung
+```
+
 ## Via Cargo
 
 In order to compile `eilmeldung` from source, you need `cargo` with a `rust` compiler with at least edition 2024 (e.g., use `rustup`) and some build deps. On Debian/Unbuntu-based systems its:
