@@ -176,12 +176,13 @@ jobs:
         id: tag
         run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Read CHANGELOG.md
+      - name: Extract release notes from CHANGELOG
         id: changelog
         run: |
+          VERSION=${{ steps.tag.outputs.TAG_NAME }}
           {
             echo 'NOTES<<EOF'
-            cat CHANGELOG.md
+            sed -n "/^# ${VERSION}/,/^# [0-9]/p" CHANGELOG.md | sed '$d'
             echo EOF
           } >> $GITHUB_OUTPUT
 
@@ -201,5 +202,18 @@ jobs:
           prerelease: false
           files: |
             ./artifacts/**/eilmeldung-*.tar.gz
+  homebrew:
+    name: Bump Homebrew formula
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: release
+    permissions:
+      contents: write
+    steps:
+      - uses: mislav/bump-homebrew-formula-action@v3
+        with:
+          formula-name: eilmeldung
+          formula-path: HomebrewFormula/eilmeldung.rb
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # the personal access token should have "repo" & "workflow" scopes
+          COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
