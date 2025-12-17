@@ -1,22 +1,25 @@
 class Eilmeldung < Formula
   desc "a feature-rich TUI RSS reader based on the newsflash library"
   homepage "https://github.com/christo-auer/eilmeldung"
+  url "https://github.com/christo-auer/eilmeldung/archive/refs/tags/0.1.0.tar.gz"
+  sha256 "58e3fce5ba9750984e86a76d88832ed44bfad19c7c1565cf090f834e658bcb60"
+  license "GPL-3.0"
+  head "https://github.com/christo-auer/eilmeldung.git", branch: "main"
   version "0.1.0"
-  
-  depends_on "libxml2"
-  
-  if OS.mac? && Hardware::CPU.arm?
-    url "https://github.com/christo-auer/eilmeldung/releases/download/0.1.0/eilmeldung-aarch64-apple-darwin-0.1.0.tar.gz"
-    sha256 "fd19cff271298780831c229a34aab48b10eb3849d9e8ae0d0b707dd0beb46112"
-  elsif OS.mac? && Hardware::CPU.intel?
-    url "https://github.com/christo-auer/eilmeldung/releases/download/0.1.0/eilmeldung-x86_64-apple-darwin-0.1.0.tar.gz"
-    sha256 "96613a98a4479ce45c1c9d5b15caea7006496ae9896191dd54763de2b8016e4d"
-  elsif OS.linux? && Hardware::CPU.intel?
-    url "https://github.com/christo-auer/eilmeldung/releases/download/0.1.0/eilmeldung-x86_64-unknown-linux-gnu-0.1.0.tar.gz"
-    sha256 "0b1851cd62807ce9b53f09a9f1f738b55e45f43129a0177ae855339cc8e41e7f"
-  end
 
+  depends_on "pkg-config" => :build
+  depends_on "rust" => :build
+
+  depends_on "libxml2"
+  depends_on "openssl@3"
+  depends_on "sqlite"
+
+  on_linux do
+    depends_on "llvm" => :build
+    depends_on "clang" => :build
+  end
+  
   def install
-    bin.install "eilmeldung"
+    system "cargo", "install", *std_cargo_args
   end
 end

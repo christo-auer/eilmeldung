@@ -30,7 +30,7 @@ You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/
 
 ## Via Homebrew
 
-To install the *binaries* via [homebrew](https://brew.sh), tap this repository and install *eilmeldung*:
+To install via [homebrew](https://brew.sh), tap this repository and install *eilmeldung*:
 
 ```bash
 brew tap christo-auer/eilmeldung https://github.com/christo-auer/eilmeldung
