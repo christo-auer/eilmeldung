@@ -8,6 +8,7 @@ repository = "https://gitlab.com/christo-auer/eilmeldung"
 license = "GPL-3.0-or-later"
 keywords = [ "rss", "tui", "news", "newsflash" ]
 categories = [ "command-line-utilities" ]
+publish = false
 
 [target.'cfg(target_os = "linux")'.dependencies]
 network_connectivity = "1.0.0"
