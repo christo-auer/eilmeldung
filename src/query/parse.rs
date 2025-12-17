@@ -326,27 +326,33 @@ fn parse_query(
                 }
             },
 
-            T::KeyTag => match query_lexer.next() {
-                Some(Ok(T::TagList)) => {
-                    let tag_list: Vec<String> = query_lexer
-                        .slice()
-                        .split(",")
-                        .map(&str::to_string)
-                        .map(|mut tag| {
-                            tag.remove(0);
-                            tag
-                        })
-                        .collect();
+            tag @ (T::KeyTag | T::TagList) => {
+                let tag_list_str = match tag {
+                    T::KeyTag => match query_lexer.next() {
+                        Some(Ok(T::TagList)) => query_lexer.slice(),
 
-                    Some(QueryAtom::Tag(tag_list))
-                }
-                _ => {
-                    return Err(E::TagListExpected(
-                        query_lexer.span().start,
-                        query_lexer.slice().to_owned(),
-                    ));
-                }
-            },
+                        _ => {
+                            return Err(E::TagListExpected(
+                                query_lexer.span().start,
+                                query_lexer.slice().to_owned(),
+                            ));
+                        }
+                    },
+                    T::TagList => query_lexer.slice(),
+
+                    _ => unreachable!(),
+                };
+                let tag_list: Vec<String> = tag_list_str
+                    .split(",")
+                    .map(&str::to_string)
+                    .map(|mut tag| {
+                        tag.remove(0);
+                        tag
+                    })
+                    .collect();
+
+                Some(QueryAtom::Tag(tag_list))
+            }
 
             mut time_key @ (T::KeyNewer
             | T::KeyOlder
