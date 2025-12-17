@@ -6,6 +6,6 @@ pre-release-replacements = [
   {file="CHANGELOG.md", search="# Unreleased", replace="# Unreleased\n\n# {{version}} - {{date}}"},
   {file="nix/package.nix", search="version = .*", replace="version = \"{{version}}\""},
   {file="HomebrewFormula/eilmeldung.rb", search="version .*", replace="version \"{{version}}\""},
-  {file="HomebrewFormula/eilmeldung.rb", search="tags/[0-9.]+", replace="tags/{{version}}"},
+  {file="HomebrewFormula/eilmeldung.rb", search="tags/[0-9.]+", replace="tags/{{version}}."},
 ]
 
