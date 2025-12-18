@@ -203,22 +203,22 @@ jobs:
           files: |
             ./artifacts/**/eilmeldung-*.tar.gz
   homebrew-bump:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Update Homebrew formula sha256
+        name: Update Homebrew formula sha256
         runs-on: ubuntu-latest
         if: startsWith(github.ref, 'refs/tags/')
         needs: release
         permissions:
           contents: write
         steps:
-          - uses: ubuntu-latest
-            run: |
-              ./HomebrewFormula/update-sha.sh
-              git config user.email "${{ vars.GIT_USER_EMAIL }}"
-              git config user.name "${{ vars.GIT_USER_NAME }}"
-              git add ./HomebrewFormula/eilmeldung.rb
-              git commit -m "chore: update SHA256 in homebrew formula"
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Update formula, commit and push
+          run: |
+            ./HomebrewFormula/update-sha.sh
+            git config user.email "${{ vars.GIT_USER_EMAIL }}"
+            git config user.name "${{ vars.GIT_USER_NAME }}"
+            git add ./HomebrewFormula/eilmeldung.rb
+            git commit -m "chore: update SHA256 in homebrew formula"
               git push origin main
 
