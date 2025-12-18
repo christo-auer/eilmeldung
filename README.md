@@ -1,3 +1,5 @@
+
+
 This is still **WIP**!
 
 ![Logo of eilmeldung](docs/images/logo.png) 
@@ -17,8 +19,9 @@ This is still **WIP**!
 
 # Features at a Glance
 
-**TODO**
+## Setup and Basic Workflow
 
+![video showing the basic setup and basic workflow of eilmeldung](https://github.com/user-attachments/assets/fde789bf-a80c-4b1d-800c-d2d305cf68a0)
 
 # Installation 
 
