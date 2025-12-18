@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-TAG=$(git describe --tags)
+TAG="$1"
 GITURL="https://github.com/christo-auer/eilmeldung/archive/refs/tags/${TAG}.tar.gz"
 
 SHA256SUM=$(curl -L --silent "${GITURL}" | sha256sum --binary | awk '{ print $1; }')

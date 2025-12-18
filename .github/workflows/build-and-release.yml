@@ -211,6 +211,9 @@ jobs:
           contents: write
         environment: ${{ inputs.environment }}
         steps:
+        - name: Extract tag name
+          id: tag
+          run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         - name: Checkout code
           uses: actions/checkout@v4
           with:
@@ -218,7 +221,7 @@ jobs:
 
         - name: Update formula, commit and push
           run: |
-            ./HomebrewFormula/update-sha.sh
+            ./HomebrewFormula/update-sha.sh ${{ steps.tag.TAG_NAME }}
             git config user.email "${{ vars.GIT_USER_EMAIL }}"
             git config user.name "${{ vars.GIT_USER_NAME }}"
             git add ./HomebrewFormula/eilmeldung.rb
