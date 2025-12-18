@@ -221,7 +221,7 @@ jobs:
 
         - name: Update formula, commit and push
           run: |
-            ./HomebrewFormula/update-sha.sh ${{ steps.tag.TAG_NAME }}
+            ./HomebrewFormula/update-sha.sh ${{ steps.tag.output.TAG_NAME }}
             git config user.email "${{ vars.GIT_USER_EMAIL }}"
             git config user.name "${{ vars.GIT_USER_NAME }}"
             git add ./HomebrewFormula/eilmeldung.rb
