@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.3.0 - 2025-12-18
+
 - added cli arguments (see `docs/cli_args.md`)
 
 # 0.2.1 - 2025-12-18
