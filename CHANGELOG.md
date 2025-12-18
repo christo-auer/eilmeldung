@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.2.1 - 2025-12-18
+
 - remove clang dep from homebrew formula
 
 # 0.2.0 - 2025-12-17
