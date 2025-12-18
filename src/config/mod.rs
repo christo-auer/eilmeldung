@@ -4,6 +4,8 @@ pub mod paths;
 pub mod share_target;
 pub mod theme;
 
+use std::path::{Path, PathBuf};
+
 use crate::prelude::*;
 
 pub mod prelude {
@@ -18,7 +20,7 @@ pub mod prelude {
 }
 
 use config::FileFormat;
-use log::{debug, info, warn};
+use log::{info, warn};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConfigError {
@@ -187,19 +189,18 @@ impl Default for Config {
     }
 }
 
-pub fn load_config() -> color_eyre::Result<Config> {
-    let config_path = PROJECT_DIRS
-        .config_dir()
-        .join(CONFIG_FILE)
-        .to_str()
-        .unwrap()
-        .to_string();
+pub fn load_config(config_dir: &Path) -> color_eyre::Result<Config> {
+    let mut config_path = PathBuf::from(config_dir);
+    config_path.push(CONFIG_FILE);
+
+    let Some(config_path) = config_path.to_str() else {
+        return Err(color_eyre::eyre::eyre!("invalid configuration path"));
+    };
 
     info!("Loading config from {}", config_path);
-    debug!("Config directory: {:?}", PROJECT_DIRS.config_dir());
 
     let mut config = match config::Config::builder()
-        .add_source(config::File::new(config_path.as_str(), FileFormat::Toml))
+        .add_source(config::File::new(config_path, FileFormat::Toml))
         .build()
     {
         Ok(config) => config.try_deserialize::<Config>()?,

@@ -1,3 +1,4 @@
+mod cli;
 mod config;
 mod connectivity;
 mod input;
@@ -8,8 +9,9 @@ mod newsflash_utils;
 mod query;
 mod ui;
 
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
+use clap::Parser;
 use log::{debug, error, info};
 use news_flash::{NewsFlash, models::LoginData};
 use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
@@ -21,15 +23,25 @@ use crate::{connectivity::ConnectivityMonitor, prelude::*};
 async fn main() -> color_eyre::Result<()> {
     info!("Starting eilmeldung application");
 
+    info!("parsing CLI args");
+    let cli_args = CliArgs::parse();
+    let config_dir = cli_args
+        .config_dir()
+        .as_ref()
+        .map(|dir_str| Path::new(dir_str))
+        .unwrap_or(PROJECT_DIRS.config_dir());
+    let state_dir = cli_args
+        .state_dir()
+        .as_ref()
+        .map(|dir_str| Path::new(dir_str))
+        .unwrap_or(PROJECT_DIRS.state_dir().unwrap_or(PROJECT_DIRS.data_dir()));
+
     color_eyre::install()?;
-    crate::logging::init_logging()?;
+    crate::logging::init_logging(&cli_args)?;
     debug!("Error handling and logging initialized");
 
     info!("Loading configuration");
-    let config = load_config()?;
-
-    let config_dir = PROJECT_DIRS.config_dir();
-    let state_dir = PROJECT_DIRS.state_dir().unwrap_or(PROJECT_DIRS.data_dir());
+    let config = load_config(&config_dir)?;
 
     info!("Initializing NewsFlash");
     let news_flash_attempt = NewsFlash::try_load(state_dir, config_dir);
