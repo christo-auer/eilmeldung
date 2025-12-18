@@ -209,9 +209,12 @@ jobs:
         needs: release
         permissions:
           contents: write
+        environment: ${{ inputs.environment }}
         steps:
         - name: Checkout code
           uses: actions/checkout@v4
+          with:
+            ref: "main"
 
         - name: Update formula, commit and push
           run: |
@@ -220,5 +223,5 @@ jobs:
             git config user.name "${{ vars.GIT_USER_NAME }}"
             git add ./HomebrewFormula/eilmeldung.rb
             git commit -m "chore: update SHA256 in homebrew formula"
-              git push origin main
+            git push origin main
 
