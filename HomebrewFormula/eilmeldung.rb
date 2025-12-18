@@ -16,7 +16,6 @@ class Eilmeldung < Formula
 
   on_linux do
     depends_on "llvm" => :build
-    depends_on "clang" => :build
   end
   
   def install

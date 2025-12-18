@@ -1,5 +1,7 @@
 # Unreleased
 
+- remove clang dep from homebrew formula
+
 # 0.2.0 - 2025-12-17
 - added tag matching without `tag:`, i.e., use `#tag` instead of `tag:#tag`
 - switched to homebrew release from source
