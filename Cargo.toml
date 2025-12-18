@@ -16,6 +16,7 @@ network_connectivity = "1.0.0"
 [dependencies]
 arboard = { version = "3.6.1", default-features = false, features = ["wayland-data-control" ] }
 chrono = "0.4.42"
+clap = { version = "4.5.53", features = ["derive"] }
 color-eyre = "0.6.5"
 config = "0.15.17"
 derive = "1.0.0"
