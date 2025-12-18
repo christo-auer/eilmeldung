@@ -214,6 +214,7 @@ jobs:
         with:
           formula-name: eilmeldung
           formula-path: HomebrewFormula/eilmeldung.rb
+          homebrew-tap: christo-auer/eilmeldung
         env:
           # the personal access token should have "repo" & "workflow" scopes
           COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
