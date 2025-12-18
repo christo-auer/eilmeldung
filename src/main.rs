@@ -28,12 +28,12 @@ async fn main() -> color_eyre::Result<()> {
     let config_dir = cli_args
         .config_dir()
         .as_ref()
-        .map(|dir_str| Path::new(dir_str))
+        .map(Path::new)
         .unwrap_or(PROJECT_DIRS.config_dir());
     let state_dir = cli_args
         .state_dir()
         .as_ref()
-        .map(|dir_str| Path::new(dir_str))
+        .map(Path::new)
         .unwrap_or(PROJECT_DIRS.state_dir().unwrap_or(PROJECT_DIRS.data_dir()));
 
     color_eyre::install()?;
@@ -41,7 +41,7 @@ async fn main() -> color_eyre::Result<()> {
     debug!("Error handling and logging initialized");
 
     info!("Loading configuration");
-    let config = load_config(&config_dir)?;
+    let config = load_config(config_dir)?;
 
     info!("Initializing NewsFlash");
     let news_flash_attempt = NewsFlash::try_load(state_dir, config_dir);
