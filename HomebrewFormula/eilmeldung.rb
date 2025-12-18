@@ -21,4 +21,10 @@ class Eilmeldung < Formula
   def install
     system "cargo", "install", *std_cargo_args
   end
+
+  test do
+    assert_match "eilmeldung #{version}", shell_output("#{bin}/eilmeldung --version").strip
+  end
+
+
 end
