@@ -135,6 +135,7 @@ programs.eilmeldung = {
 - [Configuration](docs/configuration.md): contains all *configuration options* along with the input configuration
 - [Commands](docs/commands.md): *eilmeldung* contains a command line, like (neo)vim, to effectively carry out many operations (e.g., bulk-operations)
 - [Article Queries](docs/queries.md): *article queries* can be used to *filter* and *search* according to a multitude of search criteria. Article queries are also supported by bulk-operations (un/tag, un/read, un/mark articles)
+- [Command Line Argumnets](docs/cli_args.md): available command line arguments
 
 
 </details>
