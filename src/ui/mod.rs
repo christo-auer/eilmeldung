@@ -280,7 +280,10 @@ impl App {
                         }
 
 
-                        if !self.command_input.is_active() && !self.command_confirm.is_active() {
+                        // TODO refactor all this
+                        if !self.command_input.is_active() && !self.command_confirm.is_active()
+                            && !self.help_popup.is_modal().unwrap_or(false)
+                        {
                             self.input_command_generator.process_command(&message).await?;
                         }
 
