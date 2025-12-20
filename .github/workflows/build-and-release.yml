@@ -218,6 +218,8 @@ jobs:
           uses: actions/checkout@v4
           with:
             ref: "main"
+            ssh-key: {{ secret.GIT_DEPLOY_KEY }}
+
 
         - name: Update formula, commit and push
           run: |
