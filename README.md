@@ -17,11 +17,15 @@ This is still **WIP**!
 
 *eilmeldung* is German for *breaking news*
 
-# Features at a Glance
+# Showreel
 
-## Setup and Basic Workflow
-
-<https://github.com/user-attachments/assets/fde789bf-a80c-4b1d-800c-d2d305cf68a0>
+<https://github.com/user-attachments/assets/9106c55b-8c2a-4f2e-aaf2-04fead9769f4>
+This video demonstrates
+- basic (vim-like) navigation and reading
+- *zen* mode: just show content
+- creating new tags and tagging a article
+- *filtering* and *searching* article list by using a article queries
+- *tagging* multiple articles by using an article query
 
 # Installation 
 
