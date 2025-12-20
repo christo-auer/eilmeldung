@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.4.2 - 2025-12-20
+
 - zen/distraction-free mode now shows no summary/thumbnail
 
 # 0.4.1 - 2025-12-20
