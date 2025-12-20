@@ -1,12 +1,13 @@
+use indexmap::IndexMap;
+
 use crate::prelude::*;
-use std::collections::HashMap;
 
 #[derive(Clone, Debug, serde::Deserialize)]
 #[serde(rename_all = "snake_case", default)]
 pub struct InputConfig {
     pub scroll_amount: usize,
     pub timeout_millis: u64,
-    pub mappings: HashMap<KeySequence, CommandSequence>,
+    pub mappings: IndexMap<KeySequence, CommandSequence>,
 }
 
 // a macro for pleasure
@@ -16,7 +17,7 @@ macro_rules! cmd_mappings {
     };
 }
 
-fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
+fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
     cmd_mappings! [
         "up"        => "up",
         "down"      => "down",
@@ -26,9 +27,13 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "right"     => "right",
         "j"         => "down",
         "k"         => "up",
+        "enter"     => "submit",
+        "esc"       => "abort",
+        "C-g"       => "abort",
+        "C-u"       => "clear",
         "space"     => "toggle",
         "C-f"       => "pagedown",
-        "C-b"       => "pagedown",
+        "C-b"       => "pageup",
         "g g"       => "gotofirst",
         "G"         => "gotolast",
         "q"         => "confirm quit",
@@ -55,14 +60,14 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "C-u"       => "cmd unread",
         "m"         => "mark",
         "M"         => "confirm mark %",
-        "b"         => "unmark",
-        "B"         => "confirm unmark %",
-        "C-b"       => "cmd unmark",
+        "v"         => "unmark",
+        "V"         => "confirm unmark %",
+        "C-v"       => "cmd unmark",
         "1"         => "show all",
         "2"         => "show unread",
         "3"         => "show marked",
         "z"         => "zen",
-        "/"         => "cmd search ",
+        "/"         => "find",
         "n"         => "searchnext",
         "N"         => "searchprev",
         "="         => "cmd filter ",
@@ -83,6 +88,7 @@ fn generate_default_input_commands() -> HashMap<KeySequence, CommandSequence> {
         "S m"       => "share mastodon",
         "S t"       => "share telegram",
         "S i"       => "share instapaper",
+        "?"         => "helpinput",
     ]
 }
 
@@ -112,9 +118,20 @@ impl InputConfig {
             .collect::<Vec<KeySequence>>()
             .into_iter()
             .for_each(|key| {
-                self.mappings.remove(&key);
+                self.mappings.shift_remove(&key);
             });
 
         Ok(())
+    }
+
+    pub fn match_single_key(&self, key: &Key) -> Option<&CommandSequence> {
+        self.mappings.get(&KeySequence { keys: vec![*key] })
+    }
+
+    pub fn match_single_key_to_single_command(&self, key: &Key) -> Option<&Command> {
+        self.match_single_key(key).and_then(|command_sequence| {
+            let first = command_sequence.commands.first();
+            first.filter(|_| command_sequence.commands.len() == 1)
+        })
     }
 }
