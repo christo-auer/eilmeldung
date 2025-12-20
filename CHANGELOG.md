@@ -1,6 +1,10 @@
 # Unreleased
 
+- zen/distraction-free mode now shows no summary/thumbnail
+
 # 0.4.1 - 2025-12-20
+
+- fixed: scrolling now works on filtered content in help dialog
 
 # 0.4.0 - 2025-12-20
 - command `helpinput` (default keybinding `?`) now shows a popup with all key bindings which can also be search (default keybinding `/`)
