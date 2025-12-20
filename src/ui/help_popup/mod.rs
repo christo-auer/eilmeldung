@@ -209,9 +209,6 @@ impl<'a> Widget for &HelpPopup<'a> {
             block.render(popup_area, buf);
 
             if *is_modal {
-                let paragraph = Paragraph::new(contents.to_owned())
-                    .scroll((*scroll_offset_y, *scroll_offset_x));
-
                 match search_input {
                     Some(search_input) => {
                         let [contents_chunk, search_chunk] = Layout::default()
@@ -240,7 +237,11 @@ impl<'a> Widget for &HelpPopup<'a> {
                             .cloned()
                             .collect::<Vec<Line>>();
 
-                        let paragraph = Text::from(lines);
+                        let entries: u16 = lines.len() as u16;
+                        let paragraph = Paragraph::new(lines).scroll((
+                            (*scroll_offset_y).min(entries.saturating_sub(contents_chunk.height)),
+                            *scroll_offset_x,
+                        ));
                         paragraph.render(contents_chunk, buf);
 
                         if *search_input_active {
@@ -253,7 +254,12 @@ impl<'a> Widget for &HelpPopup<'a> {
                             .render(search_chunk, buf);
                         }
                     }
-                    None => paragraph.render(inner_area, buf),
+                    None => {
+                        let paragraph = Paragraph::new(contents.to_owned())
+                            .scroll((*scroll_offset_y, *scroll_offset_x));
+
+                        paragraph.render(inner_area, buf);
+                    }
                 }
             } else {
                 contents.render(inner_area, buf);
