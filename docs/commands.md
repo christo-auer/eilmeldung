@@ -101,6 +101,19 @@ These commands are typically used via key bindings rather than the command line.
 | `pagedown` | `pagedown` | All | Navigate down by one page |
 | `gotofirst` | `gotofirst` | All | Navigate to the first item |
 | `gotolast` | `gotolast` | All | Navigate to the last item |
+| `gotolast` | `gotolast` | All | Navigate to the last item |
+
+## Input-Related Commands
+
+These commands belong to text input (e.g. command-line or search input) and must be assigned to single keys:
+
+| Command   | Syntax   | Context             | Description              |
+| --------- | -------- | ---------           | -------------            |
+| `submit`  | `submit` | Input               | Submit the current input |
+| `abort`   | `abort`  | Input               | Abort the current input  |
+| `clear`   | `clear`  | Input               | Clear the current input  |
+| `find`    | `find`   | Input, Article List | Open find (search) input |
+
 
 ## Example Commands
 

@@ -488,6 +488,13 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     view_needs_update = true;
                 }
 
+                C::InputFind if self.is_focused => {
+                    self.message_sender
+                        .send(Message::Command(C::CommandLineOpen(Some(
+                            "search".to_owned(),
+                        ))))?;
+                }
+
                 C::ArticleListSelectNextUnread => {
                     self.select_next_unread()?;
                 }

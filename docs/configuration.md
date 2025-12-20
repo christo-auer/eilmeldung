@@ -65,9 +65,7 @@ Input configuration is defined in the `[input_config]` section.
 
 ### Keybinding Customization
 
-Key bindings are defined in the `[input_config.mappings]` section as key-value pairs. Commands can be specified as:
-- **Single command** (string): `"q" = "quit"`
-- **Multiple commands** (array): `"o" = ["open", "read", "nextunread"]`
+Key bindings are defined in the `[input_config.mappings]` section as key-value pairs. A (sequence of) key(s) is mapped onto an array of commands.
 
 **Key Syntax:**
 - Single keys: `"a"`, `"j"`, `"k"`
@@ -79,20 +77,20 @@ Key bindings are defined in the `[input_config.mappings]` section as key-value p
 ```toml
 [input_config.mappings]
 # Single command
-"q" = "quit"
+"q" = ["quit"]
 
 # Multiple commands executed in sequence
 "o" = ["open", "read", "nextunread"]
 
 # Multi-key sequences
-"g g" = "gotofirst"
-"g t" = "focus feeds"
+"g g" = ["gotofirst"]
+"g t" = ["focus feeds"]
 
 # Unbind a key
-"x" = "nop"
+"x" = ["nop"]
 ```
 
-For a complete list of available commands, see the Commands section. For default keybindings, see the Keybindings section.
+For a complete list of available commands, see the Commands section. For default keybindings, see the main page or execute the command `helpinput`.
 
 ---
 
