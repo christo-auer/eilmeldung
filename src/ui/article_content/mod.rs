@@ -25,6 +25,7 @@ pub struct ArticleContent {
     message_sender: UnboundedSender<Message>,
 
     is_focused: bool,
+    is_distraction_free: bool,
 }
 
 impl ArticleContent {
@@ -39,6 +40,7 @@ impl ArticleContent {
             model_data: ArticleContentModelData::new(news_flash_utils, message_sender.clone()),
             message_sender,
             is_focused: false,
+            is_distraction_free: false,
         }
     }
 
@@ -243,9 +245,12 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.is_focused = *state == AppState::ArticleContent
                         || *state == AppState::ArticleContentDistractionFree;
 
+                    self.is_distraction_free = *state == AppState::ArticleContentDistractionFree;
+
                     if self.is_focused && self.config.auto_scrape {
                         self.scrape_article()?;
                     }
+
                     view_needs_update = true;
                 }
 
