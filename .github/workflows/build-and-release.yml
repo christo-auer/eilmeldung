@@ -217,6 +217,7 @@ jobs:
         - name: Checkout code
           uses: actions/checkout@v4
           with:
+            persist-credentials: true            
             ref: "main"
             ssh-key: ${{ secrets.GIT_DEPLOY_KEY }}
 
