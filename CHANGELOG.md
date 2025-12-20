@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.4.1 - 2025-12-20
+
 # 0.4.0 - 2025-12-20
 - command `helpinput` (default keybinding `?`) now shows a popup with all key bindings which can also be search (default keybinding `/`)
 - new input-related commands: `submit`, `abort`, `clear` applicable for situations where a user input is required (e.g. command line or search)
