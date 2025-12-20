@@ -749,8 +749,13 @@ impl crate::messages::MessageReceiver for CommandInput {
             Message::Event(Event::Key(key_event)) if self.is_active => {
                 let key: Key = (*key_event).into();
 
-                match key {
-                    Key::Just(KeyCode::Esc) | Key::Ctrl(KeyCode::Char('g')) => {
+                match (
+                    key,
+                    self.config
+                        .input_config
+                        .match_single_key_to_single_command(&key),
+                ) {
+                    (_, Some(Command::InputAbort)) => {
                         if self.help_dialog_open {
                             self.hide_help_dialog()?;
                         } else {
@@ -758,26 +763,22 @@ impl crate::messages::MessageReceiver for CommandInput {
                             self.is_active = false;
                         }
                     }
-                    Key::Just(KeyCode::Enter) => {
+                    (_, Some(Command::InputSubmit)) => {
                         if self.help_dialog_open {
                             self.hide_help_dialog()?;
                         }
                         self.on_submit()?;
                     }
 
-                    Key::Ctrl(KeyCode::Char('u')) => self.clear(""),
+                    (_, Some(Command::InputClear)) => self.clear(""),
 
-                    Key::Just(KeyCode::Down) | Key::Ctrl(KeyCode::Char('j')) => {
-                        self.on_history_next()
-                    }
-                    Key::Just(KeyCode::Up) | Key::Ctrl(KeyCode::Char('k')) => {
-                        self.on_history_previous()
-                    }
-                    Key::Just(KeyCode::Tab) => {
+                    (Key::Just(KeyCode::Down), _) => self.on_history_next(),
+                    (Key::Just(KeyCode::Up), _) => self.on_history_previous(),
+                    (Key::Just(KeyCode::Tab), _) => {
                         self.update_command_help().await?;
                         self.on_complete(true);
                     }
-                    Key::Just(KeyCode::BackTab) => {
+                    (Key::Just(KeyCode::BackTab), _) => {
                         self.update_command_help().await?;
                         self.on_complete(false);
                     }

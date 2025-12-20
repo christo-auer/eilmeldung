@@ -216,24 +216,55 @@ pub enum Command {
         detailed_message = "navigate to first element (all)"
     )]
     NavigateFirst,
+
     #[strum(
         serialize = "gotolast",
         message = "gotolast",
         detailed_message = "navigate to last element (all)"
     )]
     NavigateLast,
+
     #[strum(
         serialize = "left",
         message = "left",
         detailed_message = "nagivate left in the current context (all)"
     )]
     NavigateLeft,
+
     #[strum(
         serialize = "right",
         message = "right",
         detailed_message = "nagivate right in the current context (all)"
     )]
     NavigateRight,
+
+    #[strum(
+        serialize = "find",
+        message = "find",
+        detailed_message = "open prompt to find text"
+    )]
+    InputFind,
+
+    #[strum(
+        serialize = "abort",
+        message = "abort",
+        detailed_message = "abort current dialog"
+    )]
+    InputAbort,
+
+    #[strum(
+        serialize = "submit",
+        message = "submit",
+        detailed_message = "submit current input"
+    )]
+    InputSubmit,
+
+    #[strum(
+        serialize = "clear",
+        message = "clear",
+        detailed_message = "clear current input"
+    )]
+    InputClear,
 
     // Panels
     #[strum(
@@ -519,6 +550,13 @@ pub enum Command {
     Logout(String),
 
     #[strum(
+        serialize = "helpinput",
+        message = "helpinput",
+        detailed_message = "show help on in put mappings (all)"
+    )]
+    HelpInput,
+
+    #[strum(
         serialize = "confirm",
         message = "confirm <command>",
         detailed_message = "ask user for confirmation to execute command and, if positive, execute command (all)"
@@ -548,11 +586,15 @@ impl Display for Command {
             NavigateLast => write!(f, "to last"),
             NavigateLeft => write!(f, "left"),
             NavigateRight => write!(f, "right"),
+            InputFind => write!(f, "open find prompt"),
+            InputAbort => write!(f, "abort current input"),
+            InputSubmit => write!(f, "submit current input"),
+            InputClear => write!(f, "clear current input"),
             PanelFocusNext => write!(f, "focus next"),
             PanelFocus(panel) => write!(f, "focus {}", panel),
             PanelFocusPrevious => write!(f, "focus previous"),
-            PanelFocusNextCyclic => write!(f, "focus next"),
-            PanelFocusPreviousCyclic => write!(f, "focus next"),
+            PanelFocusNextCyclic => write!(f, "focus previous (wrapping)"),
+            PanelFocusPreviousCyclic => write!(f, "focus next (wrapping)"),
             ToggleDistractionFreeMode => write!(f, "distraction free mode"),
             FeedListToggleExpand => write!(f, "toggle selected node"),
             FeedListCategoryAdd(name) => write!(f, "add category {name}"),
@@ -623,6 +665,7 @@ impl Display for Command {
                 f,
                 "logout from provider, NOTE: this will remove ALL LOCAL DATA!"
             ),
+            HelpInput => write!(f, "show help on input mappings"),
             TagAdd(tag_title, _) => {
                 write!(f, "add tag #{}", tag_title)
             }
