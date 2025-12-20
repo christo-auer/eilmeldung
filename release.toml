@@ -1,5 +1,5 @@
 
-push-remote = "github"
+push-remote = "origin"
 tag-name = "{{version}}"
 
 pre-release-replacements = [
