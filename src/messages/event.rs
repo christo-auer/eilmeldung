@@ -110,6 +110,7 @@ pub enum Event {
 
     // help popup
     ShowHelpPopup(String, Text<'static>),
+    ShowModalHelpPopup(String, Text<'static>),
     HideHelpPopup,
 
     // application
