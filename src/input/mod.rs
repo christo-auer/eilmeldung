@@ -49,6 +49,7 @@ pub struct InputCommandGenerator {
 impl MessageReceiver for InputCommandGenerator {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         match message {
+            Message::Command(Command::HelpInput) => self.show_help_input(),
             Message::Event(Event::Key(key_event)) => {
                 self.process_key_event(Some((*key_event).into()))
             }
@@ -70,20 +71,31 @@ impl InputCommandGenerator {
 
     fn generate_input_help(
         &self,
-        key_sequence: &KeySequence,
-        prefix_matches: &Vec<(&KeySequence, &CommandSequence)>,
+        key_sequence: Option<&KeySequence>,
+        prefix_matches: &[(&KeySequence, &CommandSequence)],
         timeout_ratio: f32,
     ) -> color_eyre::Result<()> {
-        if key_sequence.keys.is_empty() {
+        if let Some(key_sequence) = key_sequence
+            && key_sequence.keys.is_empty()
+        {
             return Ok(());
         }
+
+        let key_seq_len = key_sequence.map(|ks| ks.keys.len()).unwrap_or(0);
+
+        let max_key_length = prefix_matches
+            .iter()
+            .map(|(ks, _)| ks.to_string().len().saturating_sub(key_seq_len))
+            .max()
+            .unwrap_or_default();
 
         let lines = Text::from(
             prefix_matches
                 .iter()
                 .map(|(ks, cs)| {
                     let mut keys_reduced = ks.keys.clone();
-                    keys_reduced.drain(0..key_sequence.keys.len());
+
+                    keys_reduced.drain(0..key_seq_len);
 
                     let key_entry = if keys_reduced.is_empty() {
                         let throbber_set = VERTICAL_BLOCK;
@@ -98,24 +110,39 @@ impl InputCommandGenerator {
                             .calc_step(-((len as f32 * timeout_ratio + 1.0).floor()) as i8);
                         throbber.to_symbol_span(&throbber_state)
                     } else {
-                        let mut keys = KeySequence { keys: keys_reduced }.to_string();
-                        keys.push(' ');
+                        let keys = KeySequence { keys: keys_reduced }.to_string();
                         Span::styled(keys, self.config.theme.header())
                     };
 
+                    let filler = Span::styled(
+                        " ".repeat(max_key_length.saturating_sub(key_entry.width()) + 1),
+                        self.config.theme.header(),
+                    );
+
                     Line::from(vec![
                         key_entry,
+                        filler,
                         Span::styled(cs.to_string(), self.config.theme.paragraph()),
                     ])
                 })
                 .collect::<Vec<Line<'_>>>(),
         );
 
-        self.message_sender
-            .send(Message::Event(Event::ShowHelpPopup(
-                format!("Input: {}", key_sequence),
-                lines,
-            )))?;
+        match key_sequence {
+            Some(key_sequence) => {
+                self.message_sender
+                    .send(Message::Event(Event::ShowHelpPopup(
+                        format!("Input: {}", key_sequence),
+                        lines,
+                    )))?
+            }
+            None => self
+                .message_sender
+                .send(Message::Event(Event::ShowModalHelpPopup(
+                    "Input Mappings".to_owned(),
+                    lines,
+                )))?,
+        }
 
         Ok(())
     }
@@ -153,7 +180,7 @@ impl InputCommandGenerator {
         prefix_matches.sort_by(|(ks_1, _), (ks_2, _)| ks_1.keys.len().cmp(&ks_2.keys.len()));
 
         if key.is_none() && !timeout && !self.key_sequence.keys.is_empty() {
-            self.generate_input_help(&self.key_sequence, &prefix_matches, timeout_ratio)?;
+            self.generate_input_help(Some(&self.key_sequence), &prefix_matches, timeout_ratio)?;
             return Ok(());
         }
 
@@ -189,8 +216,21 @@ impl InputCommandGenerator {
                 .send(Message::Event(Event::Tooltip(tooltip)))?;
         }
 
-        self.generate_input_help(&self.key_sequence, &prefix_matches, timeout_ratio)?;
+        self.generate_input_help(Some(&self.key_sequence), &prefix_matches, timeout_ratio)?;
 
         Ok(())
+    }
+
+    fn show_help_input(&self) -> Result<(), color_eyre::eyre::Error> {
+        self.generate_input_help(
+            None,
+            &self
+                .config
+                .input_config
+                .mappings
+                .iter()
+                .collect::<Vec<(&KeySequence, &CommandSequence)>>(),
+            0f32,
+        )
     }
 }
