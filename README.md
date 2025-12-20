@@ -19,7 +19,8 @@ This is still **WIP**!
 
 # Showreel
 
-<https://github.com/user-attachments/assets/9106c55b-8c2a-4f2e-aaf2-04fead9769f4>
+https://github.com/user-attachments/assets/a8a1dc60-0705-4521-a88d-3520923d2891
+
 This video demonstrates
 - basic (vim-like) navigation and reading
 - *zen* mode: just show content
