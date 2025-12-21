@@ -29,11 +29,7 @@ pub struct FeedListViewData {
 
 impl Widget for &mut FeedList {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        let highlight_style = if self.is_focused {
-            Style::new().reversed()
-        } else {
-            Style::new().underlined()
-        };
+        let highlight_style = Style::new().reversed();
 
         let tree_items = self.view_data.tree_items().clone();
         let tree = Tree::new(&tree_items)
