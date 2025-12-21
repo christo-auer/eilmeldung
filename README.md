@@ -1,10 +1,6 @@
-Add any other context or screenshots about the feature request here.
-
 This is still **WIP**!
 
 ![Logo of eilmeldung](docs/images/logo.png) 
-
-
   
 
 ![Screenshot of eilmeldung](docs/images/hero-shot.jpg) 
@@ -112,7 +108,7 @@ programs.eilmeldung = {
 
     input_config.mappings = {
         "q" = "quit";
-   Add any other context or screenshots about the feature request here.Add any other context or screenshots about the feature request here.     "j" = "down";
+        "j" = "down";
         "k" = "up";
         "g g" = "gotofirst";
         "G" = "gotolast";
