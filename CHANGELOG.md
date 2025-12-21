@@ -1,5 +1,7 @@
 # Unreleased
 
+- refactored content layout to be more consistent
+
 # 0.4.3 - 2025-12-21
 
 - HTML/markdown content now renders if `content_preferred_type` is set to `markddown`

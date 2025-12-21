@@ -172,13 +172,9 @@ impl<'a> ArticleListViewData<'a> {
         config: Arc<Config>,
         model_data: &ArticleListModelData,
         filter_state: &FilterState,
-        is_focused: bool,
+        _is_focused: bool,
     ) {
-        let selected_style = if is_focused {
-            Style::new().reversed()
-        } else {
-            Style::new().underlined()
-        };
+        let selected_style = Style::new().reversed();
 
         let read_icon = config.read_icon.to_string();
         let unread_icon = config.unread_icon.to_string();

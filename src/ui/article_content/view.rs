@@ -133,11 +133,10 @@ impl ArticleContentViewData {
         inner_area
     }
 
-    pub(super) fn generate_summary<'a>(
+    pub(super) fn generate_header<'a>(
         &'a self,
         model_data: &'a ArticleContentModelData,
         config: &'a Config,
-        render_summary_content: bool,
     ) -> Vec<Line<'a>> {
         let Some(article) = model_data.article() else {
             return vec![];
@@ -149,8 +148,6 @@ impl ArticleContentViewData {
         } else {
             article.feed_id.as_str().into()
         };
-        let mut summary = article.summary.clone().unwrap_or("no summary".into());
-        summary = ArticleContentModelData::clean_string(&summary);
 
         let tag_texts = model_data
             .tags()
@@ -166,7 +163,7 @@ impl ArticleContentViewData {
             .format(&config.date_format)
             .to_string();
 
-        let mut summary_lines = vec![
+        let summary_lines = vec![
             Line::from(vec![
                 Span::from(date_string).style(config.theme.feed()),
                 Span::from("  ").style(config.theme.feed()),
@@ -176,20 +173,13 @@ impl ArticleContentViewData {
             Line::from(tag_texts),
         ];
 
-        if render_summary_content {
-            summary_lines.push(Line::from(
-                Span::from(summary).style(config.theme.paragraph()),
-            ));
-        }
-
         summary_lines
     }
 
-    pub(super) fn render_summary(
+    pub(super) fn render_header(
         &mut self,
         model_data: &ArticleContentModelData,
         config: &Config,
-        render_summary_content: bool,
         inner_area: Rect,
         buf: &mut Buffer,
     ) {
@@ -199,26 +189,55 @@ impl ArticleContentViewData {
             0
         };
 
-        let [thumbnail_chunk, summary_chunk] = Layout::default()
+        let [thumbnail_chunk, header_chunk] = Layout::default()
             .direction(Direction::Horizontal)
             .flex(ratatui::layout::Flex::Start)
             .constraints(vec![
                 Constraint::Length(thumbnail_width),
                 Constraint::Min(1),
             ])
-            .margin(1)
-            .spacing(2)
-            .areas(inner_area);
+            // .margin(1)
+            .spacing(1)
+            .areas::<2>(inner_area);
 
         if config.thumbnail_show {
             self.render_thumbnail(model_data, config, thumbnail_chunk, buf);
         }
 
-        let paragraph =
-            Paragraph::new(self.generate_summary(model_data, config, render_summary_content))
-                .wrap(Wrap { trim: true });
+        let header_lines = self.generate_header(model_data, config);
+        let paragraph = Paragraph::new(header_lines).wrap(Wrap { trim: true });
+        paragraph.render(header_chunk, buf);
+    }
 
-        paragraph.render(summary_chunk, buf);
+    pub(super) fn render_summary(
+        &mut self,
+        model_data: &ArticleContentModelData,
+        config: &Config,
+        inner_area: Rect,
+        buf: &mut Buffer,
+    ) {
+        let Some(article) = model_data.article() else {
+            return;
+        };
+
+        let [header_chunk, summary_chunk] = Layout::default()
+            .direction(Direction::Vertical)
+            .flex(ratatui::layout::Flex::Start)
+            .constraints([Constraint::Length(5), Constraint::Min(1)])
+            .horizontal_margin(2)
+            .vertical_margin(1)
+            .spacing(1)
+            .areas::<2>(inner_area);
+
+        self.render_header(model_data, config, header_chunk, buf);
+
+        let mut summary = article.summary.clone().unwrap_or("".into());
+        summary = ArticleContentModelData::clean_string(&summary);
+        let summary_paragraph = Paragraph::new(Line::from(
+            Span::from(summary).style(config.theme.paragraph()),
+        ))
+        .wrap(Wrap { trim: true });
+        summary_paragraph.render(summary_chunk, buf);
     }
 
     pub(super) fn render_thumbnail(
@@ -294,23 +313,30 @@ impl ArticleContentViewData {
         inner_area: Rect,
         buf: &mut Buffer,
     ) {
-        let summary_area_height = if distraction_free { 0 } else { 4 };
+        let summary_area_height = if distraction_free { 0 } else { 5 };
         let [summary_area, content_area] = Layout::default()
             .direction(Direction::Vertical)
             .flex(Flex::Start)
             .constraints([Constraint::Length(summary_area_height), Constraint::Fill(1)])
+            .horizontal_margin(2)
+            .vertical_margin(1)
+            .spacing(1)
             .areas::<2>(inner_area);
 
         if !distraction_free {
-            self.render_summary(model_data, config, false, summary_area, buf);
+            self.render_header(model_data, config, summary_area, buf);
         }
+
+        let text_constraint = if distraction_free {
+            Constraint::Max(config.text_max_width)
+        } else {
+            Constraint::Percentage(100)
+        };
 
         let [paragraph_area] = Layout::default()
             .direction(Direction::Horizontal)
             .flex(ratatui::layout::Flex::Center)
-            .constraints([
-                Constraint::Max(config.text_max_width), // Middle content
-            ])
+            .constraints([text_constraint])
             .areas(content_area);
 
         let Some(fat_article) = model_data.fat_article() else {
@@ -391,7 +417,7 @@ impl Widget for &mut ArticleContent {
 
         if !self.is_focused && self.model_data.article().is_some() {
             self.view_data
-                .render_summary(&self.model_data, &self.config, true, inner_area, buf);
+                .render_summary(&self.model_data, &self.config, inner_area, buf);
         }
 
         if self.is_focused {
@@ -404,13 +430,8 @@ impl Widget for &mut ArticleContent {
                     buf,
                 );
             } else if self.model_data.article().is_some() {
-                self.view_data.render_summary(
-                    &self.model_data,
-                    &self.config,
-                    true,
-                    inner_area,
-                    buf,
-                );
+                self.view_data
+                    .render_summary(&self.model_data, &self.config, inner_area, buf);
             }
         }
     }
