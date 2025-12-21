@@ -124,7 +124,12 @@ pub struct ArticleListViewData<'a> {
 }
 
 impl<'a> ArticleListViewData<'a> {
-    fn build_title(&self, filter_state: &FilterState, model_data: &ArticleListModelData, config: &Config) -> Span<'static> {
+    fn build_title(
+        &self,
+        filter_state: &FilterState,
+        model_data: &ArticleListModelData,
+        config: &Config,
+    ) -> Span<'static> {
         let mut title = String::new();
 
         if let Some(article_scope) = filter_state.get_effective_scope() {
