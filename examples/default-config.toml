@@ -32,7 +32,7 @@ thumbnail_width = 20
 thumbnail_resize = true
 thumbnail_fetch_debounce_millis = 500
 text_max_width = 66
-content_preferred_type = "Markdown"
+content_preferred_type = "markdown"
 
 # Layout
 feed_list_width_percent = 33

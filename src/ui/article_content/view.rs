@@ -4,6 +4,7 @@ use crate::prelude::*;
 use std::sync::Arc;
 
 use getset::{Getters, MutGetters};
+use log::info;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Flex, Layout, Rect},
@@ -293,7 +294,7 @@ impl ArticleContentViewData {
         inner_area: Rect,
         buf: &mut Buffer,
     ) {
-        let summary_area_height = if distraction_free { 0 } else { 6 };
+        let summary_area_height = if distraction_free { 0 } else { 4 };
         let [summary_area, content_area] = Layout::default()
             .direction(Direction::Vertical)
             .flex(Flex::Start)
@@ -321,15 +322,19 @@ impl ArticleContentViewData {
         {
             // Use the cached markdown content from model
             if let Some(markdown) = model_data.markdown_content() {
+                info!("markdown available");
                 tui_markdown::from_str(markdown)
             } else {
+                info!("no markdown available, falling back to html2text");
                 // Fallback - convert to plain text instead of markdown to avoid lifetime issues
                 let plain_text = news_flash::util::html2text::html2text(html);
                 Text::from(plain_text)
             }
         } else if let Some(plain_text) = fat_article.plain_text.as_deref() {
+            info!("rendering plain text content");
             Text::from(plain_text)
         } else {
+            info!("no content available");
             Text::from("no content available")
         };
 

@@ -7,11 +7,9 @@ use std::{
 };
 
 use getset::Getters;
+use htmd::HtmlToMarkdown;
 use image::ImageReader;
-use news_flash::{
-    models::{Article, ArticleID, FatArticle, Feed, Tag, Thumbnail},
-    util::html2text,
-};
+use news_flash::models::{Article, ArticleID, FatArticle, Feed, Tag, Thumbnail};
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -153,15 +151,21 @@ impl ArticleContentModelData {
         self.markdown_content = None; // Reset processed content
     }
 
-    pub(super) fn get_or_create_markdown_content(&mut self, config: &Config) -> Option<&str> {
+    pub(super) fn get_or_create_markdown_content(
+        &mut self,
+        config: &Config,
+    ) -> color_eyre::Result<()> {
         if self.markdown_content.is_none()
             && config.content_preferred_type == ArticleContentType::Markdown
             && let Some(fat_article) = self.fat_article.as_ref()
             && let Some(html) = fat_article.scraped_content.as_deref()
         {
-            self.markdown_content = Some(html2text::html2text(html));
+            // create html to markdown converter
+            let html2markdown = HtmlToMarkdown::builder().build();
+
+            self.markdown_content = Some(html2markdown.convert(html)?);
         }
-        self.markdown_content.as_deref()
+        Ok(())
     }
 
     pub(super) fn should_fetch_thumbnail(&self, config: &Config) -> bool {
