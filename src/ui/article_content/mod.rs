@@ -237,7 +237,8 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 AsyncArticleFatFetchFinished(fat_article) => {
                     self.model_data.set_fat_article(fat_article.clone());
                     // Process markdown content if needed
-                    self.model_data.get_or_create_markdown_content(&self.config);
+                    self.model_data
+                        .get_or_create_markdown_content(&self.config)?;
                     view_needs_update = true;
                 }
 
