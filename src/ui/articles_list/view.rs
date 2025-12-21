@@ -124,7 +124,7 @@ pub struct ArticleListViewData<'a> {
 }
 
 impl<'a> ArticleListViewData<'a> {
-    fn build_title(&self, filter_state: &FilterState, model_data: &ArticleListModelData) -> String {
+    fn build_title(&self, filter_state: &FilterState, model_data: &ArticleListModelData, config: &Config) -> Span<'static> {
         let mut title = String::new();
 
         if let Some(article_scope) = filter_state.get_effective_scope() {
@@ -159,7 +159,7 @@ impl<'a> ArticleListViewData<'a> {
             title.push_str(format!("{selected_row}/{rows} ({percent}%) ",).as_str());
         }
 
-        title
+        Span::styled(title, config.theme.header())
     }
 
     pub fn update(
@@ -329,7 +329,7 @@ impl<'a> ArticleListViewData<'a> {
     ) -> Block<'static> {
         Block::default()
             .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
-            .title_top(self.build_title(filter_state, model_data))
+            .title_top(self.build_title(filter_state, model_data, config))
             .border_type(ratatui::widgets::BorderType::Rounded)
             .border_style(if is_focused {
                 config.theme.border_focused()
