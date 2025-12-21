@@ -223,7 +223,7 @@ impl ArticleContentViewData {
         let [header_chunk, summary_chunk] = Layout::default()
             .direction(Direction::Vertical)
             .flex(ratatui::layout::Flex::Start)
-            .constraints([Constraint::Length(5), Constraint::Min(1)])
+            .constraints([Constraint::Length(4), Constraint::Min(1)])
             .horizontal_margin(2)
             .vertical_margin(1)
             .spacing(1)
