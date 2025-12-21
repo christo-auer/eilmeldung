@@ -37,6 +37,7 @@ pub enum ConfigError {
 }
 
 #[derive(Debug, Clone, serde::Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum ArticleContentType {
     PlainText,
     Markdown,
