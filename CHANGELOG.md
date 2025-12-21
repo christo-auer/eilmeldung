@@ -1,5 +1,8 @@
 # Unreleased
 
+- HTML/markdown content now renders if `content_preferred_type` is set to `markddown`
+- `content_preferred_type`'s settings changed to `plain_text` and `markdown`, example updated
+
 # 0.4.2 - 2025-12-20
 
 - zen/distraction-free mode now shows no summary/thumbnail
