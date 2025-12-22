@@ -137,10 +137,7 @@ impl ArticleContentViewData {
 
         // let scroll_thumb_icon = config.scroll_thumb_icon.to_string();
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-            .begin_symbol(Some("╵"))
-            .end_symbol(Some("╷"))
-            .track_symbol(Some(" "))
-            .thumb_symbol("│")
+            .symbols(config.scrollbar_set())
             .style(config.theme.eff_border(is_focused));
 
         self.scrollbar_state = self

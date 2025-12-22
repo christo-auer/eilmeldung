@@ -21,6 +21,7 @@ pub mod prelude {
 
 use config::FileFormat;
 use log::{info, warn};
+use ratatui::symbols::scrollbar;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConfigError {
@@ -101,6 +102,10 @@ pub struct Config {
     pub unmarked_icon: char,
     pub command_line_prompt_icon: char,
     pub article_scope: ArticleScope,
+    pub scrollbar_begin_symbol: char,
+    pub scrollbar_end_symbol: char,
+    pub scrollbar_track_symbol: char,
+    pub scrollbar_thumb_symbol: char,
 
     pub articles_after_selection: usize,
     pub auto_scrape: bool,
@@ -125,6 +130,15 @@ impl Config {
         self.input_config.validate()?;
 
         Ok(())
+    }
+
+    pub fn scrollbar_set(&self) -> scrollbar::Set {
+        scrollbar::Set {
+            track: Box::new(self.scrollbar_track_symbol.to_string()).leak(),
+            thumb: Box::new(self.scrollbar_thumb_symbol.to_string()).leak(),
+            begin: Box::new(self.scrollbar_begin_symbol.to_string()).leak(),
+            end: Box::new(self.scrollbar_end_symbol.to_string()).leak(),
+        }
     }
 }
 
@@ -151,6 +165,10 @@ impl Default for Config {
             tag_icon: '󰓹',
             command_line_prompt_icon: '',
             article_scope: ArticleScope::Unread,
+            scrollbar_begin_symbol: '│',
+            scrollbar_end_symbol: '│',
+            scrollbar_track_symbol: ' ',
+            scrollbar_thumb_symbol: '│',
 
             articles_after_selection: 3,
             auto_scrape: true,

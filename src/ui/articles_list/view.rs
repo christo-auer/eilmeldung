@@ -116,10 +116,7 @@ impl Widget for &mut ArticlesList {
 
         // let scroll_thumb_icon = self.config.scroll_thumb_icon.to_string();
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-            .begin_symbol(Some("╵"))
-            .end_symbol(Some("╷"))
-            .track_symbol(Some(" "))
-            .thumb_symbol("│")
+            .symbols(self.config.scrollbar_set())
             .style(self.config.theme.eff_border(self.is_focused));
 
         let scrollbar_area = Rect {
