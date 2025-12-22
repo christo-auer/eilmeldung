@@ -167,6 +167,10 @@ impl ArticlesList {
         let Some(index) = self.view_data.get_table_state_mut().selected() else {
             return;
         };
+
+        let scrollbar_state = self.view_data.scrollbar_state_mut();
+        *scrollbar_state = scrollbar_state.position(index + 1);
+
         let offset = self.view_data.get_table_state_mut().offset_mut();
         let max_lines_above = self.config.article_list_height_lines as usize
             - (self.config.articles_after_selection + 1);

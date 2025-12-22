@@ -7,9 +7,12 @@ use getset::{Getters, MutGetters};
 use log::info;
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Flex, Layout, Rect},
+    layout::{Constraint, Direction, Flex, Layout, Margin, Rect},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, Paragraph, StatefulWidget, Widget, Wrap},
+    widgets::{
+        Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget,
+        Widget, Wrap,
+    },
 };
 use ratatui_image::{
     FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
@@ -23,6 +26,9 @@ pub struct ArticleContentViewData {
     vertical_scroll: u16,
     #[getset(get = "pub(super)")]
     max_scroll: u16,
+
+    #[getset(get = "pub(super), get_mut = "pub(super))]
+    scrollbar_state: ScrollbarState,
 
     // Image rendering state
     image: Option<StatefulProtocol>,
@@ -40,6 +46,7 @@ impl Default for ArticleContentViewData {
             image: None,
             picker: Picker::from_query_stdio().unwrap(), // TODO gracefully handle errors
             thumbnail_fetching_throbber: ThrobberState::default(),
+            scrollbar_state: ScrollbarState::default(),
         }
     }
 }
@@ -102,13 +109,13 @@ impl ArticleContentViewData {
     }
 
     pub(super) fn render_block(
-        &self,
+        &mut self,
         area: Rect,
         buf: &mut Buffer,
         config: &Config,
         is_focused: bool,
     ) -> Rect {
-        let mut block = Block::default()
+        let block = Block::default()
             .borders(Borders::all())
             .border_type(ratatui::widgets::BorderType::Rounded)
             .border_style(if is_focused {
@@ -117,19 +124,41 @@ impl ArticleContentViewData {
                 config.theme.border()
             });
 
-        if is_focused {
-            block = block.title_bottom(
-                Line::from(format!(
-                    " {}% ",
-                    f64::round((self.vertical_scroll as f64 / self.max_scroll as f64) * 100.0)
-                        as u16
-                ))
-                .right_aligned(),
-            )
-        }
+        // if is_focused {
+        //     block = block.title_bottom(
+        //         Line::from(format!(
+        //             " {}% ",
+        //             f64::round((self.vertical_scroll as f64 / self.max_scroll as f64) * 100.0)
+        //                 as u16
+        //         ))
+        //         .right_aligned(),
+        //     )
+        // }
+
+        // let scroll_thumb_icon = config.scroll_thumb_icon.to_string();
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("╵"))
+            .end_symbol(Some("╷"))
+            .track_symbol(Some(" "))
+            .thumb_symbol("│")
+            .style(config.theme.eff_border(is_focused));
+
+        self.scrollbar_state = self
+            .scrollbar_state
+            .position(self.vertical_scroll as usize)
+            .content_length(self.max_scroll as usize);
 
         let inner_area = block.inner(area);
         block.render(area, buf);
+        StatefulWidget::render(
+            scrollbar,
+            area.inner(Margin {
+                horizontal: 0,
+                vertical: 1,
+            }),
+            buf,
+            &mut self.scrollbar_state,
+        );
         inner_area
     }
 
@@ -149,12 +178,14 @@ impl ArticleContentViewData {
             article.feed_id.as_str().into()
         };
 
-        let tag_texts = model_data
-            .tags()
-            .as_deref()
-            .unwrap_or_default()
+        let tags = model_data.tags().as_deref().unwrap_or_default();
+        let tag_texts = tags
             .iter()
-            .flat_map(|tag| NewsFlashUtils::tag_to_line(tag, config, None))
+            .flat_map(|tag| {
+                let mut line = NewsFlashUtils::tag_to_line(tag, config, None);
+                line.spans.push(Span::from(" "));
+                line
+            })
             .collect::<Vec<Span>>();
 
         let date_string: String = article
@@ -223,12 +254,13 @@ impl ArticleContentViewData {
         let [header_chunk, summary_chunk] = Layout::default()
             .direction(Direction::Vertical)
             .flex(ratatui::layout::Flex::Start)
-            .constraints([Constraint::Length(4), Constraint::Min(1)])
+            .constraints([Constraint::Length(3), Constraint::Min(1)])
             .horizontal_margin(2)
             .vertical_margin(1)
             .spacing(1)
             .areas::<2>(inner_area);
 
+        self.scrollbar_state = ScrollbarState::default();
         self.render_header(model_data, config, header_chunk, buf);
 
         let mut summary = article.summary.clone().unwrap_or("".into());
@@ -249,16 +281,16 @@ impl ArticleContentViewData {
     ) {
         let centered_layout = Layout::default()
             .direction(Direction::Horizontal)
-            .flex(Flex::Start);
+            .flex(Flex::Center);
 
         match &mut self.image {
             Some(image) => {
                 let mut stateful_image = StatefulImage::new();
                 if config.thumbnail_resize {
-                    stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Nearest)))
+                    stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Lanczos3)))
                 }
                 let [centered_chunk] = centered_layout
-                    .constraints([Constraint::Min(1)])
+                    .constraints([Constraint::Length(config.thumbnail_width)])
                     .areas(thumbnail_chunk);
                 stateful_image.render(centered_chunk, buf, image);
             }
@@ -313,7 +345,7 @@ impl ArticleContentViewData {
         inner_area: Rect,
         buf: &mut Buffer,
     ) {
-        let summary_area_height = if distraction_free { 0 } else { 5 };
+        let summary_area_height = if distraction_free { 0 } else { 3 };
         let [summary_area, content_area] = Layout::default()
             .direction(Direction::Vertical)
             .flex(Flex::Start)

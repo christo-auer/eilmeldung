@@ -32,23 +32,22 @@ impl Widget for &mut FeedList {
         let highlight_style = Style::new().reversed();
 
         let tree_items = self.view_data.tree_items().clone();
+        // let scroll_thumb_icon = self.config.scroll_thumb_icon.to_string();
         let tree = Tree::new(&tree_items)
             .unwrap() // TODO error handling
             .block(
                 Block::default()
                     .borders(Borders::TOP | Borders::LEFT | Borders::BOTTOM)
                     .border_type(ratatui::widgets::BorderType::Rounded)
-                    .border_style(if self.is_focused {
-                        self.config.theme.border_focused()
-                    } else {
-                        self.config.theme.border()
-                    }),
+                    .border_style(self.config.theme.eff_border(self.is_focused)),
             )
             .experimental_scrollbar(Some(
                 Scrollbar::new(ratatui::widgets::ScrollbarOrientation::VerticalLeft)
-                    .begin_symbol(None)
-                    .end_symbol(None)
-                    .track_symbol(None),
+                    .begin_symbol(Some("┴"))
+                    .end_symbol(Some("┬"))
+                    .track_symbol(Some(" "))
+                    .thumb_symbol("│")
+                    .style(self.config.theme.eff_border(self.is_focused)),
             ))
             .highlight_style(highlight_style);
 
