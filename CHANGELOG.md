@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.4.5 - 2025-12-22
+
 - added spaces between tags in content display
 - added sexy scrollbars
 - removed scroll amount displays from article list and content
