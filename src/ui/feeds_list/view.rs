@@ -43,10 +43,7 @@ impl Widget for &mut FeedList {
             )
             .experimental_scrollbar(Some(
                 Scrollbar::new(ratatui::widgets::ScrollbarOrientation::VerticalLeft)
-                    .begin_symbol(Some("┴"))
-                    .end_symbol(Some("┬"))
-                    .track_symbol(Some(" "))
-                    .thumb_symbol("│")
+                    .symbols(self.config.scrollbar_set())
                     .style(self.config.theme.eff_border(self.is_focused)),
             ))
             .highlight_style(highlight_style);

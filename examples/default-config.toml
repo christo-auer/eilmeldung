@@ -11,6 +11,12 @@ unmarked_icon = " "
 tag_icon = "󰓹"
 command_line_prompt_icon = ""
 
+# Scrollbar symbols
+scrollbar_begin_symbol = "│"
+scrollbar_end_symbol = "│"
+scrollbar_track_symbol = " "
+scrollbar_thumb_symbol = "│"
+
 # Labels
 all_label = "󱀂 All {unread_count}"
 feed_label = " {label} {unread_count}"
