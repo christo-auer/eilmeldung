@@ -19,6 +19,10 @@ The configuration file location is `~/.config/eilmeldung/config.toml`.
 | `unmarked_icon`                   | char    | Icon for unmarked articles                                |
 | `tag_icon`                        | char    | Icon for tags                                             |
 | `command_line_prompt_icon`        | char    | Icon for command line prompt                              |
+| `scrollbar_begin_symbol`          | char    | Symbol at top of scrollbars                               |
+| `scrollbar_end_symbol`            | char    | Symbol at bottom of scrollbars                            |
+| `scrollbar_thumb_symbol`          | char    | Symbol placed at current position of scrollbars           |
+| `scrollbar_track_symbol`          | char    | Symbol placed between top and bottom of scrollbars        |
 | `all_label`                       | string  | Label format for "All" in feed list                       |
 | `feed_label`                      | string  | Label format for feeds                                    |
 | `category_label`                  | string  | Label format for categories                               |
