@@ -189,6 +189,14 @@ impl Theme {
         }
     }
 
+    pub fn eff_border(&self, is_focused: bool) -> Style {
+        if is_focused {
+            self.border_focused()
+        } else {
+            self.border()
+        }
+    }
+
     pub fn to_style(&self, component_style: &ComponentStyle) -> Style {
         Style::new()
             .fg(self.color(component_style.fg))

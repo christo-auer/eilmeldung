@@ -4,8 +4,12 @@ use std::sync::Arc;
 
 use getset::{Getters, MutGetters};
 use news_flash::models::{ArticleFilter, Marked, Read};
+use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Row, StatefulWidget, Table, TableState, Widget};
+use ratatui::widgets::{
+    Block, Borders, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table,
+    TableState, Widget,
+};
 use ratatui::{
     layout::Constraint,
     style::{Style, Stylize},
@@ -96,12 +100,9 @@ impl FilterState {
 
 impl Widget for &mut ArticlesList {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        let block = self.view_data.gen_block(
-            &self.config,
-            &self.filter_state,
-            &self.model_data,
-            self.is_focused,
-        );
+        let block = self
+            .view_data
+            .gen_block(&self.config, &self.filter_state, self.is_focused);
         let inner = block.inner(area);
 
         block.render(area, buf);
@@ -112,6 +113,27 @@ impl Widget for &mut ArticlesList {
             buf,
             &mut self.view_data.table_state,
         );
+
+        // let scroll_thumb_icon = self.config.scroll_thumb_icon.to_string();
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("╵"))
+            .end_symbol(Some("╷"))
+            .track_symbol(Some(" "))
+            .thumb_symbol("│")
+            .style(self.config.theme.eff_border(self.is_focused));
+
+        let scrollbar_area = Rect {
+            x: area.x,
+            y: area.y + 1,
+            width: area.width,
+            height: area.height - 1,
+        };
+        StatefulWidget::render(
+            scrollbar,
+            scrollbar_area,
+            buf,
+            &mut self.view_data.scrollbar_state,
+        );
     }
 }
 
@@ -121,15 +143,13 @@ pub struct ArticleListViewData<'a> {
     table: Table<'a>,
     #[getset(get_mut = "pub(super)")]
     table_state: TableState,
+
+    #[getset(get_mut = "pub(super)")]
+    scrollbar_state: ScrollbarState,
 }
 
 impl<'a> ArticleListViewData<'a> {
-    fn build_title(
-        &self,
-        filter_state: &FilterState,
-        model_data: &ArticleListModelData,
-        config: &Config,
-    ) -> Span<'static> {
+    fn build_title(&self, filter_state: &FilterState, config: &Config) -> Span<'static> {
         let mut title = String::new();
 
         if let Some(article_scope) = filter_state.get_effective_scope() {
@@ -156,13 +176,6 @@ impl<'a> ArticleListViewData<'a> {
         };
 
         title.push_str(filter_info);
-
-        let rows = model_data.articles().len();
-        if rows > 0 {
-            let selected_row = self.table_state().selected().unwrap_or(0) + 1;
-            let percent = (100f32 * (selected_row as f32 / rows as f32)) as i32;
-            title.push_str(format!("{selected_row}/{rows} ({percent}%) ",).as_str());
-        }
 
         Span::styled(title, config.theme.header())
     }
@@ -311,6 +324,11 @@ impl<'a> ArticleListViewData<'a> {
             }
         };
 
+        self.scrollbar_state = self
+            .scrollbar_state
+            .content_length(entries.len())
+            .position(0);
+
         self.table = Table::new(
             entries,
             placeholders
@@ -325,12 +343,11 @@ impl<'a> ArticleListViewData<'a> {
         &self,
         config: &Config,
         filter_state: &FilterState,
-        model_data: &ArticleListModelData,
         is_focused: bool,
     ) -> Block<'static> {
         Block::default()
             .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
-            .title_top(self.build_title(filter_state, model_data, config))
+            .title_top(self.build_title(filter_state, config))
             .border_type(ratatui::widgets::BorderType::Rounded)
             .border_style(if is_focused {
                 config.theme.border_focused()
