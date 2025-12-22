@@ -38,7 +38,7 @@ To install via [homebrew](https://brew.sh), tap this repository and install *eil
 
 ```bash
 brew tap christo-auer/eilmeldung https://github.com/christo-auer/eilmeldung
-brew install eilmeldungG
+brew install eilmeldung
 ```
 
 ## Via Cargo
