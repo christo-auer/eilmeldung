@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.4.6 - 2025-12-23
+
 - scrollbar appearance is now configurable
 
 # 0.4.5 - 2025-12-22
