@@ -131,6 +131,213 @@ programs.eilmeldung = {
 </details>
 
 
+# Getting Started
+
+Once installed, run `eilmeldung` to begin. On first launch, you'll be guided through:
+
+## Initial Setup
+
+**Note**: inoreader is currently **NOT** directly supported. Create an issue if you need support for inoreader!
+
+1. Choose Your Provider: Select from local or cloud-based RSS providers (FreshRSS, Miniflux, Feedly, Feedbin, Local, etc.)
+2. Configure Authentication: Enter your credentials (username/password or token, depending on the provider)
+3. Initial Sync: The app will sync your feeds from the provider
+
+If you're new to RSS, select **Local** as your provider - it stores everything on your machine without requiring an external service.
+
+## Help on Key Bindings
+
+Press `?` to see all available key bindings. You can also press `/` in the help dialog to filter for specific commands.
+
+## Command Line
+
+Before we begin: `eilmeldung` has a powerful command line which you can open with `:`. All actions you can trigger in `eilmeldung` are commands and key bindings are just executing one or more commands in the background. Some commands also just open the command line with a predefined command.
+
+**Tip**: Press `Tab` in the command line to trigger autocomplete and see helpful suggestions!
+
+## First Steps
+
+After setup, you'll want to add some feeds and organize them:
+
+### Adding Feeds
+
+- Press `c f` (command: `feedadd`) to add a new feed - you'll be prompted for the RSS/Atom feed URL
+- Example: `:feedadd https://example.com/feed.xml`
+- Or with a custom name: `:feedadd https://news.site/rss News Site` (note: no quotes around the name)
+- Finding RSS feeds: Many websites provide RSS feeds. Look for an RSS icon or search for "RSS" on the site. You can also use [RSS Lookup](https://www.rsslookup.com/) to find RSS feeds for any website.
+
+
+### Creating Categories
+
+- Press `c a` to add a new category for organizing your feeds
+- Example: `:categoryadd Technology`
+
+### Organizing Feeds
+
+- Rename: Select a feed/category and press `c w`, then type the new name
+- Move: Press `c y` to yank (copy) a feed, navigate to destination, press `c p` to paste after (or `c P` to paste before)
+- Remove: Press `c d` to remove an empty feed/category, or `c x` to remove with all children
+
+## Essential Key Bindings
+
+**Note**: You can redefine all key bindings according to you likings. You can also add completely new key bindings via the [configuration file](docs/configuration.md).
+
+
+### Syncing & Refreshing
+
+| Key | Action |
+|-----|--------|
+| `s` | Sync all feeds with your RSS provider |
+
+### Navigation
+
+| Key | Action |
+|-----|--------|
+| `j` / `k` | Move down / up (vim-style) |
+| `h` / `l` | Move left (article → article list → feeds) / right (feeds → article list → article) |
+| `gg` | Go to first item |
+| `G` | Go to last item |
+| `space` | Toggle category tree node (open/close) |
+| `C-h`/`C-l` | Navigate up/down in feed tree |
+| `Ctrl-f` / `Ctrl-b` | Page down / page up |
+| `Tab` / `Shift-Tab` | Cycle through panels (forward / backward) |
+| `g f` / `g a` / `g c` | Jump directly to feeds / articles / content panel |
+
+### Reading Articles
+
+| Key | Action |
+|-----|--------|
+| `o` | Open article in browser, mark as read, and jump to next unread |
+| `O` | Open all unread articles in browser and mark all as read |
+| `J` | Mark current article as read and jump to next unread |
+| `x` | Scrape full article content from the web (for truncated articles) |
+
+### Read/Unread Status
+
+
+| Key | Action |
+|-----|--------|
+| `r` | Mark current article as read |
+| `R` | Mark **all** articles as read (asks for confirmation) |
+| `u` | Mark current article as unread |
+| `U` | Mark **all** articles as unread (asks for confirmation) |
+| `Ctrl-r` | Open command line to set read with query (e.g., `:read unread today`) |
+
+
+**Note**: These commands are context-dependent! In the article list, they act on the *current article* or *all articles* in the list. On the feed list/tree they act on the *current category/feed* or *all categories/feeds*.
+
+### Marking Articles
+
+| Key | Action |
+|-----|--------|
+| `m` | Mark current article |
+| `M` | Mark **all** articles (asks for confirmation) |
+| `v` | Unmark current article |
+| `V` | Unmark **all** articles (asks for confirmation) |
+
+
+**Note**: These commands are context-dependent! In the article list, they act on the *current article* or *all articles* in the list. On the feed list/tree they act on the *current category/feed* or *all categories/feeds*.
+### Zen Mode
+
+| Key | Action |
+|-----|--------|
+| `z` | Toggle distraction-free mode (hides all panels except article content) |
+
+### Tags
+
+| Key | Action |
+|-----|--------|
+| `t` | Open command line to tag article (e.g., `:tag tech`), **TAB** to autocomplete tag names |
+
+You can create new tags with `:tagadd urgent red` (press **TAB** for autocomplete colors!). Once created, you can bulk-tag articles: `:tag tech unread` tags all unread articles as `tech`.
+
+### Article Views
+
+| Key | Action |
+|-----|--------|
+| `1` | Show all articles |
+| `2` | Show only unread articles |
+| `3` | Show only marked articles |
+
+### Searching & Filtering
+
+| Key | Action |
+|-----|--------|
+| `/` | Search articles (type query and press Enter) |
+| `n` / `N` | Jump to next / previous match |
+| `=` | Open command line to filter articles |
+| `+ +` | Apply current filter |
+| `+ r` | Clear filter and show all articles |
+
+
+See below or [Article Queries](docs/queries.md) for how to craft powerful queries.
+
+### Command Line
+
+| Key | Action |
+|-----|--------|
+| `:` | Open command line for advanced commands |
+| `Esc` or `Ctrl-g` | Cancel command input |
+| `Ctrl-u` | Clear command input |
+| `Tab`, `Backtab` | Trigger/cycle autocomplete and show help |
+
+## Query Basics
+
+**eilmeldung** supports powerful queries for searching and bulk operations:
+
+### Simple Queries
+
+```
+unread                          # All unread articles
+marked                          # All marked  articles
+today                           # Articles from last 24 hours
+unread today                    # Unread articles from today
+```
+
+### Search by Field
+
+```
+title:security                  # Articles with "security" in title
+author:john                     # Articles by John
+feed:bbc                        # All articles from BBC feed
+summary:"climate change"        # Articles with exact phrase in summary
+```
+
+### Time-Based
+
+```
+newer:"1 week ago"              # Articles from last week
+older:"2024-01-01"              # Articles before Jan 1, 2024
+newer:"1 hour ago" unread       # Recent unread articles
+```
+
+### Tags
+
+```
+#important                      # Articles tagged "important"
+#tech,#news                     # Articles tagged "tech" OR "news"
+~#politics                      # Articles NOT tagged "politics"
+```
+
+### Regular Expressions
+
+```
+title:/breaking|urgent/         # "breaking" OR "urgent" in title
+feed:/github|gitlab/            # Articles from GitHub or GitLab feeds
+```
+
+### Bulk Operations with Queries
+
+```
+:read unread feed:bbc           # Mark all unread BBC articles as read
+:tag tech newer:"1 day"         # Tag recent articles with "tech"
+:mark title:/important/i        # Mark all articles with "important" in title
+```
+
+For complete query documentation, see [Article Queries](docs/queries.md).
+
+---
+
 # Documentation
 
 - [Configuration](docs/configuration.md): contains all *configuration options* along with the input configuration
