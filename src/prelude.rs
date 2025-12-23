@@ -5,7 +5,7 @@ pub use super::ui::prelude::*;
 pub use super::cli::CliArgs;
 
 pub use super::messages::prelude::*;
-pub use super::newsflash_utils::NewsFlashUtils;
+pub use super::newsflash_utils::{NewsFlashUtils, build_client};
 pub use super::query::prelude::*;
 
 pub use super::login::LoginSetup;

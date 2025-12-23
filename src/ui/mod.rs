@@ -143,12 +143,12 @@ pub struct App {
 
 impl App {
     pub fn new(
-        config: Config,
+        config: Arc<Config>,
         news_flash_utils: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         debug!("Creating new App instance");
-        let config_arc = Arc::new(config);
+        let config_arc = config.clone();
 
         debug!("Initializing UI components");
         let app = Self {
@@ -465,6 +465,7 @@ impl MessageReceiver for App {
                         "Trying to get online...",
                         TooltipFlavor::Info,
                     )?;
+                    self.news_flash_utils.rebuild_client().await?;
                     self.news_flash_utils.set_offline(false);
                 }
             }
