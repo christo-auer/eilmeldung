@@ -1,5 +1,7 @@
 use crate::{messages::event::AsyncOperationError, prelude::*};
-use std::{collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc};
+use std::{
+    collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc, time::Duration,
+};
 
 use news_flash::{
     NewsFlash,
@@ -9,18 +11,19 @@ use news_flash::{
     },
 };
 
-use log::{debug, error};
+use log::{debug, error, info};
 use ratatui::{
     style::{Color, Stylize},
     text::{Line, Span},
 };
-use reqwest::Client;
+use reqwest::{Client, ClientBuilder};
 use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
 
 #[derive(Clone)]
 pub struct NewsFlashUtils {
     pub news_flash_lock: Arc<RwLock<NewsFlash>>,
     client_lock: Arc<RwLock<Client>>,
+    config: Arc<Config>,
     command_sender: UnboundedSender<Message>,
 
     async_operation_mutex: Arc<Mutex<()>>,
@@ -71,21 +74,47 @@ macro_rules! gen_async_call {
 
 }
 
+pub fn build_client(timeout: Duration) -> color_eyre::Result<Client> {
+    let user_agent = format!(
+        "eilmeldung/{} (RSS reader; +https://github.com/christo-auer/eilmeldung",
+        env!("CARGO_PKG_VERSION")
+    );
+    let builder = ClientBuilder::new()
+        .user_agent(user_agent.as_str())
+        .use_rustls_tls()
+        .hickory_dns(false)
+        .gzip(true)
+        .brotli(true)
+        .timeout(timeout);
+
+    Ok(builder.build()?)
+}
+
 #[rustfmt::skip]        
 impl NewsFlashUtils {
     pub fn new(
         news_flash: NewsFlash,
         client: Client,
+        config: Arc<Config>,
         command_sender: UnboundedSender<Message>,
     ) -> Self {
         debug!("Creating NewsFlashUtils");
         Self {
             news_flash_lock: Arc::new(RwLock::new(news_flash)),
             client_lock: Arc::new(RwLock::new(client)),
+            config,
             command_sender,
             async_operation_mutex: Arc::new(Mutex::new(())),
         }
     }
+
+    pub async fn rebuild_client(&self) -> color_eyre::Result<()>{
+        info!("rebuilding reqwest client");
+        let mut client = self.client_lock.write().await;
+        *client = build_client(Duration::from_secs(self.config.network_timeout_seconds))?;
+        Ok(())
+    }
+
 
     // for polling
     pub fn is_async_operation_running(&self) -> bool {

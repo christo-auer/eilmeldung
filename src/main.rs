@@ -9,7 +9,7 @@ mod newsflash_utils;
 mod query;
 mod ui;
 
-use std::{path::Path, sync::Arc};
+use std::{path::Path, sync::Arc, time::Duration};
 
 use clap::Parser;
 use log::{debug, error, info};
@@ -41,15 +41,18 @@ async fn main() -> color_eyre::Result<()> {
     debug!("Error handling and logging initialized");
 
     info!("Loading configuration");
-    let config = load_config(config_dir)?;
+    let config = Arc::new(load_config(config_dir)?);
 
     info!("Initializing NewsFlash");
     let news_flash_attempt = NewsFlash::try_load(state_dir, config_dir);
 
-    let client = reqwest::Client::new();
+    let client = build_client(Duration::from_secs(config.network_timeout_seconds))?;
 
     let news_flash = match news_flash_attempt {
-        Ok(news_flash) => news_flash,
+        Ok(news_flash) => {
+            news_flash.initial_sync(&client, Default::default()).await?;
+            news_flash
+        }
         Err(_) => {
             // this is the initial setup => setup login data
             info!("no profile found => ask user");
@@ -84,6 +87,7 @@ async fn main() -> color_eyre::Result<()> {
     let news_flash_utils = Arc::new(NewsFlashUtils::new(
         news_flash,
         client,
+        config.clone(),
         message_sender.clone(),
     ));
     let connectivity_monitor =
