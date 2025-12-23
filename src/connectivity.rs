@@ -1,8 +1,8 @@
 use std::{sync::Arc, time::Duration};
+use tokio::time::sleep;
 
-use log::{info, warn};
+use log::{info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
-use reqwest::Client;
 use tokio::task::JoinHandle;
 
 use crate::prelude::*;
@@ -10,6 +10,12 @@ use tokio::sync::{Mutex, mpsc::UnboundedSender};
 
 #[cfg(not(target_os = "macos"))]
 use network_connectivity::{Connectivity, ConnectivityState};
+
+const IS_REACHABLE_RETRIES: u16 = 10;
+const TIME_BETWEEN_RETRIES: Duration = Duration::from_secs(1);
+
+#[cfg(target_os = "macos")]
+const TIME_BETWEEN_REACHABILITY_CHECKS: Duration = Duration::from_secs(60);
 
 pub struct ConnectivityMonitor {
     message_sender: UnboundedSender<Message>,
@@ -39,18 +45,33 @@ impl ConnectivityMonitor {
     async fn check_reachability(&self) -> color_eyre::Result<()> {
         let news_flash = self.news_flash_utils.news_flash_lock.read().await;
         info!("checking reachability of service");
-        let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
+        let client = build_client(Duration::from_secs(10))?;
 
-        let is_reachable = news_flash.is_reachable(&client).await;
+        let mut is_reachable: bool = false;
+
+        for _ in 0..IS_REACHABLE_RETRIES {
+            trace!("polling service for reachability");
+            let reachable_result = news_flash.is_reachable(&client).await;
+
+            if matches!(
+                reachable_result,
+                Ok(true) | Err(NewsFlashError::API(FeedApiError::Unsupported))
+            ) {
+                is_reachable = true;
+                break;
+            }
+            sleep(TIME_BETWEEN_RETRIES).await;
+        }
+
         match is_reachable {
             // if reachable or not supported => reachable
-            Ok(true) | Err(NewsFlashError::API(FeedApiError::Unsupported)) => {
+            true => {
                 info!("service is reachable ");
                 self.message_sender
                     .send(Message::Event(Event::ConnectionAvailable))?;
             }
 
-            Ok(false) | Err(_) => {
+            false => {
                 warn!("service is not reachable anymore");
                 self.message_sender
                     .send(Message::Event(Event::ConnectionLost(
@@ -73,7 +94,9 @@ impl ConnectivityMonitor {
                         ConnectionLostReason::NoInternet,
                     )))?;
             }
-            (_, _) => self.check_reachability().await?,
+            (_, _) => {
+                self.check_reachability().await?;
+            }
         }
 
         Ok(())
@@ -124,7 +147,7 @@ impl ConnectivityMonitor {
             *self.is_running.lock().await = true;
             while *self.is_running.lock().await {
                 tokio::select! {
-                    _ = tokio::time::sleep(tokio::time::Duration::from_secs(60)) => {
+                    _ = tokio::time::sleep(TIME_BETWEEN_REACHABILITY_CHECKS) => {
                         self.check_reachability().await?;
                     },
 
