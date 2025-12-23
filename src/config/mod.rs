@@ -84,6 +84,7 @@ pub struct Config {
     pub theme: Theme,
 
     pub refresh_fps: u64,
+    pub network_timeout_seconds: u64,
 
     pub offline_icon: char,
     pub all_label: String,
@@ -145,6 +146,9 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            refresh_fps: 10,
+            network_timeout_seconds: 60,
+
             all_label: "󱀂 All {unread_count}".into(),
             feed_label: " {label} {unread_count}".into(),
             category_label: "󰉋 {label} {unread_count}".into(),
@@ -156,7 +160,6 @@ impl Default for Config {
             date_format: "%m/%d %H:%M".into(),
             theme: Default::default(),
             input_config: Default::default(),
-            refresh_fps: 10,
             offline_icon: '',
             read_icon: '',
             unread_icon: '',

@@ -1,5 +1,6 @@
 # Basic Configuration
 refresh_fps = 10
+network_timeout_seconds = 60
 article_scope = "unread"
 
 # Icons

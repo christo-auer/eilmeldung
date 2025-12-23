@@ -5,12 +5,16 @@ The configuration file location is `~/.config/eilmeldung/config.toml`.
 
 **Note:** Icons and special characters require a terminal and font that support [Nerd Fonts](https://www.nerdfonts.com/).
 
+You can find the default configuration in `examples/default-config.toml`
+
 
 ## Basic Configuration Options
+
 
 | Option                            | Type    | Description                                               |
 | --------                          | ------  | -------------                                             |
 | `refresh_fps`                     | integer | UI refresh rate in frames per second                      |
+| `network_timeout_seconds`         | integer | timeout for network operations                            |
 | `article_scope`                   | string  | Default article scope: `"all"`, `"unread"`, or `"marked"` |
 | `offline_icon`                    | char    | Icon displayed when offline                               |
 | `read_icon`                       | char    | Icon for read articles                                    |
@@ -251,7 +255,4 @@ share_targets = [
 ```
 
 
-## Default Configuration
-
-You can find the default configuration in `examples/default-config.toml`
 
