@@ -1,5 +1,8 @@
 # Unreleased
 
+- optimized logic for sensing if service is reachable, leads to faster reconnect on unstable networks or after disconnects
+- after service is reachable again (after a disconnect), the reqwest client is rebuilt. this is need for some providers to accept the connection after a reconnect (e.g. inoreader)
+
 # 0.4.6 - 2025-12-23
 
 - scrollbar appearance is now configurable
