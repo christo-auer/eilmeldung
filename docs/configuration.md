@@ -16,6 +16,7 @@ You can find the default configuration in `examples/default-config.toml`
 | `refresh_fps`                     | integer | UI refresh rate in frames per second                      |
 | `network_timeout_seconds`         | integer | timeout for network operations                            |
 | `article_scope`                   | string  | Default article scope: `"all"`, `"unread"`, or `"marked"` |
+| `keep_articles_days`              | integer | amount of days before articles are removed                |
 | `offline_icon`                    | char    | Icon displayed when offline                               |
 | `read_icon`                       | char    | Icon for read articles                                    |
 | `unread_icon`                     | char    | Icon for unread articles                                  |

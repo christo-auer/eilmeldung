@@ -20,6 +20,7 @@ pub mod prelude {
 
 use crate::prelude::*;
 
+use chrono::TimeDelta;
 use log::{debug, error, info, trace};
 use ratatui::DefaultTerminal;
 use std::{fmt::Display, path::Path, str::FromStr, sync::Arc, time::Duration};
@@ -209,6 +210,20 @@ impl App {
             .read()
             .await
             .is_offline();
+
+        // set days before articles get removed
+        info!(
+            "setting amount of days before articles are removed to {}",
+            self.config.keep_articles_days
+        );
+        self.news_flash_utils
+            .news_flash_lock
+            .read()
+            .await
+            .set_keep_articles_duration(Some(TimeDelta::days(
+                self.config.keep_articles_days as i64,
+            )))
+            .await?;
 
         debug!("Sending ApplicationStarted command");
         self.message_sender

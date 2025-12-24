@@ -11,7 +11,6 @@ mod ui;
 
 use std::{path::Path, sync::Arc, time::Duration};
 
-use chrono::TimeDelta;
 use clap::Parser;
 use log::{debug, error, info};
 use news_flash::{NewsFlash, models::LoginData};
@@ -78,9 +77,6 @@ async fn main() -> color_eyre::Result<()> {
             news_flash.unwrap()
         }
     };
-    news_flash
-        .set_keep_articles_duration(Some(TimeDelta::days(30)))
-        .await?;
 
     // setup of things we need in the app
     let (message_sender, message_receiver) = unbounded_channel::<Message>();

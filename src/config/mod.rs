@@ -82,9 +82,9 @@ pub enum ArticleScope {
 pub struct Config {
     pub input_config: InputConfig,
     pub theme: Theme,
-
     pub refresh_fps: u64,
     pub network_timeout_seconds: u64,
+    pub keep_articles_days: u16,
 
     pub offline_icon: char,
     pub all_label: String,
@@ -148,6 +148,7 @@ impl Default for Config {
         Self {
             refresh_fps: 10,
             network_timeout_seconds: 60,
+            keep_articles_days: 30,
 
             all_label: "󱀂 All {unread_count}".into(),
             feed_label: " {label} {unread_count}".into(),
