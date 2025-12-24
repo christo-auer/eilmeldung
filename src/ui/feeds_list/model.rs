@@ -345,6 +345,11 @@ impl FeedListModelData {
         Ok(())
     }
 
+    pub(super) fn fetch_feed(&self, feed_id: FeedID) -> color_eyre::Result<()> {
+        self.news_flash_utils.fetch_feed(feed_id);
+        Ok(())
+    }
+
     pub(super) async fn add_category(
         &self,
         label: String,

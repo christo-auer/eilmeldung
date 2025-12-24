@@ -50,6 +50,9 @@ pub enum Event {
     AsyncFeedAdd,
     AsyncFeedAddFinished(Feed),
 
+    AsyncFeedFetch,
+    AsyncFeedFetchFinished(FeedID, i64),
+
     AsyncCategoryAdd,
     AsyncCategoryAddFinished(Category),
 
@@ -136,6 +139,7 @@ impl Event {
             self,
             AsyncSyncFinished(_)
                 | AsyncFeedAddFinished(_)
+                | AsyncFeedFetchFinished(..)
                 | AsyncRenameFeedFinished(_)
                 | AsyncCategoryRenameFinished(_)
                 | AsyncArticleFatFetchFinished(_)

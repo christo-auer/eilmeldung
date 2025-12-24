@@ -239,10 +239,20 @@ impl FeedList {
     }
 
     fn maybe_selected_category(&self) -> Option<CategoryID> {
+        let selected = self.view_data.tree_state().selected();
+
         self.selected()
             .and_then(|feed_list_item| match feed_list_item {
                 FeedListItem::Category(category) => Some(category.category_id.to_owned()),
                 _ => None,
+            })
+            .or_else(|| {
+                selected
+                    .get(selected.len().saturating_sub(2))
+                    .map(|second_to_last| match second_to_last {
+                        FeedListItem::Category(category) => Some(category.category_id.to_owned()),
+                        _ => None,
+                    })?
             })
     }
 
@@ -616,10 +626,26 @@ impl MessageReceiver for FeedList {
                 E::AsyncFeedAddFinished(feed) => {
                     tooltip(
                         &self.message_sender,
-                        format!("successfully added feed {}", feed.label).as_str(),
+                        format!("successfully added feed {}, fetching feed now", feed.label)
+                            .as_str(),
                         TooltipFlavor::Info,
                     )?;
-                    self.model_data.sync()?;
+                    self.model_data.fetch_feed(feed.feed_id.to_owned())?;
+                }
+
+                E::AsyncFeedFetchFinished(..) => {
+                    // sync to get new articles
+                    self.message_sender
+                        .send(Message::Command(Command::FeedListSync))?;
+                }
+
+                E::AsyncSyncFinished(_) => {
+                    tooltip(
+                        &self.message_sender,
+                        "finished syncing",
+                        TooltipFlavor::Info,
+                    )?;
+                    model_needs_update = true;
                 }
 
                 E::AsyncCategoryAddFinished(category) => {
@@ -628,12 +654,14 @@ impl MessageReceiver for FeedList {
                         format!("successfully added category {}", category.label).as_str(),
                         TooltipFlavor::Info,
                     )?;
-                    self.model_data.sync()?;
+                    model_needs_update = true;
+                    // self.model_data.sync()?;
                 }
 
                 E::AsyncFeedMoveFinished | E::AsyncCategoryMoveFinished => {
                     tooltip(&self.message_sender, "move successful", TooltipFlavor::Info)?;
-                    self.model_data.sync()?;
+                    // self.model_data.sync()?;
+                    model_needs_update = true;
                 }
 
                 E::AsyncRenameFeedFinished(_)
@@ -644,7 +672,8 @@ impl MessageReceiver for FeedList {
                         "successfully changed",
                         TooltipFlavor::Info,
                     )?;
-                    self.model_data.sync()?;
+                    model_needs_update = true;
+                    // self.model_data.sync()?;
                 }
 
                 E::AsyncFeedRemoveFinished
@@ -655,7 +684,8 @@ impl MessageReceiver for FeedList {
                         "removal successful",
                         TooltipFlavor::Info,
                     )?;
-                    self.model_data.sync()?;
+                    model_needs_update = true;
+                    // self.model_data.sync()?;
                 }
 
                 event if event.caused_model_update() => model_needs_update = true,

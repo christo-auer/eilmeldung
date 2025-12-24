@@ -11,6 +11,7 @@ mod ui;
 
 use std::{path::Path, sync::Arc, time::Duration};
 
+use chrono::TimeDelta;
 use clap::Parser;
 use log::{debug, error, info};
 use news_flash::{NewsFlash, models::LoginData};
@@ -49,10 +50,7 @@ async fn main() -> color_eyre::Result<()> {
     let client = build_client(Duration::from_secs(config.network_timeout_seconds))?;
 
     let news_flash = match news_flash_attempt {
-        Ok(news_flash) => {
-            news_flash.initial_sync(&client, Default::default()).await?;
-            news_flash
-        }
+        Ok(news_flash) => news_flash,
         Err(_) => {
             // this is the initial setup => setup login data
             info!("no profile found => ask user");
@@ -80,6 +78,9 @@ async fn main() -> color_eyre::Result<()> {
             news_flash.unwrap()
         }
     };
+    news_flash
+        .set_keep_articles_duration(Some(TimeDelta::days(30)))
+        .await?;
 
     // setup of things we need in the app
     let (message_sender, message_receiver) = unbounded_channel::<Message>();

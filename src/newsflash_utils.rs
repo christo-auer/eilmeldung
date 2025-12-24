@@ -291,6 +291,16 @@ impl NewsFlashUtils {
     }
 
     gen_async_call! {
+        method_name: fetch_feed,
+        params: (feed_id: FeedID),
+        news_flash_var: news_flash,
+        client_var: client,
+        start_event: Event::AsyncFeedFetch,
+        operation: let fetched = news_flash.fetch_feed(&feed_id, &client, Default::default()).await?,
+        success_event: Event::AsyncFeedFetchFinished(feed_id, fetched),
+    }
+
+    gen_async_call! {
         method_name: add_category,
         params: (title: String, parent : Option<CategoryID>),
         news_flash_var: news_flash,
