@@ -1,5 +1,7 @@
 # Unreleased
 
+- fixed wrong display of title (and other elements) when a html-escaped code used wide ampersand instead of a regular ampersand
+- article content now also shows author
 - the option `keep_articles_days` (default 30) sets the amount of days before articles are removed
 
 # 0.4.7 - 2025-12-24

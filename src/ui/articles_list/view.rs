@@ -206,7 +206,9 @@ impl<'a> ArticleListViewData<'a> {
                 let row_vec: Vec<Line> = placeholders
                     .iter()
                     .map(|placeholder| match *placeholder {
-                        "{title}" => article.title.as_deref().unwrap_or("?").to_string().into(),
+                        "{title}" => {
+                            html_sanitize(article.title.as_deref().unwrap_or("no title")).into()
+                        }
                         "{tag_icons}" => Line::from(
                             match model_data.tags_for_article().get(&article.article_id) {
                                 Some(tag_ids) => {
@@ -230,14 +232,17 @@ impl<'a> ArticleListViewData<'a> {
                                 None => vec![Span::from("")],
                             },
                         ),
-                        "{author}" => article.author.as_deref().unwrap_or("?").to_string().into(),
-                        "{feed}" => model_data
-                            .feed_map()
-                            .get(&article.feed_id)
-                            .map(|feed| feed.label.as_str())
-                            .unwrap_or("?")
-                            .to_string()
-                            .into(),
+                        "{author}" => {
+                            html_sanitize(article.author.as_deref().unwrap_or("no author")).into()
+                        }
+                        "{feed}" => html_sanitize(
+                            model_data
+                                .feed_map()
+                                .get(&article.feed_id)
+                                .map(|feed| feed.label.as_str())
+                                .unwrap_or("unknown feed"),
+                        )
+                        .into(),
                         "{date}" => article
                             .date
                             .with_timezone(&chrono::Local)
