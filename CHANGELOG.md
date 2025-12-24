@@ -1,5 +1,7 @@
 # Unreleased
 
+- the option `keep_articles_days` (default 30) sets the amount of days before articles are removed
+
 # 0.4.7 - 2025-12-24
 
 - automatically fetching feed after adding, squashed some related bugs
