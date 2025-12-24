@@ -8,6 +8,7 @@ mod messages;
 mod newsflash_utils;
 mod query;
 mod ui;
+mod utils;
 
 use std::{path::Path, sync::Arc, time::Duration};
 

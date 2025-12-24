@@ -124,17 +124,6 @@ impl ArticleContentViewData {
                 config.theme.border()
             });
 
-        // if is_focused {
-        //     block = block.title_bottom(
-        //         Line::from(format!(
-        //             " {}% ",
-        //             f64::round((self.vertical_scroll as f64 / self.max_scroll as f64) * 100.0)
-        //                 as u16
-        //         ))
-        //         .right_aligned(),
-        //     )
-        // }
-
         // let scroll_thumb_icon = config.scroll_thumb_icon.to_string();
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .symbols(config.scrollbar_set())
@@ -168,9 +157,9 @@ impl ArticleContentViewData {
             return vec![];
         };
 
-        let title = article.title.as_deref().unwrap_or("no title");
+        let title = html_sanitize(article.title.as_deref().unwrap_or("unknown title"));
         let feed_label: String = if let Some(feed) = model_data.feed() {
-            feed.label.clone()
+            html_sanitize(&feed.label)
         } else {
             article.feed_id.as_str().into()
         };
@@ -185,6 +174,15 @@ impl ArticleContentViewData {
             })
             .collect::<Vec<Span>>();
 
+        let author = html_sanitize(
+            article
+                .author
+                .as_deref()
+                .map(|author| format!(" by {author}"))
+                .as_deref()
+                .unwrap_or(""),
+        );
+
         let date_string: String = article
             .date
             .with_timezone(&chrono::Local)
@@ -193,11 +191,12 @@ impl ArticleContentViewData {
 
         let summary_lines = vec![
             Line::from(vec![
-                Span::from(date_string).style(config.theme.feed()),
-                Span::from("  ").style(config.theme.feed()),
-                Span::from(feed_label).style(config.theme.feed()),
+                Span::from(date_string).style(config.theme.header()),
+                Span::from("  ").style(config.theme.header()),
+                Span::from(feed_label).style(config.theme.header()),
             ]),
-            Line::from(Span::from(title).style(config.theme.header())),
+            Line::styled(title, config.theme.paragraph()),
+            Line::styled(author, config.theme.paragraph()),
             Line::from(tag_texts),
         ];
 
