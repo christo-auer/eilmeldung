@@ -6,6 +6,7 @@ pub mod prelude {
 }
 
 use arboard::Clipboard;
+use log::trace;
 use model::ArticleContentModelData;
 use url::Url;
 use view::ArticleContentViewData;
@@ -51,6 +52,7 @@ impl ArticleContent {
         self.view_data.clear_image();
         self.view_data.scroll_to_top();
         self.view_data.update(&self.model_data, self.config.clone());
+        self.update_thumbnail_fetching_state()?;
         Ok(())
     }
 
@@ -71,18 +73,18 @@ impl ArticleContent {
         Ok(())
     }
 
-    fn tick(&mut self) -> color_eyre::Result<()> {
+    fn update_thumbnail_fetching_state(&mut self) -> color_eyre::Result<bool> {
         self.view_data.tick_throbber();
-
-        if self.model_data.should_fetch_thumbnail(&self.config) {
+        if self.model_data.update_should_fetch_thumbnail(&self.config) {
             self.fetch_thumbnail()?;
         }
-        Ok(())
+
+        Ok(*self.model_data.thumbnail_fetch_running())
     }
 
     fn fetch_thumbnail(&mut self) -> color_eyre::Result<()> {
         if self.view_data.image().is_none() {
-            self.model_data.fetch_thumbnail()?;
+            self.model_data.start_fetch_thumbnail()?;
             self.view_data.reset_thumbnail_throbber();
         }
         Ok(())
@@ -256,7 +258,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 }
 
                 Tick => {
-                    self.tick()?;
+                    view_needs_update = self.update_thumbnail_fetching_state()?;
                 }
 
                 event if event.caused_model_update() => {
@@ -269,6 +271,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
 
         if view_needs_update {
             self.view_data.update(&self.model_data, self.config.clone());
+            trace!("issuing REDRAW");
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
         }

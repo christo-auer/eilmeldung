@@ -1,9 +1,10 @@
 use super::model::ArticleContentModelData;
 use crate::prelude::*;
 
-use std::sync::Arc;
+use std::{io::Cursor, sync::Arc};
 
 use getset::{Getters, MutGetters};
+use image::ImageReader;
 use log::info;
 use ratatui::{
     buffer::Buffer,
@@ -19,6 +20,9 @@ use ratatui_image::{
 };
 use throbber_widgets_tui::{Throbber, ThrobberState, WhichUse};
 
+const NO_THUMB_PLACEHOLDER: &[u8] =
+    include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/no-thumb.png"));
+
 #[derive(Getters, MutGetters)]
 pub struct ArticleContentViewData {
     // Scroll state
@@ -32,6 +36,7 @@ pub struct ArticleContentViewData {
 
     // Image rendering state
     image: Option<StatefulProtocol>,
+    placeholder_image: StatefulProtocol,
     picker: Picker,
 
     // Throbber state for loading animations
@@ -40,11 +45,22 @@ pub struct ArticleContentViewData {
 
 impl Default for ArticleContentViewData {
     fn default() -> Self {
+        let picker = Picker::from_query_stdio().unwrap();
+        let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
+        let placeholder_image = picker.new_resize_protocol(
+            ImageReader::new(cursor)
+                .with_guessed_format()
+                .unwrap() // OK as content is checked
+                .decode()
+                .unwrap(), // OK as content is checked
+        );
+
         Self {
             vertical_scroll: 0,
             max_scroll: 0,
             image: None,
-            picker: Picker::from_query_stdio().unwrap(), // TODO gracefully handle errors
+            placeholder_image,
+            picker, // TODO gracefully handle errors
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
         }
@@ -290,7 +306,9 @@ impl ArticleContentViewData {
                     .areas(thumbnail_chunk);
                 stateful_image.render(centered_chunk, buf, image);
             }
-            None if *model_data.thumbnail_fetch_running() => {
+            None if *model_data.thumbnail_fetch_running()
+                || model_data.thumbnail_fetch_successful().is_none() =>
+            {
                 let throbber = Throbber::default()
                     .throbber_style(config.theme.header())
                     .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
@@ -305,31 +323,16 @@ impl ArticleContentViewData {
                     &mut self.thumbnail_fetching_throbber,
                 );
             }
-            None if !model_data.thumbnail_fetch_successful().unwrap_or(true) => {
+            _ => {
+                let mut stateful_image = StatefulImage::new();
+                if config.thumbnail_resize {
+                    stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Lanczos3)))
+                }
                 let [centered_chunk] = centered_layout
-                    .constraints([Constraint::Length(8)])
-                    .direction(Direction::Vertical)
-                    .constraints([Constraint::Length(8)])
-                    .flex(Flex::Start)
+                    .constraints([Constraint::Length(config.thumbnail_width)])
                     .areas(thumbnail_chunk);
-                let block = Block::default()
-                    .borders(Borders::all())
-                    .border_type(ratatui::widgets::BorderType::Plain)
-                    .border_style(config.theme.inactive());
-
-                let question_mark = Text::from(vec![
-                    " ___  ".into(),
-                    "|__ \\".into(),
-                    "  / / ".into(),
-                    " |_|  ".into(),
-                    " (_)  ".into(),
-                ])
-                .style(config.theme.inactive())
-                .alignment(ratatui::layout::Alignment::Center);
-                Widget::render(question_mark, block.inner(centered_chunk), buf);
-                block.render(centered_chunk, buf);
+                stateful_image.render(centered_chunk, buf, &mut self.placeholder_image);
             }
-            _ => {}
         }
     }
 

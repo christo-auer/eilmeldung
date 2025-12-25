@@ -168,7 +168,7 @@ impl ArticleContentModelData {
         Ok(())
     }
 
-    pub(super) fn should_fetch_thumbnail(&self, config: &Config) -> bool {
+    pub(super) fn update_should_fetch_thumbnail(&mut self, config: &Config) -> bool {
         if !config.thumbnail_show || self.thumbnail_fetch_running {
             return false;
         }
@@ -178,6 +178,7 @@ impl ArticleContentModelData {
         };
 
         if article.thumbnail_url.is_none() {
+            self.thumbnail_fetch_successful = Some(false);
             return false;
         }
 
@@ -203,8 +204,9 @@ impl ArticleContentModelData {
         }
     }
 
-    pub(super) fn fetch_thumbnail(&mut self) -> color_eyre::Result<()> {
+    pub(super) fn start_fetch_thumbnail(&mut self) -> color_eyre::Result<()> {
         let Some(article) = self.article.as_ref() else {
+            self.thumbnail_fetch_successful = Some(false);
             return Ok(());
         };
 
