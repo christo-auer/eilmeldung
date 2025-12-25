@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.4.8 - 2025-12-25
+
 - placeholder image is now shown when thumbnail could not be loaded
 - fixed wrong display of title (and other elements) when a html-escaped code used wide ampersand instead of a regular ampersand
 - article content now also shows author
