@@ -1,5 +1,6 @@
 # Unreleased
 
+- placeholder image is now shown when thumbnail could not be loaded
 - fixed wrong display of title (and other elements) when a html-escaped code used wide ampersand instead of a regular ampersand
 - article content now also shows author
 - the option `keep_articles_days` (default 30) sets the amount of days before articles are removed
