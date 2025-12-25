@@ -262,8 +262,6 @@ impl App {
             self.config.refresh_fps
         );
 
-        let mut redraw = true;
-
         while self.is_running {
             tokio::select! {
                 _ = render_interval.tick() => {
@@ -272,27 +270,6 @@ impl App {
 
                 message = rx.recv() =>  {
                     if let Some(message) = message {
-                        match &message {
-                            Message::Event(Event::Tick) => {
-                                if self.news_flash_utils.is_async_operation_running(){
-                                    redraw = true;
-                                }
-                            },
-
-                            Message::Event(Event::Resized(_width, _height)) => {
-                                redraw = true;
-                            }
-
-                            Message::Event(Event::AsyncArticleThumbnailFetchFinished(_)) => {
-                                trace!("Processing message: AsyncFetchThumbnailFinished");
-                            }
-
-                            _ => {
-                                redraw = true;
-                                trace!("Processing message: {:?}", message);
-                            }
-
-                        }
 
 
                         // TODO refactor all this
@@ -315,11 +292,8 @@ impl App {
                         break;
                     }
 
-                    if redraw {
-                        redraw = false;
-                        if let Err(e) = terminal.draw(|frame| frame.render_widget(&mut self, frame.area())) {
-                            error!("Failed to render terminal: {}", e);
-                        }
+                    if let Err(e) = terminal.draw(|frame| frame.render_widget(&mut self, frame.area())) {
+                        error!("Failed to render terminal: {}", e);
                     }
                 }
             }
