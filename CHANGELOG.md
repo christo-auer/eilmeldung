@@ -1,5 +1,8 @@
 # Unreleased
 
+- optimized amount of redraw calls for lower CPU consumption 
+- tags are now visible again in content view
+
 # 0.4.8 - 2025-12-25
 
 - placeholder image is now shown when thumbnail could not be loaded
