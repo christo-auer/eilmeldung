@@ -6,7 +6,6 @@ pub mod prelude {
 }
 
 use arboard::Clipboard;
-use log::trace;
 use model::ArticleContentModelData;
 use url::Url;
 use view::ArticleContentViewData;
@@ -158,6 +157,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
 
         if let Message::Command(command) = message {
             use Command as C;
+            view_needs_update = true;
             match command {
                 C::NavigateDown if self.is_focused => {
                     self.view_data.scroll_down();
@@ -188,7 +188,9 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.share_article(target)?;
                 }
 
-                _ => {}
+                _ => {
+                    view_needs_update = false;
+                }
             }
         }
 
@@ -271,7 +273,6 @@ impl crate::messages::MessageReceiver for ArticleContent {
 
         if view_needs_update {
             self.view_data.update(&self.model_data, self.config.clone());
-            trace!("issuing REDRAW");
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
         }

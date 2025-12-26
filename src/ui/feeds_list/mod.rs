@@ -477,34 +477,43 @@ impl MessageReceiver for FeedList {
             match command {
                 C::NavigateUp if self.is_focused => {
                     self.view_data.tree_state_mut().key_up();
+                    view_needs_update = true;
                 }
                 C::NavigateDown if self.is_focused => {
                     self.view_data.tree_state_mut().key_down();
+                    view_needs_update = true;
                 }
                 C::NavigateRight if self.is_focused => {
                     self.view_data.tree_state_mut().key_right();
+                    view_needs_update = true;
                 }
                 C::NavigateLeft if self.is_focused => {
                     self.view_data.tree_state_mut().key_left();
+                    view_needs_update = true;
                 }
                 C::NavigateFirst if self.is_focused => {
                     self.view_data.tree_state_mut().select_first();
+                    view_needs_update = true;
                 }
                 C::NavigateLast if self.is_focused => {
                     self.view_data.tree_state_mut().select_last();
+                    view_needs_update = true;
                 }
                 C::FeedListToggleExpand if self.is_focused => {
                     self.view_data.tree_state_mut().toggle_selected();
+                    view_needs_update = true;
                 }
                 C::NavigatePageDown if self.is_focused => {
                     self.view_data
                         .tree_state_mut()
                         .scroll_down(self.config.input_config.scroll_amount);
+                    view_needs_update = true;
                 }
                 C::NavigatePageUp if self.is_focused => {
                     self.view_data
                         .tree_state_mut()
                         .scroll_up(self.config.input_config.scroll_amount);
+                    view_needs_update = true;
                 }
 
                 C::ActionSetRead(target, action_scope) if self.target_matches(target) => {

@@ -182,7 +182,7 @@ impl App {
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
-            help_popup: HelpPopup::new(config_arc.clone()),
+            help_popup: HelpPopup::new(config_arc.clone(), message_sender.clone()),
             command_confirm: CommandConfirm::new(config_arc.clone(), message_sender.clone()),
             tooltip: Tooltip::new(
                 "Welcome to eilmeldung".into(),
@@ -243,11 +243,13 @@ impl App {
         Ok(())
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> bool {
         if self.news_flash_utils.is_async_operation_running() {
             trace!("Async operation running, updating throbber");
             self.async_operation_throbber.calc_next();
+            return true;
         }
+        false
     }
 
     async fn process_commands(
@@ -268,9 +270,9 @@ impl App {
                     self.message_sender.send(Message::Event(Event::Tick))?;
                 }
 
+
                 message = rx.recv() =>  {
                     if let Some(message) = message {
-
 
                         // TODO refactor all this
                         if !self.command_input.is_active() && !self.command_confirm.is_active()
@@ -287,14 +289,16 @@ impl App {
                         self.command_confirm.process_command(&message).await?;
                         self.help_popup.process_command(&message).await?;
 
+                        if matches!(message, Message::Command(Command::Redraw)) {
+                            trace!("redraw");
+                            terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
+                        }
+
                     } else {
                         debug!("Message channel closed, stopping message processing");
                         break;
                     }
 
-                    if let Err(e) = terminal.draw(|frame| frame.render_widget(&mut self, frame.area())) {
-                        error!("Failed to render terminal: {}", e);
-                    }
                 }
             }
         }
@@ -356,6 +360,7 @@ impl MessageReceiver for App {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         use Command::*;
         use Event::*;
+        let mut needs_redraw = true;
         match message {
             Message::Command(Logout(confirmation)) => {
                 if confirmation.as_str() != "NOW" {
@@ -390,10 +395,11 @@ impl MessageReceiver for App {
             Message::Event(Tooltip(tooltip)) => {
                 trace!("Tooltip updated");
                 self.tooltip = tooltip.clone();
+                needs_redraw = true;
             }
 
             Message::Event(Tick) => {
-                self.tick();
+                needs_redraw = self.tick();
             }
 
             Message::Event(Event::AsyncImportOpmlFinished) => {
@@ -499,7 +505,14 @@ impl MessageReceiver for App {
                 self.switch_state(new_state)?;
             }
 
-            _ => {}
+            _ => {
+                needs_redraw = false;
+            }
+        }
+
+        if needs_redraw {
+            self.message_sender
+                .send(Message::Command(Command::Redraw))?;
         }
 
         Ok(())

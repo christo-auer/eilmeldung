@@ -58,9 +58,11 @@ impl Widget for &CommandConfirm {
 
 impl MessageReceiver for CommandConfirm {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+        let mut needs_redraw = false;
         if let Message::Command(Command::CommandConfirm(command)) = message {
             self.is_active = true;
             self.command_to_confirm = Some(command.as_ref().clone());
+            needs_redraw = true;
         }
 
         if let Message::Event(Event::Key(key_event)) = message {
@@ -69,15 +71,22 @@ impl MessageReceiver for CommandConfirm {
                     self.is_active = false;
                     self.message_sender
                         .send(Message::Command(self.command_to_confirm.take().unwrap()))?;
+                    needs_redraw = true;
                 }
 
                 KeyCode::Char('n') | KeyCode::Esc if self.is_active => {
                     self.is_active = false;
                     self.command_to_confirm = None;
+                    needs_redraw = true;
                 }
 
                 _ => {}
             }
+        }
+
+        if needs_redraw {
+            self.message_sender
+                .send(Message::Command(Command::Redraw))?;
         }
 
         Ok(())

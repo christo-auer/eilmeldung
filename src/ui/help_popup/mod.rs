@@ -9,6 +9,7 @@ use ratatui::{
     text::{Line, Span, Text},
     widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
 };
+use tokio::sync::mpsc::UnboundedSender;
 use tui_textarea::TextArea;
 
 #[derive(Default)]
@@ -22,16 +23,17 @@ pub struct PopupState<'a> {
     search_input_active: bool,
 }
 
-#[derive(Default)]
 pub struct HelpPopup<'a> {
     config: Arc<Config>,
+    message_sender: UnboundedSender<Message>,
     state: Option<PopupState<'a>>,
 }
 
 impl<'a> HelpPopup<'a> {
-    pub fn new(config: Arc<Config>) -> Self {
+    pub fn new(config: Arc<Config>, message_sender: UnboundedSender<Message>) -> Self {
         Self {
             config,
+            message_sender,
             state: None,
         }
     }
@@ -270,6 +272,7 @@ impl<'a> Widget for &HelpPopup<'a> {
 
 impl<'a> MessageReceiver for HelpPopup<'a> {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+        let mut redraw_required = false;
         if let Message::Event(event) = message {
             use Event as E;
             match event {
@@ -283,6 +286,7 @@ impl<'a> MessageReceiver for HelpPopup<'a> {
                         scroll_offset_x: 0,
                         search_input_active: false,
                     });
+                    redraw_required = true;
                 }
                 E::ShowModalHelpPopup(title, contents) => {
                     self.state = Some(PopupState {
@@ -294,15 +298,23 @@ impl<'a> MessageReceiver for HelpPopup<'a> {
                         scroll_offset_x: 0,
                         search_input_active: false,
                     });
+                    redraw_required = true;
                 }
                 E::HideHelpPopup => {
                     self.state = None;
+                    redraw_required = true;
                 }
                 E::Key(key_event) if self.is_visible() => {
                     self.on_key_event(key_event)?;
+                    redraw_required = true;
                 }
                 _ => {}
             }
+        }
+
+        if redraw_required {
+            self.message_sender
+                .send(Message::Command(Command::Redraw))?;
         }
 
         Ok(())
