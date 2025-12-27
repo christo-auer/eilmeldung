@@ -41,6 +41,10 @@ brew tap christo-auer/eilmeldung https://github.com/christo-auer/eilmeldung
 brew install eilmeldung
 ```
 
+## Via AUR (Arch)
+
+There are two AUR packages: `eilmeldung` compiles the latest release and `eilmeldung` the `HEAD` of `main`. Use `paru` or `yay` to install.
+
 ## Via Cargo
 
 In order to compile `eilmeldung` from source, you need `cargo` with a `rust` compiler with at least edition 2024 (e.g., use `rustup`) and some build deps. On Debian/Unbuntu-based systems its:
