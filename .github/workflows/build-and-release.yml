@@ -251,23 +251,22 @@ jobs:
 
       - name: Setup SSH for AUR
         run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo "${{ secrets.AUR_SSH_KEY }}" > ~/.ssh/aur
+          mkdir -p /root/.ssh
+          chmod 700 /root/.ssh
+          echo "${{ secrets.AUR_SSH_KEY }}" > /root/.ssh/aur
           chmod 600 ~/.ssh/aur
-          ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-          cat > ~/.ssh/config <<'EOF'
+          ssh-keyscan -H aur.archlinux.org >> /root/.ssh/known_hosts
+          chmod 644 /root/.ssh/known_hosts
+          cat > /root/.ssh/config <<'EOF'
           Host aur.archlinux.org
             IdentityFile ~/.ssh/aur
             User aur
-            StrictHostKeyChecking accept-new
           EOF
-          chmod 600 ~/.ssh/config
+          chmod 600 /root/.ssh/config
           echo "SSH config:"
-          cat ~/.ssh/config
+          cat /root/.ssh/config
           echo "Known hosts for AUR:"
-          grep aur ~/.ssh/known_hosts || echo "No AUR entry found!"
+          grep aur /root/.ssh/known_hosts || echo "No AUR entry found!"
 
       - name: Clone AUR repository
         run: |
