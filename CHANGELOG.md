@@ -2,6 +2,8 @@
 
 # 0.4.10 - 2025-12-27
 
+- AUR packages `eilmeldung` and `eilmeldung-git` now available
+
 # 0.4.9 - 2025-12-26
 
 - optimized amount of redraw calls for lower CPU consumption 
