@@ -182,6 +182,15 @@ After setup, you'll want to add some feeds and organize them:
 - Move: Press `c y` to yank (copy) a feed, navigate to destination, press `c p` to paste after (or `c P` to paste before)
 - Remove: Press `c d` to remove an empty feed/category, or `c x` to remove with all children
 
+### Importing an OPML File
+
+Instead of manually adding feeds and categories, you can also import an OPML file. An OPML file contains all the categories and feeds you have defined in another RSS reader or provider:
+
+- Export an OPML file from your current provider and save the OPML file somewhere in your home directory.
+- In `eilmeldung`, open the command line (`:`) and enter `importopml path/to/your/feeds.opml` and press enter.
+
+**Hint**: You can also export an OPML file via `exportopml path/to/your/feeds.opml`
+
 ## Essential Key Bindings
 
 **Note**: You can redefine all key bindings according to you likings. You can also add completely new key bindings via the [configuration file](docs/configuration.md).
