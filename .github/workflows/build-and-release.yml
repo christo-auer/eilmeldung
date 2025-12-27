@@ -253,7 +253,7 @@ jobs:
         run: |
           mkdir -p /root/.ssh
           chmod 700 /root/.ssh
-          echo "${{ secrets.AUR_SSH_KEY }}" > /root/.ssh/aur
+          echo "${{ secrets.AUR_DEPLOY_KEY }}" > /root/.ssh/aur
           chmod 600 /root/.ssh/aur
           ssh-keyscan -H aur.archlinux.org >> /root/.ssh/known_hosts
           chmod 644 /root/.ssh/known_hosts
