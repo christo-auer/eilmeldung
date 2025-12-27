@@ -1,5 +1,6 @@
 # Unreleased
 
+- throbber, which indicates a running process, is now more visible
 - bug fixed: window is now redrawn when the terminal window or font is resized
 
 # 0.4.10 - 2025-12-27
