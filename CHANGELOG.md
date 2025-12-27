@@ -1,5 +1,7 @@
 # Unreleased
 
+- bug fixed: window is now redrawn when the terminal window or font is resized
+
 # 0.4.10 - 2025-12-27
 
 - AUR packages `eilmeldung` and `eilmeldung-git` now available
