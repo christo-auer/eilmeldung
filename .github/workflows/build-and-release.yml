@@ -300,6 +300,8 @@ jobs:
 
       - name: Commit and push to AUR
         run: |
+          # revert ownership back to root (its builder now)
+          chown root:root -R aur-eilmeldung
           cd aur-eilmeldung
           git add PKGBUILD .SRCINFO
           git commit -m "chore: update to version ${{ steps.tag.outputs.TAG_NAME }}"
