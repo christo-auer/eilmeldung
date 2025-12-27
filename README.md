@@ -43,7 +43,7 @@ brew install eilmeldung
 
 ## Via AUR (Arch)
 
-There are two AUR packages: `eilmeldung` compiles the latest release and `eilmeldung` the `HEAD` of `main`. Use `paru` or `yay` to install.
+There are two AUR packages: `eilmeldung` compiles the latest release and `eilmeldung-git` the `HEAD` of `main`. Use `paru` or `yay` to install.
 
 ## Via Cargo
 
