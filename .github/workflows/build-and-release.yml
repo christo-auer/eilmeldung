@@ -258,11 +258,11 @@ jobs:
           ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
           cat > ~/.ssh/config <<'EOF'
-Host aur.archlinux.org
-  IdentityFile ~/.ssh/aur
-  User aur
-  StrictHostKeyChecking accept-new
-EOF
+          Host aur.archlinux.org
+            IdentityFile ~/.ssh/aur
+            User aur
+            StrictHostKeyChecking accept-new
+          EOF
           chmod 600 ~/.ssh/config
           echo "SSH config:"
           cat ~/.ssh/config
