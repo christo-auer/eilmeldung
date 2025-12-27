@@ -254,12 +254,12 @@ jobs:
           mkdir -p /root/.ssh
           chmod 700 /root/.ssh
           echo "${{ secrets.AUR_SSH_KEY }}" > /root/.ssh/aur
-          chmod 600 ~/.ssh/aur
+          chmod 600 /root/.ssh/aur
           ssh-keyscan -H aur.archlinux.org >> /root/.ssh/known_hosts
           chmod 644 /root/.ssh/known_hosts
           cat > /root/.ssh/config <<'EOF'
           Host aur.archlinux.org
-            IdentityFile ~/.ssh/aur
+            IdentityFile /root/.ssh/aur
             User aur
           EOF
           chmod 600 /root/.ssh/config
@@ -290,6 +290,7 @@ jobs:
       - name: Generate .SRCINFO
         run: |
           cd aur-eilmeldung
+
           su builder -c "makepkg --printsrcinfo > .SRCINFO"
 
       - name: Validate with namcap
