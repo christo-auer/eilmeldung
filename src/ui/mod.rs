@@ -290,7 +290,6 @@ impl App {
                         self.help_popup.process_command(&message).await?;
 
                         if matches!(message, Message::Command(Command::Redraw)) {
-                            trace!("redraw");
                             terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
                         }
 
@@ -396,6 +395,12 @@ impl MessageReceiver for App {
                 trace!("Tooltip updated");
                 self.tooltip = tooltip.clone();
                 needs_redraw = true;
+            }
+
+            Message::Event(Resized(..)) => {
+                trace!("terminal resized, forcing redraw");
+                self.message_sender
+                    .send(Message::Command(Command::Redraw))?;
             }
 
             Message::Event(Tick) => {
