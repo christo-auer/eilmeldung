@@ -143,7 +143,7 @@ Once installed, run `eilmeldung` to begin. On first launch, you'll be guided thr
 
 **Note**: inoreader is currently **NOT** directly supported. Create an issue if you need support for inoreader!
 
-1. Choose Your Provider: Select from local or cloud-based RSS providers (FreshRSS, Miniflux, Feedly, Feedbin, Local, etc.)
+1. Choose Your Provider: Select from local or cloud-based RSS providers ([see news_flash_gtk for all supported providers](https://gitlab.com/news-flash/news_flash_gtk))
 2. Configure Authentication: Enter your credentials (username/password or token, depending on the provider)
 3. Initial Sync: The app will sync your feeds from the provider
 
