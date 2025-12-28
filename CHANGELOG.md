@@ -1,5 +1,6 @@
 # Unreleased
 
+- new share target: external command. You can no define a new share target by defining a shell command to which the URL and title of the article is passed
 - throbber, which indicates a running process, is now more visible
 - bug fixed: window is now redrawn when the terminal window or font is resized
 

@@ -229,9 +229,13 @@ The `share_targets` array defines available sharing targets. Each entry can be a
 - `"instapaper"`: Save to Instapaper
 
 **Custom Target Syntax:**
-`'<name> <url_template>'` where:
-- `<name>`: Target name used in commands
-- `<url_template>`: URL with `{url}` and `{title}` placeholders (both are URL-encoded automatically)
+`'<name> <template>'` where:
+- `<name>`: Target name used in commands (not quoted, a single word)
+- `<template>`: any occurrence of `{url}` is replaced by the URL of the article and any `{title}` is replaced by its title
+  - **Sharing via Webbrowser**: if the template starts with `http://...` or `https://...` the template is interpreted as a web URL and upon sharing the webbrowser is opened with the given URL
+  - **Sharing to a Shell Command**: otherwise the template is interpreted as a shell command with arguments. **Note**: 
+    - A new process is spawned in the background whose with `stdin`, `stdout`, and `stderr` redirected to `null`. In particular, don't that you see any output.
+    - This does not support any shell features like input output redirection (`>`, etc.), pipes (`|`) or other advanced shell features. Also no shell variables are replaced (`~`, `$HOME`). If you want more sophisticated behaviour, create a shell script and call the shell script.
 
 **Default:**
 ```toml
@@ -251,6 +255,8 @@ share_targets = [
   "reddit",
   'hackernews https://news.ycombinator.com/submitlink?u={url}&t={title}',
   'pocket https://getpocket.com/save?url={url}&title={title}',
+  'sendmail ./sendmail.sh me@eilmeldung.org \"{title}\" \"{url}\"', # note the double quotes around the two variables
+  'chromium chromium \"{url}\"',
 ]
 ```
 
