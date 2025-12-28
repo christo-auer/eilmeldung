@@ -361,6 +361,78 @@ For complete query documentation, see [Article Queries](docs/queries.md).
 
 </details>
 
+# FAQ
+
+## Which providers are supported?
+
+See [news_flash_gtk for all supported providers](https://gitlab.com/news-flash/news_flash_gtk).
+
+## Why does the binary release not work?/There is an error message on missing a .so file?
+
+The binary is currently dynamically linked against external libraries in Ubuntu. I strongly recommend using one of the source/self-compiled distributions of `eilmeldung`.
+
+## Can I call an external program with the URL/title of the current article? Can I define custom sharing URL?
+
+Yes, to can define *custom share targets* which accept commands or URLs. For instance, in the configuration file:
+
+```toml
+share_targets = [
+  'hackernews https://news.ycombinator.com/submitlink?u={url}&t={title}', # opens webbrowser
+  'sendmail ./sendmail.sh me@eilmeldung.org \"{title}\" \"{url}\"', # passes title and URL to shell script
+  # more share targets
+]
+```
+
+In `eilmeldung`, select an article and share it with `share hackernews` or `share sendmail` (use TAB for autocompletion). Of course, you can also define key bindings for this:
+
+```toml
+"S h": ["share hackernews"],
+"S m": ["share sendmail"],
+```
+
+For more, checkout [Configuration](docs/configuration.md): contains all *configuration options* along with the input configuration].
+
+See [Configuration](docs/configuration.md) for details and examples.
+
+## Does eilmeldung support smart folders?
+
+Yes, by using queries in the feed list. For example:
+
+```toml
+feed_list = [
+  'query: "Important Today" #important unread today', 
+  # ... all other entries you want to have in the feed list
+]
+```
+
+Creates an entry *Important Today* entry in the feed list which lists all unread articles with the tag `#important` from today. For more, checkout out [Article Queries](docs/queries.md) and [Configuration](docs/configuration.md).
+
+
+## I want to save articles for reading them later? How would I achieve this?
+
+You can define a tag for this:
+
+```
+tag readlater red
+```
+
+Then define a keybinding to quickly tag an article:
+
+```
+"R" = ["tag readlater"]
+# or if you want to navigate to the next unread article after tagging
+"R" = ["tag readlater", "nextunread"]
+```
+
+And finally create a query in the feed list for quick access:
+
+```toml
+feed_list = [
+  'query: "Read Later" #readlater unread',
+  # ... all other entries you want to have in the feed list
+]
+```
+
 # Standing on the Shoulders of Giants
 
 *eilmeldung* was inspired by other awesome programs and libraries of which I want to mention some:
