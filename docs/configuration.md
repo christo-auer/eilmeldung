@@ -251,7 +251,6 @@ share_targets = [
   "reddit",
   'hackernews https://news.ycombinator.com/submitlink?u={url}&t={title}',
   'pocket https://getpocket.com/save?url={url}&title={title}',
-  'email mailto:?subject={title}&body={url}',
 ]
 ```
 
