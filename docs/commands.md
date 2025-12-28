@@ -76,7 +76,7 @@ These commands support a **scope parameter** to target specific articles:
 | `open` | `open [<scope>]` | Article List | Open articles in the web browser. Examples: `:open` (current), `:open marked` (all marked) |
 | `tag` | `tag <tag name> [<scope>]` | Article List | Add tag to articles. Examples: `:tag important` (current), `:tag tech unread` (all unread), `:tag news %` (all articles) |
 | `untag` | `untag <tag name> [<scope>]` | Article List | Remove tag from articles. Examples: `:untag important` (current), `:untag tech marked` (all marked) |
-| `share` | `share <target>` | Article List, Article Content | Share article title and URL. Built-in targets: `clipboard`, `reddit`, `mastodon`, `telegram`, `instapaper`. Custom targets can be defined in the configuration file. Example: `:share clipboard` |
+| `share` | `share <target>` | Article List, Article Content | Share article title and URL. Built-in targets: `clipboard`, `reddit`, `mastodon`, `telegram`, `instapaper`. Custom targets (URL and commands) can be defined in the configuration file. Example: `:share clipboard` |
 
 **Note:** The `read` command also supports an optional **target parameter** to specify which panel's selection to use: `:read <target> <scope>`. Target can be `.` (current panel), `feeds` (feed list selection), or `articles` (article list selection). Examples: `:read feeds %` (all articles in selected feed), `:read articles .` (current article in article list).
 

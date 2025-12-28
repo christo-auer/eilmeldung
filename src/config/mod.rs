@@ -35,6 +35,8 @@ pub enum ConfigError {
     ShareTargetInvalidUrlError(#[from] url::ParseError),
     #[error("invalid target")]
     ShareTargetInvalid,
+    #[error("invalid share command")]
+    ShareTargetInvalidCommand(#[from] shell_words::ParseError),
 }
 
 #[derive(Debug, Clone, serde::Deserialize, Eq, PartialEq)]

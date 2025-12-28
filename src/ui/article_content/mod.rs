@@ -5,7 +5,6 @@ pub mod prelude {
     pub use super::ArticleContent;
 }
 
-use arboard::Clipboard;
 use model::ArticleContentModelData;
 use url::Url;
 use view::ArticleContentViewData;
@@ -125,29 +124,20 @@ impl ArticleContent {
         let title: &str = article.title.as_deref().unwrap_or("no title");
         let url: &Url = url.as_ref();
 
-        match target {
-            ShareTarget::Clipboard => {
-                let mut clipboard = Clipboard::new()?;
-                clipboard.set_text(url.to_string())?;
-                tooltip(
-                    &self.message_sender,
-                    &*format!("copied URL to clipboard ({url})"),
-                    TooltipFlavor::Info,
-                )?;
-                Ok(())
-            }
-
-            target => {
-                let share_url = target.to_url(title, url)?;
-                webbrowser::open(share_url.to_string().as_str())?;
-                tooltip(
-                    &self.message_sender,
-                    format!("shared article to {target}").as_str(),
-                    TooltipFlavor::Info,
-                )?;
-                Ok(())
-            }
+        match target.share(title, url) {
+            Ok(()) => tooltip(
+                &self.message_sender,
+                &*format!("shared with {}", target),
+                TooltipFlavor::Info,
+            )?,
+            Err(error) => tooltip(
+                &self.message_sender,
+                &*format!("unable to shared with {}: {}", target, error),
+                TooltipFlavor::Error,
+            )?,
         }
+
+        Ok(())
     }
 }
 
