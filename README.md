@@ -363,15 +363,15 @@ For complete query documentation, see [Article Queries](docs/queries.md).
 
 # FAQ
 
-## Which providers are supported?
+**Which providers are supported?**
 
 See [news_flash_gtk for all supported providers](https://gitlab.com/news-flash/news_flash_gtk).
 
-## Why does the binary release not work?/There is an error message on missing a .so file?
+**Why does the binary release not work?/There is an error message on missing a .so file?**
 
 The binary is currently dynamically linked against external libraries in Ubuntu. I strongly recommend using one of the source/self-compiled distributions of `eilmeldung`.
 
-## Can I call an external program with the URL/title of the current article? Can I define custom sharing URL?
+**Can I call an external program with the URL/title of the current article? Can I define custom sharing URL?**
 
 Yes, to can define *custom share targets* which accept commands or URLs. For instance, in the configuration file:
 
@@ -394,7 +394,7 @@ For more, checkout [Configuration](docs/configuration.md): contains all *configu
 
 See [Configuration](docs/configuration.md) for details and examples.
 
-## Does eilmeldung support smart folders?
+**Does eilmeldung support smart folders?**
 
 Yes, by using queries in the feed list. For example:
 
@@ -408,7 +408,7 @@ feed_list = [
 Creates an entry *Important Today* entry in the feed list which lists all unread articles with the tag `#important` from today. For more, checkout out [Article Queries](docs/queries.md) and [Configuration](docs/configuration.md).
 
 
-## I want to save articles for reading them later? How would I achieve this?
+**I want to save articles for reading them later? How would I achieve this?**
 
 You can define a tag for this:
 
