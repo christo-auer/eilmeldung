@@ -15,12 +15,20 @@ impl Widget for &mut App {
             return;
         }
 
-        let feeds_width = match self.state {
-            AppState::FeedSelection => self.config.feed_list_width_percent,
-            _ => 100 - self.config.article_list_width_percent,
+        let (feeds_constraint_width, articles_constraint_width) = match self.state {
+            AppState::FeedSelection => (
+                self.config.feed_list_focused_width.as_constraint(),
+                self.config
+                    .feed_list_focused_width
+                    .as_complementary_constraint(area.width),
+            ),
+            _ => (
+                self.config
+                    .article_list_focused_width
+                    .as_complementary_constraint(area.width),
+                self.config.article_list_focused_width.as_constraint(),
+            ),
         };
-
-        let articles_width = 100 - feeds_width;
 
         let command_line_visible =
             self.command_input.is_active() || self.command_confirm.is_active();
@@ -35,19 +43,31 @@ impl Widget for &mut App {
             ])
             .areas(area);
 
+        let (articles_constraint_height, article_content_constraint_height) = match self.state {
+            AppState::FeedSelection | AppState::ArticleSelection => (
+                self.config.article_list_focused_height.as_constraint(),
+                self.config
+                    .article_list_focused_height
+                    .as_complementary_constraint(middle.height),
+            ),
+            _ => (
+                self.config
+                    .article_content_focused_height
+                    .as_complementary_constraint(middle.height),
+                self.config.article_content_focused_height.as_constraint(),
+            ),
+        };
+
         let [feeds_list_chunk, articles_chunk] = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(Constraint::from_percentages(vec![
-                feeds_width,
-                articles_width,
-            ]))
-            .areas(middle);
+            .constraints(vec![feeds_constraint_width, articles_constraint_width])
+            .areas::<2>(middle);
 
         let [articles_list_chunk, article_content_chunk] = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(self.config.article_list_height_lines + 1),
-                Constraint::Fill(1),
+                articles_constraint_height,
+                article_content_constraint_height,
             ])
             .areas(articles_chunk);
 

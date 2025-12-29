@@ -1,6 +1,22 @@
 # Unreleased
 
+- **Breaking Changes**: 
+  - The followng layout options have been replaced by a more flexibe options:
+  ```toml
+  feed_list_width_percent
+  article_list_width_percent
+  article_list_height_lines
+  ```
+  - They have been replaced by
+  ```toml
+  feed_list_focused_width
+  article_list_focused_width
+  article_list_focused_height
+  article_content_focused_height
+  ```
+  - see configuration documentation and section *Layout Configuration*
 - content view no shows scraped (full) article content if available. press `x` (command `scrape`) to retrieve full article. I won't implement an automatic scrape to reduce load on websites.
+
 
 # 0.4.11 - 2025-12-28
 

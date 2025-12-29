@@ -304,9 +304,9 @@ dependencies = [
 
 [[package]]
 name = "autocfg"
-version = "1.5.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
+checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "av-scenechange"
@@ -625,6 +625,12 @@ dependencies = [
  "crypto-common",
  "inout",
 ]
+
+[[package]]
+name = "claims"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bba18ee93d577a8428902687bcc2b6b45a56b1981a1f6d779731c86cc4c5db18"
 
 [[package]]
 name = "clang-sys"
@@ -1455,6 +1461,7 @@ version = "0.4.11"
 dependencies = [
  "arboard",
  "chrono",
+ "claims",
  "clap",
  "color-eyre",
  "config",
@@ -1481,6 +1488,7 @@ dependencies = [
  "regex",
  "reqwest",
  "serde",
+ "serde_assert",
  "serde_json",
  "serde_toml",
  "shell-words",
@@ -4867,6 +4875,15 @@ dependencies = [
  "serde",
  "serde_core",
  "typeid",
+]
+
+[[package]]
+name = "serde_assert"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7341bab0ba89c85756d5d032a66b009ed88833ea915f5997b9e8303f0c52a54"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

@@ -16,6 +16,7 @@ network_connectivity = "1.0.0"
 [dependencies]
 arboard = { version = "3.6.1", default-features = false, features = ["wayland-data-control" ] }
 chrono = "0.4.42"
+claims = "0.8.0"
 clap = { version = "4.5.53", features = ["derive"] }
 color-eyre = "0.6.5"
 config = "0.15.17"
@@ -43,6 +44,7 @@ regex = "1.12.2"
 reqwest = { version = "0.12.23", default-features = false, features = ["http2", "charset", "rustls-tls", "brotli"] }
 # rig-core = { version = "0.20.0", features = ["derive", "rmcp"] } // for later
 serde = { version = "1.0.226", features = ["derive"] }
+serde_assert = "0.8.0"
 serde_json = "1.0.145"
 serde_toml = "0.0.1"
 shell-words = "1.1.1"
