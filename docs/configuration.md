@@ -289,6 +289,8 @@ article_list_focused_height = "20%",
 article_content_focused_height = "80%",
 ```
 
+https://github.com/user-attachments/assets/c4e6e89d-e95e-4a80-b660-5e1b982f6108
+
 ### Example: Dynamic Layout
 
 Here is an example of values, where unfocused panels are smaller to give more space to the focused panel:
@@ -299,6 +301,8 @@ article_list_focused_width = "85%",
 article_list_focused_height = "66%",
 article_content_focused_height = "80%",
 ````
+
+https://github.com/user-attachments/assets/ffc51e67-1842-4b49-a798-6a5d65b04265
 
 ### Example: Fully Dynamic Layout
 
@@ -311,4 +315,4 @@ article_list_focused_height = "66%",
 article_content_focused_height = "100%",
 ```
 
-
+https://github.com/user-attachments/assets/e9277d94-a6da-49de-8dd0-8c6a75e09430
