@@ -63,11 +63,11 @@ impl ArticleContent {
     }
 
     fn scrape_article(&mut self) -> color_eyre::Result<()> {
-        self.model_data.scrape_article(self.is_focused)?;
+        self.model_data.scrape_article()?;
         // Reset scroll when new content is loaded
-        if self.model_data.fat_article().is_some() {
-            *self.view_data.vertical_scroll_mut() = 0;
-        }
+        // if self.model_data.fat_article().is_some() {
+        //     *self.view_data.vertical_scroll_mut() = 0;
+        // }
         Ok(())
     }
 
@@ -170,7 +170,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.view_data.scroll_to_bottom();
                 }
 
-                C::ArticleCurrentScrape if self.is_focused => {
+                C::ArticleCurrentScrape => {
                     self.scrape_article()?;
                 }
 

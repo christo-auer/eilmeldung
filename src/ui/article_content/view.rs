@@ -344,7 +344,7 @@ impl ArticleContentViewData {
         inner_area: Rect,
         buf: &mut Buffer,
     ) {
-        let summary_area_height = if distraction_free { 0 } else { 3 };
+        let summary_area_height = if distraction_free { 0 } else { 4 };
         let [summary_area, content_area] = Layout::default()
             .direction(Direction::Vertical)
             .flex(Flex::Start)
@@ -446,24 +446,21 @@ impl Widget for &mut ArticleContent {
             .view_data
             .render_block(area, buf, &self.config, self.is_focused);
 
-        if !self.is_focused && self.model_data.article().is_some() {
-            self.view_data
-                .render_summary(&self.model_data, &self.config, inner_area, buf);
+        if !self.model_data.article().is_some() {
+            return;
         }
 
-        if self.is_focused {
-            if self.model_data.fat_article().is_some() {
-                self.view_data.render_fat_article(
-                    &self.model_data,
-                    self.is_distraction_free,
-                    &self.config,
-                    inner_area,
-                    buf,
-                );
-            } else if self.model_data.article().is_some() {
-                self.view_data
-                    .render_summary(&self.model_data, &self.config, inner_area, buf);
-            }
+        if self.model_data.fat_article().is_some() {
+            self.view_data.render_fat_article(
+                &self.model_data,
+                self.is_distraction_free,
+                &self.config,
+                inner_area,
+                buf,
+            );
+        } else if self.model_data.article().is_some() {
+            self.view_data
+                .render_summary(&self.model_data, &self.config, inner_area, buf);
         }
     }
 }

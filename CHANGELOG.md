@@ -1,5 +1,7 @@
 # Unreleased
 
+- content view no shows scraped (full) article content if available. press `x` (command `scrape`) to retrieve full article. I won't implement an automatic scrape to reduce load on websites.
+
 # 0.4.11 - 2025-12-28
 
 - new share target: external command. You can now define a new share target by defining a shell command to which the URL and title of the article is passed

@@ -133,12 +133,12 @@ impl ArticleContentModelData {
         }
     }
 
-    pub(super) fn scrape_article(&mut self, is_focused: bool) -> color_eyre::Result<()> {
+    pub(super) fn scrape_article(&mut self) -> color_eyre::Result<()> {
         let Some(article) = self.article.as_ref() else {
             return Ok(());
         };
 
-        if is_focused && self.fat_article.is_none() {
+        if self.fat_article.is_none() {
             let article_id = article.article_id.clone();
             self.news_flash_utils.fetch_fat_article(article_id);
         }
