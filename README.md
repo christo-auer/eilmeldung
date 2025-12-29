@@ -114,11 +114,11 @@ programs.eilmeldung = {
     };
 
     input_config.mappings = {
-        "q" = "quit";
-        "j" = "down";
-        "k" = "up";
-        "g g" = "gotofirst";
-        "G" = "gotolast";
+        "q" = ["quit"];
+        "j" = ["down"];
+        "k" = ["up"];
+        "g g" = ["gotofirst"];
+        "G" = ["gotolast"];
         "o" = ["open" "read" "nextunread"];
     };
 
@@ -356,7 +356,7 @@ For complete query documentation, see [Article Queries](docs/queries.md).
 
 # Documentation
 
-- [Configuration](docs/configuration.md): contains all *configuration options* along with the input configuration
+- [Configuration](docs/configuration.md): contains all *configuration options* along with the input configuration, custom share targets, layout configuration, any many more
 - [Commands](docs/commands.md): *eilmeldung* contains a command line, like (neo)vim, to effectively carry out many operations (e.g., bulk-operations)
 - [Article Queries](docs/queries.md): *article queries* can be used to *filter* and *search* according to a multitude of search criteria. Article queries are also supported by bulk-operations (un/tag, un/read, un/mark articles)
 - [Command Line Argumnets](docs/cli_args.md): available command line arguments
@@ -435,6 +435,11 @@ feed_list = [
   # ... all other entries you want to have in the feed list
 ]
 ```
+
+**I want to adjust the layout? I want to make the feed list/article list/article content smaller/larger!**
+
+Have a look at the section *Layout* in [Configuration](docs/configuration.md).
+
 
 # Standing on the Shoulders of Giants
 
