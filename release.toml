@@ -7,5 +7,6 @@ pre-release-replacements = [
   {file="nix/package.nix", search="version = .*", replace="version = \"{{version}}\";"},
   {file="HomebrewFormula/eilmeldung.rb", search="version .*", replace="version \"{{version}}\""},
   {file="HomebrewFormula/eilmeldung.rb", search="tags/[0-9.]+", replace="tags/{{version}}."},
+  {file="README.md", search="/tree/[0-9.]+", replace="/tree/{{version}}"},
 ]
 
