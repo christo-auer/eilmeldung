@@ -1,3 +1,4 @@
+pub mod dimension;
 pub mod feed_list_content_identfier;
 pub mod input_config;
 pub mod paths;
@@ -9,6 +10,7 @@ use std::path::{Path, PathBuf};
 use crate::prelude::*;
 
 pub mod prelude {
+    pub use super::dimension::Dimension;
     pub use super::feed_list_content_identfier::{
         FeedListContentIdentifier, FeedListItemType, LabeledQuery,
     };
@@ -31,6 +33,8 @@ pub enum ConfigError {
     FeedListContentIdentifierParseError(String),
     #[error("share target could not be parsed")]
     ShareTargetParseError(String),
+    #[error("dimension could not be parsed")]
+    DimensionParseError(String),
     #[error("invalid URL template for share target")]
     ShareTargetInvalidUrlError(#[from] url::ParseError),
     #[error("invalid target")]
@@ -123,6 +127,11 @@ pub struct Config {
     pub article_list_width_percent: u16,
     pub article_list_height_lines: u16,
 
+    pub feed_list_focused_width: Dimension,
+    pub article_list_focused_width: Dimension,
+    pub article_list_focused_height: Dimension,
+    pub article_content_focused_height: Dimension,
+
     pub feed_list: Vec<FeedListContentIdentifier>,
 
     pub share_targets: Vec<ShareTarget>,
@@ -185,9 +194,10 @@ impl Default for Config {
             text_max_width: 66,
             content_preferred_type: ArticleContentType::Markdown,
 
-            feed_list_width_percent: 33,
-            article_list_width_percent: 67,
-            article_list_height_lines: 6,
+            feed_list_focused_width: Dimension::Percentage(33),
+            article_list_focused_width: Dimension::Percentage(100),
+            article_list_focused_height: Dimension::Percentage(66),
+            article_content_focused_height: Dimension::Percentage(100),
 
             feed_list: vec![
                 FeedListContentIdentifier::Query(LabeledQuery {

@@ -123,7 +123,7 @@ impl Widget for &mut ArticlesList {
             x: area.x,
             y: area.y + 1,
             width: area.width,
-            height: area.height - 1,
+            height: area.height.saturating_sub(1),
         };
         StatefulWidget::render(
             scrollbar,

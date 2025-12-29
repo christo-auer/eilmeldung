@@ -11,43 +11,44 @@ You can find the default configuration in `examples/default-config.toml`
 ## Basic Configuration Options
 
 
-| Option                            | Type    | Description                                               |
-| --------                          | ------  | -------------                                             |
-| `refresh_fps`                     | integer | UI refresh rate in frames per second                      |
-| `network_timeout_seconds`         | integer | timeout for network operations                            |
-| `article_scope`                   | string  | Default article scope: `"all"`, `"unread"`, or `"marked"` |
-| `keep_articles_days`              | integer | amount of days before articles are removed                |
-| `offline_icon`                    | char    | Icon displayed when offline                               |
-| `read_icon`                       | char    | Icon for read articles                                    |
-| `unread_icon`                     | char    | Icon for unread articles                                  |
-| `marked_icon`                     | char    | Icon for marked articles                                  |
-| `unmarked_icon`                   | char    | Icon for unmarked articles                                |
-| `tag_icon`                        | char    | Icon for tags                                             |
-| `command_line_prompt_icon`        | char    | Icon for command line prompt                              |
-| `scrollbar_begin_symbol`          | char    | Symbol at top of scrollbars                               |
-| `scrollbar_end_symbol`            | char    | Symbol at bottom of scrollbars                            |
-| `scrollbar_thumb_symbol`          | char    | Symbol placed at current position of scrollbars           |
-| `scrollbar_track_symbol`          | char    | Symbol placed between top and bottom of scrollbars        |
-| `all_label`                       | string  | Label format for "All" in feed list                       |
-| `feed_label`                      | string  | Label format for feeds                                    |
-| `category_label`                  | string  | Label format for categories                               |
-| `categories_label`                | string  | Label format for categories section                       |
-| `tags_label`                      | string  | Label format for tags section                             |
-| `tag_label`                       | string  | Label format for individual tags                          |
-| `query_label`                     | string  | Label format for query items                              |
-| `article_table`                   | string  | Article list column format                                |
-| `date_format`                     | string  | Date format (strftime syntax)                             |
-| `articles_after_selection`        | integer | Number of articles to show after selection                |
-| `auto_scrape`                     | boolean | Automatically scrape full article content                 |
-| `thumbnail_show`                  | boolean | Show article thumbnails                                   |
-| `thumbnail_width`                 | integer | Thumbnail width in characters                             |
-| `thumbnail_resize`                | boolean | Resize thumbnails to fit (**this may cause slowdowns**)   |
-| `thumbnail_fetch_debounce_millis` | integer | Delay before fetching thumbnail (ms)                      |
-| `text_max_width`                  | integer | Maximum text width for article content                    |
-| `content_preferred_type`          | string  | Preferred content type: `"PlainText"` or `"Markdown"`     |
-| `feed_list_width_percent`         | integer | Feed list panel width (percentage)                        |
-| `article_list_width_percent`      | integer | Article list panel width (percentage)                     |
-| `article_list_height_lines`       | integer | Article list height in lines                              |
+| Option                            | Type      | Description                                               |
+| --------                          | ------    | -------------                                             |
+| `refresh_fps`                     | integer   | UI refresh rate in frames per second                      |
+| `network_timeout_seconds`         | integer   | timeout for network operations                            |
+| `article_scope`                   | string    | Default article scope: `"all"`, `"unread"`, or `"marked"` |
+| `keep_articles_days`              | integer   | amount of days before articles are removed                |
+| `offline_icon`                    | char      | Icon displayed when offline                               |
+| `read_icon`                       | char      | Icon for read articles                                    |
+| `unread_icon`                     | char      | Icon for unread articles                                  |
+| `marked_icon`                     | char      | Icon for marked articles                                  |
+| `unmarked_icon`                   | char      | Icon for unmarked articles                                |
+| `tag_icon`                        | char      | Icon for tags                                             |
+| `command_line_prompt_icon`        | char      | Icon for command line prompt                              |
+| `scrollbar_begin_symbol`          | char      | Symbol at top of scrollbars                               |
+| `scrollbar_end_symbol`            | char      | Symbol at bottom of scrollbars                            |
+| `scrollbar_thumb_symbol`          | char      | Symbol placed at current position of scrollbars           |
+| `scrollbar_track_symbol`          | char      | Symbol placed between top and bottom of scrollbars        |
+| `all_label`                       | string    | Label format for "All" in feed list                       |
+| `feed_label`                      | string    | Label format for feeds                                    |
+| `category_label`                  | string    | Label format for categories                               |
+| `categories_label`                | string    | Label format for categories section                       |
+| `tags_label`                      | string    | Label format for tags section                             |
+| `tag_label`                       | string    | Label format for individual tags                          |
+| `query_label`                     | string    | Label format for query items                              |
+| `article_table`                   | string    | Article list column format                                |
+| `date_format`                     | string    | Date format (strftime syntax)                             |
+| `articles_after_selection`        | integer   | Number of articles to show after selection                |
+| `auto_scrape`                     | boolean   | Automatically scrape full article content                 |
+| `thumbnail_show`                  | boolean   | Show article thumbnails                                   |
+| `thumbnail_width`                 | integer   | Thumbnail width in characters                             |
+| `thumbnail_resize`                | boolean   | Resize thumbnails to fit (**this may cause slowdowns**)   |
+| `thumbnail_fetch_debounce_millis` | integer   | Delay before fetching thumbnail (ms)                      |
+| `text_max_width`                  | integer   | Maximum text width for article content                    |
+| `content_preferred_type`          | string    | Preferred content type: `"PlainText"` or `"Markdown"`     |
+| `feed_list_focused_width`         | dimension | Width of feed list when focused                           |
+| `article_list_focused_width`      | dimension | Width of article list when focused                        |
+| `article_list_focused_height`     | dimension | Height of article list when focused                       |
+| `article_content_focused_height`  | dimension | Height of article content when focused                    |
 
 **Label Placeholders:**
 - `{label}`: Item name
@@ -59,6 +60,11 @@ You can find the default configuration in `examples/default-config.toml`
 - `{tag_icons}`: Tag icons
 - `{age}`: Article age/date
 - `{title}`: Article title
+
+**Dimension:** Is a string:
+- **Percentage**: `"n%"` where `n` is a number from 1 to 100, e.g., `"33%"`, meaning 33% of the available width/height
+- **Length**: `"n length"` where `n` is a positive, e.g., `"10 length"`, meaning 10 rows (height)  or 10 columns (width)
+
 
 ---
 
@@ -260,5 +266,49 @@ share_targets = [
 ]
 ```
 
+## Layout Configuration
+
+You can adjust the layout, that is, the size of the different panels when they are focused and unfocused by the following variables:
+
+- `feed_list_focused_width`: width of feed list when focused
+- `article_list_focused_width`: width of article list when focused
+- `article_list_focused_height`: height of article list when focused
+- `article_content_focused_height`: height of article content when focused
+
+Each has a *dimension* value whih is a string, e.g., `"10 length"` for ten rows/columns or `"33%"` for 33% of the available width/height. For instance, if the feed list should occupy 25% of the total width when focused, set its value to `"25%"` and if you want have 10 articles visible in the article list, set its height value to `"11 length"` (+1 for the header).
+
+
+### Example: Static Layout (default)
+
+With the default values, the width/height of each panel is fixed. For example, the feed list is always 25% of the whole width regardless of whether it is focused or not.
+
+```toml
+feed_list_focused_width = "25%",
+article_list_focused_width = "75%",
+article_list_focused_height = "20%",
+article_content_focused_height = "80%",
+```
+
+### Example: Dynamic Layout
+
+Here is an example of values, where unfocused panels are smaller to give more space to the focused panel:
+
+```toml
+feed_list_focused_width = "33%",
+article_list_focused_width = "85%",
+article_list_focused_height = "66%",
+article_content_focused_height = "80%",
+````
+
+### Example: Fully Dynamic Layout
+
+Here is an example where there feed list completely vanishes when the article list is focused, and the article list completely vanishes when the content is focused:
+
+```toml
+feed_list_focused_width = "33%",
+article_list_focused_width = "100%",
+article_list_focused_height = "66%",
+article_content_focused_height = "100%",
+```
 
 
