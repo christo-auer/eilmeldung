@@ -47,18 +47,21 @@ There are two AUR packages: `eilmeldung` compiles the latest release and `eilmel
 
 ## Via Cargo
 
-In order to compile `eilmeldung` from source, you need `cargo` with a `rust` compiler with at least edition 2024 (e.g., use `rustup`) and some build deps. On Debian/Unbuntu-based systems its:
+In order to compile `eilmeldung` from source, you need `cargo` with a `rust` compiler with at least edition 2024 (e.g., use `rustup` and `rustup default stable`) and some build deps:
 
+| Distribution | Dependencies (Build and Runtime)                                                           |
+| ---          | ---                                                                                        |
+| Ubuntu       | `# apt install rustup build-essential cargo perl libssl-dev pkg-config libxml2-dev clang libsqlite3-dev`<br>install stable rust toolchain as your user: `rustup default stable` |
+| Fedora       | `# dnf install cargo rust perl libxml2-devel openssl-devel clang sqlite-devel`                           |
+| Arch         | `# pacman -S cargo base-devel clang perl libxml2 openssl libsixel sqlite3`                             |
+
+To compile the latest unreleased version (`HEAD` in `main`):
 ```bash
-apt update
-apt install --yes sudo apt-get install -y build-essential libssl-dev pkg-config libxml2-dev clang libsqlite3-dev
-
+cargo install --locked --git https://github.com/christo-auer/eilmeldung
 ```
-
-Then install *eilmeldung* via:
-
-```
-cargo install --git https://github.com/christo-auer/eilmeldung
+and for the latest tag:
+```bash
+cargo install --locked --git https://github.com/christo-auer/eilmeldung/tree/0.4.11
 ```
 
 
@@ -73,7 +76,7 @@ cargo install --git https://github.com/christo-auer/eilmeldung
   {
     inputs = {
       // ...
-      eilmeldung.url = "github:christ-auer/eilmeldung";
+      eilmeldung.url = "github:christo-auer/eilmeldung";
     };
 
     outputs = { nixpkgs, home-manager, eilmeldung, ... }: {
