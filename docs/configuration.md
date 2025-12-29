@@ -283,10 +283,10 @@ Each has a *dimension* value whih is a string, e.g., `"10 length"` for ten rows/
 With the default values, the width/height of each panel is fixed. For example, the feed list is always 25% of the whole width regardless of whether it is focused or not.
 
 ```toml
-feed_list_focused_width = "25%",
-article_list_focused_width = "75%",
-article_list_focused_height = "20%",
-article_content_focused_height = "80%",
+feed_list_focused_width = "25%"
+article_list_focused_width = "75%"
+article_list_focused_height = "20%"
+article_content_focused_height = "80%"
 ```
 
 https://github.com/user-attachments/assets/c4e6e89d-e95e-4a80-b660-5e1b982f6108
@@ -296,10 +296,10 @@ https://github.com/user-attachments/assets/c4e6e89d-e95e-4a80-b660-5e1b982f6108
 Here is an example of values, where unfocused panels are smaller to give more space to the focused panel:
 
 ```toml
-feed_list_focused_width = "33%",
-article_list_focused_width = "85%",
-article_list_focused_height = "66%",
-article_content_focused_height = "80%",
+feed_list_focused_width = "33%"
+article_list_focused_width = "85%"
+article_list_focused_height = "66%"
+article_content_focused_height = "80%"
 ````
 
 https://github.com/user-attachments/assets/ffc51e67-1842-4b49-a798-6a5d65b04265
@@ -309,10 +309,10 @@ https://github.com/user-attachments/assets/ffc51e67-1842-4b49-a798-6a5d65b04265
 Here is an example where there feed list completely vanishes when the article list is focused, and the article list completely vanishes when the content is focused:
 
 ```toml
-feed_list_focused_width = "33%",
-article_list_focused_width = "100%",
-article_list_focused_height = "66%",
-article_content_focused_height = "100%",
+feed_list_focused_width = "33%"
+article_list_focused_width = "100%"
+article_list_focused_height = "66%"
+article_content_focused_height = "100%"
 ```
 
 https://github.com/user-attachments/assets/e9277d94-a6da-49de-8dd0-8c6a75e09430
