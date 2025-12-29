@@ -128,11 +128,6 @@ pub struct Config {
     pub article_list_focused_height: Dimension,
     pub article_content_focused_height: Dimension,
 
-    pub feed_list_focused_width: Dimension,
-    pub article_list_focused_width: Dimension,
-    pub article_list_focused_height: Dimension,
-    pub article_content_focused_height: Dimension,
-
     pub feed_list: Vec<FeedListContentIdentifier>,
 
     pub share_targets: Vec<ShareTarget>,
