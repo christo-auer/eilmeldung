@@ -107,6 +107,8 @@ impl Widget for &mut ArticlesList {
 
         block.render(area, buf);
 
+        *self.view_data.article_lines_mut() = Some(area.height.saturating_sub(1));
+
         StatefulWidget::render(
             &self.view_data.table,
             inner,
@@ -143,6 +145,9 @@ pub struct ArticleListViewData<'a> {
 
     #[getset(get_mut = "pub(super)")]
     scrollbar_state: ScrollbarState,
+
+    #[getset(get_mut = "pub(super)", get = "pub(super)")]
+    article_lines: Option<u16>,
 }
 
 impl<'a> ArticleListViewData<'a> {

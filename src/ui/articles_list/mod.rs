@@ -171,9 +171,11 @@ impl ArticlesList {
         let scrollbar_state = self.view_data.scrollbar_state_mut();
         *scrollbar_state = scrollbar_state.position(index);
 
+        let Some(lines) = self.view_data.article_lines().clone() else {
+            return;
+        };
         let offset = self.view_data.get_table_state_mut().offset_mut();
-        let max_lines_above = self.config.article_list_height_lines as usize
-            - (self.config.articles_after_selection + 1);
+        let max_lines_above = lines as usize - (self.config.articles_after_selection + 1);
 
         if index.saturating_sub(*offset) > max_lines_above {
             *offset = index.saturating_sub(max_lines_above);
@@ -385,17 +387,22 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.select_index_and_send_message(None)?;
                 }
                 C::NavigatePageUp if self.is_focused => {
-                    self.view_data
-                        .get_table_state_mut()
-                        .scroll_up_by(self.config.article_list_height_lines - 1);
-                    self.select_index_and_send_message(None)?;
+                    let lines = *self.view_data.article_lines();
+                    if let Some(lines) = lines {
+                        self.view_data
+                            .get_table_state_mut()
+                            .scroll_up_by(lines.saturating_sub(1));
+                        self.select_index_and_send_message(None)?;
+                    };
                 }
                 C::NavigatePageDown if self.is_focused => {
-                    self.view_data.get_table_state_mut().scroll_down_by(
-                        self.config.article_list_height_lines
-                            - self.config.articles_after_selection as u16,
-                    );
-                    self.select_index_and_send_message(None)?;
+                    let lines = *self.view_data.article_lines();
+                    if let Some(lines) = lines {
+                        self.view_data.get_table_state_mut().scroll_down_by(
+                            lines.saturating_sub(self.config.articles_after_selection as u16),
+                        );
+                        self.select_index_and_send_message(None)?;
+                    }
                 }
                 C::NavigateFirst if self.is_focused => {
                     self.view_data.get_table_state_mut().select_first();

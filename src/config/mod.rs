@@ -123,9 +123,10 @@ pub struct Config {
     pub text_max_width: u16,
     pub content_preferred_type: ArticleContentType,
 
-    pub feed_list_width_percent: u16,
-    pub article_list_width_percent: u16,
-    pub article_list_height_lines: u16,
+    pub feed_list_focused_width: Dimension,
+    pub article_list_focused_width: Dimension,
+    pub article_list_focused_height: Dimension,
+    pub article_content_focused_height: Dimension,
 
     pub feed_list_focused_width: Dimension,
     pub article_list_focused_width: Dimension,
@@ -194,10 +195,10 @@ impl Default for Config {
             text_max_width: 66,
             content_preferred_type: ArticleContentType::Markdown,
 
-            feed_list_focused_width: Dimension::Percentage(33),
-            article_list_focused_width: Dimension::Percentage(100),
-            article_list_focused_height: Dimension::Percentage(66),
-            article_content_focused_height: Dimension::Percentage(100),
+            feed_list_focused_width: Dimension::Percentage(25),
+            article_list_focused_width: Dimension::Percentage(75),
+            article_list_focused_height: Dimension::Percentage(20),
+            article_content_focused_height: Dimension::Percentage(80),
 
             feed_list: vec![
                 FeedListContentIdentifier::Query(LabeledQuery {
