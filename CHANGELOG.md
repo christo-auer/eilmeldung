@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.5.0 - 2025-12-30
+
 - **Breaking Changes**: 
   - The followng layout options have been replaced by a more flexibe options:
   ```toml
