@@ -175,7 +175,8 @@ impl ArticlesList {
             return;
         };
         let offset = self.view_data.get_table_state_mut().offset_mut();
-        let max_lines_above = (lines as usize).saturating_sub(self.config.articles_after_selection + 1);
+        let max_lines_above =
+            (lines as usize).saturating_sub(self.config.articles_after_selection + 1);
 
         if index.saturating_sub(*offset) > max_lines_above {
             *offset = index.saturating_sub(max_lines_above);
