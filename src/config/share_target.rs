@@ -83,14 +83,16 @@ impl FromStr for ShareTarget {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use ShareTarget as T;
-        Ok(match s {
+        Ok(match s.trim() {
             "clipboard" => T::Clipboard,
             "instapaper" => T::Instapaper,
             "reddit" => T::Reddit,
             "mastodon" => T::Mastodon,
             "telegram" => T::Telegram,
             s => match s.split_once(' ') {
-                Some((name, rest)) => {
+                Some((mut name, mut rest)) => {
+                    name = name.trim();
+                    rest = rest.trim();
                     if rest.starts_with("http://") || rest.starts_with("https://") {
                         T::Custom(name.to_owned(), rest.to_owned())
                     } else {
@@ -108,7 +110,7 @@ impl FromStr for ShareTarget {
 }
 
 impl ShareTarget {
-    pub fn to_url(&self, title: &str, url: &Url) -> Result<Url, ConfigError> {
+    fn to_url(&self, title: &str, url: &Url) -> Result<Url, ConfigError> {
         let url_escaped = utf8_percent_encode(url.as_ref(), NON_ALPHANUMERIC).to_string();
         let title_escaped = utf8_percent_encode(title, NON_ALPHANUMERIC).to_string();
 
@@ -138,40 +140,48 @@ impl ShareTarget {
                 Ok(())
             }
 
-            ShareTarget::Command(_, args) => self.execute_as_command(args, title, url),
+            ShareTarget::Command(_, args) => Self::execute_as_command(args, title, url),
 
-            target => {
-                let share_url = target.to_url(title, url)?;
+            _ => {
+                let share_url = self.to_url(title, url)?;
                 webbrowser::open(share_url.to_string().as_str())?;
                 Ok(())
             }
         }
     }
 
-    pub fn execute_as_command(
-        &self,
+    fn to_command(
         command_args: &[String],
         title: &str,
         url: &Url,
-    ) -> color_eyre::Result<()> {
+    ) -> color_eyre::Result<(Command, Vec<String>)> {
         let Some((cmd, args)) = command_args.split_first() else {
             return Err(color_eyre::eyre::eyre!("command is empty"));
         };
 
-        let quoted_args = args
+        let filled_in_args = args
             .iter()
             .map(|arg| {
-                arg.replace("{url}", shell_words::quote(url.as_ref()).as_ref())
-                    .replace("{title}", shell_words::quote(title).as_ref())
+                arg.replace("{url}", url.as_ref())
+                    .replace("{title}", title.as_ref())
             })
             .collect::<Vec<String>>();
 
-        info!("executing command {} {:?}", cmd, quoted_args);
-        let _child = Command::new(cmd)
-            .stdin(Stdio::null())
+        info!("executing command {} {:?}", cmd, filled_in_args);
+        Ok((Command::new(cmd), filled_in_args))
+    }
+
+    fn execute_as_command(
+        command_args: &[String],
+        title: &str,
+        url: &Url,
+    ) -> color_eyre::Result<()> {
+        let (mut cmd, filled_in_args) = Self::to_command(command_args, title, url)?;
+
+        cmd.stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .args(quoted_args)
+            .args(filled_in_args)
             .spawn()?;
 
         Ok(())
@@ -186,5 +196,150 @@ impl<'de> serde::de::Deserialize<'de> for ShareTarget {
         let s = String::deserialize(deserializer)?;
 
         ShareTarget::from_str(&s).map_err(|err| serde::de::Error::custom(err.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use claims::assert_matches;
+
+    use super::*;
+
+    macro_rules! custom_parse_test {
+        ($id:expr, $url:expr) => {{
+            use ShareTarget as S;
+            let custom = ShareTarget::from_str(concat!($id, " ", $url));
+            assert_matches!(custom, Ok(S::Custom(..)));
+            if let Ok(S::Custom(id, url)) = custom {
+                assert_eq!(url, $url.trim());
+                assert_eq!(id, $id.trim());
+            }
+        }};
+    }
+
+    macro_rules! command_parse_test {
+        ($command:expr, $id:expr, $args:expr) => {{
+            use ShareTarget as S;
+            let custom = ShareTarget::from_str($command);
+            assert_matches!(custom, Ok(S::Command(..)));
+
+            if let Ok(S::Command(id, args)) = custom {
+                assert_eq!(args, $args);
+                assert_eq!(id, $id.trim());
+            }
+        }};
+    }
+
+    macro_rules! command_replace_test {
+        ($inargs:expr, $url:expr, $title:expr, $replaced:expr) => {{
+            let args = $inargs
+                .into_iter()
+                .map(|s| s.to_owned())
+                .collect::<Vec<String>>();
+
+            let (_command, replaced_args) =
+                ShareTarget::to_command(&args, $title, &Url::from_str($url).unwrap()).unwrap();
+
+            assert_eq!(replaced_args, $replaced,);
+        }};
+    }
+
+    #[test]
+    fn test_parsing_predefined() {
+        use ShareTarget as S;
+        assert_matches!(ShareTarget::from_str("clipboard"), Ok(S::Clipboard));
+        assert_matches!(ShareTarget::from_str("instapaper"), Ok(S::Instapaper));
+        assert_matches!(ShareTarget::from_str("mastodon"), Ok(S::Mastodon));
+        assert_matches!(ShareTarget::from_str("reddit"), Ok(S::Reddit));
+        assert_matches!(ShareTarget::from_str("telegram"), Ok(S::Telegram));
+        assert_matches!(ShareTarget::from_str("signal"), Err(_));
+        assert_matches!(ShareTarget::from_str(""), Err(_));
+        assert_matches!(ShareTarget::from_str(" telegram"), Ok(S::Telegram));
+    }
+
+    #[test]
+    fn test_parsing_custom() {
+        custom_parse_test!("shareme", "http://www.shareme.com/{url}/{title}");
+        custom_parse_test!(" shareme ", "   http://www.shareme.com/{url}/{title} ");
+        custom_parse_test!("shareme ", "https://www.shareme.com/{url}/{title}");
+        custom_parse_test!(" shareme ", "https://www.shareme.com/{url}/{title} ");
+    }
+
+    #[test]
+    fn test_parsing_command() {
+        command_parse_test!(r#"fancyprog "a" "b" 'c'"#, "fancyprog", vec!["a", "b", "c"]);
+        command_parse_test!(
+            r#"    fancyprog     "a"    "b"    'c'    "#,
+            "fancyprog",
+            vec!["a", "b", "c"]
+        );
+        command_parse_test!(
+            r#"fancyprog "{url}" '{title}'"#,
+            "fancyprog",
+            vec!["{url}", "{title}"]
+        );
+        command_parse_test!(
+            r#"fancyprog "\"{url}\"" \'{title}\'"#,
+            "fancyprog",
+            vec!["\"{url}\"", "'{title}'"]
+        );
+
+        assert_matches!(
+            ShareTarget::from_str(r#"fancyprog "a"#),
+            Err(ConfigError::ShareTargetInvalidCommand(..))
+        );
+
+        assert_matches!(
+            ShareTarget::from_str(r#"fancyprog 'a"#),
+            Err(ConfigError::ShareTargetInvalidCommand(..))
+        );
+    }
+
+    #[test]
+    fn test_to_url() {
+        // pub fn to_url(&self, title: &str, url: &Url) -> Result<Url, ConfigError> {
+        use ShareTarget as T;
+        let url = T::Mastodon.to_url(
+            "Title",
+            &Url::from_str("http://www.newssite.com/article?id=123").unwrap(),
+        );
+        assert_matches!(url, Ok(Url { .. }));
+
+        assert_eq!(
+            url.unwrap(),
+            Url::from_str("https://sharetomastodon.github.io/?title=Title&url=http%3A%2F%2Fwww%2Enewssite%2Ecom%2Farticle%3Fid%3D123")
+            .unwrap()
+        )
+    }
+
+    #[test]
+    fn test_to_command() {
+        command_replace_test!(
+            vec!["fancyprog", "-v", "{url}", "{title}"],
+            "https://www.newssite.com/article?id=123",
+            "Title",
+            vec!["-v", "https://www.newssite.com/article?id=123", "Title",]
+        );
+        command_replace_test!(
+            vec!["fancyprog", "-v", "\'{url}\'", "\"{title}\""],
+            "https://www.newssite.com/article?id=123",
+            "Title",
+            vec![
+                "-v",
+                "\'https://www.newssite.com/article?id=123\'",
+                "\"Title\"",
+            ]
+        );
+        command_replace_test!(
+            vec!["fancyprog", "-v", "{url}  ", " ? {title} *"],
+            "https://www.newssite.com/article?id=123",
+            "Title",
+            vec![
+                "-v",
+                "https://www.newssite.com/article?id=123  ",
+                " ? Title *",
+            ]
+        );
     }
 }

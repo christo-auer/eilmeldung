@@ -1,16 +1,18 @@
 # Unreleased
 
+- fixed bug (issue 55): arguments to command are now not quoted anymore
+
 # 0.5.0 - 2025-12-30
 
 - **Breaking Changes**: 
   - The followng layout options have been replaced by a more flexibe options:
-  ```toml
+  ```
   feed_list_width_percent
   article_list_width_percent
   article_list_height_lines
   ```
   - They have been replaced by
-  ```toml
+  ```
   feed_list_focused_width
   article_list_focused_width
   article_list_focused_height
