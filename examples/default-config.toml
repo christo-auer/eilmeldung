@@ -170,11 +170,11 @@ query = { fg = "accent_quaternary" }
 yanked = { fg = "highlight", mods = ["reversed"] }
 border = { fg = "muted" }
 border_focused = { fg = "accent_primary" }
-statusbar = { fg = "background", bg = "accent_primary" }
+statusbar = { fg = "accent_primary", mods = ["reversed"] }
 command_input = { fg = "foreground", bg = "muted" }
 inactive = { fg = "muted" }
-tooltip_info = { fg = "background", bg = "info" }
-tooltip_warning = { fg = "background", bg = "warning" }
-tooltip_error = { fg = "background", bg = "error" }
+tooltip_info = { fg = "info", mods = ["reversed"] }
+tooltip_warning = { fg = "warning", mods = ["reversed"] }
+tooltip_error = { fg = "error", mods = ["reversed"] }
 unread_modifier = "bold"
 

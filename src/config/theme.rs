@@ -139,14 +139,16 @@ impl Default for StyleSet {
             border: ComponentStyle::default().fg(C::Muted),
             border_focused: ComponentStyle::default().fg(C::AccentPrimary),
             statusbar: ComponentStyle::default()
-                .fg(C::Background)
-                .bg(C::AccentPrimary),
+                .fg(C::AccentPrimary)
+                .mods(&[M::REVERSED]),
             command_input: ComponentStyle::default().fg(C::Foreground).bg(C::Muted),
             inactive: ComponentStyle::default().fg(C::Muted),
 
-            tooltip_info: ComponentStyle::default().fg(C::Background).bg(C::Info),
-            tooltip_warning: ComponentStyle::default().fg(C::Background).bg(C::Warning),
-            tooltip_error: ComponentStyle::default().fg(C::Background).bg(C::Error),
+            tooltip_info: ComponentStyle::default().fg(C::Info).mods(&[M::REVERSED]),
+            tooltip_warning: ComponentStyle::default()
+                .fg(C::Warning)
+                .mods(&[M::REVERSED]),
+            tooltip_error: ComponentStyle::default().fg(C::Error).mods(&[M::REVERSED]),
 
             unread_modifier: Modifier::BOLD,
         }

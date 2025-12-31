@@ -440,6 +440,10 @@ feed_list = [
 
 Have a look at the section *Layout* in [Configuration](docs/configuration.md).
 
+**The default color pallette is dark? Is there a light color pallette?**
+
+In case you use ANSI 16 colors, insert [this file](examples/light-color-pallette.toml) into your `config.toml`.
+
 
 # Standing on the Shoulders of Giants
 
