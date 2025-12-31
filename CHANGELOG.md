@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.5.2 - 2025-12-31
+
 - added example for light theme
 - made default theme more consistent between light/dark themes
 
