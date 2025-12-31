@@ -1,0 +1,13 @@
+# example for a light theme based on 16 ANSI colors
+[theme.color_palette]
+accent_primary = "magenta"
+accent_quaternary = "green"
+accent_secondary = "cyan"
+accent_tertiary = "blue"
+background = "white"
+error = "red"
+foreground = "gray"
+highlight = "yellow"
+info = "magenta"
+muted = "darkgray"
+warning = "yellow"

@@ -1,5 +1,9 @@
 # Unreleased
 
+- added example for light theme
+- made default theme more consistent between light/dark themes
+
+# 0.5.1 - 2025-12-30
 - fixed bug (issue 55): arguments to command are now not quoted anymore
 
 # 0.5.0 - 2025-12-30
