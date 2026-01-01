@@ -1,6 +1,7 @@
 pub mod dimension;
 pub mod feed_list_content_identfier;
 pub mod input_config;
+pub mod login_configuration;
 pub mod paths;
 pub mod share_target;
 pub mod theme;
@@ -15,6 +16,7 @@ pub mod prelude {
         FeedListContentIdentifier, FeedListItemType, LabeledQuery,
     };
     pub use super::input_config::InputConfig;
+    pub use super::login_configuration::LoginConfiguration;
     pub use super::paths::{CONFIG_FILE, PROJECT_DIRS};
     pub use super::share_target::ShareTarget;
     pub use super::theme::Theme;
@@ -41,6 +43,12 @@ pub enum ConfigError {
     ShareTargetInvalid,
     #[error("invalid share command")]
     ShareTargetInvalidCommand(#[from] shell_words::ParseError),
+    #[error("invalid pass or pass command")]
+    PassCommandParseError,
+    #[error("invalid pass or pass command")]
+    PassCommandCommandExecutionError(String),
+    #[error("invalid login configuration")]
+    LoginConfigurationInvalid(String),
 }
 
 #[derive(Debug, Clone, serde::Deserialize, Eq, PartialEq)]
@@ -131,6 +139,8 @@ pub struct Config {
     pub feed_list: Vec<FeedListContentIdentifier>,
 
     pub share_targets: Vec<ShareTarget>,
+
+    pub login: Option<LoginConfiguration>,
 }
 
 impl Config {
@@ -216,6 +226,7 @@ impl Default for Config {
                 ShareTarget::Instapaper,
                 ShareTarget::Telegram,
             ],
+            login: None,
         }
     }
 }
