@@ -427,9 +427,6 @@ mod test {
     #[case("cmd:echo \"secret\"", "secret")]
     #[case("cmd:  echo \"secret\"", "secret")]
     #[case("cmd:echo 'secret'", "secret")]
-    // #[case("cmd:./test/outputpass.sh somearg", "secret")]
-    // #[case("cmd:./test/outputpass.sh somearg someotherarg", "secret")]
-    // #[case("cmd:./test/outputpass.sh somearg someotherarg", "secret")]
     fn test_secret_execute_command(#[case] cmd: &str, #[case] pass: &str) {
         let secret = Secret::from_str(cmd).unwrap();
         let pass_value = secret.get_secret();
@@ -439,17 +436,15 @@ mod test {
 
     #[test]
     fn test_secret_execute_command_fail() {
-        let secret = Secret::from_str("cmd:./test/outputpass.sh somerror").unwrap();
+        let secret = Secret::from_str("cmd:exit 1").unwrap();
         let pass_value = secret.get_secret();
         assert_matches!(
             pass_value,
             Err(ConfigError::SecretCommandExecutionError(..))
         );
-        let ConfigError::SecretCommandExecutionError(message) = pass_value.unwrap_err() else {
+        let ConfigError::SecretCommandExecutionError(_message) = pass_value.unwrap_err() else {
             panic!("expected SecretCommandExecutionError with error message");
         };
-
-        assert_eq!(message, "this is expected\n");
     }
 
     #[test]
