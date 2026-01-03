@@ -525,22 +525,20 @@ mod test {
     }
 
     #[rstest]
-    #[rustfmt::skip]
-    #[case(LoginType::DirectPassword, Some(None), None,       None,       None,       None, None, None,       None)]
-    #[case(LoginType::DirectPassword, None,       None,       Some(None), None,       None, None, None,       None)]
-    #[case(LoginType::DirectToken,    None,       None,       None,       Some(None), None, None, None,       None)]
-    #[case(LoginType::OAuth,          None,       Some(None), None,       None,       None, None, None,       None)]
-    #[case(LoginType::OAuth,          None,       None,       None,       None,       None, None, Some(None), None)]
-    #[case(LoginType::OAuth,          None,       None,       None,       None,       None, None, None,       Some(None))]
     #[allow(clippy::too_many_arguments)]    
+    #[rustfmt::skip]
+    #[case(LoginType::DirectPassword, Some(None), None,       None,       None,       None,       None)]
+    #[case(LoginType::DirectPassword, None,       None,       Some(None), None,       None,       None)]
+    #[case(LoginType::DirectToken,    None,       None,       None,       Some(None), None,       None)]
+    #[case(LoginType::OAuth,          None,       Some(None), None,       None,       None,       None)]
+    #[case(LoginType::OAuth,          None,       None,       None,       None,       Some(None), None)]
+    #[case(LoginType::OAuth,          None,       None,       None,       None,       None,       Some(None))]
     fn to_login_data_fails(
         #[case] login_type: LoginType,
         #[case] user: Option<Option<&str>>,
         #[case] url: Option<Option<&str>>,
         #[case] password: Option<Option<&str>>,
         #[case] token: Option<Option<&str>>,
-        #[case] basic_auth_user: Option<Option<&str>>,
-        #[case] basic_auth_password: Option<Option<&str>>,
         #[case] oauth_client_id: Option<Option<&str>>,
         #[case] oauth_client_secret: Option<Option<&str>>,
     ) {
@@ -566,12 +564,8 @@ mod test {
                 .unwrap_or(Some("cmd:echo \"secret3\""))
                 .map(|cmd| Secret::from_str(cmd).unwrap()),
 
-            basic_auth_user: basic_auth_user
-                .unwrap_or(Some("username"))
-                .map(str::to_owned),
-            basic_auth_password: basic_auth_password
-                .unwrap_or(Some("cmd:echo \"secret4\""))
-                .map(|cmd| Secret::from_str(cmd).unwrap()),
+            basic_auth_user: Some("username".to_owned()),
+            basic_auth_password: Some(Secret::from_str("cmd:echo \"secret4\"").unwrap()),
         };
         let login_data_res = login_configuration.to_login_data();
 
