@@ -389,8 +389,8 @@ share_targets = [
 In `eilmeldung`, select an article and share it with `share hackernews` or `share sendmail` (use TAB for autocompletion). Of course, you can also define key bindings for this:
 
 ```toml
-"S h": ["share hackernews"],
-"S m": ["share sendmail"],
+"S h": ["share hackernews"]
+"S m": ["share sendmail"]
 ```
 
 For more, checkout [Configuration](docs/configuration.md): contains all *configuration options* along with the input configuration].
