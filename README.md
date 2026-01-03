@@ -444,6 +444,10 @@ Have a look at the section *Layout* in [Configuration](docs/configuration.md).
 
 In case you use ANSI 16 colors, insert [this file](examples/light-color-palette.toml) into your `config.toml`.
 
+**Can I configure the login information in via the configuration file `config.toml`? Can I automate the interactive login process?**
+
+Yes, check out *Automatic Login* in [Configuration](docs/configuration.md)!
+
 
 # Standing on the Shoulders of Giants
 
