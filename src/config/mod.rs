@@ -140,7 +140,7 @@ pub struct Config {
 
     pub share_targets: Vec<ShareTarget>,
 
-    pub login: Option<LoginConfiguration>,
+    pub login_setup: Option<LoginConfiguration>,
 }
 
 impl Config {
@@ -226,7 +226,7 @@ impl Default for Config {
                 ShareTarget::Instapaper,
                 ShareTarget::Telegram,
             ],
-            login: None,
+            login_setup: None,
         }
     }
 }

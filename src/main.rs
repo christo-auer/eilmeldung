@@ -55,10 +55,11 @@ async fn main() -> color_eyre::Result<()> {
             // this is the initial setup => setup login data
             info!("no profile found => ask user or try config");
             let mut logged_in = false;
-            let mut skip_asking_for_login = config.login.is_some();
+            // skip if login configuration is given
+            let mut skip_asking_for_login = config.login_setup.is_some();
 
             let mut login_data: Option<LoginData> = config
-                .login
+                .login_setup
                 .as_ref()
                 .inspect(|_| info!("login configuration found"))
                 .map(|login_configuration| login_configuration.to_login_data())
