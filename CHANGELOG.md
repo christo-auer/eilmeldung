@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.6.0 - 2026-01-03
+
 # 0.5.2 - 2025-12-31
 
 - added example for light theme
