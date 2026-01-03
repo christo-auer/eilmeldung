@@ -11,44 +11,45 @@ You can find the default configuration in `examples/default-config.toml`
 ## Basic Configuration Options
 
 
-| Option                            | Type      | Description                                               |
-| --------                          | ------    | -------------                                             |
-| `refresh_fps`                     | integer   | UI refresh rate in frames per second                      |
-| `network_timeout_seconds`         | integer   | timeout for network operations                            |
-| `article_scope`                   | string    | Default article scope: `"all"`, `"unread"`, or `"marked"` |
-| `keep_articles_days`              | integer   | amount of days before articles are removed                |
-| `offline_icon`                    | char      | Icon displayed when offline                               |
-| `read_icon`                       | char      | Icon for read articles                                    |
-| `unread_icon`                     | char      | Icon for unread articles                                  |
-| `marked_icon`                     | char      | Icon for marked articles                                  |
-| `unmarked_icon`                   | char      | Icon for unmarked articles                                |
-| `tag_icon`                        | char      | Icon for tags                                             |
-| `command_line_prompt_icon`        | char      | Icon for command line prompt                              |
-| `scrollbar_begin_symbol`          | char      | Symbol at top of scrollbars                               |
-| `scrollbar_end_symbol`            | char      | Symbol at bottom of scrollbars                            |
-| `scrollbar_thumb_symbol`          | char      | Symbol placed at current position of scrollbars           |
-| `scrollbar_track_symbol`          | char      | Symbol placed between top and bottom of scrollbars        |
-| `all_label`                       | string    | Label format for "All" in feed list                       |
-| `feed_label`                      | string    | Label format for feeds                                    |
-| `category_label`                  | string    | Label format for categories                               |
-| `categories_label`                | string    | Label format for categories section                       |
-| `tags_label`                      | string    | Label format for tags section                             |
-| `tag_label`                       | string    | Label format for individual tags                          |
-| `query_label`                     | string    | Label format for query items                              |
-| `article_table`                   | string    | Article list column format                                |
-| `date_format`                     | string    | Date format (strftime syntax)                             |
-| `articles_after_selection`        | integer   | Number of articles to show after selection                |
-| `auto_scrape`                     | boolean   | Automatically scrape full article content                 |
-| `thumbnail_show`                  | boolean   | Show article thumbnails                                   |
-| `thumbnail_width`                 | integer   | Thumbnail width in characters                             |
-| `thumbnail_resize`                | boolean   | Resize thumbnails to fit (**this may cause slowdowns**)   |
-| `thumbnail_fetch_debounce_millis` | integer   | Delay before fetching thumbnail (ms)                      |
-| `text_max_width`                  | integer   | Maximum text width for article content                    |
-| `content_preferred_type`          | string    | Preferred content type: `"PlainText"` or `"Markdown"`     |
-| `feed_list_focused_width`         | dimension | Width of feed list when focused                           |
-| `article_list_focused_width`      | dimension | Width of article list when focused                        |
-| `article_list_focused_height`     | dimension | Height of article list when focused                       |
-| `article_content_focused_height`  | dimension | Height of article content when focused                    |
+| Option                            | Type                | Description                                                |
+| --------                          | ------              | -------------                                              |
+| `refresh_fps`                     | integer             | UI refresh rate in frames per second                       |
+| `network_timeout_seconds`         | integer             | timeout for network operations                             |
+| `article_scope`                   | string              | Default article scope: `"all"`, `"unread"`, or `"marked"`  |
+| `keep_articles_days`              | integer             | amount of days before articles are removed                 |
+| `offline_icon`                    | char                | Icon displayed when offline                                |
+| `read_icon`                       | char                | Icon for read articles                                     |
+| `unread_icon`                     | char                | Icon for unread articles                                   |
+| `marked_icon`                     | char                | Icon for marked articles                                   |
+| `unmarked_icon`                   | char                | Icon for unmarked articles                                 |
+| `tag_icon`                        | char                | Icon for tags                                              |
+| `command_line_prompt_icon`        | char                | Icon for command line prompt                               |
+| `scrollbar_begin_symbol`          | char                | Symbol at top of scrollbars                                |
+| `scrollbar_end_symbol`            | char                | Symbol at bottom of scrollbars                             |
+| `scrollbar_thumb_symbol`          | char                | Symbol placed at current position of scrollbars            |
+| `scrollbar_track_symbol`          | char                | Symbol placed between top and bottom of scrollbars         |
+| `all_label`                       | string              | Label format for "All" in feed list                        |
+| `feed_label`                      | string              | Label format for feeds                                     |
+| `category_label`                  | string              | Label format for categories                                |
+| `categories_label`                | string              | Label format for categories section                        |
+| `tags_label`                      | string              | Label format for tags section                              |
+| `tag_label`                       | string              | Label format for individual tags                           |
+| `query_label`                     | string              | Label format for query items                               |
+| `article_table`                   | string              | Article list column format                                 |
+| `date_format`                     | string              | Date format (strftime syntax)                              |
+| `articles_after_selection`        | integer             | Number of articles to show after selection                 |
+| `auto_scrape`                     | boolean             | Automatically scrape full article content                  |
+| `thumbnail_show`                  | boolean             | Show article thumbnails                                    |
+| `thumbnail_width`                 | integer             | Thumbnail width in characters                              |
+| `thumbnail_resize`                | boolean             | Resize thumbnails to fit (**this may cause slowdowns**)    |
+| `thumbnail_fetch_debounce_millis` | integer             | Delay before fetching thumbnail (ms)                       |
+| `text_max_width`                  | integer             | Maximum text width for article content                     |
+| `content_preferred_type`          | string              | Preferred content type: `"PlainText"` or `"Markdown"`      |
+| `feed_list_focused_width`         | dimension           | Width of feed list when focused                            |
+| `article_list_focused_width`      | dimension           | Width of article list when focused                         |
+| `article_list_focused_height`     | dimension           | Height of article list when focused                        |
+| `article_content_focused_height`  | dimension           | Height of article content when focused                     |
+
 
 **Label Placeholders:**
 - `{label}`: Item name
@@ -299,7 +300,7 @@ Here is an example of values, where unfocused panels are smaller to give more sp
 feed_list_focused_width = "33%"
 article_list_focused_width = "85%"
 article_list_focused_height = "66%"
-article_content_focused_height = "80%"
+article_content_focused_height = "80%"s
 ````
 
 https://github.com/user-attachments/assets/ffc51e67-1842-4b49-a798-6a5d65b04265
@@ -316,3 +317,66 @@ article_content_focused_height = "100%"
 ```
 
 https://github.com/user-attachments/assets/e9277d94-a6da-49de-8dd0-8c6a75e09430
+
+## Automatic Login
+
+Upon first starting `eilmeldung`, the user is asked to enter login information after which `eilmeldung` logs into the provider and syncs the content. This interactive login setup can be *automated* by filling the section `[login_setup]`. The settings are:
+
+
+| Option                | Type   | `login_type`                               | Description                                                                   |
+| ---                   | ---    | ---                                        | ---                                                                           |
+| `login_type`          | string |                                            | Type of login: `"no_login"`, `"direct_password"`, `"direct_token"`, `"oauth"` |
+| `provider`            | string | all                                        | Provider: `"local_rss"`, `"freshrss"`, etc.                                   |
+| `url`                 | string | `oauth` (required); `direct_password`, `direct_token` (optional) | URL for connection |
+| `user`                | string | `direct_password`                          | Username for direct login                                                     |
+| `password`            | secret | `direct_password`                          | Password or command which produces password  (see below!)                     |
+| `token`               | secret | `direct_token`                             | Token for login by token                                                      |
+| `oauth_client_id`     | string | `oauth`                                    | *Optional*: client ID for oauth login (see note below)                        |
+| `oauth_client_secret` | secret | `oauth`                                    | *Optional*: client secret for oauth login (see note below)                    |
+| `basic_auth_user`     | string | `direct_password`, `direct_token`          | *Optional*: user name for http basic authentication |
+| `basic_auth_password` | secret | `direct_password`, `direct_token`          | *Optional*: password for http basic authentication |
+
+**Note:** For OAuth login, if you provide custom OAuth credentials, both `oauth_client_id` and `oauth_client_secret` must be provided together. You cannot provide only one of them. If you want to use the provider's default OAuth credentials, omit both fields.
+
+**Overwhelmed?** Check *Finding the Right Settings* below! But first read about:
+
+### Secrets
+
+Configuration options with type *secret* are strings which
+
+- either contain the secret itself (e.g, `password = "abcd1234" `); storing password in *clear text* is **NOT RECOMMENDED**
+- or contain a command with prefix `cmd:` which outputs the secret on its output (e.g., `password = "cmd:pass my-passwords/eilmeldung"`); **THIS IS THE WAY**
+
+### Finding the Right Settings
+
+`eilmeldung` outputs all needed values via the command line switch `--print-login-data`. If you are already logged in, it simply outputs the login data. If you are not logged in, you will be led through the interactive login process and the login data is output afterwards:
+
+```bash
+eilmeldung --print-login-data
+
+Welcome to +++ eilmeldung +++
+...
+...
+> Are you satisfied with these settings? Select `n` to change them. Yes
+Attempting to login and synchronize...
+login and initial sync successful
+
+login_type = "direct_password"
+provider = "freshrss"
+user = "chris"
+url = "http://x.y.z.w/api/greader.php/"
+password = "*******"
+```
+
+Note that the password is *redacted*! You have to replace the contents of `password`  with your actual password command. If you, for some reason, want to output the password values verbatim, add the command line switch `--show-secrets`.
+Simply copy and paste this into you `config.toml`.
+
+```toml
+[login_setup]
+login_type = "direct_password"
+provider = "freshrss"
+user = "username"
+url = "http://x.y.z.w/api/greader.php/"
+password = "cmd:pass my-passwords/eilmeldung"
+```
+
