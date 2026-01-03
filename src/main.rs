@@ -53,14 +53,25 @@ async fn main() -> color_eyre::Result<()> {
         Ok(news_flash) => news_flash,
         Err(_) => {
             // this is the initial setup => setup login data
-            info!("no profile found => ask user");
+            info!("no profile found => ask user or try config");
             let mut logged_in = false;
+            let mut skip_asking_for_login = config.login.is_some();
 
-            let mut login_data: Option<LoginData> = None;
+            let mut login_data: Option<LoginData> = config
+                .login
+                .as_ref()
+                .inspect(|_| info!("login configuration found"))
+                .map(|login_configuration| login_configuration.to_login_data())
+                .transpose()?;
             let login_setup = LoginSetup::new();
             let mut news_flash: Option<NewsFlash> = None;
             while !logged_in {
-                login_data = Some(login_setup.inquire_login_data(&login_data).await?);
+                login_data = if login_data.is_none() || !skip_asking_for_login {
+                    skip_asking_for_login = false;
+                    Some(login_setup.inquire_login_data(&login_data).await?)
+                } else {
+                    login_data
+                };
                 news_flash = Some(NewsFlash::new(
                     state_dir,
                     config_dir,
@@ -78,6 +89,16 @@ async fn main() -> color_eyre::Result<()> {
             news_flash.unwrap()
         }
     };
+
+    // just print login data and exit
+    if *cli_args.print_login_data() {
+        let login_data = news_flash.get_login_data().await.unwrap();
+        print!(
+            "{}",
+            LoginConfiguration::from(login_data).as_toml(!cli_args.show_secrets())?
+        );
+        return Ok(());
+    }
 
     // setup of things we need in the app
     let (message_sender, message_receiver) = unbounded_channel::<Message>();

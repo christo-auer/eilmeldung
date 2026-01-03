@@ -21,4 +21,12 @@ pub struct CliArgs {
     /// Directory with state files (database, etc.)
     #[arg(short, long)]
     state_dir: Option<String>,
+
+    /// Print login data as TOML (for use as automatic login setup in config.toml)
+    #[arg(long)]
+    print_login_data: bool,
+
+    /// Show secrets when printing login data
+    #[arg(long)]
+    show_secrets: bool,
 }

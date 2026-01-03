@@ -512,10 +512,6 @@ impl LoginSetup {
 
             Ok(_) => {
                 info!("login and initial sync successful");
-                termimad::print_inline(
-                    "Login and initial sync successful. **You are ready to go**!\n",
-                );
-                inquire::Text::new("Press enter to continue...").prompt_skippable()?;
                 Ok(true)
             }
         }

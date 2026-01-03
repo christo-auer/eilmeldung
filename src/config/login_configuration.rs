@@ -4,27 +4,39 @@ use std::{
 };
 
 use crate::prelude::*;
-use news_flash::models::{ApiSecret, BasicAuth, DirectLogin, LoginData, OAuthData, PluginID};
+use itertools::Itertools;
+use news_flash::models::{
+    ApiSecret, BasicAuth, DirectLogin, LoginData, OAuthData, PasswordLogin, PluginID, TokenLogin,
+};
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct LoginConfiguration {
     pub login_type: LoginType,
     pub provider: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<PassCommand>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub token: Option<PassCommand>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub oauth_client_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub oauth_client_secret: Option<PassCommand>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub basic_auth_user: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub basic_auth_password: Option<PassCommand>,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum LoginType {
     NoLogin,
     DirectPassword,
@@ -117,6 +129,28 @@ impl<'de> serde::de::Deserialize<'de> for PassCommand {
     }
 }
 
+impl serde::ser::Serialize for PassCommand {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            PassCommand::Password(password) => serializer.serialize_str(password),
+            PassCommand::Command(args) => {
+                let cmd = args.first().unwrap_or(&"".to_owned()).to_owned();
+
+                let args_str = args
+                    .iter()
+                    .skip(1)
+                    .map(|arg| shell_words::quote(arg))
+                    .join(" ");
+
+                serializer.serialize_str(&format!("{cmd} {args_str}"))
+            }
+        }
+    }
+}
+
 fn unwrap_or_config_error<T>(val: Option<&T>, err: &str) -> Result<T, ConfigError>
 where
     T: Clone,
@@ -202,6 +236,127 @@ impl LoginConfiguration {
             user: user.to_owned(),
             password,
         }))
+    }
+
+    fn from_none(plugin_id: PluginID) -> Self {
+        Self {
+            login_type: LoginType::NoLogin,
+            provider: plugin_id.as_str().to_owned(),
+            ..Default::default()
+        }
+    }
+
+    fn from_direct_password(direct_login: &PasswordLogin) -> Self {
+        Self {
+            login_type: LoginType::DirectPassword,
+            provider: direct_login.id.as_str().to_owned(),
+            url: direct_login.url.to_owned(),
+            user: Some(direct_login.user.to_owned()),
+            password: Some(PassCommand::Password(direct_login.password.to_owned())),
+            ..Default::default()
+        }
+        .with_basic_auth(direct_login.basic_auth.as_ref())
+    }
+
+    fn with_basic_auth(self, basic_auth: Option<&BasicAuth>) -> Self {
+        Self {
+            basic_auth_user: basic_auth
+                .map(|basic_auth| basic_auth.user.to_owned())
+                .clone(),
+            basic_auth_password: basic_auth
+                .and_then(|basic_auth| basic_auth.password.to_owned())
+                .map(PassCommand::Password),
+            ..self
+        }
+    }
+
+    fn from_direct_token(token_login: &TokenLogin) -> Self {
+        Self {
+            login_type: LoginType::DirectToken,
+            provider: token_login.id.as_str().to_owned(),
+            url: token_login.url.to_owned(),
+            token: Some(PassCommand::Password(token_login.token.to_owned())),
+            ..Self::default()
+        }
+        .with_basic_auth(token_login.basic_auth.as_ref())
+    }
+
+    fn from_oauth(oauth_data: &OAuthData) -> Self {
+        Self {
+            login_type: LoginType::OAuth,
+            provider: oauth_data.id.as_str().to_owned(),
+            url: Some(oauth_data.url.to_owned()),
+            oauth_client_id: oauth_data
+                .custom_api_secret
+                .as_ref()
+                .map(|api_secret| api_secret.client_id.to_owned()),
+            oauth_client_secret: oauth_data
+                .custom_api_secret
+                .as_ref()
+                .map(|api_secret| PassCommand::Password(api_secret.client_secret.to_owned())),
+
+            ..Self::default()
+        }
+    }
+
+    fn redact(pass: Option<PassCommand>) -> Option<PassCommand> {
+        pass.map(|_| PassCommand::Password("*******".to_owned()))
+    }
+
+    fn redact_secrets(self) -> Self {
+        Self {
+            password: Self::redact(self.password),
+            oauth_client_secret: Self::redact(self.oauth_client_secret),
+            basic_auth_password: Self::redact(self.basic_auth_password),
+            token: Self::redact(self.token),
+            ..self
+        }
+    }
+
+    pub fn as_toml(&self, show_secrets: bool) -> Result<String, ConfigError> {
+        if show_secrets {
+            toml::ser::to_string(self)
+                .map_err(|err| ConfigError::LoginConfigurationInvalid(err.to_string()))
+        } else {
+            toml::ser::to_string(&Self::redact_secrets(self.clone()))
+                .map_err(|err| ConfigError::LoginConfigurationInvalid(err.to_string()))
+        }
+    }
+}
+
+impl Default for LoginConfiguration {
+    fn default() -> Self {
+        Self {
+            login_type: LoginType::NoLogin,
+            provider: "local_rss".to_owned(),
+            user: None,
+            url: None,
+
+            password: None,
+
+            token: None,
+
+            oauth_client_id: None,
+            oauth_client_secret: None,
+
+            basic_auth_user: None,
+            basic_auth_password: None,
+        }
+    }
+}
+
+impl From<LoginData> for LoginConfiguration {
+    fn from(login_data: LoginData) -> Self {
+        match login_data {
+            LoginData::None(plugin_id) => Self::from_none(plugin_id),
+            LoginData::Direct(DirectLogin::Password(direct_password)) => {
+                Self::from_direct_password(&direct_password)
+            }
+            LoginData::Direct(DirectLogin::Token(direct_token)) => {
+                Self::from_direct_token(&direct_token)
+            }
+            LoginData::OAuth(oauth_data) => Self::from_oauth(&oauth_data),
+        }
     }
 }
 
