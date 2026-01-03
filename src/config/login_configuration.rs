@@ -427,11 +427,12 @@ mod test {
     #[case("cmd:echo \"secret\"", "secret")]
     #[case("cmd:  echo \"secret\"", "secret")]
     #[case("cmd:echo 'secret'", "secret")]
-    #[case("cmd:./test/outputpass.sh somearg", "secret")]
-    #[case("cmd:./test/outputpass.sh somearg someotherarg", "secret")]
-    #[case("cmd:./test/outputpass.sh somearg someotherarg", "secret")]
+    #[case("cmd:DIR/test/outputpass.sh somearg", "secret")]
+    #[case("cmd:DIR/test/outputpass.sh somearg someotherarg", "secret")]
+    #[case("cmd:DIR/test/outputpass.sh somearg someotherarg", "secret")]
     fn test_secret_execute_command(#[case] cmd: &str, #[case] pass: &str) {
-        let secret = Secret::from_str(cmd).unwrap();
+        let cmd = cmd.replace("DIR", env!("CARGO_MANIFEST_DIR"));
+        let secret = Secret::from_str(&cmd).unwrap();
         let pass_value = secret.get_secret();
         assert_matches!(pass_value, Ok(..));
         assert_eq!(pass_value.unwrap(), pass);
@@ -439,7 +440,11 @@ mod test {
 
     #[test]
     fn test_secret_execute_command_fail() {
-        let secret = Secret::from_str("cmd:./test/outputpass.sh somerror").unwrap();
+        let secret = Secret::from_str(&format!(
+            "cmd:{}/test/outputpass.sh somerror",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap();
         let pass_value = secret.get_secret();
         assert_matches!(
             pass_value,
