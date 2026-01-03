@@ -532,6 +532,7 @@ mod test {
     #[case(LoginType::OAuth,          None,       Some(None), None,       None,       None, None, None,       None)]
     #[case(LoginType::OAuth,          None,       None,       None,       None,       None, None, Some(None), None)]
     #[case(LoginType::OAuth,          None,       None,       None,       None,       None, None, None,       Some(None))]
+    #[allow(clippy::too_many_arguments)]    
     fn to_login_data_fails(
         #[case] login_type: LoginType,
         #[case] user: Option<Option<&str>>,
