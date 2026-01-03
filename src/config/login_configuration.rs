@@ -311,10 +311,10 @@ impl LoginConfiguration {
 
     pub fn as_toml(&self, show_secrets: bool) -> Result<String, ConfigError> {
         if show_secrets {
-            toml::ser::to_string(&Self::redact_secrets(self.clone()))
+            toml::ser::to_string(self)
                 .map_err(|err| ConfigError::LoginConfigurationInvalid(err.to_string()))
         } else {
-            toml::ser::to_string(self)
+            toml::ser::to_string(&Self::redact_secrets(self.clone()))
                 .map_err(|err| ConfigError::LoginConfigurationInvalid(err.to_string()))
         }
     }

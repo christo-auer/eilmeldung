@@ -96,7 +96,7 @@ async fn main() -> color_eyre::Result<()> {
         let login_data = news_flash.get_login_data().await.unwrap();
         print!(
             "{}",
-            LoginConfiguration::from(login_data).as_toml(!cli_args.show_secrets())?
+            LoginConfiguration::from(login_data).as_toml(*cli_args.show_secrets())?
         );
         return Ok(());
     }
