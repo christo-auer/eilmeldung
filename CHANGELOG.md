@@ -1,6 +1,10 @@
 # Unreleased
 
+- added MUSL CI targets
+
 # 0.6.0 - 2026-01-03
+
+- added new config section: `[login_setup]` for automatic login
 
 # 0.5.2 - 2025-12-31
 
