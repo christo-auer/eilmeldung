@@ -512,6 +512,8 @@ impl LoginSetup {
 
             Ok(_) => {
                 info!("login and initial sync successful");
+                termimad::inline("login and initial sync successful");
+                termimad::inline("");
                 Ok(true)
             }
         }
