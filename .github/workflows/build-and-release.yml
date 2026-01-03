@@ -160,7 +160,7 @@ jobs:
           path: package/eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}.tar.gz
 
 
-  build:
+  build_macos:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os}}
     if: startsWith(github.ref, 'refs/tags/')
@@ -168,8 +168,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
           - os: macos-latest
             target: x86_64-apple-darwin
           - os: macos-latest
@@ -256,7 +254,7 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build, build_musl]
+    needs: [build_macos, build_musl]
     permissions:
       contents: write
     steps:
@@ -323,13 +321,16 @@ jobs:
             git push origin main
 
   aur-publish:
-    name: Publish to AUR
+    name: Publish ${{ matrix.package }} to AUR
     runs-on: ubuntu-latest
     container: archlinux:latest
     if: startsWith(github.ref, 'refs/tags/')
     needs: release
     permissions:
       contents: read
+    strategy:
+      matrix:
+        package: [eilmeldung, eilmeldung-bin]
     steps:
       - name: Extract tag name
         id: tag
@@ -361,14 +362,14 @@ jobs:
 
       - name: Clone AUR repository
         run: |
-          git clone ssh://aur@aur.archlinux.org/eilmeldung.git aur-eilmeldung
-          cd aur-eilmeldung
+          git clone ssh://aur@aur.archlinux.org/${{ matrix.package }}.git aur-pkg
+          cd aur-pkg
           git config user.email "${{ vars.GIT_USER_EMAIL }}"
           git config user.name "${{ vars.GIT_USER_NAME }}"
 
       - name: Update PKGBUILD version and checksums
         run: |
-          cd aur-eilmeldung
+          cd aur-pkg
           sed -i "s/^pkgver=.*/pkgver=${{ steps.tag.outputs.TAG_NAME }}/" PKGBUILD
           sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
           # Create a temporary user for updpkgsums (refuses to run as root)
@@ -380,20 +381,20 @@ jobs:
 
       - name: Generate .SRCINFO
         run: |
-          cd aur-eilmeldung
+          cd aur-pkg
 
           su builder -c "makepkg --printsrcinfo > .SRCINFO"
 
       - name: Validate with namcap
         run: |
-          cd aur-eilmeldung
+          cd aur-pkg
           namcap PKGBUILD || true
 
       - name: Commit and push to AUR
         run: |
           # revert ownership back to root (its builder now)
-          chown root:root -R aur-eilmeldung
-          cd aur-eilmeldung
+          chown root:root -R aur-pkg
+          cd aur-pkg
           git add PKGBUILD .SRCINFO
           git commit -m "chore: update to version ${{ steps.tag.outputs.TAG_NAME }}"
           git push origin master
