@@ -43,10 +43,10 @@ pub enum ConfigError {
     ShareTargetInvalid,
     #[error("invalid share command")]
     ShareTargetInvalidCommand(#[from] shell_words::ParseError),
-    #[error("invalid pass or pass command")]
-    PassCommandParseError,
-    #[error("invalid pass or pass command")]
-    PassCommandCommandExecutionError(String),
+    #[error("invalid secret or secret command")]
+    SecretParseError,
+    #[error("invalid secret or secret command")]
+    SecretCommandExecutionError(String),
     #[error("invalid login configuration")]
     LoginConfigurationInvalid(String),
 }
