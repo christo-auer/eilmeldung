@@ -44,7 +44,7 @@ You can find the default configuration in `examples/default-config.toml`
 | `thumbnail_resize`                | boolean             | Resize thumbnails to fit (**this may cause slowdowns**)    |
 | `thumbnail_fetch_debounce_millis` | integer             | Delay before fetching thumbnail (ms)                       |
 | `text_max_width`                  | integer             | Maximum text width for article content                     |
-| `content_preferred_type`          | string              | Preferred content type: `"PlainText"` or `"Markdown"`      |
+| `content_preferred_type`          | string              | Preferred content type: `"plain_text"` or `"markdown"`      |
 | `feed_list_focused_width`         | dimension           | Width of feed list when focused                            |
 | `article_list_focused_width`      | dimension           | Width of article list when focused                         |
 | `article_list_focused_height`     | dimension           | Height of article list when focused                        |
