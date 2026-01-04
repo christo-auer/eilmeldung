@@ -130,6 +130,7 @@ pub struct Config {
     pub thumbnail_fetch_debounce_millis: u64,
     pub text_max_width: u16,
     pub content_preferred_type: ArticleContentType,
+    pub default_sort_order: SortOrder,
 
     pub feed_list_focused_width: Dimension,
     pub article_list_focused_width: Dimension,
@@ -204,6 +205,8 @@ impl Default for Config {
             article_list_focused_width: Dimension::Percentage(75),
             article_list_focused_height: Dimension::Percentage(20),
             article_content_focused_height: Dimension::Percentage(80),
+
+            default_sort_order: SortOrder::new(vec![SortKey::Date(SortDirection::Ascending)]),
 
             feed_list: vec![
                 FeedListContentIdentifier::Query(LabeledQuery {

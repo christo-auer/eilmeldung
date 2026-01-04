@@ -101,6 +101,10 @@ impl ArticleListModelData {
             self.articles = self.get_queried_articles(article_adhoc_filter);
         }
 
+        filter_state
+            .get_effective_sort_order()
+            .sort(&mut self.articles, &self.feed_map);
+
         Ok(())
     }
 

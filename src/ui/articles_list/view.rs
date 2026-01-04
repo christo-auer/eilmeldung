@@ -18,6 +18,8 @@ use ratatui::{
 #[derive(Getters, MutGetters)]
 #[getset(get = "pub(super)")]
 pub struct FilterState {
+    default_sort_order: SortOrder,
+
     augmented_article_filter: Option<AugmentedArticleFilter>,
 
     #[get_mut = "pub(super)"]
@@ -30,29 +32,41 @@ pub struct FilterState {
     article_adhoc_filter: Option<ArticleQuery>,
 
     #[get_mut = "pub(super)"]
+    adhoc_sort_order: Option<SortOrder>,
+
+    #[get_mut = "pub(super)"]
+    reverse_sort_order: bool,
+
+    #[get_mut = "pub(super)"]
     apply_article_adhoc_filter: bool,
 }
 
-impl Default for FilterState {
-    fn default() -> Self {
-        Self {
-            article_scope: ArticleScope::All,
-            augmented_article_filter: None,
-            article_search_query: None,
-            article_adhoc_filter: None,
-            apply_article_adhoc_filter: false,
-        }
-    }
-}
+// impl Default for FilterState {
+//     fn default() -> Self {
+//         Self {
+//             default_sort_order: SortOrder::default(),
+//             article_scope: ArticleScope::All,
+//             augmented_article_filter: None,
+//             article_search_query: None,
+//             article_adhoc_filter: None,
+//             apply_article_adhoc_filter: false,
+//             adhoc_sort_order: None,
+//             reverse_sort_order: false,
+//         }
+//     }
+// }
 
 impl FilterState {
-    pub fn new(article_scope: ArticleScope) -> Self {
+    pub fn new(article_scope: ArticleScope, default_sort_order: SortOrder) -> Self {
         Self {
+            default_sort_order,
             article_scope,
             augmented_article_filter: None,
             article_search_query: None,
             article_adhoc_filter: None,
+            adhoc_sort_order: None,
             apply_article_adhoc_filter: false,
+            reverse_sort_order: false,
         }
     }
 
@@ -87,6 +101,24 @@ impl FilterState {
         Some(self.article_scope)
     }
 
+    pub fn get_effective_sort_order(&self) -> SortOrder {
+        self.adhoc_sort_order
+            .as_ref()
+            .or_else(|| {
+                self.article_adhoc_filter
+                    .as_ref()
+                    .and_then(|filter| filter.sort_order().as_ref())
+            })
+            .or_else(|| {
+                self.augmented_article_filter
+                    .as_ref()
+                    .and_then(|filter| filter.article_query.sort_order().as_ref())
+            })
+            .unwrap_or(&self.default_sort_order)
+            .to_owned()
+            .reverse(self.reverse_sort_order)
+    }
+
     pub fn on_new_article_filter(&mut self, article_filter: AugmentedArticleFilter) {
         self.augmented_article_filter = Some(article_filter);
         self.apply_article_adhoc_filter = false;
@@ -95,6 +127,11 @@ impl FilterState {
     pub fn on_new_article_adhoc_filter(&mut self, article_adhoc_filter: ArticleQuery) {
         self.article_adhoc_filter = Some(article_adhoc_filter);
         self.apply_article_adhoc_filter = true;
+    }
+
+    pub fn clear_sort_order(&mut self) {
+        self.adhoc_sort_order = None;
+        self.reverse_sort_order = false;
     }
 }
 
@@ -178,6 +215,16 @@ impl<'a> ArticleListViewData<'a> {
         };
 
         title.push_str(filter_info);
+
+        title.push_str(&format!(
+            " {} {} ",
+            if *filter_state.reverse_sort_order() {
+                "󰒿"
+            } else {
+                "󰌼"
+            },
+            filter_state.get_effective_sort_order()
+        ));
 
         Span::styled(title, config.theme.header())
     }

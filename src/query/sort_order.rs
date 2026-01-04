@@ -1,7 +1,8 @@
 // use crate::prelude::*;
 
-use std::{cmp::Ordering, collections::HashMap, str::FromStr};
+use std::{cmp::Ordering, collections::HashMap, fmt::Display, str::FromStr};
 
+use itertools::Itertools;
 use logos::Logos;
 use news_flash::models::{Article, Feed, FeedID};
 use serde::Deserialize;
@@ -37,6 +38,15 @@ pub enum SortDirection {
     Descending,
 }
 
+impl Display for SortDirection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SortDirection::Ascending => write!(f, "󰒼"),
+            SortDirection::Descending => write!(f, "󰒽"),
+        }
+    }
+}
+
 impl SortDirection {
     pub fn reversed(self) -> Self {
         use SortDirection as S;
@@ -62,6 +72,19 @@ pub enum SortKey {
     Synced(SortDirection),
     Title(SortDirection),
     Author(SortDirection),
+}
+
+impl Display for SortKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use SortKey as S;
+        match self {
+            S::Feed(direction) => write!(f, "{direction}feed"),
+            S::Date(direction) => write!(f, "{direction}date"),
+            S::Synced(direction) => write!(f, "{direction}synced"),
+            S::Title(direction) => write!(f, "{direction}title"),
+            S::Author(direction) => write!(f, "{direction}author"),
+        }
+    }
 }
 
 impl SortKey {
@@ -129,6 +152,19 @@ pub struct SortOrder {
     order: Vec<SortKey>,
 }
 
+impl Display for SortOrder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.order
+                .iter()
+                .map(|sort_key| sort_key.to_string())
+                .join(" ")
+        )
+    }
+}
+
 #[derive(Debug, thiserror::Error, Clone, PartialEq, Default)]
 pub enum SortOrderParseError {
     #[default]
@@ -146,7 +182,10 @@ pub enum SortOrderParseError {
 }
 
 impl SortOrder {
-    #[allow(dead_code)]
+    pub fn new(order: Vec<SortKey>) -> Self {
+        Self { order }
+    }
+
     pub fn reversed(self) -> Self {
         SortOrder {
             order: self
@@ -156,6 +195,10 @@ impl SortOrder {
                 .map(|key| key.reversed())
                 .collect(),
         }
+    }
+
+    pub fn reverse(self, reverse: bool) -> SortOrder {
+        if reverse { self.reversed() } else { self }
     }
 
     pub fn sort(&self, articles: &mut [Article], feed_map: &HashMap<FeedID, Feed>) {
