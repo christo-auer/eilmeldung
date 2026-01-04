@@ -370,10 +370,6 @@ For complete query documentation, see [Article Queries](docs/queries.md).
 
 See [news_flash_gtk for all supported providers](https://gitlab.com/news-flash/news_flash_gtk).
 
-**Why does the binary release not work?/There is an error message on missing a .so file?**
-
-The binary is currently dynamically linked against external libraries in Ubuntu. I strongly recommend using one of the source/self-compiled distributions of `eilmeldung`.
-
 **Can I call an external program with the URL/title of the current article? Can I define custom sharing URL?**
 
 Yes, to can define *custom share targets* which accept commands or URLs. For instance, in the configuration file:
@@ -389,8 +385,8 @@ share_targets = [
 In `eilmeldung`, select an article and share it with `share hackernews` or `share sendmail` (use TAB for autocompletion). Of course, you can also define key bindings for this:
 
 ```toml
-"S h": ["share hackernews"]
-"S m": ["share sendmail"]
+"S h" = ["share hackernews"]
+"S m" = ["share sendmail"]
 ```
 
 For more, checkout [Configuration](docs/configuration.md): contains all *configuration options* along with the input configuration].
