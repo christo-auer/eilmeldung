@@ -1,10 +1,13 @@
 mod parse;
+mod sort_order;
 
 pub mod prelude {
     pub use super::parse::{QueryParseError, QueryToken};
+    pub use super::sort_order::{SortOrder, SortOrderParseError};
     pub use super::{ArticleQuery, AugmentedArticleFilter};
 }
 
+use crate::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 use chrono::{DateTime, Utc};
@@ -66,6 +69,7 @@ impl QueryClause {
 pub struct ArticleQuery {
     query_string: String,
     query: Vec<QueryClause>,
+    sort_order: Option<SortOrder>,
 }
 
 impl ArticleQuery {
@@ -77,11 +81,17 @@ impl ArticleQuery {
         tags_for_article: &HashMap<ArticleID, Vec<TagID>>,
         tag_map: &HashMap<TagID, Tag>,
     ) -> Vec<Article> {
-        articles
+        let mut filtered_articles = articles
             .iter()
             .filter(|article| self.test(article, feed_map, tags_for_article, tag_map))
             .cloned()
-            .collect::<Vec<Article>>()
+            .collect::<Vec<Article>>();
+
+        if let Some(sort_order) = self.sort_order.as_ref() {
+            sort_order.sort(&mut filtered_articles, feed_map);
+        }
+
+        filtered_articles
     }
 
     #[inline(always)]
