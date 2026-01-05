@@ -1,10 +1,13 @@
 mod parse;
+mod sort_order;
 
 pub mod prelude {
     pub use super::parse::{QueryParseError, QueryToken};
+    pub use super::sort_order::{SortDirection, SortKey, SortOrder, SortOrderParseError};
     pub use super::{ArticleQuery, AugmentedArticleFilter};
 }
 
+use crate::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 use chrono::{DateTime, Utc};
@@ -66,6 +69,7 @@ impl QueryClause {
 pub struct ArticleQuery {
     query_string: String,
     query: Vec<QueryClause>,
+    sort_order: Option<SortOrder>,
 }
 
 impl ArticleQuery {

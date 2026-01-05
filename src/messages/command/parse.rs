@@ -44,6 +44,9 @@ pub enum CommandParseError {
     #[error("expecting file path")]
     FilePathExpected,
 
+    #[error("sort order expected")]
+    SortOrderExpected(#[from] SortOrderParseError),
+
     #[error("expecting `NOW` as parameter for confirmation")]
     ConfirmationExpected,
 
@@ -254,6 +257,17 @@ impl Command {
                 expect_something(args, "expecting article query")
                     .map_err(|_| {
                         E::ArticleQueryExpected(QueryParseError::KeyOrWordExpected(
+                            0,
+                            "".to_owned(),
+                        ))
+                    })?
+                    .as_str(),
+            )?),
+
+            C::ArticleListSort(..) => C::ArticleListSort(SortOrder::from_str(
+                expect_something(args, "expecting sort order")
+                    .map_err(|_| {
+                        E::SortOrderExpected(SortOrderParseError::OrderDirectionOrKeyExpected(
                             0,
                             "".to_owned(),
                         ))

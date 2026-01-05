@@ -61,3 +61,38 @@ author:/(smith|jones|brown)/i                   # Articles by Smith, Jones, or B
 title:/(feature|bug|fix)/ feed:/github|gitlab/  # Development-related articles from code hosting platforms
 ```
 
+
+### Using Sort Orders in Queries
+
+Sort orders can be embedded in queries using the `sort` key. This is particularly useful in feed list queries. Check [Commands](commands.md#sorting-articles) for how sort orders are defined.
+
+**Syntax:**
+```
+sort="<sort order>"
+```
+
+**Note** the double quotes!
+
+**Examples:**
+```
+unread sort="date"                                     # Unread articles, newest first
+feed:bbc sort="feed title"                             # BBC articles sorted by feed then title
+today sort="synced"                                    # Today's articles, most recently synced first
+#important unread sort="<date"                         # Important unread, oldest first
+newer:"1 week" sort="feed date"                        # Last week's articles by feed, newest first
+```
+
+### Feed List Query Examples with Sorting
+
+In your `feed_list` configuration, you can add sort orders to queries:
+
+```toml
+feed_list = [
+  'query: "Latest Unread" unread sort="date"',
+  'query: "By Feed" unread sort="feed date"',
+  'query: "Recently Synced" sort="synced"',
+  "feeds",
+  "tags",
+]
+```
+

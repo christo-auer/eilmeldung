@@ -38,7 +38,7 @@ impl ArticlesList {
             message_sender,
 
             view_data: ArticleListViewData::default(),
-            filter_state: FilterState::new(config.article_scope),
+            filter_state: FilterState::new(config.article_scope, config.default_sort_order.clone()),
 
             model_data: ArticleListModelData::new(news_flash_utils.clone()),
 
@@ -546,6 +546,21 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     model_needs_update = true;
                 }
 
+                C::ArticleListSort(sort_order) => {
+                    *self.filter_state.adhoc_sort_order_mut() = Some(sort_order.to_owned());
+                    model_needs_update = true;
+                }
+
+                C::ArticleListSortReverse => {
+                    *self.filter_state.reverse_sort_order_mut() =
+                        !*self.filter_state.reverse_sort_order_mut();
+                    model_needs_update = true;
+                }
+
+                C::ArticleListSortClear => {
+                    self.filter_state.clear_sort_order();
+                    model_needs_update = true;
+                }
                 _ => {}
             }
         }

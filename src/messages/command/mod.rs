@@ -505,6 +505,27 @@ pub enum Command {
     ArticleListFilterClear,
 
     #[strum(
+        serialize = "sort",
+        message = "sort <sort order>",
+        detailed_message = "sort articles according to sort order (article list)"
+    )]
+    ArticleListSort(SortOrder),
+
+    #[strum(
+        serialize = "sortreverse",
+        message = "sortreverse",
+        detailed_message = "reverse the current sort order (article list)"
+    )]
+    ArticleListSortReverse,
+
+    #[strum(
+        serialize = "sortclear",
+        message = "sortclear",
+        detailed_message = "clear the current sort order (article list)"
+    )]
+    ArticleListSortClear,
+
+    #[strum(
         serialize = "share",
         message = "share <target>",
         detailed_message = "shares title and url with target (article list, article content)"
@@ -640,6 +661,9 @@ impl Display for Command {
             }
             ArticleListFilterApply => write!(f, "apply current article filter"),
             ArticleListFilterClear => write!(f, "clear article filter"),
+            ArticleListSort(sort_order) => write!(f, "sort article list by {}", sort_order),
+            ArticleListSortReverse => write!(f, "reverse current sort order"),
+            ArticleListSortClear => write!(f, "clear current sort order"),
 
             FeedListSync => write!(f, "sync all"),
             ActionSetRead(target, action_scope) => {

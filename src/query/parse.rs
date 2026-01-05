@@ -50,11 +50,20 @@ pub enum QueryParseError {
     #[error("expecting tag list (#tag1,#tag2,#tag3,...)")]
     TagListExpected(usize, String),
 
+    #[error("expecting sort order (e.g., \"date <feed\")")]
+    SortOrderExpected(usize, String),
+
+    #[error("multiple sort orders found, only one sort order allowed")]
+    MultipleSortOrdersFound(usize, String),
+
     #[error("expecting time or relative time")]
     TimeOrRelativeTimeExpected(usize, String),
 
     #[error("invalid regular expression")]
     InvalidRegularExpression(#[from] regex::Error),
+
+    #[error("invalid sort order")]
+    InvalidSortOrder(#[from] SortOrderParseError),
 }
 
 impl QueryParseError {
@@ -214,6 +223,14 @@ pub enum QueryToken {
         detailed_message = "articles containing all listed tags"
     )]
     KeyTag,
+
+    #[token("sort:")]
+    #[strum(
+        serialize = "sort",
+        message = "tag:\"<sort order>\"",
+        detailed_message = "sorts the articles by the given sort order"
+    )]
+    Sort,
 
     #[regex(r#""[^"\n\r\\]*(?:\\.[^"\n\r\\]*)*""#)]
     QuotedString,
@@ -452,6 +469,29 @@ fn parse_query(
                     _ => unreachable!(),
                 }
             }
+
+            QueryToken::Sort => match query_lexer.next() {
+                Some(Ok(T::QuotedString)) => {
+                    let mut sort_order = query_lexer.slice().to_owned();
+                    strip_first_and_last(&mut sort_order);
+                    if article_query.sort_order.is_none() {
+                        article_query.sort_order = Some(SortOrder::from_str(&sort_order)?);
+                    } else {
+                        return Err(QueryParseError::MultipleSortOrdersFound(
+                            query_lexer.span().start,
+                            query_lexer.slice().to_owned(),
+                        ));
+                    }
+                    None
+                }
+
+                _ => {
+                    return Err(QueryParseError::SortOrderExpected(
+                        query_lexer.span().start,
+                        query_lexer.slice().to_owned(),
+                    ));
+                }
+            },
 
             QueryToken::Word => Some(QueryAtom::All(SearchTerm::Word(
                 query_lexer.slice().to_string(),
