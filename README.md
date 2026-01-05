@@ -293,8 +293,8 @@ See below or [Article Queries](docs/queries.md) for how to craft powerful querie
 | Key | Action |
 |-----|--------|
 | `\` | Open command line to set sort order |
-| `| |` | Reverse current sort order |
-| `| r` | Clear sort order and restore default |
+| `\| \|` | Reverse current sort order |
+| `\| r` | Clear sort order and restore default |
 
 Articles can be sorted by multiple criteria: `feed`, `date`, `synced`, `title`, or `author`. The sort order is displayed in the article list header with an icon (󰌼 for normal, 󰒿 for reversed).
 
