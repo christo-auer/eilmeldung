@@ -1,5 +1,24 @@
 ## Article Queries
-**eilmeldung** features a flexible query language that can be used across multiple contexts throughout the application. Queries are useful only display specific articles or execute bulk-operations. Here are some examples:
+
+**eilmeldung** features a flexible query language that can be used across multiple contexts throughout the application. Queries are useful to display specific articles or execute bulk-operations. 
+
+---
+
+## Table of Contents
+
+- [Quick Examples](#quick-examples)
+- [Query Keys](#query-keys)
+- [Search Term Types](#search-term-types)
+- [Advanced Features](#advanced-features)
+- [Example Queries](#example-queries)
+- [Using Sort Orders in Queries](#using-sort-orders-in-queries)
+- [Query Cookbook](#query-cookbook)
+
+---
+
+## Quick Examples
+
+Here are some examples to get you started:
 
 ```
 tag paywall title:/Anzeige:/ feed:heise   # tags all articles from heise whose title starts with "Anzeige" with tag paywall
@@ -95,4 +114,128 @@ feed_list = [
   "tags",
 ]
 ```
+
+---
+
+## Query Cookbook
+
+This section provides real-world query examples organized by use case.
+
+### Daily Reading Routines
+
+```
+# Morning news: unread articles from the last 12 hours
+newer:"12 hours ago" unread
+
+# Today's important updates
+today unread #important
+
+# Catch up on specific feeds
+feed:/tech|news/ unread today
+
+# Quick scan: just headlines from trusted sources
+feed:/(bbc|reuters|ap)/ unread newer:"6 hours ago"
+```
+
+### Article Maintenance
+
+```
+# Find old unread articles (reading backlog)
+older:"1 month ago" unread
+
+# Clean up very old articles
+older:"6 months ago"
+
+# Recently synced but already read (duplicates?)
+syncedbefore:"1 hour ago" read
+
+# Articles without tags that are marked
+marked ~tagged
+```
+
+### Research & Topic Tracking
+
+```
+# Follow a developing story
+all:/"climate summit"/ newer:"1 week ago"
+
+# Compare coverage across sources
+title:/"election"/ newer:"3 days ago"
+
+# Track multiple related topics
+title:/(AI|"machine learning"|"neural network")/i
+
+# Find related content by same author
+author:smith unread
+```
+
+### Bulk Operations
+
+```
+# Mark old articles as read
+:read older:"2 months ago" unread
+
+# Tag articles from specific feeds
+:tag tech feed:/(github|gitlab|stackoverflow)/
+
+# Remove tag from read articles
+:untag toread read
+
+# Mark urgent items
+:mark title:/breaking|urgent/i newer:"1 hour ago"
+```
+
+### Feed Organization
+
+```
+# View all articles from a category of feeds
+feed:/(news|media)/ unread
+
+# Compare feed volume
+feed:techcrunch newer:"1 day ago"
+
+# Find feeds with many unread articles
+# (use this in feed list view)
+unread
+
+# Identify quiet feeds
+older:"1 week ago"
+```
+
+### Advanced Filtering
+
+```
+# Exclude certain topics
+unread ~title:/(sports|celebrity|gossip)/i
+
+# Multiple exclusions
+unread ~#politics ~#sports
+
+# Complex time ranges
+newer:"1 week ago" older:"3 days ago"
+
+# Specific time window with tags
+newer:"2024-01-01" older:"2024-02-01" #research
+```
+
+---
+
+## Tips & Tricks
+
+**Combining Queries with Commands:**
+- Use queries with any command that accepts a scope
+- Examples: `:read <query>`, `:mark <query>`, `:tag <name> <query>`
+
+**Testing Queries:**
+- Use `:filter <query>` to preview results before bulk operations
+- Press `+ +` to apply the filter and see what matches
+
+**Saving Frequent Queries:**
+- Add them to your feed list in the configuration file
+- Create keybindings for common query-based commands
+
+**Query Performance:**
+- Regex queries are slower than simple text matches
+- Time-based queries are very fast
+- Combine specific filters first, then broader ones
 

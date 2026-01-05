@@ -7,6 +7,28 @@ The configuration file location is `~/.config/eilmeldung/config.toml`.
 
 You can find the default configuration in `examples/default-config.toml`
 
+---
+
+## Table of Contents
+
+- [Basic Configuration Options](#basic-configuration-options)
+- [Default Sort Order](#default-sort-order)
+- [Input Configuration](#input-configuration)
+  - [Keybinding Customization](#keybinding-customization)
+- [Theme Configuration](#theme-configuration)
+  - [Color Palette](#color-palette)
+  - [Component Styles](#component-styles)
+- [Feed List Configuration](#feed-list-configuration)
+- [Share Target Configuration](#share-target-configuration)
+- [Layout Configuration](#layout-configuration)
+  - [Example: Static Layout (default)](#example-static-layout-default)
+  - [Example: Dynamic Layout](#example-dynamic-layout)
+  - [Example: Fully Dynamic Layout](#example-fully-dynamic-layout)
+- [Automatic Login](#automatic-login)
+  - [Secrets](#secrets)
+  - [Finding the Right Settings](#finding-the-right-settings)
+
+---
 
 ## Basic Configuration Options
 
@@ -331,8 +353,8 @@ Here is an example of values, where unfocused panels are smaller to give more sp
 feed_list_focused_width = "33%"
 article_list_focused_width = "85%"
 article_list_focused_height = "66%"
-article_content_focused_height = "80%"s
-````
+article_content_focused_height = "80%"
+```
 
 https://github.com/user-attachments/assets/ffc51e67-1842-4b49-a798-6a5d65b04265
 

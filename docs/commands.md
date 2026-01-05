@@ -7,6 +7,59 @@
 
 Commands may accept parameters such as scopes, queries, names, URLs, and colors. On the command line, press TAB to see autocomplete suggestions for available values.
 
+---
+
+## Table of Contents
+
+- [Example Commands](#example-commands)
+- [Application Commands](#application-commands)
+- [Panel Management](#panel-management)
+- [Feed List Management](#feed-list-management)
+- [Article List](#article-list)
+- [Article Actions](#article-actions)
+- [Import/Export](#importexport)
+- [Navigation Commands](#navigation-commands)
+- [Input-Related Commands](#input-related-commands)
+- [Sorting Articles](#sorting-articles)
+
+---
+
+## Example Commands
+
+Here are some common command examples to get you started:
+
+```
+:quit                                    # Quit the application
+:sync                                    # Sync all feeds
+:read                                    # Mark current article as read
+:read %                                  # Mark all articles as read
+:read unread today                       # Mark all unread articles from today as read
+:read feeds %                            # Mark all articles in selected feed as read
+:filter title:/breaking/ newer:"1 hour"  # Filter breaking news from last hour
+:tag important                           # Tag current article as important
+:tag tech unread                         # Tag all unread articles as tech
+:untag work %                            # Remove work tag from all articles
+:share clipboard                         # Share current article to clipboard
+:feedadd https://example.com/feed.xml    # Add a new feed
+:feedadd https://news.site/rss News      # Add feed with custom name
+:categoryadd Technology                  # Add a new category
+:tagadd urgent red                       # Add a red "urgent" tag
+:rename Tech News Daily                  # Rename selected item
+:importopml feeds.opml                   # Import feeds from OPML file
+:exportopml backup.opml                  # Export feeds to OPML file
+:focus articles                          # Focus the article list panel
+:show unread                             # Show only unread articles
+:search author:john newer:"3 days"       # Search for articles by John from last 3 days
+:sort date                               # Sort by date (newest first)
+:sort >date                              # Sort by date (oldest first)
+:sort feed title                         # Sort by feed name, then by title
+:sort feed date                          # Sort by feed (A-Z), then by date (newest first)
+:sortreverse                             # Reverse current sort order
+:sortclear                               # Clear sort order, restore default
+```
+
+---
+
 ## Application Commands
 
 | Command | Syntax | Context | Description |
@@ -104,7 +157,6 @@ These commands are typically used via key bindings rather than the command line.
 | `pagedown` | `pagedown` | All | Navigate down by one page |
 | `gotofirst` | `gotofirst` | All | Navigate to the first item |
 | `gotolast` | `gotolast` | All | Navigate to the last item |
-| `gotolast` | `gotolast` | All | Navigate to the last item |
 
 ## Input-Related Commands
 
@@ -117,38 +169,8 @@ These commands belong to text input (e.g. command-line or search input) and must
 | `clear`   | `clear`  | Input               | Clear the current input  |
 | `find`    | `find`   | Input, Article List | Open find (search) input |
 
+---
 
-## Example Commands
-
-```
-:quit                                    # Quit the application
-:sync                                    # Sync all feeds
-:read                                    # Mark current article as read
-:read %                                  # Mark all articles as read
-:read unread today                       # Mark all unread articles from today as read
-:read feeds %                            # Mark all articles in selected feed as read
-:filter title:/breaking/ newer:"1 hour"  # Filter breaking news from last hour
-:tag important                           # Tag current article as important
-:tag tech unread                         # Tag all unread articles as tech
-:untag work %                            # Remove work tag from all articles
-:share clipboard                         # Share current article to clipboard
-:feedadd https://example.com/feed.xml    # Add a new feed
-:feedadd https://news.site/rss News      # Add feed with custom name
-:categoryadd Technology                  # Add a new category
-:tagadd urgent red                       # Add a red "urgent" tag
-:rename Tech News Daily                  # Rename selected item
-:importopml feeds.opml                   # Import feeds from OPML file
-:exportopml backup.opml                  # Export feeds to OPML file
-:focus articles                          # Focus the article list panel
-:show unread                             # Show only unread articles
-:search author:john newer:"3 days"       # Search for articles by John from last 3 days
-:sort date                               # Sort by date (newest first)
-:sort >date                              # Sort by date (oldest first)
-:sort feed title                         # Sort by feed name, then by title
-:sort feed date                          # Sort by feed (A-Z), then by date (newest first)
-:sortreverse                             # Reverse current sort order
-:sortclear                               # Clear sort order, restore default
-```
 ## Sorting Articles
 
 Articles can be sorted by one or more criteria. Sort orders directly via the `sort` command, e.g.
