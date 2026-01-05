@@ -1,5 +1,14 @@
 # Unreleased
 
+- **new feature**: you can now **sort** the article list
+  - via the new `sort` command: `sort <feed >date` sorts the articles by feed ascending and from oldest to newest (see command documentation for details)
+  - define a *default sort* order via the configuration option `default_sort_order` (default value is `<date`, i.e., from newest to oldest)
+  - use the new `sort="..."` in article queries, e.g., `#readlater unread sort="<feed <date"` queries all unread articles with tag `readlater` and sorts them first by `feed` then from newest to oldest
+  - new default key bindings
+    - `\` opens the command line with `sort`
+    - `| r` clears the current sort and reverts to default sort ordre (or query sort order)
+    - `| |` reverses the current sort order
+    - as always, you can define your own key bindings to your desires
 # 0.6.2 - 2026-01-05
 
 - there is now an explicit error when `config.toml` is invalid (e.g., duplicate entries)
@@ -9,7 +18,6 @@
   - `M-m` maps to `cmd mark`
   - `M-v` maps to `cmd unmark` (before `C-v`)
   - `M-r` maps to `cmd read` (before `C-r`)
-
 
 # 0.6.1 - 2026-01-03
 
