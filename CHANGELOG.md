@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.7.0 - 2026-01-05
+
 - **new feature**: you can now **sort** the article list
   - via the new `sort` command: `sort <feed >date` sorts the articles by feed ascending and from oldest to newest (see command documentation for details)
   - define a *default sort* order via the configuration option `default_sort_order` (default value is `<date`, i.e., from newest to oldest)
