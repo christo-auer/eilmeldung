@@ -1,5 +1,14 @@
 # Unreleased
 
+- there is now an explicit error when `config.toml` is invalid (e.g., duplicate entries)
+- `C-u` was a duplicate mapping in `default-config.toml`
+- some remappings in `default-config.toml`:
+  - `M-u` maps to `cmd unread` (before `C-u`)
+  - `M-m` maps to `cmd mark`
+  - `M-v` maps to `cmd unmark` (before `C-v`)
+  - `M-r` maps to `cmd read` (before `C-r`)
+
+
 # 0.6.1 - 2026-01-03
 
 - added MUSL CI targets
