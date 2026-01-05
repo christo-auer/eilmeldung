@@ -248,7 +248,7 @@ pub fn load_config(config_dir: &Path) -> color_eyre::Result<Config> {
         Ok(config) => config.try_deserialize::<Config>()?,
         Err(err) => {
             warn!("unable to read config file: {err}");
-            Config::default()
+            return Err(color_eyre::eyre::eyre!(err));
         }
     };
 
