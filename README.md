@@ -62,7 +62,7 @@ For detailed installation instructions including Nix/Home Manager setup, see **[
 3. **Choose a provider** (select "Local" if you're new to RSS)
 4. **Add feeds** with `c f` or import an OPML file with `:importopml path/to/file.opml`
 5. **Sync** your feeds with `s`
-6. **Start reading!** Use `j`/`k` to navigate, `o` to open articles
+6. **Start reading!** Use `j`/`k` to navigate up/down, `h`/`l` to navigate between panels, `o` to open articles in the browser, `z` to enjoy "zen mode"
 
 Press `?` anytime to see all available commands!
 
