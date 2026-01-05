@@ -58,6 +58,9 @@ Commands may accept parameters such as scopes, queries, names, URLs, and colors.
 | `filter` | `filter <query>` | Article List | Filter the article list by query. Example: `:filter unread author:john` |
 | `filterapply` | `filterapply` | Article List | Apply the current filter |
 | `filterclear` | `filterclear` | Article List | Clear the current filter and show all articles |
+| `sort` | `sort <sort order>` | Article List | Sort the article list by the specified sort order. Examples: `:sort date`, `:sort >date`, `:sort feed title`, `:sort <feed >date author` |
+| `sortreverse` | `sortreverse` | Article List | Reverse the current sort order (newest <-> oldest, A-Z <-> Z-A). Toggle between ascending and descending |
+| `sortclear` | `sortclear` | Article List | Clear the current sort order and restore the default sort order |
 | `scrape` | `scrape` | Article List, Article Content | Scrape the full article content from the web (for articles with truncated content) |
 
 ## Article Actions
@@ -139,5 +142,68 @@ These commands belong to text input (e.g. command-line or search input) and must
 :focus articles                          # Focus the article list panel
 :show unread                             # Show only unread articles
 :search author:john newer:"3 days"       # Search for articles by John from last 3 days
+:sort date                               # Sort by date (newest first)
+:sort >date                              # Sort by date (oldest first)
+:sort feed title                         # Sort by feed name, then by title
+:sort feed date                          # Sort by feed (A-Z), then by date (newest first)
+:sortreverse                             # Reverse current sort order
+:sortclear                               # Clear sort order, restore default
+```
+## Sorting Articles
+
+Articles can be sorted by one or more criteria. Sort orders directly via the `sort` command, e.g.
+
+```
+sort feed date
 ```
 
+Sorts articles first by feed (ascending) and then by date (newest-first).
+
+To reverse the sorting order, use `sortreverse`. To revert to the default sorting order, use `sortclear`.
+The [Configuration](docs/configuration.md) option `default_sort_order = "..."` defines the default sorting order.
+An [Article Queries](docs/queries.md) can also contain a sort order which takes precedence or the default sorting order.
+A sorting order defined by the command `sort` in turn takes precedence of the sorting order from the query. The priority is therefore (from highest to lowest):
+
+- sort order from `sort` command
+- sort order from `query`
+- default sort order
+
+
+### Sort Keys
+
+| Key | Description |
+|-----|-------------|
+| `date` | Sort by article publication date/age |
+| `synced` | Sort by when article was synced/fetched |
+| `title` | Sort by article title (case-insensitive) |
+| `author` | Sort by article author (case-insensitive) |
+| `feed` | Sort by feed name (case-insensitive) |
+
+### Sort Direction
+
+| Symbol | Direction | Behavior |
+|--------|-----------|----------|
+| `<` or omitted | Ascending | A-Z for text, newest-first for dates |
+| `>` | Descending | Z-A for text, oldest-first for dates |
+
+**Note:** For date-based sorting (`date` and `synced`), the natural display order is newest-first. Therefore:
+- `date` or `<date` shows newest articles first
+- `>date` shows oldest articles first
+
+### Multi-Level Sorting
+
+Combine multiple sort keys (separated by spaces) to create multi-level sorting. Articles are sorted by the first key, then ties are broken by the second key, and so on.
+
+### Sort Order Examples
+
+```
+date                              # Sort by date (newest first)
+<date                             # Sort by date (newest first, explicit)
+>date                             # Sort by date (oldest first)
+feed                              # Sort by feed name (A-Z)
+>feed                             # Sort by feed name (Z-A)
+feed date                         # Sort by feed (A-Z), then date (newest first)
+feed >date                        # Sort by feed (A-Z), then date (oldest first)
+date title                        # Sort by date (newest first), then title (A-Z)
+feed date author                  # Sort by feed (A-Z), date (newest), then author (A-Z)
+```

@@ -16,6 +16,7 @@ You can find the default configuration in `examples/default-config.toml`
 | `refresh_fps`                     | integer             | UI refresh rate in frames per second                       |
 | `network_timeout_seconds`         | integer             | timeout for network operations                             |
 | `article_scope`                   | string              | Default article scope: `"all"`, `"unread"`, or `"marked"`  |
+| `default_sort_order`              | string (sort order) | Default sort order for articles: e.g., `"date"`, `">date"`, `"feed date"` (see Article Queries for syntax) |
 | `keep_articles_days`              | integer             | amount of days before articles are removed                 |
 | `offline_icon`                    | char                | Icon displayed when offline                                |
 | `read_icon`                       | char                | Icon for read articles                                     |
@@ -66,6 +67,36 @@ You can find the default configuration in `examples/default-config.toml`
 - **Percentage**: `"n%"` where `n` is a number from 1 to 100, e.g., `"33%"`, meaning 33% of the available width/height
 - **Length**: `"n length"` where `n` is a positive, e.g., `"10 length"`, meaning 10 rows (height)  or 10 columns (width)
 
+
+---
+
+## Default Sort Order
+
+You can configure the default sort order for articles using the `default_sort_order` option. This sort order is applied whenever articles are displayed, unless overridden by a query-specific sort order or an adhoc sort command.
+
+**Syntax:**
+```toml
+default_sort_order = "<sort order>"
+```
+
+**Examples:**
+```toml
+# Sort by date, newest first (common for RSS readers, this is the default)
+default_sort_order = "date"
+
+# Sort by feed name, then by date (newest first within each feed)
+default_sort_order = "feed date"
+
+# Sort by title alphabetically (case is ignored)
+default_sort_order = "title"
+
+# Sort by date oldest first
+default_sort_order = ">date"
+```
+
+For complete sort order syntax and available sort keys, see [Commands](commands.md#sorting-articles).
+
+**Default Value:** `"date"` (newest first)
 
 ---
 

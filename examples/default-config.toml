@@ -2,6 +2,7 @@
 refresh_fps = 10
 network_timeout_seconds = 60
 article_scope = "unread"
+default_sort_order = "<date" 
 keep_articles_days = 30
 
 # Icons
@@ -126,6 +127,9 @@ timeout_millis = 5000
 "="         = ["cmd filter "]
 "+ r"       = ["filterclear"]
 "+ +"       = ["filterapply"]
+"\\"        = ["cmd sort "]
+"| |"       = ["sortreverse"]
+"| r"       = ["sortclear"]
 "c w"       = ["cmd rename"]
 "c d"       = ["confirm remove"]
 "c x"       = ["confirm removeall"]

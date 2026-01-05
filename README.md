@@ -288,6 +288,26 @@ You can create new tags with `:tagadd urgent red` (press **TAB** for autocomplet
 
 See below or [Article Queries](docs/queries.md) for how to craft powerful queries.
 
+### Sorting Articles
+
+| Key | Action |
+|-----|--------|
+| `\` | Open command line to set sort order |
+| `| |` | Reverse current sort order |
+| `| r` | Clear sort order and restore default |
+
+Articles can be sorted by multiple criteria: `feed`, `date`, `synced`, `title`, or `author`. The sort order is displayed in the article list header with an icon (󰌼 for normal, 󰒿 for reversed).
+
+**Examples:**
+```
+:sort date                    # Sort by date (newest first)
+:sort >date                   # Sort by date (oldest first)
+:sort feed title              # Sort by feed name, then by title
+:sort feed date               # Sort by feed (A-Z), then by date (newest first)
+```
+
+For complete sorting documentation, see [Commands](docs/commands.md#sorting-articles).
+
 ### Command Line
 
 | Key | Action |
