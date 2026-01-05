@@ -157,28 +157,6 @@ eilmeldung --log-level DEBUG --log-file ~/eilmeldung-debug.log
 
 See [Command Line Arguments](cli_args.md) for more options.
 
-### The application is slow or unresponsive
-
-Try adjusting these configuration options:
-
-```toml
-# Reduce UI refresh rate
-refresh_fps = 10
-
-# Disable thumbnail resizing (can be slow)
-thumbnail_resize = false
-
-# Disable automatic content scraping
-auto_scrape = false
-```
-
-### Articles aren't syncing
-
-1. Check your internet connection
-2. Press `s` to manually sync
-3. Verify your provider credentials are correct
-4. Check debug logs for error messages
-
 ---
 
 ## Still Have Questions?
