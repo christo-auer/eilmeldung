@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.6.2 - 2026-01-05
+
 - there is now an explicit error when `config.toml` is invalid (e.g., duplicate entries)
 - `C-u` was a duplicate mapping in `default-config.toml`
 - some remappings in `default-config.toml`:
