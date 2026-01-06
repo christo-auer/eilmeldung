@@ -1,5 +1,24 @@
 ## Article Queries
-**eilmeldung** features a flexible query language that can be used across multiple contexts throughout the application. Queries are useful only display specific articles or execute bulk-operations. Here are some examples:
+
+**eilmeldung** features a flexible query language that can be used across multiple contexts throughout the application. Queries are useful to display specific articles or execute bulk-operations. 
+
+---
+
+## Table of Contents
+
+- [Quick Examples](#quick-examples)
+- [Query Keys](#query-keys)
+- [Search Term Types](#search-term-types)
+- [Advanced Features](#advanced-features)
+- [Example Queries](#example-queries)
+- [Using Sort Orders in Queries](#using-sort-orders-in-queries)
+- [Query Cookbook](#query-cookbook)
+
+---
+
+## Quick Examples
+
+Here are some examples to get you started:
 
 ```
 tag paywall title:/Anzeige:/ feed:heise   # tags all articles from heise whose title starts with "Anzeige" with tag paywall
@@ -68,18 +87,18 @@ Sort orders can be embedded in queries using the `sort` key. This is particularl
 
 **Syntax:**
 ```
-sort="<sort order>"
+sort:"<sort order>"
 ```
 
 **Note** the double quotes!
 
 **Examples:**
 ```
-unread sort="date"                                     # Unread articles, newest first
-feed:bbc sort="feed title"                             # BBC articles sorted by feed then title
-today sort="synced"                                    # Today's articles, most recently synced first
-#important unread sort="<date"                         # Important unread, oldest first
-newer:"1 week" sort="feed date"                        # Last week's articles by feed, newest first
+unread sort:"date"                                     # Unread articles, newest first
+feed:bbc sort:"feed title"                             # BBC articles sorted by feed then title
+today sort:"synced"                                    # Today's articles, most recently synced first
+#important unread sort:"<date"                         # Important unread, oldest first
+newer:"1 week" sort:"feed date"                        # Last week's articles by feed, newest first
 ```
 
 ### Feed List Query Examples with Sorting
@@ -88,11 +107,76 @@ In your `feed_list` configuration, you can add sort orders to queries:
 
 ```toml
 feed_list = [
-  'query: "Latest Unread" unread sort="date"',
-  'query: "By Feed" unread sort="feed date"',
-  'query: "Recently Synced" sort="synced"',
+  'query: "Latest Unread" unread sort:"date"',
+  'query: "By Feed" unread sort:"feed date"',
+  'query: "Recently Synced" sort:"synced"',
   "feeds",
   "tags",
 ]
 ```
+
+---
+
+## Query Examples
+
+```
+# Morning news: unread articles from the last 12 hours
+newer:"12 hours ago" unread
+
+# Today's important updates
+today unread #important
+
+# Catch up on specific feeds
+feed:/tech|news/ unread today
+
+# Quick scan: just headlines from trusted sources
+feed:/(bbc|reuters|ap)/ unread newer:"6 hours ago"
+
+# Follow a developing story
+all:"climate summit" newer:"1 week ago"
+
+# Compare coverage across sources
+title:election newer:"3 days ago"
+
+# Track multiple related topics
+title:/(AI|machine learning|neural network)/i
+
+# Find related content by same author
+author:smith unread
+```
+
+## Bulk Operations
+
+Queries can be used for builk operations:
+
+```
+# Mark old articles as read
+:read older:"2 months ago" unread
+
+# Tag articles from specific feeds
+:tag tech feed:/(github|gitlab|stackoverflow)/
+
+# Remove tag from read articles
+:untag toread read
+
+# Mark urgent items
+:mark title:/breaking|urgent/i newer:"1 hour ago"
+```
+
+
+---
+
+## Tips & Tricks
+
+**Combining Queries with Commands:**
+- Use queries with any command that accepts a scope
+- Examples: `:read <query>`, `:mark <query>`, `:tag <name> <query>`
+
+**Testing Queries:**
+- Use `:filter <query>` to preview results before bulk operations
+
+**Saving Frequent Queries:**
+- Add them to your feed list in the configuration file
+- Create keybindings for common query-based commands
+
 

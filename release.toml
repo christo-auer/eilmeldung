@@ -8,6 +8,6 @@ pre-release-replacements = [
   {file="HomebrewFormula/eilmeldung.rb", search="version .*", replace="version \"{{version}}\""},
   {file="HomebrewFormula/eilmeldung.rb", search="sha256 .*", replace="sha256 \"replaced by CI on release of {{version}}\""},
   {file="HomebrewFormula/eilmeldung.rb", search="tags/[0-9.]+", replace="tags/{{version}}."},
-  {file="README.md", search="/tree/[0-9.]+", replace="/tree/{{version}}"},
+  {file="docs/installation.md", search="/tree/[0-9.]+", replace="/tree/{{version}}"},
 ]
 

@@ -13,6 +13,21 @@
 
 *eilmeldung* is German for *breaking news*
 
+---
+
+## Table of Contents
+
+- [Showreel](#showreel)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Quick Reference](#quick-reference)
+- [Documentation](#documentation)
+- [FAQ](#faq)
+- [Credits](#credits)
+- [Contributing](#contributing)
+
+---
+
 # Showreel
 
 https://github.com/user-attachments/assets/a8a1dc60-0705-4521-a88d-3520923d2891
@@ -24,450 +39,108 @@ This video demonstrates
 - *filtering* and *searching* article list by using a article queries
 - *tagging* multiple articles by using an article query
 
+---
+
 # Installation 
 
-Follow any of the installation methods below, then run *eilmeldung*. It will guide you through the setup process.
+**Quick install:**
 
-## Important: Nerd Fonts
+- **Homebrew**: `brew tap christo-auer/eilmeldung && brew install eilmeldung`
+- **Arch (AUR)**: `paru -S eilmeldung` or `yay -S eilmeldung`
+- **Cargo**: `cargo install --locked --git https://github.com/christo-auer/eilmeldung` (you need to install [build dependencies](docs/installation.md) first!)
 
-You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!
+**Important**: You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!
 
-## Via Homebrew
+For detailed installation instructions including Nix/Home Manager setup, see **[Installation Guide](docs/installation.md)**.
 
-To install via [homebrew](https://brew.sh), tap this repository and install *eilmeldung*:
+---
 
-```bash
-brew tap christo-auer/eilmeldung https://github.com/christo-auer/eilmeldung
-brew install eilmeldung
-```
+# Quick Start
 
-## Via AUR (Arch)
+1. **Install** eilmeldung (see above)
+2. **Run** `eilmeldung` - you'll be guided through the initial setup
+3. **Choose a provider** (select "Local" if you're new to RSS)
+4. **Add feeds** with `c f` or import an OPML file with `:importopml path/to/file.opml`
+5. **Sync** your feeds with `s`
+6. **Start reading!** Use `j`/`k` to navigate up/down, `h`/`l` to navigate between panels, `o` to open articles in the browser, `z` to enjoy "zen mode"
 
-There are two AUR packages: `eilmeldung` compiles the latest release and `eilmeldung-git` the `HEAD` of `main`. Use `paru` or `yay` to install.
+Press `?` anytime to see all available commands!
 
-## Via Cargo
+For a comprehensive getting started guide, see **[Getting Started](docs/getting-started.md)**.
 
-In order to compile `eilmeldung` from source, you need `cargo` with a `rust` compiler with at least edition 2024 (e.g., use `rustup` and `rustup default stable`) and some build deps:
+---
 
-| Distribution | Dependencies (Build and Runtime)                                                           |
-| ---          | ---                                                                                        |
-| Ubuntu       | `# apt install rustup build-essential cargo perl libssl-dev pkg-config libxml2-dev clang libsqlite3-dev`<br>install stable rust toolchain as your user: `rustup default stable` |
-| Fedora       | `# dnf install cargo rust perl libxml2-devel openssl-devel clang sqlite-devel`                           |
-| Arch         | `# pacman -S cargo base-devel clang perl libxml2 openssl libsixel sqlite3`                             |
+# Quick Reference
 
-To compile the latest unreleased version (`HEAD` in `main`):
-```bash
-cargo install --locked --git https://github.com/christo-auer/eilmeldung
-```
-and for the latest tag:
-```bash
-cargo install --locked --git https://github.com/christo-auer/eilmeldung/tree/0.7.0
-```
+Here some key bindings to get you started.
 
+| Key       | Action                                          |
+| -----     | --------                                        |
+| `?`       | Show all key bindings (search with `/`!)        |
+| `s`       | Sync all feeds                                  |
+| `j` / `k` | Move down / up                                  |
+| `h` / `l` | Move between panels (left/right)                |
+| `o`       | Open article in browser, mark as read, jump to next unread |
+| `r` / `u` | Mark as read / unread                           |
+| `m` / `v` | Mark (star) / unmark article                    |
+| `/`       | Search articles                                 |
+| `:`       | Open command line                               |
+| `q`       | Quit                                            |
 
-## Nix Flake and Home Manager
-
-<details>
-<summary> Expand for installation on Nix and Home Manager</summary>
-
-  Add *eilmeldung* to your inputs, apply `eilmeldung.overlays.default` overlay to `pkgs`. If you want Home Manager integration, add Home Manager module `eilmeldung.homeManager.default`. Here is an example:
-
-  ```nix
-  {
-    inputs = {
-      // ...
-      eilmeldung.url = "github:christo-auer/eilmeldung";
-    };
-
-    outputs = { nixpkgs, home-manager, eilmeldung, ... }: {
-      homeConfigurations."..." = home-manager.lib.homeManagerConfiguration {
-        pkgs = import nixpkgs {
-          system = "x86_64-linux";
-          overlays = [ eilmeldung.overlays.default ];
-        };
-        
-        modules = [
-          // ...
-          eilmeldung.homeManagerModules.default
-        ];
-      };
-    };
-  }
-  ```
-
-Home Manager configuration works by defining the settings from the configuration file:
-
-```nix
-programs.eilmeldung = {
-  enable = true;
-
-  settings = {
-    refresh_fps = 60;
-    article_scope = "unread";
-
-
-    theme = {
-      color_palette = {
-        background = "#1e1e2e";
-        // ...
-      };
-    };
-
-    input_config.mappings = {
-        "q" = ["quit"];
-        "j" = ["down"];
-        "k" = ["up"];
-        "g g" = ["gotofirst"];
-        "G" = ["gotolast"];
-        "o" = ["open" "read" "nextunread"];
-    };
-
-    feed_list = [
-      "query: \"Today Unread\" today unread"
-      "query: \"Today Marked\" today marked"
-      "feeds"
-      "* categories"
-      "tags"
-    ];
-  };
-};
-
-
-```
-
-</details>
-
-
-# Getting Started
-
-Once installed, run `eilmeldung` to begin. On first launch, you'll be guided through:
-
-## Initial Setup
-
-**Note**: inoreader is currently **NOT** directly supported. Create an issue if you need support for inoreader!
-
-1. Choose Your Provider: Select from local or cloud-based RSS providers ([see news_flash_gtk for all supported providers](https://gitlab.com/news-flash/news_flash_gtk))
-2. Configure Authentication: Enter your credentials (username/password or token, depending on the provider)
-3. Initial Sync: The app will sync your feeds from the provider
-
-If you're new to RSS, select **Local** as your provider - it stores everything on your machine without requiring an external service.
-
-## Help on Key Bindings
-
-Press `?` to see all available key bindings. You can also press `/` in the help dialog to filter for specific commands.
-
-## Command Line
-
-Before we begin: `eilmeldung` has a powerful command line which you can open with `:`. All actions you can trigger in `eilmeldung` are commands and key bindings are just executing one or more commands in the background. Some commands also just open the command line with a predefined command.
-
-**Tip**: Press `Tab` in the command line to trigger autocomplete and see helpful suggestions!
-
-## First Steps
-
-After setup, you'll want to add some feeds and organize them:
-
-### Adding Feeds
-
-- Press `c f` (command: `feedadd`) to add a new feed - you'll be prompted for the RSS/Atom feed URL
-- Example: `:feedadd https://example.com/feed.xml`
-- Or with a custom name: `:feedadd https://news.site/rss News Site` (note: no quotes around the name)
-- Finding RSS feeds: Many websites provide RSS feeds. Look for an RSS icon or search for "RSS" on the site. You can also use [RSS Lookup](https://www.rsslookup.com/) to find RSS feeds for any website.
-
-
-### Creating Categories
-
-- Press `c a` to add a new category for organizing your feeds
-- Example: `:categoryadd Technology`
-
-### Organizing Feeds
-
-- Rename: Select a feed/category and press `c w`, then type the new name
-- Move: Press `c y` to yank (copy) a feed, navigate to destination, press `c p` to paste after (or `c P` to paste before)
-- Remove: Press `c d` to remove an empty feed/category, or `c x` to remove with all children
-
-### Importing an OPML File
-
-Instead of manually adding feeds and categories, you can also import an OPML file. An OPML file contains all the categories and feeds you have defined in another RSS reader or provider:
-
-- Export an OPML file from your current provider and save the OPML file somewhere in your home directory.
-- In `eilmeldung`, open the command line (`:`) and enter `importopml path/to/your/feeds.opml` and press enter.
-
-**Hint**: You can also export an OPML file via `exportopml path/to/your/feeds.opml`
-
-## Essential Key Bindings
-
-**Note**: You can redefine all key bindings according to you likings. You can also add completely new key bindings via the [configuration file](docs/configuration.md).
-
-
-### Syncing & Refreshing
-
-| Key | Action |
-|-----|--------|
-| `s` | Sync all feeds with your RSS provider |
-
-### Navigation
-
-| Key | Action |
-|-----|--------|
-| `j` / `k` | Move down / up (vim-style) |
-| `h` / `l` | Move left (article → article list → feeds) / right (feeds → article list → article) |
-| `gg` | Go to first item |
-| `G` | Go to last item |
-| `space` | Toggle category tree node (open/close) |
-| `C-h`/`C-l` | Navigate up/down in feed tree |
-| `Ctrl-f` / `Ctrl-b` | Page down / page up |
-| `Tab` / `Shift-Tab` | Cycle through panels (forward / backward) |
-| `g f` / `g a` / `g c` | Jump directly to feeds / articles / content panel |
-
-### Reading Articles
-
-| Key | Action |
-|-----|--------|
-| `o` | Open article in browser, mark as read, and jump to next unread |
-| `O` | Open all unread articles in browser and mark all as read |
-| `J` | Mark current article as read and jump to next unread |
-| `x` | Scrape full article content from the web (for truncated articles) |
-
-### Read/Unread Status
-
-
-| Key | Action |
-|-----|--------|
-| `r` | Mark current article as read |
-| `R` | Mark **all** articles as read (asks for confirmation) |
-| `u` | Mark current article as unread |
-| `U` | Mark **all** articles as unread (asks for confirmation) |
-| `Ctrl-r` | Open command line to set read with query (e.g., `:read unread today`) |
-
-
-**Note**: These commands are context-dependent! In the article list, they act on the *current article* or *all articles* in the list. On the feed list/tree they act on the *current category/feed* or *all categories/feeds*.
-
-### Marking Articles
-
-| Key | Action |
-|-----|--------|
-| `m` | Mark current article |
-| `M` | Mark **all** articles (asks for confirmation) |
-| `v` | Unmark current article |
-| `V` | Unmark **all** articles (asks for confirmation) |
-
-
-**Note**: These commands are context-dependent! In the article list, they act on the *current article* or *all articles* in the list. On the feed list/tree they act on the *current category/feed* or *all categories/feeds*.
-### Zen Mode
-
-| Key | Action |
-|-----|--------|
-| `z` | Toggle distraction-free mode (hides all panels except article content) |
-
-### Tags
-
-| Key | Action |
-|-----|--------|
-| `t` | Open command line to tag article (e.g., `:tag tech`), **TAB** to autocomplete tag names |
-
-You can create new tags with `:tagadd urgent red` (press **TAB** for autocomplete colors!). Once created, you can bulk-tag articles: `:tag tech unread` tags all unread articles as `tech`.
-
-### Article Views
-
-| Key | Action |
-|-----|--------|
-| `1` | Show all articles |
-| `2` | Show only unread articles |
-| `3` | Show only marked articles |
-
-### Searching & Filtering
-
-| Key | Action |
-|-----|--------|
-| `/` | Search articles (type query and press Enter) |
-| `n` / `N` | Jump to next / previous match |
-| `=` | Open command line to filter articles |
-| `+ +` | Apply current filter |
-| `+ r` | Clear filter and show all articles |
-
-
-See below or [Article Queries](docs/queries.md) for how to craft powerful queries.
-
-### Sorting Articles
-
-| Key | Action |
-|-----|--------|
-| `\` | Open command line to set sort order |
-| `\| \|` | Reverse current sort order |
-| `\| r` | Clear sort order and restore default |
-
-Articles can be sorted by multiple criteria: `feed`, `date`, `synced`, `title`, or `author`. The sort order is displayed in the article list header with an icon (󰌼 for normal, 󰒿 for reversed).
-
-**Examples:**
-```
-:sort date                    # Sort by date (newest first)
-:sort >date                   # Sort by date (oldest first)
-:sort feed title              # Sort by feed name, then by title
-:sort feed date               # Sort by feed (A-Z), then by date (newest first)
-```
-
-For complete sorting documentation, see [Commands](docs/commands.md#sorting-articles).
-
-### Command Line
-
-| Key | Action |
-|-----|--------|
-| `:` | Open command line for advanced commands |
-| `Esc` or `Ctrl-g` | Cancel command input |
-| `Ctrl-u` | Clear command input |
-| `Tab`, `Backtab` | Trigger/cycle autocomplete and show help |
-
-## Query Basics
-
-**eilmeldung** supports powerful queries for searching and bulk operations:
-
-### Simple Queries
-
-```
-unread                          # All unread articles
-marked                          # All marked  articles
-today                           # Articles from last 24 hours
-unread today                    # Unread articles from today
-```
-
-### Search by Field
-
-```
-title:security                  # Articles with "security" in title
-author:john                     # Articles by John
-feed:bbc                        # All articles from BBC feed
-summary:"climate change"        # Articles with exact phrase in summary
-```
-
-### Time-Based
-
-```
-newer:"1 week ago"              # Articles from last week
-older:"2024-01-01"              # Articles before Jan 1, 2024
-newer:"1 hour ago" unread       # Recent unread articles
-```
-
-### Tags
-
-```
-#important                      # Articles tagged "important"
-#tech,#news                     # Articles tagged "tech" OR "news"
-~#politics                      # Articles NOT tagged "politics"
-```
-
-### Regular Expressions
-
-```
-title:/breaking|urgent/         # "breaking" OR "urgent" in title
-feed:/github|gitlab/            # Articles from GitHub or GitLab feeds
-```
-
-### Bulk Operations with Queries
-
-```
-:read unread feed:bbc           # Mark all unread BBC articles as read
-:tag tech newer:"1 day"         # Tag recent articles with "tech"
-:mark title:/important/i        # Mark all articles with "important" in title
-```
-
-For complete query documentation, see [Article Queries](docs/queries.md).
+**Tip:** Press `?` anytime to see all available commands, and use `/` in the help dialog to search!
 
 ---
 
 # Documentation
 
-- [Configuration](docs/configuration.md): contains all *configuration options* along with the input configuration, custom share targets, layout configuration, any many more
-- [Commands](docs/commands.md): *eilmeldung* contains a command line, like (neo)vim, to effectively carry out many operations (e.g., bulk-operations)
-- [Article Queries](docs/queries.md): *article queries* can be used to *filter* and *search* according to a multitude of search criteria. Article queries are also supported by bulk-operations (un/tag, un/read, un/mark articles)
-- [Command Line Argumnets](docs/cli_args.md): available command line arguments
+Complete documentation is available in the `docs/` directory:
 
+- **[Getting Started Guide](docs/getting-started.md)** - Setup and first steps
+- **[Installation Guide](docs/installation.md)** - Detailed installation instructions
+- **[Key Bindings Reference](docs/keybindings.md)** - Complete keybinding reference
+- **[Commands Reference](docs/commands.md)** - All available commands
+- **[Article Queries](docs/queries.md)** - Powerful search and filter syntax
+- **[Configuration Guide](docs/configuration.md)** - Customize appearance and behavior
+- **[Command Line Arguments](docs/cli_args.md)** - Available CLI options
+- **[FAQ](docs/faq.md)** - Frequently asked questions
 
-</details>
+---
 
 # FAQ
 
-**Which providers are supported?**
+### Which providers are supported?
 
-See [news_flash_gtk for all supported providers](https://gitlab.com/news-flash/news_flash_gtk).
+See [news_flash_gtk for all supported providers](https://gitlab.com/news-flash/news_flash_gtk). Note: inoreader is currently **NOT** directly supported.
 
-**Can I call an external program with the URL/title of the current article? Can I define custom sharing URL?**
+### Does eilmeldung support smart folders?
 
-Yes, to can define *custom share targets* which accept commands or URLs. For instance, in the configuration file:
-
-```toml
-share_targets = [
-  'hackernews https://news.ycombinator.com/submitlink?u={url}&t={title}', # opens webbrowser
-  'sendmail ./sendmail.sh me@eilmeldung.org \"{title}\" \"{url}\"', # passes title and URL to shell script
-  # more share targets
-]
-```
-
-In `eilmeldung`, select an article and share it with `share hackernews` or `share sendmail` (use TAB for autocompletion). Of course, you can also define key bindings for this:
-
-```toml
-"S h" = ["share hackernews"]
-"S m" = ["share sendmail"]
-```
-
-For more, checkout [Configuration](docs/configuration.md): contains all *configuration options* along with the input configuration].
-
-See [Configuration](docs/configuration.md) for details and examples.
-
-**Does eilmeldung support smart folders?**
-
-Yes, by using queries in the feed list. For example:
+Yes! Use queries in your feed list configuration. Example:
 
 ```toml
 feed_list = [
-  'query: "Important Today" #important unread today', 
-  # ... all other entries you want to have in the feed list
-]
-```
-
-Creates an entry *Important Today* entry in the feed list which lists all unread articles with the tag `#important` from today. For more, checkout out [Article Queries](docs/queries.md) and [Configuration](docs/configuration.md).
-
-
-**I want to save articles for reading them later? How would I achieve this?**
-
-You can define a tag for this:
-
-```
-tag readlater red
-```
-
-Then define a keybinding to quickly tag an article:
-
-```
-"R" = ["tag readlater"]
-# or if you want to navigate to the next unread article after tagging
-"R" = ["tag readlater", "nextunread"]
-```
-
-And finally create a query in the feed list for quick access:
-
-```toml
-feed_list = [
+  'query: "Important Today" #important unread today',
   'query: "Read Later" #readlater unread',
-  # ... all other entries you want to have in the feed list
+  "feeds",
 ]
 ```
 
-**I want to adjust the layout? I want to make the feed list/article list/article content smaller/larger!**
+### Can I customize keybindings and colors?
 
-Have a look at the section *Layout* in [Configuration](docs/configuration.md).
+Absolutely! Everything is customizable via the [configuration file](docs/configuration.md). See `examples/default-config.toml` for all options.
 
-**The default color palette is dark? Is there a light color palette?**
+### How do I save articles for later?
 
-In case you use ANSI 16 colors, insert [this file](examples/light-color-palette.toml) into your `config.toml`.
+Create a tag (`:tagadd readlater red`), bind it to a key, and create a query in your feed list. See the [FAQ](docs/faq.md#how-can-i-save-articles-for-reading-later) for details.
 
-**Can I configure the login information in via the configuration file `config.toml`? Can I automate the interactive login process?**
+**More questions?** See the complete [FAQ](docs/faq.md).
 
-Yes, check out *Automatic Login* in [Configuration](docs/configuration.md)!
+---
 
+# Credits
 
-# Standing on the Shoulders of Giants
+## Standing on the Shoulders of Giants
 
-*eilmeldung* was inspired by other awesome programs and libraries of which I want to mention some:
+*eilmeldung* was inspired by other awesome programs and libraries:
 
 - [news-flash](https://gitlab.com/news-flash/news_flash) library and [news-flash GTK](https://gitlab.com/news-flash/news_flash_gtk), a modern Gnome/GTK RSS reader, both implemented in rust
 - [newsboat](https://newsboat.org/) which has been me TUI RSS reader of choice for many years
@@ -476,65 +149,25 @@ Yes, check out *Automatic Login* in [Configuration](docs/configuration.md)!
 - [neovim](https://neovim.io/) and [vim](https://www.vim.org/) for their philosophy on user input
 - [ratatui](https://ratatui.rs/) and all its supporting libraries for creating the TUI
 
-# On the use of LLMs in this Project 
+## On the use of LLMs in this Project
 
-<details>
+This project was built as an experiment in learning Rust through LLM use. LLMs were used as tutors (asking questions, not providing solutions) and for documentation, but every line of code was intentionally written to solve a problem I understood.
 
-<summary>Expand to learn more about why and how I used LLMs in this project</summary>
+📖 Read more about the LLM development approach in [LLM Development](docs/llm-development.md).
 
-This project was built as an experiment in learning Rust through LLM use.
+---
 
-## Some Context
+# Contributing
 
-I teach programming/computer science at a university of applied sciences. Over the last few years, I've witnessed a change in how students *learn* and *understand* programming and related concepts by using LLMs. While for some students, using LLMs brings real benefits, for others it becomes a crutch that prevents genuine learning. The difference lies not in the tool itself, but in *how* it's used. I am not only talking about *cheating* in assignments. The main problems are in my opinion:
+Contributions are welcome! Please feel free to:
 
-1. LLMs are trained to produce code and solve problems: when a student encounters a problem, LLMs tend to produce code, preventing students from overcoming the challenge themselves and robbing them of a vital learning opportunity.
-2. As LLMs tend to be sycophantic and pleasing in the nature of their answers, students fall into the trap of believing that they understood the concept under investigation. This may be true on a conceptual level. However, programming is a *doing art* which is only understood when students overcome the challenge of *applying a programming concept* (by failing and then succeeding).
+- Report bugs or request features via [GitHub Issues](https://github.com/christo-auer/eilmeldung/issues)
+- Submit pull requests
+- Improve documentation
+- Share your configuration examples
 
-Consider this analogy I sometimes use with my students: You want to learn to swim. An LLM can explain the mechanics—how to move your arms, when to breathe, how to stay afloat. But would you then jump into deep water based solely on that explanation? Of course not. You'd need hours of practice in shallow water, struggling, failing, and gradually improving.
+---
 
-Programming is no different. Yet LLMs make it tempting to skip the struggle entirely. To be fair, the same argument applies to any passive learning method (like YouTube videos or classical lectures). However, never has this approach of purely conceptual learning been so alluring as with LLMs.
+# License
 
-That said, LLMs, it seems at the moment, are here to stay. Knowing how to use them (and when not) is a vital ability which already plays a certain role in programming. For this reason I am incorporating "developing using LLMs" into my programming course ("Advanced topics in Java"). In order to make sure to really understand what I am talking about, I needed to apply LLMs to *learn a new programming language* myself. And this project *eilmeldung* is the result of this endeavour.
-
-## How LLMs were used in this Project
-
-LLMs were used in this project to understand if and how they can be used for the following:
-
-- Learning a new programming language or concept using a *Tutor Agent Prompt*: The tutor agent prompt tells the LLM to *not produce any solutions* or *code*. Instead, the LLM was prompted to lead me to a solution by asking questions. This approach was applied also to compiler errors.
-- Explaining existing code bases using a *Explainer Agent Prompt*: With this prompt, the LLM explains existing code bases to more quickly understand *idiomatic programming approaches* and *architectures*.
-- Creating documentation (e.g., [Commands](docs/commands.md))
-- Refactoring after a certain pattern: After refactoring one or more modules, the LLM was asked to refactor remaining modules in a similar manner.
-- Creating fine-grained commits.
-
-## How LLMs were NOT used in this Project
-
-This project is **not vibe-coded**. Every line was intentionally written to solve a problem I understood. The code has *warts*, i.e., awkward Rust patterns, over-engineered solutions, remnants of learning mistakes --- and that's the point. This is what *learning* looks like.
-
-## Purely Anecdotal Lessons Learned
-
-- Using an LLM as a tutor was mostly successful. For example, when debugging borrow checker errors, having the LLM *ask* me questions like "What is the lifetime of this reference?" was far more educational than receiving a corrected code snippet. However, as the context becomes longer, LLMs tend to forget their role as tutors (*context rot*) and start to produce code again. Apart from that, LLMs *can* be really good sparring partners when it comes to learning.
-- Explaining unknown code bases works relatively well as long as the code base is not too large and questions are either very specific or very high-level.
-- Creating documentation works but needs to be checked *very carefully* for errors and wrong assumptions.
-- Refactoring (in my case) didn't work and I had to revert the changes: LLMs tend to produce code which is not very maintainable and does not fit to the existing architecture.
-- Committing: worked well at first but led to data loss in one case (LLM stashed all changes, then dropped the stash and then tried to re-implement the changes itself)
-
-## Key Takeaway 
-
-If you're learning with LLMs:
-- **Do**: Use them as tutors that ask questions, not answer machines
-- **Do**: Implement solutions yourself, even when LLMs offer code
-- **Don't**: Let LLMs rob you of the struggle --- the struggle *is* the learning
-- **Don't**: Mistake understanding an explanation for having the skill
-
-## Tools and Prompts
-
-I am using [neovim](https://neovim.io/) with [opencode](https://opencode.ai/). Here are the prompts in *opencode agent format* I've developed for the different tasks:
-
-- [tutor.md](https://github.com/user-attachments/files/24354660/tutor.md): Tutor helping to understand new concepts
-- [explainer.md](https://github.com/user-attachments/files/24354664/explainer.md): For understanding code bases
-- [unit-tester.md](https://github.com/user-attachments/files/24354665/unit-tester.md): For creating unit test. Note how the LLM should **deny** creating tests on implementations or unclear specification.
-
-
-
-</details>
+See [LICENSE](LICENSE) file for details.
