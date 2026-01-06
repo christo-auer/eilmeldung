@@ -65,18 +65,18 @@ Query elements are **conjunctive** (AND-ed together), i.e., all specified condit
 - **Negation**: Use `~` to negate any query (e.g., `~read` matches unread articles, `~title:politics` excludes articles with "politics" in title)
 - **Multiple Criteria**: Combine multiple queries with spaces: all conditions must be satisfied (AND logic)
 - **Relative Time**: Use natural language for time-based queries: `"1 week ago"`, `"yesterday"`, `"3 days ago"` (see [`parse_datetime` documentation](https://lib.rs/crates/parse_datetime) for more information)
-- **Regular Expression OR**: Use the `|` operator in regex patterns for OR logic: `title:/(rust|python|javascript)/i` matches articles with any of these languages in the title
+- **Regular Expression OR**: Use the `|` operator in regex patterns for OR logic: `title:/(rust|python|javascript)/` matches articles with any of these languages in the title
 
 ## Example Queries
 
 ```
 unread today                                    # Unread articles from today
 feed:bbc ~read                                  # Unread articles from BBC feed
-title:/breaking|urgent/i newer:"1 hour ago"     # Recent breaking or urgent news (regex OR)
+title:/(?i)breaking|urgent/ newer:"1 hour ago"     # Recent breaking or urgent news (regex OR)
 marked #important                               # Marked articles tagged as important
 all:"climate change" newer:"1 week ago"         # Climate change articles from last week
 ~#politics unread                               # Unread articles without politics tag
-author:/(smith|jones|brown)/i                   # Articles by Smith, Jones, or Brown (regex OR)
+author:/(?i)smith|jones|brown/                   # Articles by Smith, Jones, or Brown (regex OR)
 title:/(feature|bug|fix)/ feed:/github|gitlab/  # Development-related articles from code hosting platforms
 ```
 
@@ -138,8 +138,8 @@ all:"climate summit" newer:"1 week ago"
 # Compare coverage across sources
 title:election newer:"3 days ago"
 
-# Track multiple related topics
-title:/(AI|machine learning|neural network)/i
+# Track multiple related topics (case-insensitive)
+title:/(?i)(AI|machine learning|neural network)/
 
 # Find related content by same author
 author:smith unread
@@ -159,8 +159,8 @@ Queries can be used for builk operations:
 # Remove tag from read articles
 :untag toread read
 
-# Mark urgent items
-:mark title:/breaking|urgent/i newer:"1 hour ago"
+# Mark urgent items (case-insensitive)
+:mark title:/(?i)breaking|urgent/ newer:"1 hour ago"
 ```
 
 
