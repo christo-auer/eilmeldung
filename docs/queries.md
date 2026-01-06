@@ -87,18 +87,18 @@ Sort orders can be embedded in queries using the `sort` key. This is particularl
 
 **Syntax:**
 ```
-sort="<sort order>"
+sort:"<sort order>"
 ```
 
 **Note** the double quotes!
 
 **Examples:**
 ```
-unread sort="date"                                     # Unread articles, newest first
-feed:bbc sort="feed title"                             # BBC articles sorted by feed then title
-today sort="synced"                                    # Today's articles, most recently synced first
-#important unread sort="<date"                         # Important unread, oldest first
-newer:"1 week" sort="feed date"                        # Last week's articles by feed, newest first
+unread sort:"date"                                     # Unread articles, newest first
+feed:bbc sort:"feed title"                             # BBC articles sorted by feed then title
+today sort:"synced"                                    # Today's articles, most recently synced first
+#important unread sort:"<date"                         # Important unread, oldest first
+newer:"1 week" sort:"feed date"                        # Last week's articles by feed, newest first
 ```
 
 ### Feed List Query Examples with Sorting
@@ -107,9 +107,9 @@ In your `feed_list` configuration, you can add sort orders to queries:
 
 ```toml
 feed_list = [
-  'query: "Latest Unread" unread sort="date"',
-  'query: "By Feed" unread sort="feed date"',
-  'query: "Recently Synced" sort="synced"',
+  'query: "Latest Unread" unread sort:"date"',
+  'query: "By Feed" unread sort:"feed date"',
+  'query: "Recently Synced" sort:"synced"',
   "feeds",
   "tags",
 ]
@@ -117,11 +117,7 @@ feed_list = [
 
 ---
 
-## Query Cookbook
-
-This section provides real-world query examples organized by use case.
-
-### Daily Reading Routines
+## Query Examples
 
 ```
 # Morning news: unread articles from the last 12 hours
@@ -135,41 +131,23 @@ feed:/tech|news/ unread today
 
 # Quick scan: just headlines from trusted sources
 feed:/(bbc|reuters|ap)/ unread newer:"6 hours ago"
-```
 
-### Article Maintenance
-
-```
-# Find old unread articles (reading backlog)
-older:"1 month ago" unread
-
-# Clean up very old articles
-older:"6 months ago"
-
-# Recently synced but already read (duplicates?)
-syncedbefore:"1 hour ago" read
-
-# Articles without tags that are marked
-marked ~tagged
-```
-
-### Research & Topic Tracking
-
-```
 # Follow a developing story
-all:/"climate summit"/ newer:"1 week ago"
+all:"climate summit" newer:"1 week ago"
 
 # Compare coverage across sources
-title:/"election"/ newer:"3 days ago"
+title:election newer:"3 days ago"
 
 # Track multiple related topics
-title:/(AI|"machine learning"|"neural network")/i
+title:/(AI|machine learning|neural network)/i
 
 # Find related content by same author
 author:smith unread
 ```
 
-### Bulk Operations
+## Bulk Operations
+
+Queries can be used for builk operations:
 
 ```
 # Mark old articles as read
@@ -185,38 +163,6 @@ author:smith unread
 :mark title:/breaking|urgent/i newer:"1 hour ago"
 ```
 
-### Feed Organization
-
-```
-# View all articles from a category of feeds
-feed:/(news|media)/ unread
-
-# Compare feed volume
-feed:techcrunch newer:"1 day ago"
-
-# Find feeds with many unread articles
-# (use this in feed list view)
-unread
-
-# Identify quiet feeds
-older:"1 week ago"
-```
-
-### Advanced Filtering
-
-```
-# Exclude certain topics
-unread ~title:/(sports|celebrity|gossip)/i
-
-# Multiple exclusions
-unread ~#politics ~#sports
-
-# Complex time ranges
-newer:"1 week ago" older:"3 days ago"
-
-# Specific time window with tags
-newer:"2024-01-01" older:"2024-02-01" #research
-```
 
 ---
 
@@ -228,14 +174,9 @@ newer:"2024-01-01" older:"2024-02-01" #research
 
 **Testing Queries:**
 - Use `:filter <query>` to preview results before bulk operations
-- Press `+ +` to apply the filter and see what matches
 
 **Saving Frequent Queries:**
 - Add them to your feed list in the configuration file
 - Create keybindings for common query-based commands
 
-**Query Performance:**
-- Regex queries are slower than simple text matches
-- Time-based queries are very fast
-- Combine specific filters first, then broader ones
 

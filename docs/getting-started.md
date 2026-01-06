@@ -83,9 +83,9 @@ Instead of manually adding feeds and categories, you can also import an OPML fil
 
 eilmeldung has three main panels:
 
-1. **Feed List** (left): Shows your feeds, categories, tags, and custom queries
-2. **Article List** (center): Displays articles from the selected feed
-3. **Article Content** (right): Shows the full article content
+1. **Feed List** (left): Shows your feeds, categories, tags, and custom queries (this is *customizable*!)
+2. **Article List** (top right): Displays articles from the selected feed/tag/query
+3. **Article Content** (bottom right): Shows the full article content
 
 ### Basic Navigation
 

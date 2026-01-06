@@ -60,15 +60,6 @@ cp ~/.config/eilmeldung/config.toml ~/.config/eilmeldung-test/
 eilmeldung --config-dir ~/.config/eilmeldung-test --state-dir /tmp/eilmeldung-test
 ```
 
-### Portable Installation
-
-Run eilmeldung from a USB drive or shared directory:
-
-```bash
-eilmeldung --config-dir /path/to/portable/config --state-dir /path/to/portable/data
-```
-
----
 
 ---
 

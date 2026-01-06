@@ -1,7 +1,7 @@
 # Configuration 
 
 **eilmeldung** uses a TOML configuration file to customize behavior, appearance, and key bindings. The configuration file is optional, eilmeldung works out-of-the-box with sensible defaults.
-The configuration file location is `~/.config/eilmeldung/config.toml`.
+The configuration file location is `~/.config/eilmeldung/config.toml` (Linux) or `~/Library/Application Support/eilmeldung/config.toml`.
 
 **Note:** Icons and special characters require a terminal and font that support [Nerd Fonts](https://www.nerdfonts.com/).
 
@@ -141,6 +141,7 @@ Key bindings are defined in the `[input_config.mappings]` section as key-value p
 - Control keys: `"C-c"` (Ctrl+C), `"C-r"` (Ctrl+R)
 - Special keys: `"space"`, `"tab"`, `"backtab"`, `"up"`, `"down"`, `"left"`, `"right"`, `"esc"`, `"enter"`
 - Multi-key sequences: `"g g"` (press g twice), `"c w"` (c then w)
+- To unbind a key, map it to `[]`: `"x" = []` unbinds `x`
 
 **Examples:**
 ```toml
@@ -156,7 +157,7 @@ Key bindings are defined in the `[input_config.mappings]` section as key-value p
 "g t" = ["focus feeds"]
 
 # Unbind a key
-"x" = ["nop"]
+"x" = []
 ```
 
 For a complete list of available commands, see the Commands section. For default keybindings, see the main page or execute the command `helpinput`.
@@ -203,7 +204,7 @@ Component styles define how UI elements appear. Each component can have:
 
 **Color References:**
 - Palette colors: `"background"`, `"foreground"`, `"muted"`, `"highlight"`, `"accent_primary"`, `"accent_secondary"`, `"accent_tertiary"`, `"accent_quaternary"`, `"info"`, `"warning"`, `"error"`
-- Custom colors: `{ custom = "#ff0000" }` or `{ custom = "red" }`
+- Custom colors via hex: ` "#ff0000" `
 
 **Available Modifiers:**
 `"bold"`, `"dim"`, `"italic"`, `"underlined"`, `"slow_blink"`, `"rapid_blink"`, `"reversed"`, `"hidden"`, `"crossed_out"`
@@ -232,9 +233,9 @@ Component styles define how UI elements appear. Each component can have:
 **Example:**
 ```toml
 [theme.style_set]
-article_highlighted = { fg = "highlight", bg = { custom = "#2a2a3a" }, mods = ["bold", "italic"] }
+article_highlighted = { fg = "highlight", bg = "#2a2a3a" , mods = ["bold", "italic"] }
 border_focused = { fg = "accent_primary", mods = ["bold"] }
-feed = { fg = { custom = "#f5c2e7" } }
+feed = { fg = "#f5c2e7" }
 unread_modifier = "bold"
 ```
 
@@ -294,7 +295,7 @@ The `share_targets` array defines available sharing targets. Each entry can be a
 - `<template>`: any occurrence of `{url}` is replaced by the URL of the article and any `{title}` is replaced by its title
   - **Sharing via Webbrowser**: if the template starts with `http://...` or `https://...` the template is interpreted as a web URL and upon sharing the webbrowser is opened with the given URL
   - **Sharing to a Shell Command**: otherwise the template is interpreted as a shell command with arguments. **Note**: 
-    - A new process is spawned in the background whose with `stdin`, `stdout`, and `stderr` redirected to `null`. In particular, don't that you see any output.
+    - A new process is spawned in the background whose with `stdin`, `stdout`, and `stderr` redirected to `null`. In particular, you won't see any terminal output.
     - This does not support any shell features like input output redirection (`>`, etc.), pipes (`|`) or other advanced shell features. Also no shell variables are replaced (`~`, `$HOME`). If you want more sophisticated behaviour, create a shell script and call the shell script.
 
 **Default:**

@@ -35,7 +35,7 @@ Here are some common command examples to get you started:
 :read %                                  # Mark all articles as read
 :read unread today                       # Mark all unread articles from today as read
 :read feeds %                            # Mark all articles in selected feed as read
-:filter title:/breaking/ newer:"1 hour"  # Filter breaking news from last hour
+:filter title:breaking newer:"1 hour"    # Filter breaking news from last hour
 :tag important                           # Tag current article as important
 :tag tech unread                         # Tag all unread articles as tech
 :untag work %                            # Remove work tag from all articles

@@ -77,7 +77,7 @@ This document provides a comprehensive reference of all default key bindings in 
 | `R` | Mark **all** articles as read (asks for confirmation) |
 | `u` | Mark current article as unread |
 | `U` | Mark **all** articles as unread (asks for confirmation) |
-| `Ctrl-r` | Open command line to set read with query (e.g., `:read unread today`) |
+| `Alt-r` | Open command line to set read with query (e.g., `:read unread today`) |
 
 **Note**: These commands are context-dependent! In the article list, they act on the *current article* or *all articles* in the list. On the feed list/tree they act on the *current category/feed* or *all categories/feeds*.
 
