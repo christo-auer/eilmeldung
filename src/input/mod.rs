@@ -149,23 +149,35 @@ impl InputCommandGenerator {
 
     fn process_key_event(&mut self, key: Option<Key>) -> color_eyre::Result<()> {
         let mut aborted = false;
+        let mut submit = false;
         let now = Instant::now();
 
-        match key {
-            Some(Key::Just(event::KeyCode::Esc)) => {
+        let command = key.as_ref().and_then(|key| {
+            self.config
+                .input_config
+                .match_single_key_to_single_command(key)
+        });
+
+        match command {
+            Some(Command::InputAbort) => {
                 aborted = true;
                 self.last_input_instant = now;
             }
-            Some(key) => {
+            Some(Command::InputSubmit) => {
+                submit = true;
                 self.last_input_instant = now;
-                self.key_sequence.keys.push(key);
-                trace!("current key_sequence: {:?}", self.key_sequence);
             }
-            _ => {}
+            _ => {
+                if let Some(key) = key {
+                    self.last_input_instant = now;
+                    self.key_sequence.keys.push(key);
+                    trace!("current key_sequence: {:?}", self.key_sequence);
+                }
+            }
         }
 
         let duration = now.duration_since(self.last_input_instant);
-        let timeout = duration > Duration::from_millis(5000);
+        let timeout = duration > Duration::from_millis(self.config.input_config.timeout_millis);
         let timeout_ratio =
             duration.as_millis() as f32 / self.config.input_config.timeout_millis as f32;
 
@@ -186,7 +198,7 @@ impl InputCommandGenerator {
 
         if let Some(command_sequence) =
             self.config.input_config.mappings.get(&self.key_sequence) // direct match
-                && (prefix_matches.len() == 1 || timeout)
+                && (prefix_matches.len() == 1 || timeout || submit)
         {
             for command in command_sequence.commands.iter() {
                 self.message_sender
