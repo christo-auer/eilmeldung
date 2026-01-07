@@ -4,7 +4,7 @@ use crate::ui::feeds_list::model::FeedListModelData;
 
 use getset::{Getters, MutGetters};
 use log::info;
-use news_flash::models::{Category, Feed, UnifiedMapping};
+use news_flash::models::{Category, Feed, FeedMapping, NEWSFLASH_TOPLEVEL, UnifiedMapping};
 use news_flash::models::{PluginCapabilities, TagID};
 use ratatui::widgets::Scrollbar;
 use ratatui::widgets::{Block, Borders};
@@ -283,10 +283,17 @@ impl FeedListViewData {
 
         use FeedOrCategory::*;
         self.yanked_unified_mapping = match feed_or_category {
-            Feed(feed_id) => model_data
-                .feed_mapping_for_feed()
-                .get(&feed_id)
-                .map(|mapping| UnifiedMapping::Feed(mapping.to_owned())),
+            Feed(feed_id) => {
+                let feed_mapping = match model_data.feed_mapping_for_feed().get(&feed_id) {
+                    Some(feed_mapping) => feed_mapping.to_owned(),
+                    None => FeedMapping {
+                        feed_id: feed_id.to_owned(),
+                        category_id: (*NEWSFLASH_TOPLEVEL).to_owned(),
+                        sort_index: None,
+                    },
+                };
+                Some(UnifiedMapping::Feed(feed_mapping))
+            }
             Category(category_id) => model_data
                 .category_mapping_for_category()
                 .get(&category_id)
