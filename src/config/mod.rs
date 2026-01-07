@@ -242,6 +242,11 @@ pub fn load_config(config_dir: &Path) -> color_eyre::Result<Config> {
         return Err(color_eyre::eyre::eyre!("invalid configuration path"));
     };
 
+    if !Path::new(config_path).exists() {
+        info!("No config file found, using default config");
+        return Ok(Config::default());
+    }
+
     info!("Loading config from {}", config_path);
 
     let mut config = match config::Config::builder()
