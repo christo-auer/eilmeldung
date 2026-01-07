@@ -31,7 +31,7 @@ pkgs.mkShell {
   # Environment variables for development
   LIBCLANG_PATH = pkgs.lib.makeLibraryPath [ pkgs.llvmPackages_19.libclang.lib ];
   BINDGEN_EXTRA_CLANG_ARGS = builtins.concatStringsSep " " (
-    (builtins.map (a: ''-I"${a}/include"'') [
+    (map (a: ''-I"${a}/include"'') [
       pkgs.glibc.dev
     ])
     ++ [
