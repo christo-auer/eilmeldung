@@ -84,7 +84,7 @@ Add *eilmeldung* to your inputs, apply `eilmeldung.overlays.default` overlay to 
       
       modules = [
         // ...
-        eilmeldung.homeManagerModules.default
+        eilmeldung.homeManager.default
       ];
     };
   };
