@@ -1,5 +1,10 @@
 # Unreleased
 
+- bugfix: eilmeldung wouldn't launch if no `config.toml` exists; no it launches with the default configuration
+
+
+# 0.7.1 - 2026-01-06
+
 - bugfix: when entering a key sequence with multiple alternatives, if there is one which already matches, pressing enter (default key binding) executes the key binding immediately. Otherwise there is a timeout running down after which it is executed. If escape is pressed, the keybinding input is aborted.
 
 # 0.7.0 - 2026-01-05
