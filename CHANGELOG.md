@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.7.2 - 2026-01-07
+
 - bugfix: eilmeldung wouldn't launch if no `config.toml` exists; no it launches with the default configuration
 
 
