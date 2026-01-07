@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: feeds imported via OPML in the root level could not be yanked (`c y`). This works now.
+
 # 0.7.2 - 2026-01-07
 
 - bugfix: eilmeldung wouldn't launch if no `config.toml` exists; now it launches with the default configuration
