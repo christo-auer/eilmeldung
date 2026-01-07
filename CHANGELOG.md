@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.7.3 - 2026-01-07
+
 - bugfix: feeds imported via OPML in the root level could not be yanked (`c y`). This works now.
 
 # 0.7.2 - 2026-01-07
