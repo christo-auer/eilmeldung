@@ -318,6 +318,7 @@ share_targets = [
   'pocket https://getpocket.com/save?url={url}&title={title}',
   'sendmail ./sendmail.sh me@eilmeldung.org \"{title}\" \"{url}\"', # note the double quotes around the two variables
   'chromium chromium \"{url}\"',
+  'org-mode xdg-open \"org-protocol://capture?template=L&url=\"{url}\"&title=\"{title}\"\"' # share on emacs/org-mode (by @luogni)
 ]
 ```
 
