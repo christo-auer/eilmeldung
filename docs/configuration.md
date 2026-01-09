@@ -33,45 +33,46 @@ You can find the default configuration in `examples/default-config.toml`
 ## Basic Configuration Options
 
 
-| Option                            | Type                | Description                                                |
-| --------                          | ------              | -------------                                              |
-| `refresh_fps`                     | integer             | UI refresh rate in frames per second                       |
-| `network_timeout_seconds`         | integer             | timeout for network operations                             |
-| `article_scope`                   | string              | Default article scope: `"all"`, `"unread"`, or `"marked"`  |
+| Option                            | Type                | Description                                                                                                |
+| --------                          | ------              | -------------                                                                                              |
+| `refresh_fps`                     | integer             | UI refresh rate in frames per second                                                                       |
+| `network_timeout_seconds`         | integer             | timeout for network operations                                                                             |
+| `article_scope`                   | string              | Default article scope: `"all"`, `"unread"`, or `"marked"`                                                  |
 | `default_sort_order`              | string (sort order) | Default sort order for articles: e.g., `"date"`, `">date"`, `"feed date"` (see Article Queries for syntax) |
-| `keep_articles_days`              | integer             | amount of days before articles are removed                 |
-| `offline_icon`                    | char                | Icon displayed when offline                                |
-| `read_icon`                       | char                | Icon for read articles                                     |
-| `unread_icon`                     | char                | Icon for unread articles                                   |
-| `marked_icon`                     | char                | Icon for marked articles                                   |
-| `unmarked_icon`                   | char                | Icon for unmarked articles                                 |
-| `tag_icon`                        | char                | Icon for tags                                              |
-| `command_line_prompt_icon`        | char                | Icon for command line prompt                               |
-| `scrollbar_begin_symbol`          | char                | Symbol at top of scrollbars                                |
-| `scrollbar_end_symbol`            | char                | Symbol at bottom of scrollbars                             |
-| `scrollbar_thumb_symbol`          | char                | Symbol placed at current position of scrollbars            |
-| `scrollbar_track_symbol`          | char                | Symbol placed between top and bottom of scrollbars         |
-| `all_label`                       | string              | Label format for "All" in feed list                        |
-| `feed_label`                      | string              | Label format for feeds                                     |
-| `category_label`                  | string              | Label format for categories                                |
-| `categories_label`                | string              | Label format for categories section                        |
-| `tags_label`                      | string              | Label format for tags section                              |
-| `tag_label`                       | string              | Label format for individual tags                           |
-| `query_label`                     | string              | Label format for query items                               |
-| `article_table`                   | string              | Article list column format                                 |
-| `date_format`                     | string              | Date format (strftime syntax)                              |
-| `articles_after_selection`        | integer             | Number of articles to show after selection                 |
-| `auto_scrape`                     | boolean             | Automatically scrape full article content                  |
-| `thumbnail_show`                  | boolean             | Show article thumbnails                                    |
-| `thumbnail_width`                 | integer             | Thumbnail width in characters                              |
-| `thumbnail_resize`                | boolean             | Resize thumbnails to fit (**this may cause slowdowns**)    |
-| `thumbnail_fetch_debounce_millis` | integer             | Delay before fetching thumbnail (ms)                       |
-| `text_max_width`                  | integer             | Maximum text width for article content                     |
-| `content_preferred_type`          | string              | Preferred content type: `"plain_text"` or `"markdown"`      |
-| `feed_list_focused_width`         | dimension           | Width of feed list when focused                            |
-| `article_list_focused_width`      | dimension           | Width of article list when focused                         |
-| `article_list_focused_height`     | dimension           | Height of article list when focused                        |
-| `article_content_focused_height`  | dimension           | Height of article content when focused                     |
+| `hide_default_sort_order`         | boolean             | If true, hides the sort order if the default sort order is applied; otherwise always show sort order       |
+| `keep_articles_days`              | integer             | amount of days before articles are removed                                                                 |
+| `offline_icon`                    | char                | Icon displayed when offline                                                                                |
+| `read_icon`                       | char                | Icon for read articles                                                                                     |
+| `unread_icon`                     | char                | Icon for unread articles                                                                                   |
+| `marked_icon`                     | char                | Icon for marked articles                                                                                   |
+| `unmarked_icon`                   | char                | Icon for unmarked articles                                                                                 |
+| `tag_icon`                        | char                | Icon for tags                                                                                              |
+| `command_line_prompt_icon`        | char                | Icon for command line prompt                                                                               |
+| `scrollbar_begin_symbol`          | char                | Symbol at top of scrollbars                                                                                |
+| `scrollbar_end_symbol`            | char                | Symbol at bottom of scrollbars                                                                             |
+| `scrollbar_thumb_symbol`          | char                | Symbol placed at current position of scrollbars                                                            |
+| `scrollbar_track_symbol`          | char                | Symbol placed between top and bottom of scrollbars                                                         |
+| `all_label`                       | string              | Label format for "All" in feed list                                                                        |
+| `feed_label`                      | string              | Label format for feeds                                                                                     |
+| `category_label`                  | string              | Label format for categories                                                                                |
+| `categories_label`                | string              | Label format for categories section                                                                        |
+| `tags_label`                      | string              | Label format for tags section                                                                              |
+| `tag_label`                       | string              | Label format for individual tags                                                                           |
+| `query_label`                     | string              | Label format for query items                                                                               |
+| `article_table`                   | string              | Article list column format                                                                                 |
+| `date_format`                     | string              | Date format (strftime syntax)                                                                              |
+| `articles_after_selection`        | integer             | Number of articles to show after selection                                                                 |
+| `auto_scrape`                     | boolean             | Automatically scrape full article content                                                                  |
+| `thumbnail_show`                  | boolean             | Show article thumbnails                                                                                    |
+| `thumbnail_width`                 | integer             | Thumbnail width in characters                                                                              |
+| `thumbnail_resize`                | boolean             | Resize thumbnails to fit (**this may cause slowdowns**)                                                    |
+| `thumbnail_fetch_debounce_millis` | integer             | Delay before fetching thumbnail (ms)                                                                       |
+| `text_max_width`                  | integer             | Maximum text width for article content                                                                     |
+| `content_preferred_type`          | string              | Preferred content type: `"plain_text"` or `"markdown"`                                                     |
+| `feed_list_focused_width`         | dimension           | Width of feed list when focused                                                                            |
+| `article_list_focused_width`      | dimension           | Width of article list when focused                                                                         |
+| `article_list_focused_height`     | dimension           | Height of article list when focused                                                                        |
+| `article_content_focused_height`  | dimension           | Height of article content when focused                                                                     |
 
 
 **Label Placeholders:**

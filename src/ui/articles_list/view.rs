@@ -101,6 +101,15 @@ impl FilterState {
         Some(self.article_scope)
     }
 
+    pub fn uses_default_sort_order(&self) -> bool {
+        self.adhoc_sort_order.is_none()
+            && (self
+                .augmented_article_filter
+                .as_ref()
+                .is_none_or(|filter| filter.article_query.sort_order().is_none()))
+            && !*self.reverse_sort_order()
+    }
+
     pub fn get_effective_sort_order(&self) -> SortOrder {
         self.adhoc_sort_order
             .as_ref()
@@ -216,15 +225,17 @@ impl<'a> ArticleListViewData<'a> {
 
         title.push_str(filter_info);
 
-        title.push_str(&format!(
-            " {} {} ",
-            if *filter_state.reverse_sort_order() {
-                "󰒿"
-            } else {
-                "󰌼"
-            },
-            filter_state.get_effective_sort_order()
-        ));
+        if !filter_state.uses_default_sort_order() {
+            title.push_str(&format!(
+                " {} {} ",
+                if *filter_state.reverse_sort_order() {
+                    "󰒿"
+                } else {
+                    "󰌼"
+                },
+                filter_state.get_effective_sort_order()
+            ));
+        }
 
         Span::styled(title, config.theme.header())
     }
