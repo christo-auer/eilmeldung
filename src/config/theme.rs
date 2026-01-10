@@ -60,11 +60,45 @@ pub enum StyleColor {
 
 #[derive(Debug, Default, Clone, serde::Deserialize)]
 pub struct ComponentStyle {
+    #[serde(default)]
     fg: StyleColor,
+
+    #[serde(default)]
     bg: StyleColor,
 
     #[serde(default)]
-    mods: Vec<Modifier>,
+    mods: Vec<StyleModifier>,
+}
+
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StyleModifier {
+    Bold,
+    Dim,
+    Italic,
+    Underlined,
+    SlowBlink,
+    RapidBlink,
+    Reversed,
+    Hidden,
+    CrossedOut,
+}
+
+impl StyleModifier {
+    fn to_modifier(self) -> Modifier {
+        use StyleModifier as S;
+        match self {
+            S::Bold => Modifier::BOLD,
+            S::Dim => Modifier::DIM,
+            S::Italic => Modifier::ITALIC,
+            S::Underlined => Modifier::UNDERLINED,
+            S::SlowBlink => Modifier::SLOW_BLINK,
+            S::RapidBlink => Modifier::RAPID_BLINK,
+            S::Reversed => Modifier::REVERSED,
+            S::Hidden => Modifier::HIDDEN,
+            S::CrossedOut => Modifier::CROSSED_OUT,
+        }
+    }
 }
 
 impl ComponentStyle {
@@ -76,7 +110,7 @@ impl ComponentStyle {
         Self { bg, ..self }
     }
 
-    fn mods(self, mods: &[Modifier]) -> Self {
+    fn mods(self, mods: &[StyleModifier]) -> Self {
         Self {
             mods: mods.to_owned(),
             ..self
@@ -87,7 +121,7 @@ impl ComponentStyle {
         self.mods
             .iter()
             .fold(Modifier::default(), |mut modifiers, modifier| {
-                modifiers |= *modifier;
+                modifiers |= modifier.to_modifier();
                 modifiers
             })
     }
@@ -116,41 +150,41 @@ pub struct StyleSet {
     tooltip_warning: ComponentStyle,
     tooltip_error: ComponentStyle,
 
-    unread_modifier: Modifier,
+    unread_modifier: StyleModifier,
 }
 
 impl Default for StyleSet {
     fn default() -> Self {
-        use Modifier as M;
         use StyleColor as C;
+        use StyleModifier as M;
         Self {
             header: ComponentStyle::default().fg(C::AccentPrimary),
             paragraph: ComponentStyle::default().fg(C::Foreground),
             article: ComponentStyle::default().fg(C::Foreground),
-            article_highlighted: ComponentStyle::default().fg(C::Highlight).mods(&[M::BOLD]),
+            article_highlighted: ComponentStyle::default().fg(C::Highlight).mods(&[M::Bold]),
             feed: ComponentStyle::default().fg(C::AccentPrimary),
             category: ComponentStyle::default().fg(C::AccentSecondary),
             tag: ComponentStyle::default().fg(C::AccentTertiary),
             query: ComponentStyle::default().fg(C::AccentQuaternary),
             yanked: ComponentStyle::default()
                 .fg(C::Highlight)
-                .mods(&[M::REVERSED]),
+                .mods(&[M::Reversed]),
 
             border: ComponentStyle::default().fg(C::Muted),
             border_focused: ComponentStyle::default().fg(C::AccentPrimary),
             statusbar: ComponentStyle::default()
                 .fg(C::AccentPrimary)
-                .mods(&[M::REVERSED]),
+                .mods(&[M::Reversed]),
             command_input: ComponentStyle::default().fg(C::Foreground).bg(C::Muted),
             inactive: ComponentStyle::default().fg(C::Muted),
 
-            tooltip_info: ComponentStyle::default().fg(C::Info).mods(&[M::REVERSED]),
+            tooltip_info: ComponentStyle::default().fg(C::Info).mods(&[M::Reversed]),
             tooltip_warning: ComponentStyle::default()
                 .fg(C::Warning)
-                .mods(&[M::REVERSED]),
-            tooltip_error: ComponentStyle::default().fg(C::Error).mods(&[M::REVERSED]),
+                .mods(&[M::Reversed]),
+            tooltip_error: ComponentStyle::default().fg(C::Error).mods(&[M::Reversed]),
 
-            unread_modifier: Modifier::BOLD,
+            unread_modifier: StyleModifier::Bold,
         }
     }
 }
@@ -207,7 +241,7 @@ impl Theme {
     }
 
     pub fn unread_modifier(&self) -> Modifier {
-        self.style_set.unread_modifier
+        self.style_set.unread_modifier.to_modifier()
     }
 
     component_funs! {

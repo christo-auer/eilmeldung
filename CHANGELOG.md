@@ -1,5 +1,6 @@
 # Unreleased
 
+- fixed bug which made `default-configuration.toml` invalid; now the style set works as documented
 - new option: `hide_default_sort_order`, if `true`, hides the sort order if the default sort order is applied
 
 # 0.7.3 - 2026-01-07
