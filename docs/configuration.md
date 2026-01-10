@@ -1,7 +1,7 @@
 # Configuration 
 
 **eilmeldung** uses a TOML configuration file to customize behavior, appearance, and key bindings. The configuration file is optional, eilmeldung works out-of-the-box with sensible defaults.
-The configuration file location is `~/.config/eilmeldung/config.toml` (Linux) or `~/Library/Application Support/eilmeldung/config.toml`.
+The configuration file location is `~/.config/eilmeldung/config.toml` (Linux) or `~/Library/Application Support/org.christo-auer.eilmeldung/config.toml`.
 
 **Note:** Icons and special characters require a terminal and font that support [Nerd Fonts](https://www.nerdfonts.com/).
 
