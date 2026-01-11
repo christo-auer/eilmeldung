@@ -2,17 +2,17 @@ use crate::prelude::*;
 use std::fmt::Display;
 use std::str::FromStr;
 
-use news_flash::models::{ArticleFilter, Tag, TagID};
+use news_flash::models::{ArticleFilter, Tag};
 use news_flash::models::{Category, Feed};
 use ratatui::text::Text;
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum FeedListItem {
     All,
     Feed(Box<Feed>),
     Categories,
     Category(Box<Category>),
-    Tags(Vec<TagID>),
+    Tags,
     Tag(Box<Tag>),
     Query(Box<LabeledQuery>),
 }
@@ -43,7 +43,7 @@ impl FeedListItem {
                     .replace("{label}", category.label.as_str()),
                 config.theme.category(),
             ),
-            Tags(_) => (config.tags_label.to_owned(), config.theme.tag()),
+            Tags => (config.tags_label.to_owned(), config.theme.tag()),
             Tag(tag) => {
                 let mut style = config.theme.tag();
 
@@ -91,7 +91,7 @@ impl FeedListItem {
                         .unwrap_or("no url".into())
                 )
             }
-            Tags(_) => "all tagged articles".to_string(),
+            Tags => "all tagged articles".to_string(),
             Tag(tag) => format!("Tag: {}", tag.label),
             Query(labeled_query) => format!("Query: {}", labeled_query.query),
         }
@@ -116,11 +116,7 @@ impl TryFrom<FeedListItem> for AugmentedArticleFilter {
                 ..Default::default()
             }
             .into(),
-            Tags(tag_ids) => ArticleFilter {
-                tags: Some(tag_ids),
-                ..Default::default()
-            }
-            .into(),
+            Tags => AugmentedArticleFilter::from_str("tagged").unwrap(),
             Tag(tag) => ArticleFilter {
                 tags: vec![tag.tag_id].into(),
                 ..Default::default()
@@ -139,7 +135,7 @@ impl Display for FeedListItem {
             Feed(feed) => write!(f, "feed {}", feed.label),
             Categories => write!(f, "categories"),
             Category(category) => write!(f, "category {}", category.label),
-            Tags(_) => write!(f, "tags"),
+            Tags => write!(f, "tags"),
             Tag(tag) => write!(f, "tag #{}", tag.label),
             Query(labeled_article_query) => {
                 write!(f, "article query {}", labeled_article_query.label)

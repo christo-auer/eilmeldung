@@ -4,8 +4,8 @@ use crate::ui::feeds_list::model::FeedListModelData;
 
 use getset::{Getters, MutGetters};
 use log::info;
+use news_flash::models::PluginCapabilities;
 use news_flash::models::{Category, Feed, FeedMapping, NEWSFLASH_TOPLEVEL, UnifiedMapping};
-use news_flash::models::{PluginCapabilities, TagID};
 use ratatui::widgets::Scrollbar;
 use ratatui::widgets::{Block, Borders};
 use ratatui::{
@@ -131,12 +131,6 @@ impl FeedListViewData {
             .await?
             .contains(PluginCapabilities::SUPPORT_TAGS)
         {
-            let tag_ids: Vec<TagID> = model_data
-                .tags()
-                .iter()
-                .map(|tag| tag.tag_id.clone())
-                .collect();
-
             let mut children = model_data
                 .tags()
                 .iter()
@@ -146,7 +140,7 @@ impl FeedListViewData {
             match item_type {
                 FeedListItemType::List => self.tree_items.append(&mut children),
                 FeedListItemType::Tree => {
-                    let tags_item = FeedListItem::Tags(tag_ids);
+                    let tags_item = FeedListItem::Tags;
                     let tag_item_text = tags_item.to_text(config, None, None);
 
                     let tags_tree_item = TreeItem::new(tags_item, tag_item_text, children)?;
@@ -299,5 +293,35 @@ impl FeedListViewData {
                 .get(&category_id)
                 .map(|mapping| UnifiedMapping::Category(mapping.to_owned())),
         };
+    }
+
+    pub(super) fn ensure_sensible_selection(&mut self, selected_before: &[FeedListItem]) {
+        let selected_now = self.tree_state.selected();
+
+        let selection = if selected_now.is_empty() {
+            selected_before
+        } else {
+            selected_now
+        };
+
+        let roots = self.tree_items.as_slice();
+
+        // follows the path along the selection and long as it is still there
+        let sensible_selection = selection
+            .iter()
+            .scan(roots, |items, id| {
+                items
+                    .iter()
+                    .find(|item| item.identifier() == id)
+                    .map(|next| {
+                        *items = next.children();
+                        next.identifier()
+                    })
+                    .or(items.first().map(TreeItem::identifier))
+            })
+            .cloned()
+            .collect::<Vec<FeedListItem>>();
+
+        self.tree_state.select(sensible_selection);
     }
 }
