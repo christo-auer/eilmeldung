@@ -96,7 +96,7 @@ impl FeedList {
                     .model_data
                     .set_category_read(vec![category.category_id.clone()])?,
                 Tag(tag) => self.model_data.set_tag_read(vec![tag.tag_id.clone()])?,
-                Tags(_) => {}
+                Tags => {}
                 Categories | Query(_) => {
                     // reroute to article list
                     self.message_sender
@@ -121,7 +121,7 @@ impl FeedList {
         use FeedListItem::*;
         if let Some(selected) = self.selected().as_ref() {
             match selected {
-                not_supported @ (All | Tags(_) | Query(_) | Categories) => {
+                not_supported @ (All | Tags | Query(_) | Categories) => {
                     return tooltip(
                         &self.message_sender,
                         format!("renaming not supported for {not_supported}").as_str(),
@@ -176,7 +176,7 @@ impl FeedList {
         use FeedListItem::*;
         if let Some(selected) = self.selected().as_ref() {
             match selected {
-                not_supported @ (All | Tags(_) | Query(_) | Categories) => {
+                not_supported @ (All | Tags | Query(_) | Categories) => {
                     tooltip(
                         &self.message_sender,
                         format!("removing not supported for {not_supported}").as_str(),
@@ -468,6 +468,7 @@ impl MessageReceiver for FeedList {
 
         // get selection before
         let selected_before_item = self.selected().clone();
+        let selected_before = self.view_data.tree_state().selected().to_vec();
         let mut model_needs_update = false;
         let mut view_needs_update = false;
 
@@ -701,35 +702,33 @@ impl MessageReceiver for FeedList {
                 _ => {}
             }
         }
-        // get selection after
-        let mut selected_after_item = self.selected();
 
-        if selected_after_item.is_none() {
-            self.view_data.tree_state_mut().select_first();
-            selected_after_item = self.selected();
-        }
+        let selected_after_item = self.selected();
 
-        if selected_before_item.as_ref() != selected_after_item.as_ref() {
-            if self.view_data.yanked_unified_mapping().is_some() {
-                view_needs_update = true;
-            }
-            self.update_tooltip(selected_after_item.as_ref())?;
-            self.generate_articles_selected_command()?;
-        }
 
         if model_needs_update {
             self.model_data.update().await?;
             self.view_data
                 .update(&self.config, &self.model_data)
                 .await?;
+            self.view_data.ensure_sensible_selection(&selected_before);
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
         } else if view_needs_update {
             self.view_data
                 .update(&self.config, &self.model_data)
                 .await?;
+            self.view_data.ensure_sensible_selection(&selected_before);
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
+        }
+
+        if selected_before_item.as_ref() != selected_after_item.as_ref() {
+            // if self.view_data.yanked_unified_mapping().is_some() {
+            //     view_needs_update = true;
+            // }
+            self.update_tooltip(selected_after_item.as_ref())?;
+            self.generate_articles_selected_command()?;
         }
 
         Ok(())
