@@ -705,7 +705,6 @@ impl MessageReceiver for FeedList {
 
         let selected_after_item = self.selected();
 
-
         if model_needs_update {
             self.model_data.update().await?;
             self.view_data
