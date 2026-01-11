@@ -1,5 +1,7 @@
 # Unreleased
 
+- feed list now tries to restore selection after changes (instead of selecting nothing)
+
 # 0.7.4 - 2026-01-10
 
 - fixed bug which made `default-configuration.toml` invalid; now the style set works as documented
