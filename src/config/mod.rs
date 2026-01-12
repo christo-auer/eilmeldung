@@ -91,6 +91,17 @@ pub enum ArticleScope {
     Marked,
 }
 
+impl ArticleScope {
+    pub fn to_icon(self, config: &Config) -> char {
+        use ArticleScope as A;
+        match self {
+            A::All => config.all_icon,
+            A::Unread => config.unread_icon,
+            A::Marked => config.marked_icon,
+        }
+    }
+}
+
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -118,6 +129,7 @@ pub struct Config {
     pub unmarked_icon: char,
     pub command_line_prompt_icon: char,
     pub article_scope: ArticleScope,
+    pub feed_list_scope: ArticleScope,
     pub scrollbar_begin_symbol: char,
     pub scrollbar_end_symbol: char,
     pub scrollbar_track_symbol: char,
@@ -189,6 +201,7 @@ impl Default for Config {
             tag_icon: '󰓹',
             command_line_prompt_icon: '',
             article_scope: ArticleScope::Unread,
+            feed_list_scope: ArticleScope::All,
             scrollbar_begin_symbol: '│',
             scrollbar_end_symbol: '│',
             scrollbar_track_symbol: ' ',

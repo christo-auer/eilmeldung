@@ -14,6 +14,7 @@ use ratatui::{
     layout::Constraint,
     style::{Style, Stylize},
 };
+use strum::IntoEnumIterator;
 
 #[derive(Getters, MutGetters)]
 #[getset(get = "pub(super)")]
@@ -202,29 +203,15 @@ impl<'a> ArticleListViewData<'a> {
         let spans = &mut title.spans;
 
         if let Some(article_scope) = filter_state.get_effective_scope() {
-            let to_icon = |scope: ArticleScope| -> Span {
-                let icon = match scope {
-                    ArticleScope::All => config.all_icon,
-                    ArticleScope::Unread => config.unread_icon,
-                    ArticleScope::Marked => config.marked_icon,
+            for scope in ArticleScope::iter() {
+                let style = if scope == article_scope {
+                    config.theme.header()
+                } else {
+                    config.theme.inactive()
                 };
-
-                Span::styled(
-                    icon.to_string(),
-                    if scope == article_scope {
-                        config.theme.header()
-                    } else {
-                        config.theme.inactive()
-                    },
-                )
-            };
-
-            spans.push(" ".into());
-            spans.push(to_icon(ArticleScope::All));
-            spans.push(" ".into());
-            spans.push(to_icon(ArticleScope::Unread));
-            spans.push(" ".into());
-            spans.push(to_icon(ArticleScope::Marked));
+                spans.push(" ".into());
+                spans.push(Span::styled(scope.to_icon(config).to_string(), style));
+            }
             spans.push(" ".into());
         }
 

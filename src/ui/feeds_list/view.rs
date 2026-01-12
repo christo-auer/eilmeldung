@@ -6,25 +6,42 @@ use getset::{Getters, MutGetters};
 use log::info;
 use news_flash::models::PluginCapabilities;
 use news_flash::models::{Category, Feed, FeedMapping, NEWSFLASH_TOPLEVEL, UnifiedMapping};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::Scrollbar;
 use ratatui::widgets::{Block, Borders};
 use ratatui::{
     style::{Style, Stylize},
     widgets::{StatefulWidget, Widget},
 };
+use strum::IntoEnumIterator;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 use super::feed_list_item::FeedListItem;
 
-#[derive(Getters, MutGetters, Default)]
+#[derive(Getters, MutGetters)]
 pub struct FeedListViewData {
     #[getset(get = "pub", get_mut = "pub")]
+    scope: ArticleScope,
+
+    #[getset(get = "pub", get_mut = "pub")]
     tree_state: TreeState<FeedListItem>,
+
     #[getset(get = "pub")]
     tree_items: Vec<TreeItem<'static, FeedListItem>>,
 
     #[getset(get = "pub")]
     yanked_unified_mapping: Option<UnifiedMapping>,
+}
+
+impl FeedListViewData {
+    pub fn new(config: &Config) -> Self {
+        Self {
+            scope: config.feed_list_scope,
+            tree_state: Default::default(),
+            tree_items: Default::default(),
+            yanked_unified_mapping: Default::default(),
+        }
+    }
 }
 
 impl Widget for &mut FeedList {
@@ -39,7 +56,8 @@ impl Widget for &mut FeedList {
                 Block::default()
                     .borders(Borders::TOP | Borders::LEFT | Borders::BOTTOM)
                     .border_type(ratatui::widgets::BorderType::Rounded)
-                    .border_style(self.config.theme.eff_border(self.is_focused)),
+                    .border_style(self.config.theme.eff_border(self.is_focused))
+                    .title_top(self.view_data.build_title(&self.config)),
             )
             .experimental_scrollbar(Some(
                 Scrollbar::new(ratatui::widgets::ScrollbarOrientation::VerticalLeft)
@@ -81,6 +99,26 @@ impl FeedListViewData {
             .push(TreeItem::new_leaf(query_item, query_item_text));
     }
 
+    fn include_feed_or_category(
+        &self,
+        model_data: &FeedListModelData,
+        feed_or_category: &FeedOrCategory,
+    ) -> bool {
+        match self.scope {
+            ArticleScope::All => true,
+            ArticleScope::Unread => model_data
+                .unread_count_for_feed_or_category()
+                .get(feed_or_category)
+                .map(|count| *count > 0)
+                .unwrap_or(false),
+            ArticleScope::Marked => model_data
+                .marked_count_for_feed_or_category()
+                .get(feed_or_category)
+                .map(|count| *count > 0)
+                .unwrap_or(false),
+        }
+    }
+
     fn add_categories_item(
         &mut self,
         config: &Config,
@@ -89,7 +127,11 @@ impl FeedListViewData {
     ) -> color_eyre::Result<()> {
         let mut root_items = Vec::new();
 
-        for root in model_data.roots().iter() {
+        for root in model_data
+            .roots()
+            .iter()
+            .filter(|feed_or_category| self.include_feed_or_category(model_data, feed_or_category))
+        {
             match root {
                 FeedOrCategory::Category(category_id) => {
                     if let Some(category) = model_data.category_map().get(category_id) {
@@ -134,6 +176,14 @@ impl FeedListViewData {
             let mut children = model_data
                 .tags()
                 .iter()
+                .filter(|tag| {
+                    !(matches!(self.scope, ArticleScope::Unread)
+                        && model_data
+                            .unread_count_for_tag()
+                            .get(&tag.tag_id)
+                            .map(|count| *count == 0i64)
+                            .unwrap_or(false))
+                })
                 .map(|tag| self.gen_tag_item(config, model_data, tag.to_owned()))
                 .collect::<Vec<TreeItem<_>>>();
 
@@ -160,6 +210,12 @@ impl FeedListViewData {
         let mut children = model_data
             .feeds()
             .iter()
+            .filter(|feed| {
+                self.include_feed_or_category(
+                    model_data,
+                    &FeedOrCategory::Feed(feed.feed_id.to_owned()),
+                )
+            })
             .map(|feed| self.map_feed_to_tree_item(config, feed, model_data))
             .collect();
         match item_type {
@@ -213,6 +269,8 @@ impl FeedListViewData {
             .category_tree()
             .get(&category.category_id)
             .unwrap_or(&Vec::new())
+            .iter()
+            .filter(|feed_or_category| self.include_feed_or_category(model_data, feed_or_category))
         {
             children.push(match child {
                 FeedOrCategory::Category(category_id) => {
@@ -323,5 +381,21 @@ impl FeedListViewData {
             .collect::<Vec<FeedListItem>>();
 
         self.tree_state.select(sensible_selection);
+    }
+
+    fn build_title<'a>(&self, config: &Config) -> Line<'a> {
+        let mut title = Line::styled("", config.theme.header());
+        let spans = &mut title.spans;
+        for scope in ArticleScope::iter() {
+            let style = if scope == self.scope {
+                config.theme.header()
+            } else {
+                config.theme.inactive()
+            };
+            spans.push(" ".into());
+            spans.push(Span::styled(scope.to_icon(config).to_string(), style));
+        }
+        spans.push(" ".into());
+        title
     }
 }

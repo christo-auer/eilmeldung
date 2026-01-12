@@ -40,10 +40,10 @@ impl FeedList {
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {
-            config,
+            config: config.clone(),
             message_sender,
             model_data: FeedListModelData::new(news_flash_utils.clone()),
-            view_data: FeedListViewData::default(),
+            view_data: FeedListViewData::new(&config),
             is_focused: false,
         }
     }
@@ -514,6 +514,14 @@ impl MessageReceiver for FeedList {
                     self.view_data
                         .tree_state_mut()
                         .scroll_up(self.config.input_config.scroll_amount);
+                    view_needs_update = true;
+                }
+                show_command @ (C::Show(ActionTarget::FeedList, scope)
+                | C::Show(ActionTarget::Current, scope))
+                    if matches!(show_command, C::Show(ActionTarget::FeedList, _))
+                        || self.is_focused =>
+                {
+                    *self.view_data.scope_mut() = *scope;
                     view_needs_update = true;
                 }
 
