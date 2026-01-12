@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.7.5 - 2026-01-12
+
 - **new feature**: feed list now supports showing only items with unread or marked items (or all)
   - press `1`, `2` or `3` *in the feed list* to show *all* or items with *unread* or *marked* articles in the feed list
   - of course, this still works in the *article list* 
