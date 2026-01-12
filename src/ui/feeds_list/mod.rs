@@ -101,7 +101,7 @@ impl FeedList {
                     // reroute to article list
                     self.message_sender
                         .send(Message::Command(Command::ActionSetRead(
-                            ActionSetReadTarget::ArticleList,
+                            ActionTarget::ArticleList,
                             ActionScope::All,
                         )))?;
                 }
@@ -230,10 +230,10 @@ impl FeedList {
         Ok(())
     }
 
-    fn target_matches(&self, target: &ActionSetReadTarget) -> bool {
+    fn target_matches(&self, target: &ActionTarget) -> bool {
         match target {
-            ActionSetReadTarget::Current if self.is_focused => true,
-            ActionSetReadTarget::FeedList => true,
+            ActionTarget::Current if self.is_focused => true,
+            ActionTarget::FeedList => true,
             _ => false,
         }
     }
@@ -526,7 +526,7 @@ impl MessageReceiver for FeedList {
                             // list
                             self.message_sender
                                 .send(Message::Command(Command::ActionSetRead(
-                                    ActionSetReadTarget::ArticleList,
+                                    ActionTarget::ArticleList,
                                     query_scope.to_owned(),
                                 )))?;
                         }

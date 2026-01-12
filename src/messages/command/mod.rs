@@ -9,9 +9,7 @@ use news_flash::models::Url;
 
 pub mod prelude {
     pub use super::parse::CommandParseError;
-    pub use super::{
-        ActionScope, ActionSetReadTarget, Command, CommandSequence, Panel, PastePosition,
-    };
+    pub use super::{ActionScope, ActionTarget, Command, CommandSequence, Panel, PastePosition};
 }
 
 use crate::prelude::*;
@@ -118,7 +116,7 @@ impl Display for ActionScope {
 
 #[derive(Debug, Clone, Default, strum::EnumIter, strum::EnumMessage, strum::AsRefStr)]
 #[strum(serialize_all = "lowercase")]
-pub enum ActionSetReadTarget {
+pub enum ActionTarget {
     #[default]
     #[strum(message = ".", detailed_message = "currently selected panel")]
     Current,
@@ -128,10 +126,10 @@ pub enum ActionSetReadTarget {
     ArticleList,
 }
 
-impl FromStr for ActionSetReadTarget {
+impl FromStr for ActionTarget {
     type Err = color_eyre::Report;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use ActionSetReadTarget::*;
+        use ActionTarget::*;
 
         Ok(match s {
             "." => Current,
@@ -142,7 +140,7 @@ impl FromStr for ActionSetReadTarget {
     }
 }
 
-impl Display for ActionSetReadTarget {
+impl Display for ActionTarget {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.get_message().unwrap().fmt(f) // <- if this fails, it must fail hard
     }
@@ -388,7 +386,7 @@ pub enum Command {
         message = "read [[<target>] <scope>]",
         detailed_message = "set all articles matching the scope in the target to read (feed list, article list)"
     )]
-    ActionSetRead(ActionSetReadTarget, ActionScope),
+    ActionSetRead(ActionTarget, ActionScope),
 
     #[strum(
         serialize = "unread",
@@ -449,10 +447,10 @@ pub enum Command {
 
     #[strum(
         serialize = "show",
-        message = "show <article scope>",
-        detailed_message = "show only articles in the article scope (article list)"
+        message = "show <target> <article scope>",
+        detailed_message = "show only articles in the article scope (feed list, article list)"
     )]
-    ArticleListSetScope(ArticleScope),
+    Show(ActionTarget, ArticleScope),
 
     #[strum(
         serialize = "scrape",
@@ -638,9 +636,9 @@ impl Display for Command {
                 write!(f, "change color of tag to {}", color)
             }
             ArticleListSelectNextUnread => write!(f, "select next unread"),
-            ArticleListSetScope(ArticleScope::Marked) => write!(f, "show marked"),
-            ArticleListSetScope(ArticleScope::Unread) => write!(f, "show unread"),
-            ArticleListSetScope(ArticleScope::All) => write!(f, "show all"),
+            Show(target, ArticleScope::Marked) => write!(f, "show only marked in {target}"),
+            Show(target, ArticleScope::Unread) => write!(f, "show only unread in {target}"),
+            Show(target, ArticleScope::All) => write!(f, "show all in {target}"),
             ArticleShare(share_target) => write!(f, "share article to {share_target}"),
 
             ArticleCurrentScrape => write!(f, "scrape content"),
