@@ -38,6 +38,7 @@ You can find the default configuration in `examples/default-config.toml`
 | `refresh_fps`                     | integer             | UI refresh rate in frames per second                                                                       |
 | `network_timeout_seconds`         | integer             | timeout for network operations                                                                             |
 | `article_scope`                   | string              | Default article scope: `"all"`, `"unread"`, or `"marked"`                                                  |
+| `feed_list_scope`                 | string              | Default feed list scope: `"all"`, `"unread"`, or `"marked"`                                                |
 | `default_sort_order`              | string (sort order) | Default sort order for articles: e.g., `"date"`, `">date"`, `"feed date"` (see Article Queries for syntax) |
 | `hide_default_sort_order`         | boolean             | If true, hides the sort order if the default sort order is applied; otherwise always show sort order       |
 | `keep_articles_days`              | integer             | amount of days before articles are removed                                                                 |

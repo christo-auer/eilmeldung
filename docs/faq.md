@@ -96,6 +96,19 @@ feed_list = [
 ]
 ```
 
+### Can I sync what the feed list and article list how (all/unread/marked)?
+
+There is no dedicated setting for this but this can be achived by using the same value for `article_scope` and `feed_list_scope` and remapping the keybindings for changing the scope:
+
+```toml
+[input_config.mappings]
+"1" = ["show feeds all", "show articles all"]
+"2" = ["show feeds unread", "show articles unread"]
+"3" = ["show feeds marked", "show articles marked"]
+```
+
+With this the article list and feed list always have the same scope.
+
 ---
 
 ## Configuration & Customization

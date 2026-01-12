@@ -48,7 +48,8 @@ Here are some common command examples to get you started:
 :importopml feeds.opml                   # Import feeds from OPML file
 :exportopml backup.opml                  # Export feeds to OPML file
 :focus articles                          # Focus the article list panel
-:show unread                             # Show only unread articles
+:show unread                             # Show only unread articles in current panel
+:show feeds all                          # Show all articles in the feed list
 :search author:john newer:"3 days"       # Search for articles by John from last 3 days
 :sort date                               # Sort by date (newest first)
 :sort >date                              # Sort by date (oldest first)
@@ -103,7 +104,6 @@ Here are some common command examples to get you started:
 
 | Command | Syntax | Context | Description |
 |---------|--------|---------|-------------|
-| `show` | `show <scope>` | Article List | Filter articles by scope: `all`, `unread`, or `marked`. Examples: `:show unread`, `:show marked` |
 | `nextunread` | `nextunread` | Article List | Select the next unread article in the list |
 | `search` | `search <query>` | Article List | Search for articles matching the query. Example: `:search title:security newer:"1 week"` |
 | `searchnext` | `searchnext` | Article List | Jump to the next article matching the current search query |
@@ -125,6 +125,7 @@ These commands support a **scope parameter** to target specific articles:
 
 | Command | Syntax | Context | Description |
 |---------|--------|---------|-------------|
+| `show` | `show [<target>] <scope>` | Article List, Feed List | Filter articles by scope: `all`, `unread`, or `marked`. Examples: `:show unread`, `:show feeds marked`, `:show articles all` |
 | `read` | `read [<scope>]` | Feed List, Article List | Mark articles as read. Examples: `:read` (current), `:read %` (all), `:read unread today` (unread from today), `:read feed:bbc` (all from BBC) |
 | `unread` | `unread [<scope>]` | Feed List, Article List | Mark articles as unread. Examples: `:unread` (current), `:unread %` (all), `:unread marked` (all marked) |
 | `mark` | `mark [<scope>]` | Article List | Mark articles (starred/bookmarked). Examples: `:mark` (current), `:mark %` (all), `:mark unread` (all unread) |
@@ -134,7 +135,7 @@ These commands support a **scope parameter** to target specific articles:
 | `untag` | `untag <tag name> [<scope>]` | Article List | Remove tag from articles. Examples: `:untag important` (current), `:untag tech marked` (all marked) |
 | `share` | `share <target>` | Article List, Article Content | Share article title and URL. Built-in targets: `clipboard`, `reddit`, `mastodon`, `telegram`, `instapaper`. Custom targets (URL and commands) can be defined in the configuration file. Example: `:share clipboard` |
 
-**Note:** The `read` command also supports an optional **target parameter** to specify which panel's selection to use: `:read <target> <scope>`. Target can be `.` (current panel), `feeds` (feed list selection), or `articles` (article list selection). Examples: `:read feeds %` (all articles in selected feed), `:read articles .` (current article in article list).
+**Note:** The `show` and `read` commands also supports an optional **target parameter** to specify which panel's selection to use: Target can be `.` (current panel), `feeds` (feed list selection), or `articles` (article list selection). 
 
 ## Import/Export
 
