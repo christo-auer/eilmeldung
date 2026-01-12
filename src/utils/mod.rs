@@ -17,7 +17,7 @@ pub fn to_bubble<'a>(span: Span<'a>) -> Line<'a> {
     let style = span.style;
 
     Line::from(vec![
-        Span::styled("", style), 
+        Span::styled("", style),
         span.style(style.add_modifier(Modifier::REVERSED)),
         Span::styled("", style),
     ])
