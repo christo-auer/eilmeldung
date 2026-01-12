@@ -389,7 +389,7 @@ impl CommandInput {
         current_part: &str,
     ) -> color_eyre::Result<()> {
         let text = Self::distribute_in_columns(
-            self.generate_help_tab_std(ActionSetReadTarget::iter(), current_part)
+            self.generate_help_tab_std(ActionTarget::iter(), current_part)
                 .chain(self.generate_help_tab_std(ActionScope::iter(), current_part))
                 .collect::<Vec<Line<'_>>>(),
             2,
@@ -397,7 +397,7 @@ impl CommandInput {
 
         self.show_help_dialog("Action or Article Scope".to_owned(), text)?;
 
-        let targets = ActionSetReadTarget::iter()
+        let targets = ActionTarget::iter()
             .map(|target| target.get_message().unwrap_or("?").to_owned())
             .chain(ActionScope::iter().map(|scope| scope.get_message().unwrap_or("?").to_owned()))
             .collect::<Vec<String>>();

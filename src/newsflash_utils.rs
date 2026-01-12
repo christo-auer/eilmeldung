@@ -13,7 +13,7 @@ use news_flash::{
 
 use log::{debug, error, info};
 use ratatui::{
-    style::{Color, Stylize},
+    style::Color,
     text::{Line, Span},
 };
 use reqwest::{Client, ClientBuilder};
@@ -445,11 +445,7 @@ impl NewsFlashUtils {
             .or(config.theme.tag().fg)
             .unwrap_or_default();
         let style = config.theme.tag().fg(color);
-        Line::from(vec![
-            Span::styled("", style),
-            Span::styled(tag.label.to_owned(), style.reversed()),
-            Span::styled("", style),
-        ])
+        to_bubble(Span::styled(tag.label.to_owned(), style))
     }
 
     fn get_root_cause_message(error: &dyn Error) -> String {

@@ -357,10 +357,10 @@ impl ArticlesList {
         Ok(())
     }
 
-    fn target_matches(&self, target: &ActionSetReadTarget) -> bool {
+    fn target_matches(&self, target: &ActionTarget) -> bool {
         match target {
-            ActionSetReadTarget::Current if self.is_focused => true,
-            ActionSetReadTarget::ArticleList => true,
+            ActionTarget::Current if self.is_focused => true,
+            ActionTarget::ArticleList => true,
             _ => false,
         }
     }
@@ -415,7 +415,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.select_index_and_send_message(Some(self.model_data.articles().len() - 1))?;
                 }
 
-                C::ArticleListSetScope(scope) => {
+                show_command @ (C::Show(ActionTarget::ArticleList, scope)
+                | C::Show(ActionTarget::Current, scope))
+                    if matches!(show_command, C::Show(ActionTarget::ArticleList, _))
+                        || self.is_focused =>
+                {
                     *self.filter_state.article_scope_mut() = *scope;
                     model_needs_update = true;
                 }
@@ -438,11 +442,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
                         // if all articles must be set to read and no adhoc filter is applied, the
                         // feed list can set the articles to read
                         All if !self.filter_state.apply_article_adhoc_filter()
-                            && !matches!(target, ActionSetReadTarget::ArticleList) =>
+                            && !matches!(target, ActionTarget::ArticleList) =>
                         {
                             info!("re-routing set read command to feed list");
                             self.message_sender.send(Message::Command(C::ActionSetRead(
-                                ActionSetReadTarget::FeedList,
+                                ActionTarget::FeedList,
                                 ActionScope::Current,
                             )))?;
                         }

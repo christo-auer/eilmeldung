@@ -147,14 +147,14 @@ impl Command {
                 };
 
                 let target = word
-                    .map(|word| match ActionSetReadTarget::from_str(word.as_str()) {
+                    .map(|word| match ActionTarget::from_str(word.as_str()) {
                         Ok(target) => target,
                         Err(_) => {
                             args = old_args; // restore old version of args
-                            ActionSetReadTarget::Current
+                            ActionTarget::Current
                         }
                     })
-                    .unwrap_or(ActionSetReadTarget::Current);
+                    .unwrap_or(ActionTarget::Current);
 
                 C::ActionSetRead(target, ActionScope::from_option_string(args.as_deref())?)
             }
@@ -244,10 +244,31 @@ impl Command {
                 C::TagAdd(tag_title, color)
             }
 
-            C::ArticleListSetScope(..) => C::ArticleListSetScope(
-                expect_from_str::<ArticleScope>(&mut args, "expecting article scope")
-                    .map_err(|_| E::ArticleScopeExpected)?,
-            ),
+            C::Show(..) => {
+                let old_args = args.clone();
+                let word = expect_word(&mut args, "target or scope")
+                    .map_err(|_| E::TargetOrArticleScopeExpected);
+
+                if eager && let Err(error) = word {
+                    return Err(error);
+                };
+
+                let target = word
+                    .map(|word| match ActionTarget::from_str(word.as_str()) {
+                        Ok(target) => target,
+                        Err(_) => {
+                            args = old_args; // restore old version of args
+                            ActionTarget::Current
+                        }
+                    })
+                    .unwrap_or(ActionTarget::Current);
+
+                C::Show(
+                    target,
+                    expect_from_str::<ArticleScope>(&mut args, "expecting article scope")
+                        .map_err(|_| E::ArticleScopeExpected)?,
+                )
+            }
 
             C::ArticleListSearch(..) => C::ArticleListSearch(ArticleQuery::from_str(
                 expect_something(args, "expecting article query")?.as_str(),

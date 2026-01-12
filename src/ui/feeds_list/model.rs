@@ -122,8 +122,6 @@ impl FeedListModelData {
             );
         }
 
-        self.unread_count_for_tag = HashMap::new();
-
         // build category/feed tree
         self.category_tree = HashMap::new();
 

@@ -14,6 +14,7 @@ use ratatui::{
     layout::Constraint,
     style::{Style, Stylize},
 };
+use strum::IntoEnumIterator;
 
 #[derive(Getters, MutGetters)]
 #[getset(get = "pub(super)")]
@@ -197,24 +198,21 @@ pub struct ArticleListViewData<'a> {
 }
 
 impl<'a> ArticleListViewData<'a> {
-    fn build_title(&self, filter_state: &FilterState, config: &Config) -> Span<'static> {
-        let mut title = String::new();
+    fn build_title(&self, filter_state: &FilterState, config: &Config) -> Line<'static> {
+        let mut title = Line::styled("", config.theme.header());
+        let spans = &mut title.spans;
 
         if let Some(article_scope) = filter_state.get_effective_scope() {
-            let to_icon = |scope: ArticleScope| -> char {
-                if scope == article_scope {
-                    '󰐾'
+            for scope in ArticleScope::iter() {
+                let style = if scope == article_scope {
+                    config.theme.header()
                 } else {
-                    ''
-                }
-            };
-
-            title.push_str(&format!(
-                " {} All {} Unread {} Marked ",
-                to_icon(ArticleScope::All),
-                to_icon(ArticleScope::Unread),
-                to_icon(ArticleScope::Marked)
-            ));
+                    config.theme.inactive()
+                };
+                spans.push(" ".into());
+                spans.push(Span::styled(scope.to_icon(config).to_string(), style));
+            }
+            spans.push(" ".into());
         }
 
         let filter_info = match filter_state.article_adhoc_filter {
@@ -223,10 +221,10 @@ impl<'a> ArticleListViewData<'a> {
             _ => "",
         };
 
-        title.push_str(filter_info);
+        spans.push(Span::styled(filter_info, config.theme.header()));
 
         if !filter_state.uses_default_sort_order() {
-            title.push_str(&format!(
+            let filter_text = &format!(
                 " {} {} ",
                 if *filter_state.reverse_sort_order() {
                     "󰒿"
@@ -234,10 +232,12 @@ impl<'a> ArticleListViewData<'a> {
                     "󰌼"
                 },
                 filter_state.get_effective_sort_order()
-            ));
+            );
+            spans.push(Span::styled(filter_text.to_owned(), config.theme.header()));
         }
+        // spans.push(Span::styled("├", config.theme.header()));
 
-        Span::styled(title, config.theme.header())
+        title
     }
 
     pub fn update(
@@ -413,6 +413,7 @@ impl<'a> ArticleListViewData<'a> {
         Block::default()
             .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
             .title_top(self.build_title(filter_state, config))
+            .title_alignment(ratatui::layout::Alignment::Left)
             .border_type(ratatui::widgets::BorderType::Rounded)
             .border_style(if is_focused {
                 config.theme.border_focused()

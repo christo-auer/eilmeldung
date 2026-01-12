@@ -1,6 +1,12 @@
 # Unreleased
 
-- feed list now tries to restore selection after changes (instead of selecting nothing)
+- **new feature**: feed list now supports showing only items with unread or marked items (or all)
+  - press `1`, `2` or `3` *in the feed list* to show *all* or items with *unread* or *marked* articles in the feed list
+  - of course, this still works in the *article list* 
+  - the new setting `feed_list_scope` defines the default setting on startup
+  - if you want to synchronize what the feed list and article list show, have a look at the FAQ (*Features and Capabilities*)
+  - new display of current scope using only icons
+- bugfix: feed list now tries to restore selection after changes (instead of selecting nothing)
 
 # 0.7.4 - 2026-01-10
 

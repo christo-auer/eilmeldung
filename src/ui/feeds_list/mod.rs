@@ -40,10 +40,10 @@ impl FeedList {
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {
-            config,
+            config: config.clone(),
             message_sender,
             model_data: FeedListModelData::new(news_flash_utils.clone()),
-            view_data: FeedListViewData::default(),
+            view_data: FeedListViewData::new(&config),
             is_focused: false,
         }
     }
@@ -101,7 +101,7 @@ impl FeedList {
                     // reroute to article list
                     self.message_sender
                         .send(Message::Command(Command::ActionSetRead(
-                            ActionSetReadTarget::ArticleList,
+                            ActionTarget::ArticleList,
                             ActionScope::All,
                         )))?;
                 }
@@ -230,10 +230,10 @@ impl FeedList {
         Ok(())
     }
 
-    fn target_matches(&self, target: &ActionSetReadTarget) -> bool {
+    fn target_matches(&self, target: &ActionTarget) -> bool {
         match target {
-            ActionSetReadTarget::Current if self.is_focused => true,
-            ActionSetReadTarget::FeedList => true,
+            ActionTarget::Current if self.is_focused => true,
+            ActionTarget::FeedList => true,
             _ => false,
         }
     }
@@ -516,6 +516,14 @@ impl MessageReceiver for FeedList {
                         .scroll_up(self.config.input_config.scroll_amount);
                     view_needs_update = true;
                 }
+                show_command @ (C::Show(ActionTarget::FeedList, scope)
+                | C::Show(ActionTarget::Current, scope))
+                    if matches!(show_command, C::Show(ActionTarget::FeedList, _))
+                        || self.is_focused =>
+                {
+                    *self.view_data.scope_mut() = *scope;
+                    view_needs_update = true;
+                }
 
                 C::ActionSetRead(target, action_scope) if self.target_matches(target) => {
                     match action_scope {
@@ -526,7 +534,7 @@ impl MessageReceiver for FeedList {
                             // list
                             self.message_sender
                                 .send(Message::Command(Command::ActionSetRead(
-                                    ActionSetReadTarget::ArticleList,
+                                    ActionTarget::ArticleList,
                                     query_scope.to_owned(),
                                 )))?;
                         }

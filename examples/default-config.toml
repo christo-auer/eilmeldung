@@ -2,6 +2,7 @@
 refresh_fps = 10
 network_timeout_seconds = 60
 article_scope = "unread"
+feed_list_scope = "all"
 default_sort_order = "<date" 
 keep_articles_days = 30
 
@@ -9,7 +10,7 @@ keep_articles_days = 30
 offline_icon = ""
 read_icon = ""
 unread_icon = ""
-marked_icon = ""
+marked_icon = ""
 unmarked_icon = " "
 tag_icon = "󰓹"
 command_line_prompt_icon = ""

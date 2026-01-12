@@ -74,18 +74,19 @@ For a comprehensive getting started guide, see **[Getting Started](docs/getting-
 
 Here some key bindings to get you started.
 
-| Key       | Action                                          |
-| -----     | --------                                        |
-| `?`       | Show all key bindings (search with `/`!)        |
-| `s`       | Sync all feeds                                  |
-| `j` / `k` | Move down / up                                  |
-| `h` / `l` | Move between panels (left/right)                |
-| `o`       | Open article in browser, mark as read, jump to next unread |
-| `r` / `u` | Mark as read / unread                           |
-| `m` / `v` | Mark (star) / unmark article                    |
-| `/`       | Search articles                                 |
-| `:`       | Open command line                               |
-| `q`       | Quit                                            |
+| Key             | Action                                                        |
+| -----           | --------                                                      |
+| `?`             | Show all key bindings (search with `/`!)                      |
+| `s`             | Sync all feeds                                                |
+| `j` / `k`       | Move down / up                                                |
+| `h` / `l`       | Move between panels (left/right)                              |
+| `o`             | Open article in browser, mark as read, jump to next unread    |
+| `r` / `u`       | Mark as read / unread                                         |
+| `m` / `v`       | Mark (star) / unmark article                                  |
+| `/`             | Search articles                                               |
+| `:`             | Open command line                                             |
+| `q`             | Quit                                                          |
+| `1` / `2` / `3` | Show all/only unread/only marked in feed list or article list |
 
 **Tip:** Press `?` anytime to see all available commands, and use `/` in the help dialog to search!
 
@@ -131,6 +132,10 @@ Absolutely! Everything is customizable via the [configuration file](docs/configu
 ### How do I save articles for later?
 
 Create a tag (`:tagadd readlater red`), bind it to a key, and create a query in your feed list. See the [FAQ](docs/faq.md#how-can-i-save-articles-for-reading-later) for details.
+
+### Can I hide feeds/categories/tags without unread/marked articles?
+
+Yes, focus the feed list and press `2` / `3` to show only feeds/categories/tags with unread / marked articles, show all with `1`. Change the value of the configuration option `feed_list_scope` to either `all`, `unread` or `marked` to set the default value.
 
 **More questions?** See the complete [FAQ](docs/faq.md).
 
