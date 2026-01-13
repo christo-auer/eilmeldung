@@ -10,7 +10,11 @@ use throbber_widgets_tui::Throbber;
 
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        if self.state == AppState::ArticleContentDistractionFree {
+        if self.state == AppState::ArticleContentDistractionFree
+            && !self.command_input.is_active()
+            && !self.command_confirm.is_active()
+            && !self.help_popup.is_modal().unwrap_or(false)
+        {
             self.article_content.render(area, buf);
             return;
         }
