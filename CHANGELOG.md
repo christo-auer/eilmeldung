@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.7.6 - 2026-01-13
+
 - bugfix: when in zen mode (distraction-free mode) and a modal dialog is active (confirmation, etc.), zen mode is temporarily deactivated
 
 # 0.7.5 - 2026-01-12
