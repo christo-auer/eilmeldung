@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: when in zen mode (distraction-free mode) and a modal dialog is active (confirmation, etc.), zen mode is temporarily deactivated
+
 # 0.7.5 - 2026-01-12
 
 - **new feature**: feed list now supports showing only items with unread or marked items (or all)
