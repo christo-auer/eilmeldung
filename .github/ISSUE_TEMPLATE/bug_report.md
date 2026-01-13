@@ -28,6 +28,7 @@ Reproduce behavior with `--log-file` and `--log-level TRACE` and insert the rele
  - OS: macOS or Linux
  - Package: binaries from GitHub, homebew, nix, etc.
  - Terminal Emulator: ghostty, foot, kitty, Konsole, etc.
+ - RSS Provider: local RSS, freshRSS, etc.
 
 **Additional context**
 Add any other context about the problem here.
