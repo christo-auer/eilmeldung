@@ -1,6 +1,7 @@
 use std::{sync::Arc, time::Duration};
 use tokio::time::sleep;
 
+use futures::StreamExt;
 use log::{info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
 use tokio::task::JoinHandle;
@@ -8,14 +9,8 @@ use tokio::task::JoinHandle;
 use crate::prelude::*;
 use tokio::sync::{Mutex, mpsc::UnboundedSender};
 
-#[cfg(not(target_os = "macos"))]
-use network_connectivity::{Connectivity, ConnectivityState};
-
 const IS_REACHABLE_RETRIES: u16 = 10;
 const TIME_BETWEEN_RETRIES: Duration = Duration::from_secs(1);
-
-#[cfg(target_os = "macos")]
-const TIME_BETWEEN_REACHABILITY_CHECKS: Duration = Duration::from_secs(60);
 
 pub struct ConnectivityMonitor {
     message_sender: UnboundedSender<Message>,
@@ -83,30 +78,10 @@ impl ConnectivityMonitor {
         Ok(())
     }
 
-    #[cfg(not(target_os = "macos"))]
-    async fn on_connectivity_changed(&self, connectivity: &Connectivity) -> color_eyre::Result<()> {
-        use ConnectivityState::*;
-        match (connectivity.ipv4, connectivity.ipv6) {
-            (None, None) => {
-                warn!("connection to the network is gone");
-                self.message_sender
-                    .send(Message::Event(Event::ConnectionLost(
-                        ConnectionLostReason::NoInternet,
-                    )))?;
-            }
-            (_, _) => {
-                self.check_reachability().await?;
-            }
-        }
-
-        Ok(())
-    }
-
-    #[cfg(not(target_os = "macos"))]
     pub fn spawn(self) -> color_eyre::Result<JoinHandle<color_eyre::Result<()>>> {
-        let (driver, mut receiver) =
-            network_connectivity::new().map_err(|error| color_eyre::eyre::eyre!(error))?;
-        let driver = tokio::spawn(driver);
+        use if_watch::tokio::IfWatcher;
+
+        let mut set = IfWatcher::new()?;
 
         Ok(tokio::spawn(async move {
             *self.is_running.lock().await = true;
@@ -116,40 +91,10 @@ impl ConnectivityMonitor {
                         self.check_reachability().await?;
                     },
 
-                    connectivity = receiver.recv() => {
-                        match connectivity {
-                            None => *self.is_running.lock().await = false,
-                            Some(connectivity) => {
-                                log::info!("connectivity has changed: {:?}", connectivity);
-                                self.on_connectivity_changed(&connectivity).await?;
-                            }
-
-                        }
-
-                    }
-
-
-                }
-            }
-            drop(receiver);
-
-            driver
-                .await?
-                .map_err(|error| color_eyre::eyre::eyre!(error))?;
-
-            Ok(())
-        }))
-    }
-
-    #[cfg(target_os = "macos")]
-    pub fn spawn(self) -> color_eyre::Result<JoinHandle<color_eyre::Result<()>>> {
-        Ok(tokio::spawn(async move {
-            *self.is_running.lock().await = true;
-            while *self.is_running.lock().await {
-                tokio::select! {
-                    _ = tokio::time::sleep(TIME_BETWEEN_REACHABILITY_CHECKS) => {
+                    event = set.select_next_some() => {
+                        log::info!("connectivity has changed: {:?}", event);
                         self.check_reachability().await?;
-                    },
+                    }
 
 
                 }
