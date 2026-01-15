@@ -1,5 +1,6 @@
 # Unreleased
 
+- new modifier for key bindings: `S-...` for shift, e.g., `S-down` for pressing "shift and downward cursor key"
 - bugfix: command input doesn't crash on umlaute/unicode anymore
 
 # 0.7.7 - 2026-01-15
