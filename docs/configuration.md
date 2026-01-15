@@ -162,6 +162,22 @@ Key bindings are defined in the `[input_config.mappings]` section as key-value p
 "x" = []
 ```
 
+#### Modifier Keys
+
+- `C-` Ctrl
+- `M-` Meta (Alt)
+- `S-` Shift (don't use for characters, use this for special keys, see below)
+
+**Note**: For uppercase characters, you don't need `S-`. Just use the uppercase character itself: `J` instead of `S-j`.
+
+#### Special Keys
+- `enter`, `space`, `tab`, `backtab`, `backspace`
+- `esc`
+- navigation: `left`, `right`, `up`, `down`, `page_up`, `page_down`, `home`, `end`
+- modification: `insert`, `delete`
+- function keys: `f1`, `f2`, `f3`, `f4`, `f5`, `f6`, `f7`, `f8`, `f9`, `f10`, `f11`, `f12`
+
+
 For a complete list of available commands, see the Commands section. For default keybindings, see the main page or execute the command `helpinput`.
 
 ---

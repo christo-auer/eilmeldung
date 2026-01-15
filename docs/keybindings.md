@@ -199,6 +199,12 @@ All key bindings can be customized in your configuration file. See the [Input Co
 # Custom navigation
 "C-j" = ["pagedown"]
 "C-k" = ["pageup"]
+
+# Using modifiers
+"C-k" = ["..."] # Ctrl
+"M-k" = ["..."] # Meta (Alt)
+"S-f1" = ["..."] # Shift and F1
+"S-down" = ["..."] # Shift and down arrow key
 ```
 
 See the [default configuration](../examples/default-config.toml) for the complete list of default key bindings.
