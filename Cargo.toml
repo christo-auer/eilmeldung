@@ -50,6 +50,7 @@ serde_json = "1.0.145"
 serde_toml = "0.0.1"
 shell-words = "1.1.1"
 strfmt = "0.2.5"
+string_manipulation_utf8 = "0.3.0"
 strum = { version = "0.27.2", features = ["derive", "strum_macros"] }
 termimad = "0.34.0"
 text-splitter = { version = "0.28.0", features = ["markdown"] }

@@ -115,24 +115,24 @@ impl CommandInput {
         }
     }
 
-    fn get_curent_input_to_cursor(&self) -> &str {
+    fn get_current_input_to_cursor(&self) -> String {
         let col = self.text_input.cursor().1;
-        &self.text_input.lines()[0][..col]
+        string_manipulation_utf8::substring(&self.text_input.lines()[0], 0, col as isize)
     }
 
-    fn get_current_word(&self) -> (&str, &str) {
-        let current_input = self.get_curent_input_to_cursor();
+    fn get_current_word(&self) -> (String, String) {
+        let current_input = self.get_current_input_to_cursor();
         match current_input.rsplit_once(|c: char| c.is_whitespace()) {
-            None => ("", current_input),
-            Some(split) => split,
+            None => ("".to_owned(), current_input),
+            Some(split) => (split.0.to_owned(), split.1.to_owned()),
         }
     }
 
-    fn get_first_word(&self) -> &str {
-        let current_input = self.get_curent_input_to_cursor();
+    fn get_first_word(&self) -> String {
+        let current_input = self.get_current_input_to_cursor();
         match current_input.split_once(|c: char| c.is_whitespace()) {
-            None => "",
-            Some((word, _)) => word,
+            None => "".to_owned(),
+            Some((word, _)) => word.to_owned(),
         }
     }
 
@@ -140,7 +140,7 @@ impl CommandInput {
         let (partial_command, current_part) = self.get_current_word();
         let current_part = current_part.to_owned();
 
-        let parse_result = Command::parse(partial_command, true);
+        let parse_result = Command::parse(&partial_command, true);
 
         use CommandParseError as E;
         match parse_result {
@@ -194,7 +194,7 @@ impl CommandInput {
         let num_targets = completion_targets.len();
         let completion = match completion_targets
             .iter()
-            .position(|target| *target == current_word)
+            .position(|target| *target == &current_word)
         {
             Some(index) => {
                 if forward {
@@ -669,7 +669,7 @@ impl CommandInput {
             return;
         }
 
-        if let Ok(command) = Command::from_str(self.get_first_word()) {
+        if let Ok(command) = Command::from_str(&self.get_first_word()) {
             self.command_hint = Some(Line::from(vec![
                 Span::styled(
                     command.get_message().unwrap_or(command.as_ref()).to_owned(),

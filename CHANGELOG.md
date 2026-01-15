@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: command input doesn't crash on umlaute/unicode anymore
+
 # 0.7.7 - 2026-01-15
 
 - no more switching back and forth between panels by these new convenient default key bindings:
