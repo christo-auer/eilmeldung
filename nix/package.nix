@@ -13,7 +13,7 @@
 
 rustPlatform.buildRustPackage {
   pname = "eilmeldung";
-  version = "0.7.6";
+  version = "0.7.7";
   
   src = ../.;
   

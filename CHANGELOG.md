@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.7.7 - 2026-01-15
+
 - no more switching back and forth between panels by these new convenient default key bindings:
   - use `Ctrl-j` and `Ctrl-k` to move down/up in the feeds list, from **any panel**
   - use `J` and `K` to scroll the article content down/up (scrape before by pressing `x`)
