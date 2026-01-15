@@ -1523,6 +1523,7 @@ dependencies = [
  "serde_toml",
  "shell-words",
  "strfmt",
+ "string_manipulation_utf8",
  "strum 0.27.2",
  "termimad",
  "text-splitter",
@@ -5269,6 +5270,12 @@ dependencies = [
  "proc-macro2",
  "quote",
 ]
+
+[[package]]
+name = "string_manipulation_utf8"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f02d1ab43d2ff0988268ea71d28c72ac210e7a18d085bb791c589c7051948b50"
 
 [[package]]
 name = "strsim"
