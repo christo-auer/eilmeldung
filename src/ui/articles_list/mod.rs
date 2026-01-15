@@ -364,6 +364,33 @@ impl ArticlesList {
             _ => false,
         }
     }
+
+    fn on_tag_or_untag(
+        &mut self,
+        action_scope: ActionScope,
+        tag_name: String,
+        tag_articles: bool,
+    ) -> Result<(), color_eyre::eyre::Error> {
+        match self
+            .model_data
+            .tag_map()
+            .values()
+            .find(|&tag| tag.label == tag_name)
+        {
+            Some(tag) => {
+                self.change_tag(&action_scope, tag.clone(), tag_articles)?;
+            }
+            None => {
+                log::warn!("could not find tag with name {}", tag_name);
+                tooltip(
+                    &self.message_sender,
+                    format!("unknown tag: {}", tag_name).as_str(),
+                    TooltipFlavor::Error,
+                )?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl crate::messages::MessageReceiver for ArticlesList {
@@ -378,16 +405,32 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
         if let Message::Command(command) = message {
             use Command as C;
+            let mut handle_command = false;
+
+            let Some(command) = (match command {
+                C::In(Panel::ArticleList, command) => {
+                    handle_command = true;
+                    Some(*command.to_owned())
+                }
+                C::In(..) => None,
+                command => {
+                    handle_command = self.is_focused;
+                    Some(command.to_owned())
+                }
+            }) else {
+                return Ok(());
+            };
+
             match command {
-                C::NavigateUp if self.is_focused => {
+                C::NavigateUp if handle_command => {
                     self.view_data.get_table_state_mut().select_previous();
                     self.select_index_and_send_message(None)?;
                 }
-                C::NavigateDown if self.is_focused => {
+                C::NavigateDown if handle_command => {
                     self.view_data.get_table_state_mut().select_next();
                     self.select_index_and_send_message(None)?;
                 }
-                C::NavigatePageUp if self.is_focused => {
+                C::NavigatePageUp if handle_command => {
                     let lines = *self.view_data.article_lines();
                     if let Some(lines) = lines {
                         self.view_data
@@ -396,7 +439,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                         self.select_index_and_send_message(None)?;
                     };
                 }
-                C::NavigatePageDown if self.is_focused => {
+                C::NavigatePageDown if handle_command => {
                     let lines = *self.view_data.article_lines();
                     if let Some(lines) = lines {
                         self.view_data.get_table_state_mut().scroll_down_by(
@@ -405,11 +448,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
                         self.select_index_and_send_message(None)?;
                     }
                 }
-                C::NavigateFirst if self.is_focused => {
+                C::NavigateFirst if handle_command => {
                     self.view_data.get_table_state_mut().select_first();
                     self.select_index_and_send_message(None)?;
                 }
-                C::NavigateLast if self.is_focused => {
+                C::NavigateLast if handle_command => {
                     self.view_data.get_table_state_mut().select_last();
                     // manually "select" as select_last does not know the number of rows
                     self.select_index_and_send_message(Some(self.model_data.articles().len() - 1))?;
@@ -418,24 +461,24 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 show_command @ (C::Show(ActionTarget::ArticleList, scope)
                 | C::Show(ActionTarget::Current, scope))
                     if matches!(show_command, C::Show(ActionTarget::ArticleList, _))
-                        || self.is_focused =>
+                        || handle_command =>
                 {
-                    *self.filter_state.article_scope_mut() = *scope;
+                    *self.filter_state.article_scope_mut() = scope;
                     model_needs_update = true;
                 }
 
                 // actions
                 C::ActionOpenInBrowser(action_scope) => {
-                    self.open_in_browser(action_scope)?;
+                    self.open_in_browser(&action_scope)?;
                 }
 
-                C::ActionSetRead(target, action_scope) if self.target_matches(target) => {
+                C::ActionSetRead(target, action_scope) if self.target_matches(&target) => {
                     // first we check if we can reroute this to feed list to make it quicker
                     use ActionScope::*;
                     match action_scope {
                         // queries must be handled by article list
                         Query(_) => {
-                            self.set_action_scope_read_status(action_scope, Read::Read)?;
+                            self.set_action_scope_read_status(&action_scope, Read::Read)?;
                             view_needs_update = true;
                         }
 
@@ -452,59 +495,38 @@ impl crate::messages::MessageReceiver for ArticlesList {
                         }
 
                         _ => {
-                            self.set_action_scope_read_status(action_scope, Read::Read)?;
+                            self.set_action_scope_read_status(&action_scope, Read::Read)?;
                             view_needs_update = true;
                         }
                     }
                 }
 
                 C::ActionSetUnread(action_scope) => {
-                    self.set_action_scope_read_status(action_scope, Read::Unread)?;
+                    self.set_action_scope_read_status(&action_scope, Read::Unread)?;
                     view_needs_update = true;
                 }
 
                 C::ActionSetMarked(action_scope) => {
-                    self.set_action_scope_marked_status(action_scope, Marked::Marked)?;
+                    self.set_action_scope_marked_status(&action_scope, Marked::Marked)?;
                     view_needs_update = true;
                 }
 
                 C::ActionSetUnmarked(action_scope) => {
-                    self.set_action_scope_marked_status(action_scope, Marked::Unmarked)?;
+                    self.set_action_scope_marked_status(&action_scope, Marked::Unmarked)?;
                     view_needs_update = true;
                 }
 
-                tag_command @ (C::ActionTagArticles(action_scope, tag_name)
-                | C::ActionUntagArticles(action_scope, tag_name))
-                    if self.is_focused =>
-                {
-                    match self
-                        .model_data
-                        .tag_map()
-                        .values()
-                        .find(|&tag| tag.label == *tag_name)
-                    {
-                        Some(tag) => {
-                            self.change_tag(
-                                action_scope,
-                                tag.clone(),
-                                matches!(tag_command, C::ActionTagArticles(..)),
-                            )?;
-                        }
-                        None => {
-                            log::warn!("could not find tag with name {}", tag_name);
-                            tooltip(
-                                &self.message_sender,
-                                format!("unknown tag: {}", tag_name).as_str(),
-                                TooltipFlavor::Error,
-                            )?;
-                        }
-                    }
-
-                    // self.set_action_scope_marked_status(action_scope, Marked::Unmarked)?;
+                C::ActionTagArticles(action_scope, tag_name) => {
+                    self.on_tag_or_untag(action_scope, tag_name, true)?;
                     view_needs_update = true;
                 }
 
-                C::InputFind if self.is_focused => {
+                C::ActionUntagArticles(action_scope, tag_name) => {
+                    self.on_tag_or_untag(action_scope, tag_name, false)?;
+                    view_needs_update = true;
+                }
+
+                C::InputFind if handle_command => {
                     self.message_sender
                         .send(Message::Command(C::CommandLineOpen(Some(
                             "search".to_owned(),
@@ -521,7 +543,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                         self.config.clone(),
                         &self.model_data,
                         &self.filter_state,
-                        self.is_focused,
+                        handle_command,
                     ); // manual here for highlighting only
                     self.search_next(false, false)?;
                 }

@@ -19,6 +19,8 @@ use crate::prelude::*;
     Copy,
     Debug,
     Default,
+    Eq,
+    PartialEq,
     strum::EnumString,
     strum::EnumMessage,
     strum::EnumIter,
@@ -583,6 +585,13 @@ pub enum Command {
     #[allow(clippy::enum_variant_names)]
     CommandConfirm(Box<Command>),
 
+    #[strum(
+        serialize = "in",
+        message = "in <panel> <command>",
+        detailed_message = "execute command in the panel"
+    )]
+    In(Panel, Box<Command>),
+
     // redraw command
     #[strum(
         serialize = "redraw",
@@ -590,6 +599,15 @@ pub enum Command {
         detailed_message = "redraw screen (all)"
     )]
     Redraw,
+}
+
+impl Command {
+    pub fn unwrap_in(&self, panel: Panel) -> Option<&Command> {
+        if let Command::In(target_panel, command) = self {
+            return (*target_panel == panel).then_some(command);
+        }
+        Some(self)
+    }
 }
 
 impl Display for Command {
@@ -692,6 +710,7 @@ impl Display for Command {
                 write!(f, "add tag #{}", tag_title)
             }
             CommandConfirm(command) => write!(f, "{}?", command),
+            In(panel, command) => write!(f, "{command} in {panel}"),
         }
     }
 }
