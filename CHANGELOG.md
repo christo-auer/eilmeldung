@@ -1,5 +1,24 @@
 # Unreleased
 
+- no more switching back and forth between panels by these new convenient default key bindings:
+  - use `Ctrl-j` and `Ctrl-k` to move down/up in the feeds list, from **any panel**
+  - use `J` and `K` to scroll the article content down/up (scrape before by pressing `x`)
+  - use `M-j` and `M-k` to move down/up in the articles list
+- of course, you can customize these key bindings by using the new `in` command
+  - `in <panel> <command>` runs a command in the given panel (`feeds`, `articles`, `content`)
+  - example: `in feeds down` moves the selection down in the feeds list, `in content gotofirst` scrolls to the top in the article list.
+  - the new default key mappings are:
+    ```toml
+    "C-j"       = ["in feeds down"]
+    "C-k"       = ["in feeds up"]
+    "J"         = ["in content down"]
+    "K"         = ["in content up"]
+    "M-j"       = ["in articles down"]
+    "M-k"       = ["in articles up"]
+    ```
+  - note: if you want the old default key mapping for `J` back, add `"J" = ["read", "nextunread"]` to `[input_config.mappings]` in `config.toml`
+
+
 # 0.7.6 - 2026-01-13
 
 - bugfix: when in zen mode (distraction-free mode) and a modal dialog is active (confirmation, etc.), zen mode is temporarily deactivated

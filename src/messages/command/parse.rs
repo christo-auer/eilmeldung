@@ -131,6 +131,17 @@ impl Command {
                 C::CommandConfirm(Box::new(Command::parse(&args, eager)?))
             }
 
+            C::In(..) => {
+                let panel: Panel =
+                    expect_from_str(&mut args, "expecting panel: feeds, articles, content")?;
+
+                let Some(args) = args else {
+                    return Err(E::CommandExpected);
+                };
+
+                C::In(panel, Box::new(Command::parse(&args, eager)?))
+            }
+
             C::PanelFocus(_) => {
                 let panel: Panel =
                     expect_from_str(&mut args, "expecting panel: feeds, articles, content")?;

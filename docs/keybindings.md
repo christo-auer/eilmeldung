@@ -44,17 +44,23 @@ This document provides a comprehensive reference of all default key bindings in 
 
 ## Navigation
 
-| Key | Action |
-|-----|--------|
-| `j` / `k` | Move down / up (vim-style) |
-| `h` / `l` | Move left (article → article list → feeds) / right (feeds → article list → article) |
-| `gg` | Go to first item |
-| `G` | Go to last item |
-| `space` | Toggle category tree node (open/close) |
-| `C-h`/`C-l` | Navigate up/down in feed tree |
-| `Ctrl-f` / `Ctrl-b` | Page down / page up |
-| `Tab` / `Shift-Tab` | Cycle through panels (forward / backward) |
-| `g f` / `g a` / `g c` | Jump directly to feeds / articles / content panel |
+| Key                   | Action                                                                              |
+| -----                 | --------                                                                            |
+| `j` / `k`             | Move down / up (vim-style)                                                          |
+| `h` / `l`             | Move left (article → article list → feeds) / right (feeds → article list → article) |
+| `gg`                  | Go to first item                                                                    |
+| `G`                   | Go to last item                                                                     |
+| `space`               | Toggle category tree node (open/close)                                              |
+| `C-h`/`C-l`           | Navigate up/down in feed tree                                                       |
+| `Ctrl-f` / `Ctrl-b`   | Page down / page up                                                                 |
+| `Tab` / `Shift-Tab`   | Cycle through panels (forward / backward)                                           |
+| `g f` / `g a` / `g c` | Jump directly to feeds / articles / content panel                                   |
+| `C-j`                 | Move down in feeds list (from anywhere)                                             |
+| `C-k`                 | Move up in feeds list (from anywhere)                                               |
+| `J`                   | Move up in article content (from anywhere)                                          | 
+| `K`                   | Move up in article content (from anywhere)                                          | 
+| `M-j`                 | Move up in article list (from anywhere)                                             |
+| `M-k`                 | Move up in article list (from anywhere)                                             | 
 
 ---
 

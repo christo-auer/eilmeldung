@@ -148,25 +148,41 @@ impl crate::messages::MessageReceiver for ArticleContent {
         if let Message::Command(command) = message {
             use Command as C;
             view_needs_update = true;
+            let mut handle_command = false;
+
+            let Some(command) = (match command {
+                C::In(Panel::ArticleContent, command) => {
+                    handle_command = true;
+                    Some(*command.to_owned())
+                }
+                C::In(..) => None,
+                command => {
+                    handle_command = self.is_focused;
+                    Some(command.to_owned())
+                }
+            }) else {
+                return Ok(());
+            };
+
             match command {
-                C::NavigateDown if self.is_focused => {
+                C::NavigateDown if handle_command => {
                     self.view_data.scroll_down();
                 }
-                C::NavigateUp if self.is_focused => {
+                C::NavigateUp if handle_command => {
                     self.view_data.scroll_up();
                 }
-                C::NavigatePageUp if self.is_focused => {
+                C::NavigatePageUp if handle_command => {
                     self.view_data
                         .scroll_page_up(self.config.input_config.scroll_amount as u16);
                 }
-                C::NavigatePageDown if self.is_focused => {
+                C::NavigatePageDown if handle_command => {
                     self.view_data
                         .scroll_page_down(self.config.input_config.scroll_amount as u16);
                 }
-                C::NavigateFirst if self.is_focused => {
+                C::NavigateFirst if handle_command => {
                     self.view_data.scroll_to_top();
                 }
-                C::NavigateLast if self.is_focused => {
+                C::NavigateLast if handle_command => {
                     self.view_data.scroll_to_bottom();
                 }
 
@@ -175,7 +191,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 }
 
                 C::ArticleShare(target) => {
-                    self.share_article(target)?;
+                    self.share_article(&target)?;
                 }
 
                 _ => {

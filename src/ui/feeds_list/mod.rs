@@ -475,42 +475,58 @@ impl MessageReceiver for FeedList {
         // commands
         if let Message::Command(command) = message {
             use Command as C;
+            let mut handle_command = false;
+
+            let Some(command) = (match command {
+                C::In(Panel::FeedList, command) => {
+                    handle_command = true;
+                    Some(*command.to_owned())
+                }
+                C::In(..) => None,
+                command => {
+                    handle_command = self.is_focused;
+                    Some(command.to_owned())
+                }
+            }) else {
+                return Ok(());
+            };
+
             match command {
-                C::NavigateUp if self.is_focused => {
+                C::NavigateUp if handle_command => {
                     self.view_data.tree_state_mut().key_up();
                     view_needs_update = true;
                 }
-                C::NavigateDown if self.is_focused => {
+                C::NavigateDown if handle_command => {
                     self.view_data.tree_state_mut().key_down();
                     view_needs_update = true;
                 }
-                C::NavigateRight if self.is_focused => {
+                C::NavigateRight if handle_command => {
                     self.view_data.tree_state_mut().key_right();
                     view_needs_update = true;
                 }
-                C::NavigateLeft if self.is_focused => {
+                C::NavigateLeft if handle_command => {
                     self.view_data.tree_state_mut().key_left();
                     view_needs_update = true;
                 }
-                C::NavigateFirst if self.is_focused => {
+                C::NavigateFirst if handle_command => {
                     self.view_data.tree_state_mut().select_first();
                     view_needs_update = true;
                 }
-                C::NavigateLast if self.is_focused => {
+                C::NavigateLast if handle_command => {
                     self.view_data.tree_state_mut().select_last();
                     view_needs_update = true;
                 }
-                C::FeedListToggleExpand if self.is_focused => {
+                C::FeedListToggleExpand if handle_command => {
                     self.view_data.tree_state_mut().toggle_selected();
                     view_needs_update = true;
                 }
-                C::NavigatePageDown if self.is_focused => {
+                C::NavigatePageDown if handle_command => {
                     self.view_data
                         .tree_state_mut()
                         .scroll_down(self.config.input_config.scroll_amount);
                     view_needs_update = true;
                 }
-                C::NavigatePageUp if self.is_focused => {
+                C::NavigatePageUp if handle_command => {
                     self.view_data
                         .tree_state_mut()
                         .scroll_up(self.config.input_config.scroll_amount);
@@ -519,13 +535,13 @@ impl MessageReceiver for FeedList {
                 show_command @ (C::Show(ActionTarget::FeedList, scope)
                 | C::Show(ActionTarget::Current, scope))
                     if matches!(show_command, C::Show(ActionTarget::FeedList, _))
-                        || self.is_focused =>
+                        || handle_command =>
                 {
-                    *self.view_data.scope_mut() = *scope;
+                    *self.view_data.scope_mut() = scope;
                     view_needs_update = true;
                 }
 
-                C::ActionSetRead(target, action_scope) if self.target_matches(target) => {
+                C::ActionSetRead(target, action_scope) if self.target_matches(&target) => {
                     match action_scope {
                         ActionScope::All => self.model_data.set_all_read()?,
                         ActionScope::Current => self.set_current_read()?,
@@ -562,7 +578,7 @@ impl MessageReceiver for FeedList {
                 }
 
                 C::FeedListCategoryAdd(name) => {
-                    self.add_category(name).await?;
+                    self.add_category(&name).await?;
                 }
 
                 C::FeedListFeedChangeUrl(url) => {
@@ -581,7 +597,7 @@ impl MessageReceiver for FeedList {
                             TooltipFlavor::Error,
                         )?;
                     } else {
-                        self.model_data.add_tag(name, color).await?;
+                        self.model_data.add_tag(&name, &color).await?;
                     }
                 }
 
@@ -622,7 +638,7 @@ impl MessageReceiver for FeedList {
                 }
 
                 C::FeedListPasteFeedOrCategory(position) => {
-                    self.paste_feed_or_category(*position)?;
+                    self.paste_feed_or_category(position)?;
                 }
 
                 _ => {}

@@ -90,6 +90,8 @@ Here some key bindings to get you started.
 
 **Tip:** Press `?` anytime to see all available commands, and use `/` in the help dialog to search!
 
+**Another Tip**: Navigate to the article list and use `C-j`/`C-k` to move down/up in the feed list and use `M-k`/`M-j` to scroll the article content down/up. Of course, you can remap all keys to your liking.
+
 ---
 
 # Documentation
