@@ -152,6 +152,10 @@ Run `eilmeldung --print-login-data` to see the configuration needed for your set
 
 See [Finding the Right Settings](configuration.md#finding-the-right-settings) for details.
 
+### Do I always have to focus a panel to move/execute a command there?
+
+No, the `in <panel> <command>` executes the command in the panel (`feeds`, `articles`, `content`). For instance, to move down in the feed list, the command is `in feeds down`; use this for customizing your key bindings!
+
 ---
 
 ## Troubleshooting
