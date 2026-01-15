@@ -17,6 +17,7 @@
     "M-k"       = ["in articles up"]
     ```
   - note: if you want the old default key mapping for `J` back, add `"J" = ["read", "nextunread"]` to `[input_config.mappings]` in `config.toml`
+  - switched to a different network connectivity library (`if-watch`)
 
 
 # 0.7.6 - 2026-01-13
