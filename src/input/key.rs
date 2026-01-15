@@ -7,6 +7,7 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 pub enum Key {
     Ctrl(KeyCode),
     Alt(KeyCode),
+    Shift(KeyCode),
     Just(KeyCode),
     Unknown,
 }
@@ -79,6 +80,7 @@ impl FromStr for Key {
             match prefix {
                 'C' => Ok(key.map(Key::Ctrl)?),
                 'M' => Ok(key.map(Key::Alt)?),
+                'S' => Ok(key.map(Key::Shift)?),
                 _ => Err(color_eyre::Report::msg(format!(
                     "unable to parse key from `{s}``"
                 ))),
@@ -149,6 +151,11 @@ impl Display for Key {
                 "M-{}",
                 key_code_to_string(key_code).unwrap_or("unknown key".into())
             ),
+            Shift(key_code) => write!(
+                f,
+                "S-{}",
+                key_code_to_string(key_code).unwrap_or("unknown key".into())
+            ),
             Just(key_code) => write!(
                 f,
                 "{}",
@@ -196,13 +203,17 @@ impl From<&str> for KeySequence {
 
 impl From<KeyEvent> for Key {
     fn from(key_event: KeyEvent) -> Self {
-        let mut modifiers = key_event.modifiers;
-        modifiers &= !KeyModifiers::SHIFT; // remove SHIFT bit
+        let modifiers = key_event.modifiers;
+        // modifiers &= !KeyModifiers::SHIFT; // remove SHIFT bit
 
         match modifiers {
             KeyModifiers::NONE => Key::Just(key_event.code),
             KeyModifiers::ALT => Key::Alt(key_event.code),
             KeyModifiers::CONTROL => Key::Ctrl(key_event.code),
+            KeyModifiers::SHIFT => match key_event.code {
+                code @ KeyCode::Char(_) => Key::Just(code),
+                code => Key::Shift(code),
+            },
             _ => Key::Unknown,
         }
     }
