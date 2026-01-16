@@ -232,7 +232,7 @@ Component styles define how UI elements appear. Each component can have:
 | `header` | `accent_primary` | `none` |: | Section headers |
 | `paragraph` | `foreground` | `none` |: | Regular text |
 | `article` | `foreground` | `none` |: | Article items |
-| `article_highlighted` | `highlight` | `none` | `["bold"]` | Selected article |
+| `article_highlighted` | `highlight` | `none` | `["bold"]` | article matching search criteria |
 | `feed` | `accent_primary` | `none` |: | Feed items |
 | `category` | `accent_secondary` | `none` |: | Category items |
 | `tag` | `accent_tertiary` | `none` |: | Tag items |
