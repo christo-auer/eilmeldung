@@ -109,6 +109,10 @@ There is no dedicated setting for this but this can be achived by using the same
 
 With this the article list and feed list always have the same scope.
 
+### Can I sort the feeds and categories?
+
+Yes, *yank* the element you want to move (`c y`), move to the position you want to insert the element and press `c p` to insert *after* and `c P` to insert before the selected element.
+
 ---
 
 ## Configuration & Customization
