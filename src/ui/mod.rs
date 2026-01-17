@@ -228,6 +228,12 @@ impl App {
         debug!("Sending ApplicationStarted command");
         self.message_sender
             .send(Message::Event(Event::ApplicationStarted))?;
+
+        if self.config.sync_on_startup {
+            self.message_sender
+                .send(Message::Command(Command::FeedListSync))?;
+        }
+
         debug!("Select feeds panel");
         self.message_sender
             .send(Message::Command(Command::PanelFocus(Panel::FeedList)))?;

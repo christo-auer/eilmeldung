@@ -113,6 +113,10 @@ With this the article list and feed list always have the same scope.
 
 Yes, *yank* the element you want to move (`c y`), move to the position you want to insert the element and press `c p` to insert *after* and `c P` to insert before the selected element.
 
+### Can I automatically sync on startup/every n minutes?
+
+Yes, set `sync_on_startup = true`/`sync_every_minutes=n` in your `config.toml`.
+
 ---
 
 ## Configuration & Customization

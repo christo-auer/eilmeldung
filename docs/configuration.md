@@ -42,6 +42,8 @@ You can find the default configuration in `examples/default-config.toml`
 | `default_sort_order`              | string (sort order) | Default sort order for articles: e.g., `"date"`, `">date"`, `"feed date"` (see Article Queries for syntax) |
 | `hide_default_sort_order`         | boolean             | If true, hides the sort order if the default sort order is applied; otherwise always show sort order       |
 | `keep_articles_days`              | integer             | amount of days before articles are removed                                                                 |
+| `sync_on_startup`                 | boolean             | If true, automatically sync all feeds on startup |
+| `sync_every_minutes`              | integer             | Amount of time between automatic sync of all feeds, must be greater than 0 (no automatic sync occurs if this option is omitted) |
 | `offline_icon`                    | char                | Icon displayed when offline                                                                                |
 | `read_icon`                       | char                | Icon for read articles                                                                                     |
 | `unread_icon`                     | char                | Icon for unread articles                                                                                   |
