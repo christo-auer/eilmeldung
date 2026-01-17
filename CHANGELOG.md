@@ -1,5 +1,8 @@
 # Unreleased
 
+- new configuration options: 
+  - set `sync_on_startup` to `true` to automatically sync on startup (default: `false`)
+  - set `sync_every_minutes` to periodically sync (default: disabled)
 - new modifier for key bindings: `S-...` for shift, e.g., `S-down` for pressing "shift and downward cursor key"
 - bugfix: command input doesn't crash on umlaute/unicode anymore
 

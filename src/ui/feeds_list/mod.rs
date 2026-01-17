@@ -19,9 +19,9 @@ use crate::{
         tooltip,
     },
 };
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::{sync::mpsc::UnboundedSender, time::Instant};
 
 pub struct FeedList {
     config: Arc<Config>,
@@ -31,6 +31,7 @@ pub struct FeedList {
     model_data: FeedListModelData,
 
     is_focused: bool,
+    last_sync: Instant,
 }
 
 impl FeedList {
@@ -45,6 +46,7 @@ impl FeedList {
             model_data: FeedListModelData::new(news_flash_utils.clone()),
             view_data: FeedListViewData::new(&config),
             is_focused: false,
+            last_sync: Instant::now(),
         }
     }
     pub(super) fn update_tooltip(
@@ -463,6 +465,18 @@ impl FeedList {
 impl MessageReceiver for FeedList {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         if matches!(message, Message::Event(Event::Tick)) {
+            if let Some(sync_interval) = self.config.sync_every_minutes
+                && self
+                    .last_sync
+                    .checked_add(Duration::from_mins(sync_interval))
+                    .map(|time_to_sync| Instant::now() > time_to_sync)
+                    .unwrap_or(false)
+            {
+                self.message_sender
+                    .send(Message::Command(Command::FeedListSync))?;
+                self.last_sync = Instant::now();
+            }
+
             return Ok(());
         }
 

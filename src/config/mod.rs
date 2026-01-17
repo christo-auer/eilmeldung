@@ -111,6 +111,9 @@ pub struct Config {
     pub network_timeout_seconds: u64,
     pub keep_articles_days: u16,
 
+    pub sync_on_startup: bool,
+    pub sync_every_minutes: Option<u64>,
+
     pub offline_icon: char,
     pub all_label: String,
     pub feed_label: String,
@@ -161,6 +164,14 @@ impl Config {
     fn validate(&mut self) -> color_eyre::Result<()> {
         self.input_config.validate()?;
 
+        if let Some(sync_interval) = self.sync_every_minutes
+            && sync_interval == 0
+        {
+            return Err(color_eyre::eyre::eyre!(
+                "sync_every_minutes must at least be 1"
+            ));
+        }
+
         Ok(())
     }
 
@@ -180,6 +191,9 @@ impl Default for Config {
             refresh_fps: 10,
             network_timeout_seconds: 60,
             keep_articles_days: 30,
+
+            sync_on_startup: false,
+            sync_every_minutes: None,
 
             all_label: "󱀂 All {unread_count}".into(),
             feed_label: " {label} {unread_count}".into(),
