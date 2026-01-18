@@ -1,13 +1,11 @@
 # Basic Configuration
+startup_commands = []
 refresh_fps = 10
 network_timeout_seconds = 60
 article_scope = "unread"
 feed_list_scope = "all"
 default_sort_order = "<date" 
 keep_articles_days = 30
-
-# Automatic Sync
-sync_on_startup = false
 # sync_every_minutes = 10  # disabled by default
 
 # Icons

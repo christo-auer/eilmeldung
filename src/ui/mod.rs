@@ -229,14 +229,20 @@ impl App {
         self.message_sender
             .send(Message::Event(Event::ApplicationStarted))?;
 
-        if self.config.sync_on_startup {
-            self.message_sender
-                .send(Message::Command(Command::FeedListSync))?;
-        }
-
         debug!("Select feeds panel");
         self.message_sender
             .send(Message::Command(Command::PanelFocus(Panel::FeedList)))?;
+
+        // execute all startup commands
+        debug!("executing startup commands");
+        self.config
+            .startup_commands
+            .iter()
+            .try_for_each(|command| {
+                debug!("executing {command}");
+                self.message_sender
+                    .send(Message::Command(command.to_owned()))
+            })?;
 
         info!("Starting command processing loop");
         self.process_commands(&mut message_receiver, terminal)
