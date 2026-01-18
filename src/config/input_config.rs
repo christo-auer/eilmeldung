@@ -8,6 +8,7 @@ pub struct InputConfig {
     pub scroll_amount: usize,
     pub timeout_millis: u64,
     pub mappings: IndexMap<KeySequence, CommandSequence>,
+    pub remove_unnecessary_mappings: bool,
 }
 
 // a macro for pleasure
@@ -107,32 +108,12 @@ impl Default for InputConfig {
             scroll_amount: 10,
             timeout_millis: 5000,
             mappings: generate_default_input_commands(),
+            remove_unnecessary_mappings: true,
         }
     }
 }
 
 impl InputConfig {
-    pub fn validate(&mut self) -> color_eyre::Result<()> {
-        Self::default()
-            .mappings
-            .into_iter()
-            .for_each(|(key_seq, cmd_seq)| {
-                self.mappings.entry(key_seq).or_insert(cmd_seq);
-            });
-
-        self.mappings
-            .iter()
-            .filter_map(|(key_seq, command_seq)| command_seq.commands.is_empty().then_some(key_seq))
-            .cloned()
-            .collect::<Vec<KeySequence>>()
-            .into_iter()
-            .for_each(|key| {
-                self.mappings.shift_remove(&key);
-            });
-
-        Ok(())
-    }
-
     pub fn match_single_key(&self, key: &Key) -> Option<&CommandSequence> {
         self.mappings.get(&KeySequence { keys: vec![*key] })
     }
