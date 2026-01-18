@@ -96,7 +96,7 @@ feed_list = [
 ]
 ```
 
-### Can I sync what the feed list and article list how (all/unread/marked)?
+### Can I sync what the feed list and article list show (all/unread/marked)?
 
 There is no dedicated setting for this but this can be achived by using the same value for `article_scope` and `feed_list_scope` and remapping the keybindings for changing the scope:
 
