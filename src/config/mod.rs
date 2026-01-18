@@ -111,7 +111,8 @@ pub struct Config {
     pub network_timeout_seconds: u64,
     pub keep_articles_days: u16,
 
-    pub sync_on_startup: bool,
+    pub startup_commands: Vec<Command>,
+
     pub sync_every_minutes: Option<u64>,
 
     pub offline_icon: char,
@@ -192,7 +193,7 @@ impl Default for Config {
             network_timeout_seconds: 60,
             keep_articles_days: 30,
 
-            sync_on_startup: false,
+            startup_commands: Vec::default(),
             sync_every_minutes: None,
 
             all_label: "󱀂 All {unread_count}".into(),

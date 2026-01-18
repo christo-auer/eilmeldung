@@ -115,7 +115,12 @@ Yes, *yank* the element you want to move (`c y`), move to the position you want 
 
 ### Can I automatically sync on startup/every n minutes?
 
-Yes, set `sync_on_startup = true`/`sync_every_minutes=n` in your `config.toml`.
+Yes, in your `config.toml` add `sync` to your `startup_commands` (`startup_commands=["sync"]`). To automatically sync every `10` minutes, set `sync_every_minutes=10`.
+
+### Can I automatically select the article list on startup?
+
+Yes, in your `config.toml` add `focus articles` to your `startup_commands` (`startup_commands=["articles"]`).
+
 
 ---
 
