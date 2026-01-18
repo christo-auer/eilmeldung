@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.7.8 - 2026-01-18
+
 - new configuration options: 
   - set `sync_every_minutes` to periodically sync (default: disabled)
   - `startup_commands` to automatically execute commands on startup, e.g., `startup_commands=["sync", "focus articles"]` to automatically sync on startup and focus the articles list
