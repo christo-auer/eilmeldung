@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: custom colors (for styles) are now properly parsed. 
+
 # 0.7.8 - 2026-01-18
 
 - new configuration options: 
