@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.7.9 - 2026-01-22
+
 - removed share keybindings (`S m`, `S t`, etc.). instead `S` opens the command line with the configured share targets (press TAB to cycle through them)
 - bugfixes
   - slightly improved default values for thumbnail scaling, more room to bottom

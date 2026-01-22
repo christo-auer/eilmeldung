@@ -59,7 +59,7 @@ cargo install --locked --git https://github.com/christo-auer/eilmeldung
 ```
 and for the latest tag:
 ```bash
-cargo install --locked --git https://github.com/christo-auer/eilmeldung/tree/0.7.8
+cargo install --locked --git https://github.com/christo-auer/eilmeldung/tree/0.7.9
 ```
 
 ---
