@@ -93,11 +93,12 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "c p"       => "paste after",
         "c P"       => "paste before",
         "c c"       => "cmd tagchangecolor",
-        "S c"       => "share clipboard",
-        "S r"       => "share reddit",
-        "S m"       => "share mastodon",
-        "S t"       => "share telegram",
-        "S i"       => "share instapaper",
+        "S"         => "cmd share",
+        // "S c"       => "share clipboard",
+        // "S r"       => "share reddit",
+        // "S m"       => "share mastodon",
+        // "S t"       => "share telegram",
+        // "S i"       => "share instapaper",
         "?"         => "helpinput",
     ]
 }
