@@ -163,7 +163,7 @@ pub struct Config {
 
 impl Config {
     fn validate(&mut self) -> color_eyre::Result<()> {
-        self.input_config.validate()?;
+        self.validate_input_config()?;
 
         if let Some(sync_interval) = self.sync_every_minutes
             && sync_interval == 0
@@ -172,6 +172,29 @@ impl Config {
                 "sync_every_minutes must at least be 1"
             ));
         }
+
+        Ok(())
+    }
+
+    fn validate_input_config(&mut self) -> color_eyre::Result<()> {
+        Self::default()
+            .input_config
+            .mappings
+            .into_iter()
+            .for_each(|(key_seq, cmd_seq)| {
+                self.input_config.mappings.entry(key_seq).or_insert(cmd_seq);
+            });
+
+        self.input_config
+            .mappings
+            .iter()
+            .filter_map(|(key_seq, command_seq)| command_seq.commands.is_empty().then_some(key_seq))
+            .cloned()
+            .collect::<Vec<KeySequence>>()
+            .into_iter()
+            .for_each(|key| {
+                self.input_config.mappings.shift_remove(&key);
+            });
 
         Ok(())
     }

@@ -2,6 +2,7 @@ use crate::prelude::*;
 
 use std::{str::FromStr, sync::Arc};
 
+use log::trace;
 use ratatui::{
     crossterm::event::KeyCode,
     layout::Flex,
@@ -139,8 +140,10 @@ impl CommandInput {
     async fn update_command_help(&mut self) -> color_eyre::Result<()> {
         let (partial_command, current_part) = self.get_current_word();
         let current_part = current_part.to_owned();
+        trace!("complete: {current_part}");
 
         let parse_result = Command::parse(&partial_command, true);
+        trace!("complete parse result: {parse_result:?}");
 
         use CommandParseError as E;
         match parse_result {
@@ -799,6 +802,7 @@ impl crate::messages::MessageReceiver for CommandInput {
 
             Message::Command(Command::CommandLineOpen(preset_command)) => {
                 self.is_active = true;
+                let preset_command_present = preset_command.is_some();
                 self.clear("");
 
                 let preset_command = preset_command
@@ -811,10 +815,14 @@ impl crate::messages::MessageReceiver for CommandInput {
 
                 self.history.push(preset_command.to_string());
                 self.history_index = self.history.len() - 1;
-                self.completion_prefix = preset_command.to_owned();
                 self.text_input.insert_str(preset_command);
                 self.completion_targets = None;
+                self.update_completion_prefix();
                 self.update_command_hint();
+                if preset_command_present {
+                    self.update_command_help().await?;
+                    // self.on_complete(true);
+                }
             }
 
             _ => {

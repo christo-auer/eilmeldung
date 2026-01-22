@@ -71,6 +71,7 @@ This document provides a comprehensive reference of all default key bindings in 
 | `o` | Open article in browser, mark as read, and jump to next unread |
 | `O` | Open all unread articles in browser and mark all as read |
 | `x` | Scrape full article content from the web (for truncated articles) |
+| `S` | Share article (opens command line with share targets) |
 
 ---
 

@@ -1,7 +1,9 @@
 # Unreleased
 
-- bugfix: slightly improved default values for thumbnail scaling, more room to bottom
-- bugfix: custom colors (for styles) are now properly parsed. 
+- removed share keybindings (`S m`, `S t`, etc.). instead `S` opens the command line with the configured share targets (press TAB to cycle through them)
+- bugfixes
+  - slightly improved default values for thumbnail scaling, more room to bottom
+  - custom colors (for styles) are now properly parsed. 
 
 # 0.7.8 - 2026-01-18
 

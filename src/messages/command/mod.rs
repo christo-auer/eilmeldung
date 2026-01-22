@@ -384,6 +384,13 @@ pub enum Command {
     FeedListToggleExpand,
 
     #[strum(
+        serialize = "expand",
+        message = "expand [<scope>]",
+        detailed_message = "expands current selectem item or all items belonging to scope (feed list)"
+    )]
+    FeedListExpand(Option<ArticleScope>),
+
+    #[strum(
         serialize = "read",
         message = "read [[<target>] <scope>]",
         detailed_message = "set all articles matching the scope in the target to read (feed list, article list)"
@@ -634,6 +641,14 @@ impl Display for Command {
             PanelFocusPreviousCyclic => write!(f, "focus next (wrapping)"),
             ToggleDistractionFreeMode => write!(f, "distraction free mode"),
             FeedListToggleExpand => write!(f, "toggle selected node"),
+            FeedListExpand(None) => write!(f, "expand the selected node"),
+            FeedListExpand(Some(ArticleScope::All)) => write!(f, "expand all nodes"),
+            FeedListExpand(Some(ArticleScope::Unread)) => {
+                write!(f, "expand all nodes with unread items")
+            }
+            FeedListExpand(Some(ArticleScope::Marked)) => {
+                write!(f, "expand all nodes with marked items")
+            }
             FeedListCategoryAdd(name) => write!(f, "add category {name}"),
             FeedListFeedAdd(Some(url), Some(name)) => write!(f, "add feed {name} with url {url}"),
             FeedListFeedAdd(Some(url), None) => write!(f, "add feed with url {url}"),
