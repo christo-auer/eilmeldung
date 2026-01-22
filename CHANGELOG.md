@@ -1,8 +1,13 @@
 # Unreleased
 
+- bugfix: slightly improved default values for thumbnail scaling, more room to bottom
+- bugfix: custom colors (for styles) are now properly parsed. 
+
+# 0.7.8 - 2026-01-18
+
 - new configuration options: 
-  - set `sync_on_startup` to `true` to automatically sync on startup (default: `false`)
   - set `sync_every_minutes` to periodically sync (default: disabled)
+  - `startup_commands` to automatically execute commands on startup, e.g., `startup_commands=["sync", "focus articles"]` to automatically sync on startup and focus the articles list
 - new modifier for key bindings: `S-...` for shift, e.g., `S-down` for pressing "shift and downward cursor key"
 - bugfix: command input doesn't crash on umlaute/unicode anymore
 

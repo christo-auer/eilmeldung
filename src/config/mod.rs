@@ -111,7 +111,8 @@ pub struct Config {
     pub network_timeout_seconds: u64,
     pub keep_articles_days: u16,
 
-    pub sync_on_startup: bool,
+    pub startup_commands: Vec<Command>,
+
     pub sync_every_minutes: Option<u64>,
 
     pub offline_icon: char,
@@ -215,7 +216,7 @@ impl Default for Config {
             network_timeout_seconds: 60,
             keep_articles_days: 30,
 
-            sync_on_startup: false,
+            startup_commands: Vec::default(),
             sync_every_minutes: None,
 
             all_label: "󱀂 All {unread_count}".into(),
@@ -247,7 +248,7 @@ impl Default for Config {
             articles_after_selection: 3,
             auto_scrape: true,
             thumbnail_show: true,
-            thumbnail_width: 20,
+            thumbnail_width: 14,
             thumbnail_resize: true,
             thumbnail_fetch_debounce_millis: 500,
             text_max_width: 66,

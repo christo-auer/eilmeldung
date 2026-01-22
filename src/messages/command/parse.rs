@@ -255,6 +255,16 @@ impl Command {
                 C::TagAdd(tag_title, color)
             }
 
+            C::FeedListExpand(_) => match args {
+                None if !eager => C::FeedListExpand(None),
+                None => return Err(CommandParseError::ArticleScopeExpected),
+
+                Some(args) => C::FeedListExpand(Some(expect_from_str(
+                    &mut Some(args),
+                    "article scope expected",
+                )?)),
+            },
+
             C::Show(..) => {
                 let old_args = args.clone();
                 let word = expect_word(&mut args, "target or scope")

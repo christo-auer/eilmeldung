@@ -1,13 +1,11 @@
 # Basic Configuration
+startup_commands = []
 refresh_fps = 10
 network_timeout_seconds = 60
 article_scope = "unread"
 feed_list_scope = "all"
 default_sort_order = "<date" 
 keep_articles_days = 30
-
-# Automatic Sync
-sync_on_startup = false
 # sync_every_minutes = 10  # disabled by default
 
 # Icons
@@ -43,7 +41,7 @@ hide_default_sort_order = false
 # Content
 auto_scrape = true
 thumbnail_show = true
-thumbnail_width = 20
+thumbnail_width = 14
 thumbnail_resize = true
 thumbnail_fetch_debounce_millis = 500
 text_max_width = 66

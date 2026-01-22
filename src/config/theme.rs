@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use ratatui::style::{Color, Modifier, Style};
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -37,8 +39,7 @@ impl Default for ColorPalette {
     }
 }
 
-#[derive(Debug, Copy, Default, Clone, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Copy, Default, Clone)]
 pub enum StyleColor {
     #[default]
     None,
@@ -56,6 +57,36 @@ pub enum StyleColor {
     Error,
 
     Custom(Color),
+}
+
+impl<'de> serde::de::Deserialize<'de> for StyleColor {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+
+        use StyleColor as C;
+
+        Ok(match s.trim() {
+            "none" => C::None,
+            "background" => C::None,
+            "foreground" => C::None,
+            "muted" => C::None,
+            "highlight" => C::None,
+            "accent_primary" => C::None,
+            "accent_secondary" => C::None,
+            "accent_tertiary" => C::None,
+            "accent_quaternary" => C::None,
+            "info" => C::None,
+            "warning" => C::None,
+            "error" => C::None,
+            s => C::Custom(
+                Color::from_str(s)
+                    .map_err(|_| serde::de::Error::custom(format!("unable to parse color: {s}")))?,
+            ),
+        })
+    }
 }
 
 #[derive(Debug, Default, Clone, serde::Deserialize)]

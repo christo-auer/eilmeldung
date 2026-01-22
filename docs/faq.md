@@ -96,7 +96,7 @@ feed_list = [
 ]
 ```
 
-### Can I sync what the feed list and article list how (all/unread/marked)?
+### Can I sync what the feed list and article list show (all/unread/marked)?
 
 There is no dedicated setting for this but this can be achived by using the same value for `article_scope` and `feed_list_scope` and remapping the keybindings for changing the scope:
 
@@ -115,7 +115,12 @@ Yes, *yank* the element you want to move (`c y`), move to the position you want 
 
 ### Can I automatically sync on startup/every n minutes?
 
-Yes, set `sync_on_startup = true`/`sync_every_minutes=n` in your `config.toml`.
+Yes, in your `config.toml` add `sync` to your `startup_commands` (`startup_commands=["sync"]`). To automatically sync every `10` minutes, set `sync_every_minutes=10`.
+
+### Can I automatically select the article list on startup?
+
+Yes, in your `config.toml` add `focus articles` to your `startup_commands` (`startup_commands=["articles"]`).
+
 
 ---
 
