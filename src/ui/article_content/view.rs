@@ -235,10 +235,7 @@ impl ArticleContentViewData {
         let [thumbnail_chunk, header_chunk] = Layout::default()
             .direction(Direction::Horizontal)
             .flex(ratatui::layout::Flex::Start)
-            .constraints(vec![
-                Constraint::Length(thumbnail_width),
-                Constraint::Min(1),
-            ])
+            .constraints(vec![Constraint::Max(thumbnail_width), Constraint::Min(1)])
             // .margin(1)
             .spacing(1)
             .areas::<2>(inner_area);
@@ -266,7 +263,7 @@ impl ArticleContentViewData {
         let [header_chunk, summary_chunk] = Layout::default()
             .direction(Direction::Vertical)
             .flex(ratatui::layout::Flex::Start)
-            .constraints([Constraint::Length(4), Constraint::Min(1)])
+            .constraints([Constraint::Max(5), Constraint::Min(1)])
             .horizontal_margin(2)
             .vertical_margin(1)
             .spacing(1)
@@ -299,7 +296,8 @@ impl ArticleContentViewData {
             Some(image) => {
                 let mut stateful_image = StatefulImage::new();
                 if config.thumbnail_resize {
-                    stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Lanczos3)))
+                    stateful_image =
+                        stateful_image.resize(Resize::Scale(Some(FilterType::Lanczos3)));
                 }
                 let [centered_chunk] = centered_layout
                     .constraints([Constraint::Length(config.thumbnail_width)])

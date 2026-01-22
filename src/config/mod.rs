@@ -225,7 +225,7 @@ impl Default for Config {
             articles_after_selection: 3,
             auto_scrape: true,
             thumbnail_show: true,
-            thumbnail_width: 20,
+            thumbnail_width: 14,
             thumbnail_resize: true,
             thumbnail_fetch_debounce_millis: 500,
             text_max_width: 66,

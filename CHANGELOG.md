@@ -1,5 +1,6 @@
 # Unreleased
 
+- bugfix: slightly improved default values for thumbnail scaling, more room to bottom
 - bugfix: custom colors (for styles) are now properly parsed. 
 
 # 0.7.8 - 2026-01-18
