@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.8.0 - 2026-01-23
+
 - new theming possibilities for unread/read items (**breaking changes**!)
   - settings `unread_modifier` and `article_highlighted` have been **removed**!
   - instead use the component styles `unread`, `read`, `highlighted` and `selected` to adjust how the respective items should look like
