@@ -81,7 +81,6 @@ pub fn build_client(timeout: Duration) -> color_eyre::Result<Client> {
     );
     let builder = ClientBuilder::new()
         .user_agent(user_agent.as_str())
-        .use_rustls_tls()
         .hickory_dns(false)
         .gzip(true)
         .brotli(true)
