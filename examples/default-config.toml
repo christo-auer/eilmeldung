@@ -186,5 +186,9 @@ inactive = { fg = "muted" }
 tooltip_info = { fg = "info", mods = ["reversed"] }
 tooltip_warning = { fg = "warning", mods = ["reversed"] }
 tooltip_error = { fg = "error", mods = ["reversed"] }
-unread_modifier = "bold"
+unread = { mods = ["bold"] }
+read = { mods = ["dim"] }
+selected = { mods = ["reversed"] }
+highlighted = { fg = "highlight" }
+
 

@@ -1,10 +1,15 @@
 # Unreleased
 
+- new theming possibilities for unread/read items (**breaking changes**!)
+  - settings `unread_modifier` and `article_highlighted` have been **removed**!
+  - instead use the component styles `unread`, `read`, `highlighted` and `selected` to adjust how the respective items should look like
+  - for more details have a look at *Component Style Modifiers* in `docs/configuration.md`
 - new commands
   - `expand`: expands the current item in the tree
   - `expandcategories <scope>`: expand categories with articles in scope, i.e., `all`, `unread` or `marked` articles
   - `collapse`: collapses the current item in the tree
   - `collapseall`: collapses all items in the tree
+- bugfix: custom colors all mapped to `none`
 
 # 0.7.9 - 2026-01-22
 
