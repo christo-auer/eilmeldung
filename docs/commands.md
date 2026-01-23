@@ -97,7 +97,11 @@ Here are some common command examples to get you started:
 | `removeall` | `removeall` | Feed List | Remove the selected item with all its children |
 | `feedchangeurl` | `feedchangeurl <URL>` | Feed List | Change the URL of the selected feed. Example: `:feedchangeurl https://newurl.com/feed.xml` |
 | `tagchangecolor` | `tagchangecolor <color>` | Feed List | Change color of selected tag (e.g., `blue`, `#0000ff`). Press TAB for suggestions. Examples: `:tagchangecolor green`, `:tagchangecolor #ff5500` |
-| `toggle` | `toggle` | Feed List | Toggle selected feed or category open/closed in the tree |
+| `toggle` | `toggle` | Feed List | Toggle selected item in the tree |
+| `expand` | `expand` | Feed List | Expands the current item in the tree |
+| `expandcategories` | `expandcategories <scope>` | Feed List | Expand categories with articles in scope, i.e., `all`, `unread` or `marked` articles |
+| `collapse` | `collapse` | Feed List | Collapses the current item in the tree |
+| `collapsall` | `collapseall` | Feed List | Collapses all items in the tree |
 | `yank` | `yank` | Feed List | Yank (copy) the selected feed or category for moving |
 | `paste` | `paste <position>` | Feed List | Paste the yanked item. Position: `before` or `after`. Examples: `:paste after`, `:paste before` |
 

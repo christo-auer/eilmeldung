@@ -384,11 +384,32 @@ pub enum Command {
     FeedListToggleExpand,
 
     #[strum(
-        serialize = "expand",
-        message = "expand [<scope>]",
-        detailed_message = "expands current selectem item or all items belonging to scope (feed list)"
+        serialize = "expandcategories",
+        message = "expandcategories <scope>",
+        detailed_message = "expands current selected item or all categories belonging to scope (feed list)"
     )]
-    FeedListExpand(Option<ArticleScope>),
+    FeedListExpandCategories(ArticleScope),
+
+    #[strum(
+        serialize = "expand",
+        message = "expand",
+        detailed_message = "expands current selected item (feed list)"
+    )]
+    FeedListExpand,
+
+    #[strum(
+        serialize = "collapse",
+        message = "collapse",
+        detailed_message = "collapses the currently selected item (feed list)"
+    )]
+    FeedListCollapse,
+
+    #[strum(
+        serialize = "collapseall",
+        message = "collapseall",
+        detailed_message = "collapses all items (feed list)"
+    )]
+    FeedListCollapseAll,
 
     #[strum(
         serialize = "read",
@@ -641,13 +662,15 @@ impl Display for Command {
             PanelFocusPreviousCyclic => write!(f, "focus next (wrapping)"),
             ToggleDistractionFreeMode => write!(f, "distraction free mode"),
             FeedListToggleExpand => write!(f, "toggle selected node"),
-            FeedListExpand(None) => write!(f, "expand the selected node"),
-            FeedListExpand(Some(ArticleScope::All)) => write!(f, "expand all nodes"),
-            FeedListExpand(Some(ArticleScope::Unread)) => {
-                write!(f, "expand all nodes with unread items")
+            FeedListExpand => write!(f, "expand the selected node"),
+            FeedListCollapse => write!(f, "collapse the selected node"),
+            FeedListCollapseAll => write!(f, "collapse the selected node"),
+            FeedListExpandCategories(ArticleScope::All) => write!(f, "expand all nodes"),
+            FeedListExpandCategories(ArticleScope::Unread) => {
+                write!(f, "expand all categories with unread items")
             }
-            FeedListExpand(Some(ArticleScope::Marked)) => {
-                write!(f, "expand all nodes with marked items")
+            FeedListExpandCategories(ArticleScope::Marked) => {
+                write!(f, "expand all categories with marked items")
             }
             FeedListCategoryAdd(name) => write!(f, "add category {name}"),
             FeedListFeedAdd(Some(url), Some(name)) => write!(f, "add feed {name} with url {url}"),

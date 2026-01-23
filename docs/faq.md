@@ -121,6 +121,10 @@ Yes, in your `config.toml` add `sync` to your `startup_commands` (`startup_comma
 
 Yes, in your `config.toml` add `focus articles` to your `startup_commands` (`startup_commands=["articles"]`).
 
+### How can I expand all categories with unread articles?
+
+Use the command `expandcategories unread`. Call with `all` to expand all categories and `marked` to expand all categories with marked articles. Create a keybinding for quick action or add it `startup_commands`.
+
 
 ---
 

@@ -8,6 +8,7 @@ pub mod prelude {
 
 use feed_list_item::FeedListItem;
 use news_flash::models::{CategoryID, PluginCapabilities, UnifiedMapping, Url};
+use tui_tree_widget::TreeItem;
 
 use crate::{
     prelude::*,
@@ -460,6 +461,85 @@ impl FeedList {
 
         Ok(())
     }
+
+    fn expand_scope(&mut self, scope: ArticleScope) {
+        let roots = self.view_data.tree_items().clone();
+
+        for item in roots {
+            self.expand_recursively(scope, &mut Vec::default(), &item);
+        }
+    }
+
+    fn expand_recursively<'a>(
+        &mut self,
+        scope: ArticleScope,
+        path: &mut Vec<&'a FeedListItem>,
+        item: &'a TreeItem<'a, FeedListItem>,
+    ) {
+        path.push(item.identifier());
+
+        self.expand(scope, path);
+
+        for child_item in item.children() {
+            self.expand_recursively(scope, path, child_item);
+        }
+
+        path.pop();
+    }
+
+    fn expand(&mut self, scope: ArticleScope, path: &Vec<&FeedListItem>) {
+        let Some(item) = path.last() else {
+            return;
+        };
+
+        use ArticleScope as S;
+        let expand = match item {
+            FeedListItem::Category(category_id) => match scope {
+                S::All => true,
+                S::Unread => self
+                    .model_data
+                    .unread_count_for_feed_or_category()
+                    .get(&FeedOrCategory::Category(
+                        category_id.as_ref().category_id.to_owned(),
+                    ))
+                    .map(|count| *count > 0)
+                    .unwrap_or(false),
+                S::Marked => self
+                    .model_data
+                    .marked_count_for_feed_or_category()
+                    .get(&FeedOrCategory::Category(
+                        category_id.as_ref().category_id.to_owned(),
+                    ))
+                    .map(|count| *count > 0)
+                    .unwrap_or(false),
+            },
+            // implementation for All and Tags
+            // FeedListItem::All => match scope {
+            //     S::Unread => *self.model_data.unread_count_all() > 0,
+            //     S::Marked => self
+            //         .model_data
+            //         .marked_count_for_feed_or_category()
+            //         .iter()
+            //         .any(|(_, count)| *count > 0),
+            //     S::All => true,
+            // },
+            // FeedListItem::Tags => match scope {
+            //     S::Unread => self
+            //         .model_data
+            //         .unread_count_for_tag()
+            //         .iter()
+            //         .any(|(_, count)| *count > 0),
+            //     S::Marked => false,
+            //     S::All => true,
+            // },
+            _ => false,
+        };
+
+        if expand {
+            let path = path.iter().cloned().cloned().collect::<Vec<FeedListItem>>();
+            self.view_data.tree_state_mut().open(path);
+        }
+    }
 }
 
 impl MessageReceiver for FeedList {
@@ -534,6 +614,28 @@ impl MessageReceiver for FeedList {
                     self.view_data.tree_state_mut().toggle_selected();
                     view_needs_update = true;
                 }
+
+                C::FeedListExpand if handle_command => {
+                    let selected = self.view_data.tree_state().selected().to_vec();
+                    self.view_data.tree_state_mut().open(selected);
+                    view_needs_update = true;
+                }
+
+                C::FeedListExpandCategories(scope) if handle_command => {
+                    self.expand_scope(scope);
+                    view_needs_update = true;
+                }
+
+                C::FeedListCollapse if handle_command => {
+                    let selected = self.view_data.tree_state().selected().to_vec();
+                    self.view_data.tree_state_mut().close(&selected);
+                    view_needs_update = true;
+                }
+
+                C::FeedListCollapseAll if handle_command => {
+                    self.view_data.tree_state_mut().close_all();
+                }
+
                 C::NavigatePageDown if handle_command => {
                     self.view_data
                         .tree_state_mut()
