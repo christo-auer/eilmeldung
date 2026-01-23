@@ -41,7 +41,7 @@ percent-encoding = "2.3.2"
 ratatui = { version = "0.29.0", features = ["serde", "crossterm"]}
 ratatui-image = "8.0.2"
 regex = "1.12.2"
-reqwest = { version = "0.12.23", default-features = false, features = ["http2", "charset", "rustls-tls", "brotli"] }
+reqwest = { version = "0.12.23", default-features = false, features = ["http2", "charset", "brotli"] }
 rstest = "0.26.1"
 # rig-core = { version = "0.20.0", features = ["derive", "rmcp"] } // for later
 serde = { version = "1.0.226", features = ["derive"] }
