@@ -70,17 +70,17 @@ impl<'de> serde::de::Deserialize<'de> for StyleColor {
 
         Ok(match s.trim() {
             "none" => C::None,
-            "background" => C::None,
-            "foreground" => C::None,
-            "muted" => C::None,
-            "highlight" => C::None,
-            "accent_primary" => C::None,
-            "accent_secondary" => C::None,
-            "accent_tertiary" => C::None,
-            "accent_quaternary" => C::None,
-            "info" => C::None,
-            "warning" => C::None,
-            "error" => C::None,
+            "background" => C::Background,
+            "foreground" => C::Foreground,
+            "muted" => C::Muted,
+            "highlight" => C::Highlight,
+            "accent_primary" => C::AccentPrimary,
+            "accent_secondary" => C::AccentSecondary,
+            "accent_tertiary" => C::AccentTertiary,
+            "accent_quaternary" => C::AccentQuaternary,
+            "info" => C::Info,
+            "warning" => C::Warning,
+            "error" => C::Error,
             s => C::Custom(
                 Color::from_str(s)
                     .map_err(|_| serde::de::Error::custom(format!("unable to parse color: {s}")))?,
@@ -164,7 +164,6 @@ pub struct StyleSet {
     header: ComponentStyle,
     paragraph: ComponentStyle,
     article: ComponentStyle,
-    article_highlighted: ComponentStyle,
     feed: ComponentStyle,
     category: ComponentStyle,
     tag: ComponentStyle,
@@ -181,7 +180,10 @@ pub struct StyleSet {
     tooltip_warning: ComponentStyle,
     tooltip_error: ComponentStyle,
 
-    unread_modifier: StyleModifier,
+    unread: ComponentStyle,
+    read: ComponentStyle,
+    selected: ComponentStyle,
+    highlighted: ComponentStyle,
 }
 
 impl Default for StyleSet {
@@ -192,7 +194,6 @@ impl Default for StyleSet {
             header: ComponentStyle::default().fg(C::AccentPrimary),
             paragraph: ComponentStyle::default().fg(C::Foreground),
             article: ComponentStyle::default().fg(C::Foreground),
-            article_highlighted: ComponentStyle::default().fg(C::Highlight).mods(&[M::Bold]),
             feed: ComponentStyle::default().fg(C::AccentPrimary),
             category: ComponentStyle::default().fg(C::AccentSecondary),
             tag: ComponentStyle::default().fg(C::AccentTertiary),
@@ -215,7 +216,10 @@ impl Default for StyleSet {
                 .mods(&[M::Reversed]),
             tooltip_error: ComponentStyle::default().fg(C::Error).mods(&[M::Reversed]),
 
-            unread_modifier: StyleModifier::Bold,
+            unread: ComponentStyle::default().mods(&[M::Bold]),
+            read: ComponentStyle::default().mods(&[M::Dim]),
+            selected: ComponentStyle::default().mods(&[M::Reversed]),
+            highlighted: ComponentStyle::default().fg(C::Highlight),
         }
     }
 }
@@ -236,11 +240,10 @@ macro_rules! component_funs {
 }
 
 impl Theme {
-    pub fn color(&self, style_color: StyleColor) -> Color {
-        use Color as C;
+    pub fn color(&self, style_color: StyleColor) -> Option<Color> {
         use StyleColor as SC;
-        match style_color {
-            SC::None => C::default(),
+        Some(match style_color {
+            SC::None => return None,
             SC::Background => self.color_palette.background,
             SC::Foreground => self.color_palette.foreground,
             SC::Muted => self.color_palette.muted,
@@ -253,7 +256,7 @@ impl Theme {
             SC::Warning => self.color_palette.warning,
             SC::Error => self.color_palette.error,
             SC::Custom(color) => color,
-        }
+        })
     }
 
     pub fn eff_border(&self, is_focused: bool) -> Style {
@@ -265,21 +268,34 @@ impl Theme {
     }
 
     pub fn to_style(&self, component_style: &ComponentStyle) -> Style {
-        Style::new()
-            .fg(self.color(component_style.fg))
-            .bg(self.color(component_style.bg))
-            .add_modifier(component_style.modifiers())
+        Style {
+            fg: self.color(component_style.fg),
+            bg: self.color(component_style.bg),
+            add_modifier: component_style.modifiers(),
+            ..Default::default()
+        }
     }
 
-    pub fn unread_modifier(&self) -> Modifier {
-        self.style_set.unread_modifier.to_modifier()
+    pub fn patch_unread(&self, style: &Style) -> Style {
+        style.patch(self.to_style(&self.style_set.unread))
+    }
+
+    pub fn patch_read(&self, style: &Style) -> Style {
+        style.patch(self.to_style(&self.style_set.read))
+    }
+
+    pub fn patch_selected(&self, style: &Style) -> Style {
+        style.patch(self.to_style(&self.style_set.selected))
+    }
+
+    pub fn patch_highlighted(&self, style: &Style) -> Style {
+        style.patch(self.to_style(&self.style_set.highlighted))
     }
 
     component_funs! {
       header,
       paragraph,
       article,
-      article_highlighted,
       feed,
       category,
       tag,
@@ -292,6 +308,7 @@ impl Theme {
       inactive,
       tooltip_info,
       tooltip_warning,
-      tooltip_error
+      tooltip_error,
+      selected
     }
 }

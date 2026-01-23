@@ -147,6 +147,17 @@ The default color palette is dark. For a light palette using ANSI 16 colors, see
 
 You can also customize all colors individually. See [Theme Configuration](configuration.md#theme-configuration).
 
+### Can I change how read/unread articles/items look like?
+
+Yes, use [Component Style Modifiers](configuration.md#component-style-modifiers). For instance:
+
+```toml
+unread = { fg = "highlight" mods = ["italic"] } # shows unread items in italic with the highlight color
+read = { fg = "muted" mods = ["dim"] } # shows read items dim with muted color
+```
+
+
+
 ### Can I configure login information via the configuration file?
 
 Yes! Check out *Automatic Login* in [Configuration](configuration.md#automatic-login).

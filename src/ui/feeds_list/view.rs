@@ -9,10 +9,7 @@ use news_flash::models::{Category, Feed, FeedMapping, NEWSFLASH_TOPLEVEL, Unifie
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Scrollbar;
 use ratatui::widgets::{Block, Borders};
-use ratatui::{
-    style::{Style, Stylize},
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui::widgets::{StatefulWidget, Widget};
 use strum::IntoEnumIterator;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
@@ -46,7 +43,7 @@ impl FeedListViewData {
 
 impl Widget for &mut FeedList {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        let highlight_style = Style::new().reversed();
+        let highlight_style = self.config.theme.selected();
 
         let tree_items = self.view_data.tree_items().clone();
         // let scroll_thumb_icon = self.config.scroll_thumb_icon.to_string();
@@ -238,14 +235,20 @@ impl FeedListViewData {
         let identifier = FeedListItem::Feed(Box::new(feed.clone()));
         let mut identifier_text = identifier.to_text(
             config,
-            model_data
-                .unread_count_for_feed_or_category()
-                .get(&FeedOrCategory::Feed(feed.feed_id.clone()))
-                .copied(),
-            model_data
-                .marked_count_for_feed_or_category()
-                .get(&FeedOrCategory::Feed(feed.feed_id.clone()))
-                .copied(),
+            Some(
+                model_data
+                    .unread_count_for_feed_or_category()
+                    .get(&FeedOrCategory::Feed(feed.feed_id.clone()))
+                    .copied()
+                    .unwrap_or(0),
+            ),
+            Some(
+                model_data
+                    .marked_count_for_feed_or_category()
+                    .get(&FeedOrCategory::Feed(feed.feed_id.clone()))
+                    .copied()
+                    .unwrap_or(0),
+            ),
         );
 
         if let Some(UnifiedMapping::Feed(feed_mapping)) = self.yanked_unified_mapping()
@@ -311,9 +314,13 @@ impl FeedListViewData {
         model_data: &FeedListModelData,
         tag: news_flash::models::Tag,
     ) -> TreeItem<'static, FeedListItem> {
-        let count = model_data.unread_count_for_tag().get(&tag.tag_id).copied();
+        let count = model_data
+            .unread_count_for_tag()
+            .get(&tag.tag_id)
+            .copied()
+            .unwrap_or(0);
         let tag_item = FeedListItem::Tag(Box::new(tag));
-        let tag_item_text = tag_item.to_text(config, count, None);
+        let tag_item_text = tag_item.to_text(config, Some(count), None);
         TreeItem::new_leaf(tag_item, tag_item_text)
     }
 

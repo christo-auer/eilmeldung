@@ -4,15 +4,12 @@ use std::sync::Arc;
 
 use getset::{Getters, MutGetters};
 use news_flash::models::{ArticleFilter, Marked, Read};
+use ratatui::layout::Constraint;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
     Block, Borders, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table,
     TableState, Widget,
-};
-use ratatui::{
-    layout::Constraint,
-    style::{Style, Stylize},
 };
 use strum::IntoEnumIterator;
 
@@ -247,7 +244,7 @@ impl<'a> ArticleListViewData<'a> {
         filter_state: &FilterState,
         _is_focused: bool,
     ) {
-        let selected_style = Style::new().reversed();
+        let selected_style = config.theme.selected();
 
         let read_icon = config.read_icon.to_string();
         let unread_icon = config.unread_icon.to_string();
@@ -357,7 +354,7 @@ impl<'a> ArticleListViewData<'a> {
                     })
                     .collect();
 
-                let style = match filter_state.article_search_query.as_ref() {
+                let mut style = match filter_state.article_search_query.as_ref() {
                     Some(query)
                         if query.test(
                             article,
@@ -366,9 +363,15 @@ impl<'a> ArticleListViewData<'a> {
                             model_data.tag_map(),
                         ) =>
                     {
-                        config.theme.article_highlighted()
+                        config.theme.patch_highlighted(&config.theme.article())
                     }
                     _ => config.theme.article(),
+                };
+
+                style = if article.unread == Read::Read {
+                    config.theme.patch_read(&style)
+                } else {
+                    config.theme.patch_unread(&style)
                 };
 
                 Row::new(row_vec).style(style)

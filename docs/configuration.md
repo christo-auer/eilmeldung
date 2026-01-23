@@ -18,6 +18,7 @@ You can find the default configuration in `examples/default-config.toml`
 - [Theme Configuration](#theme-configuration)
   - [Color Palette](#color-palette)
   - [Component Styles](#component-styles)
+  - [Component Style Modifiers](#component-style-modifiers)
 - [Feed List Configuration](#feed-list-configuration)
 - [Share Target Configuration](#share-target-configuration)
 - [Layout Configuration](#layout-configuration)
@@ -244,7 +245,6 @@ Component styles define how UI elements appear. Each component can have:
 | `header` | `accent_primary` | `none` |: | Section headers |
 | `paragraph` | `foreground` | `none` |: | Regular text |
 | `article` | `foreground` | `none` |: | Article items |
-| `article_highlighted` | `highlight` | `none` | `["bold"]` | article matching search criteria |
 | `feed` | `accent_primary` | `none` |: | Feed items |
 | `category` | `accent_secondary` | `none` |: | Category items |
 | `tag` | `accent_tertiary` | `none` |: | Tag items |
@@ -258,15 +258,30 @@ Component styles define how UI elements appear. Each component can have:
 | `tooltip_info` | `background` | `info` |: | Info tooltips |
 | `tooltip_warning` | `background` | `warning` |: | Warning tooltips |
 | `tooltip_error` | `background` | `error` |: | Error tooltips |
-| `unread_modifier` |: |: | `"bold"` | Modifier applied to unread items |
 
 **Example:**
 ```toml
 [theme.style_set]
-article_highlighted = { fg = "highlight", bg = "#2a2a3a" , mods = ["bold", "italic"] }
 border_focused = { fg = "accent_primary", mods = ["bold"] }
 feed = { fg = "#f5c2e7" }
-unread_modifier = "bold"
+```
+### Component Style Modifiers
+
+The following component styles are *modifiers* which are applied depending on the state of the item (e.g., article, feed, category, etc.)
+
+| Component | Default FG | Default BG | Default Mods | Description |
+|-----------|-----------|------------|--------------|-------------|
+| `unread` | `none` | `none` | `bold` | Unread articles or items with unread articles |
+| `read` | `none` | `none` | `dim` | Read articles or items with only read articles |
+| `selected` | `none` | `none` | `reversed` | Selected items (e.g., in feed or article list) |
+| `highlighted` | `highlight` | `none` | `none` | Highlighted items (e.g., articles matching the search query) |
+
+**Note**: These modifiers are applied *additively* to the other component styles, e.g., for an *unread article* the component style `article` is overwritten with all defined attributes of the `unread` component style.
+
+```toml
+[theme.style_set]
+unread = { fg = "highlight", mods = ["italic"] }
+highlighted = { bg = "#FF0000" }
 ```
 
 ---

@@ -26,9 +26,13 @@ impl FeedListItem {
     ) -> Text<'a> {
         use FeedListItem::*;
 
-        let unread_count_str = unread_count.map(|c| c.to_string()).unwrap_or_default();
+        let unread_count_str = unread_count
+            .map(|c| if c > 0 { c.to_string() } else { "".to_owned() })
+            .unwrap_or_default();
 
-        let marked_count_str = marked_count.map(|c| c.to_string()).unwrap_or_default();
+        let marked_count_str = marked_count
+            .map(|c| if c > 0 { c.to_string() } else { "".to_owned() })
+            .unwrap_or_default();
 
         let (label, mut style) = match self {
             All => (config.all_label.to_owned(), config.theme.feed()),
@@ -47,8 +51,9 @@ impl FeedListItem {
             Tag(tag) => {
                 let mut style = config.theme.tag();
 
-                let color = NewsFlashUtils::tag_color(tag).unwrap_or(style.fg.unwrap());
-                style = style.fg(color);
+                if let Some(color) = NewsFlashUtils::tag_color(tag) {
+                    style = style.fg(color);
+                }
 
                 let label = config.tag_label.replace("{label}", &tag.label);
 
@@ -61,10 +66,12 @@ impl FeedListItem {
             ),
         };
 
-        if let Some(unread_count) = unread_count
-            && unread_count > 0
-        {
-            style = style.add_modifier(config.theme.unread_modifier());
+        if let Some(unread_count) = unread_count {
+            if unread_count > 0 {
+                style = config.theme.patch_unread(&style);
+            } else {
+                style = config.theme.patch_read(&style);
+            }
         }
 
         Text::styled(
