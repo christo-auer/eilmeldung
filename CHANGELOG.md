@@ -10,6 +10,7 @@
   - `collapse`: collapses the current item in the tree
   - `collapseall`: collapses all items in the tree
 - bugfix: custom colors all mapped to `none`
+- switched to system TLS implementation (thanks to @bgiarrizzo to the PR) which makes it possible to use eilmeldung behind SSL injection proxies
 
 # 0.7.9 - 2026-01-22
 
