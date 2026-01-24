@@ -1,5 +1,10 @@
 # Unreleased
 
+- two new component style modifiers
+  - `unread_count` is applied to unread count label in feed tree
+  - `marked_count` is applied to marked count label in feed tree
+  - default for both is `{ mods = ["italic"]}`; if you want the old style set them to `{ }` (no modification of style)
+
 # 0.8.0 - 2026-01-23
 
 - new theming possibilities for unread/read items (**breaking changes**!)

@@ -271,10 +271,12 @@ The following component styles are *modifiers* which are applied depending on th
 
 | Component | Default FG | Default BG | Default Mods | Description |
 |-----------|-----------|------------|--------------|-------------|
-| `unread` | `none` | `none` | `bold` | Unread articles or items with unread articles |
-| `read` | `none` | `none` | `dim` | Read articles or items with only read articles |
-| `selected` | `none` | `none` | `reversed` | Selected items (e.g., in feed or article list) |
-| `highlighted` | `highlight` | `none` | `none` | Highlighted items (e.g., articles matching the search query) |
+| `unread`       | `none`      | `none` | `bold`     | Unread articles or items with unread articles                |
+| `read`         | `none`      | `none` | `dim`      | Read articles or items with only read articles               |
+| `selected`     | `none`      | `none` | `reversed` | Selected items (e.g., in feed or article list)               |
+| `highlighted`  | `highlight` | `none` | `none`     | Highlighted items (e.g., articles matching the search query) |
+| `unread_count` | `none`      | `none` | `italic`   | Unread count label (shown right of item)                     |
+| `marked_count` | `none`      | `none` | `italic`   | Marked count label (shown right of item)                     |
 
 **Note**: These modifiers are applied *additively* to the other component styles, e.g., for an *unread article* the component style `article` is overwritten with all defined attributes of the `unread` component style.
 
@@ -282,6 +284,7 @@ The following component styles are *modifiers* which are applied depending on th
 [theme.style_set]
 unread = { fg = "highlight", mods = ["italic"] }
 highlighted = { bg = "#FF0000" }
+unread_count = { fg = "highlight" }
 ```
 
 ---

@@ -181,6 +181,8 @@ pub struct StyleSet {
     tooltip_error: ComponentStyle,
 
     unread: ComponentStyle,
+    unread_count: ComponentStyle,
+    marked_count: ComponentStyle,
     read: ComponentStyle,
     selected: ComponentStyle,
     highlighted: ComponentStyle,
@@ -220,6 +222,9 @@ impl Default for StyleSet {
             read: ComponentStyle::default().mods(&[M::Dim]),
             selected: ComponentStyle::default().mods(&[M::Reversed]),
             highlighted: ComponentStyle::default().fg(C::Highlight),
+
+            unread_count: ComponentStyle::default().mods(&[M::Italic]),
+            marked_count: ComponentStyle::default().mods(&[M::Italic]),
         }
     }
 }
@@ -309,6 +314,8 @@ impl Theme {
       tooltip_info,
       tooltip_warning,
       tooltip_error,
-      selected
+      selected,
+      unread_count,
+      marked_count
     }
 }
