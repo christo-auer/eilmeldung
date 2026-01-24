@@ -2,9 +2,12 @@ use crate::prelude::*;
 use std::fmt::Display;
 use std::str::FromStr;
 
+use log::error;
+use logos::Logos;
 use news_flash::models::{ArticleFilter, Tag};
 use news_flash::models::{Category, Feed};
-use ratatui::text::Text;
+use ratatui::style::Style;
+use ratatui::text::{Span, Text};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum FeedListItem {
@@ -15,6 +18,21 @@ pub enum FeedListItem {
     Tags,
     Tag(Box<Tag>),
     Query(Box<LabeledQuery>),
+}
+
+#[derive(Clone, Debug, logos::Logos)]
+enum LabelToken {
+    #[token("{unread_count}", priority = 100)]
+    UnreadCount,
+
+    #[token("{marked_count}", priority = 100)]
+    MarkedCount,
+
+    #[token("{label}", priority = 100)]
+    Label,
+
+    #[regex(r#"[^{]+"#, priority = 0)]
+    Fill,
 }
 
 impl FeedListItem {
@@ -34,20 +52,24 @@ impl FeedListItem {
             .map(|c| if c > 0 { c.to_string() } else { "".to_owned() })
             .unwrap_or_default();
 
-        let (label, mut style) = match self {
-            All => (config.all_label.to_owned(), config.theme.feed()),
+        let (label, label_template, mut style): (&str, String, Style) = match self {
+            All => ("", config.all_label.to_owned(), config.theme.feed()),
             Feed(feed) => (
-                config.feed_label.replace("{label}", feed.label.as_str()),
+                feed.label.as_str(),
+                config.feed_label.to_owned(),
                 config.theme.feed(),
             ),
-            Categories => (config.categories_label.to_owned(), config.theme.category()),
-            Category(category) => (
-                config
-                    .category_label
-                    .replace("{label}", category.label.as_str()),
+            Categories => (
+                "",
+                config.categories_label.to_owned(),
                 config.theme.category(),
             ),
-            Tags => (config.tags_label.to_owned(), config.theme.tag()),
+            Category(category) => (
+                category.label.as_str(),
+                config.category_label.to_owned(),
+                config.theme.category(),
+            ),
+            Tags => ("", config.tags_label.to_owned(), config.theme.tag()),
             Tag(tag) => {
                 let mut style = config.theme.tag();
 
@@ -55,16 +77,19 @@ impl FeedListItem {
                     style = style.fg(color);
                 }
 
-                let label = config.tag_label.replace("{label}", &tag.label);
-
-                (label, style)
+                (tag.label.as_str(), config.tag_label.to_owned(), style)
             }
 
             Query(query) => (
-                config.query_label.replace("{label}", &query.label),
+                query.label.as_str(),
+                config.query_label.to_owned(),
                 config.theme.query(),
             ),
         };
+
+        let mut lexer = LabelToken::lexer(label_template.as_str());
+
+        let mut text = Text::default().style(style);
 
         if let Some(unread_count) = unread_count {
             if unread_count > 0 {
@@ -74,12 +99,27 @@ impl FeedListItem {
             }
         }
 
-        Text::styled(
-            label
-                .replace("{unread_count}", unread_count_str.as_str())
-                .replace("{marked_count}", marked_count_str.as_str()),
-            style,
-        )
+        while let Some(token) = lexer.next() {
+            use LabelToken as T;
+            match token {
+                Ok(T::Fill) => text.push_span(Span::styled(lexer.slice().to_owned(), style)),
+                Ok(T::UnreadCount) => text.push_span(Span::styled(
+                    unread_count_str.to_owned(),
+                    style.patch(config.theme.unread_count()),
+                )),
+                Ok(T::MarkedCount) => text.push_span(Span::styled(
+                    marked_count_str.to_owned(),
+                    style.patch(config.theme.marked_count()),
+                )),
+                Ok(T::Label) => text.push_span(Span::styled(label.to_owned(), style)),
+
+                Err(_) => error!(
+                    "there was an unexpected error while parsing the label template: {label_template}"
+                ),
+            }
+        }
+
+        text
     }
 
     pub(super) fn to_tooltip(&self, _config: &Config) -> String {

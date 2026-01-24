@@ -190,5 +190,7 @@ unread = { mods = ["bold"] }
 read = { mods = ["dim"] }
 selected = { mods = ["reversed"] }
 highlighted = { fg = "highlight" }
+unread_count = { mods = ["italic"] }
+marked_count = { mods = ["italic"] }
 
 
