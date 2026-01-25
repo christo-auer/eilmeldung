@@ -21,8 +21,9 @@ rustPlatform.buildRustPackage {
     lockFile = ../Cargo.lock;
     outputHashes = {
       "nanohtml2text-0.2.1" = "sha256-HyucvnpG6H9NOG1UdIP/X1za03sA3xuLxPG8FW3zsWo=";
-      "news-flash-2.3.0-alpha.0" = "sha256-vU3IlBA4c+i77Ux/rUmiasxOlcQSYC8c1tbSoRzUcjY=";
-      "newsblur_api-0.3.1" = "sha256-/q4I5ZywnvGPDxwH1bCxk1+AmN0t2MRsCRMsOjmfRzI=";
+      "news-flash-2.3.0-alpha.0" = "sha256-+o/O+GYktfHnCqCvRE3aguT9w2thNviMkCYSCtvuwJU=";
+      "newsblur_api-0.4.0" = "sha256-3FcfCFxX74uxMkTieGlDH9T+5snlH0j7+0vpswzgdVE=";
+      "tui-textarea-0.7.0" = "sha256-3ENi0XCVkhJAj9mgMXXkCY2FZ1VcVrSjfidBCsYdfMA=";
     };
   };
   
@@ -39,7 +40,7 @@ rustPlatform.buildRustPackage {
   ];
   
   LIBCLANG_PATH = lib.makeLibraryPath [ llvmPackages_19.libclang.lib ];
-  BINDGEN_EXTRA_CLANG_ARGS = builtins.concatStringsSep " " (
+  BINDGEN_EXTRA_CLANG_ARGS = lib.concatStringsSep " " (
     (builtins.map (a: ''-I"${a}/include"'') [
       glibc.dev
     ])

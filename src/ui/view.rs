@@ -1,11 +1,6 @@
 use crate::prelude::*;
 
-use ratatui::{
-    buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
-    text::{Line, Span},
-    widgets::Widget,
-};
+use ratatui::prelude::*;
 use throbber_widgets_tui::Throbber;
 
 impl Widget for &mut App {

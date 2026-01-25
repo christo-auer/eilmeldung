@@ -199,7 +199,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn scrollbar_set(&self) -> scrollbar::Set {
+    pub fn scrollbar_set(&self) -> scrollbar::Set<'_> {
         scrollbar::Set {
             track: Box::new(self.scrollbar_track_symbol.to_string()).leak(),
             thumb: Box::new(self.scrollbar_thumb_symbol.to_string()).leak(),

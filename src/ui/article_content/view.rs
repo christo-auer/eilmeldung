@@ -6,15 +6,7 @@ use std::{io::Cursor, sync::Arc};
 use getset::{Getters, MutGetters};
 use image::ImageReader;
 use log::info;
-use ratatui::{
-    buffer::Buffer,
-    layout::{Constraint, Direction, Flex, Layout, Margin, Rect},
-    text::{Line, Span, Text},
-    widgets::{
-        Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget,
-        Widget, Wrap,
-    },
-};
+use ratatui::layout::Flex;
 use ratatui_image::{
     FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
 };
