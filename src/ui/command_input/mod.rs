@@ -3,12 +3,7 @@ use crate::prelude::*;
 use std::{str::FromStr, sync::Arc};
 
 use log::trace;
-use ratatui::{
-    crossterm::event::KeyCode,
-    layout::Flex,
-    prelude::*,
-    widgets::{Block, BorderType, Borders},
-};
+use ratatui::{crossterm::event::KeyCode, layout::Flex};
 use strum::{EnumMessage, IntoEnumIterator};
 use tokio::sync::mpsc::UnboundedSender;
 use tui_textarea::TextArea;
