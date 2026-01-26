@@ -4,6 +4,7 @@
   - `unread_count` is applied to unread count label in feed tree
   - `marked_count` is applied to marked count label in feed tree
   - default for both is `{ mods = ["italic"]}`; if you want the old style set them to `{ }` (no modification of style)
+- feed list now tries to make sure that the "most sensible" item is selected after changes in the tree (in particular after items have been set to read)
 
 # 0.8.0 - 2026-01-23
 

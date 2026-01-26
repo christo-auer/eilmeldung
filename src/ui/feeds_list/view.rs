@@ -360,34 +360,69 @@ impl FeedListViewData {
         };
     }
 
-    pub(super) fn ensure_sensible_selection(&mut self, selected_before: &[FeedListItem]) {
-        let selected_now = self.tree_state.selected();
-
-        let selection = if selected_now.is_empty() {
-            selected_before
-        } else {
-            selected_now
-        };
-
-        let roots = self.tree_items.as_slice();
-
-        // follows the path along the selection and long as it is still there
-        let sensible_selection = selection
+    pub(super) fn get_selection_with_index(
+        &self,
+        selection: &[FeedListItem],
+    ) -> Vec<(usize, FeedListItem)> {
+        selection
             .iter()
-            .scan(roots, |items, id| {
+            .scan(self.tree_items.as_slice(), |items, id| {
                 items
                     .iter()
-                    .find(|item| item.identifier() == id)
-                    .map(|next| {
+                    .enumerate()
+                    .find(|(_, item)| item.identifier() == id)
+                    .map(|(index, next)| {
                         *items = next.children();
-                        next.identifier()
+                        (index, next.identifier().to_owned())
                     })
-                    .or(items.first().map(TreeItem::identifier))
+                    .or(None)
             })
-            .cloned()
+            .collect::<Vec<(usize, FeedListItem)>>()
+    }
+
+    pub(super) fn ensure_sensible_selection(
+        &mut self,
+        selected_before: &[(usize, FeedListItem)],
+    ) -> bool {
+        let sensible_selection = selected_before
+            .iter()
+            .scan(
+                (false, self.tree_items.as_slice()),
+                |(last, items), (index, id)| {
+                    items
+                        .iter()
+                        .enumerate()
+                        .find(|(_, item)| item.identifier() == id)
+                        .map(|(_, next)| {
+                            *items = next.children();
+                            next.identifier().to_owned()
+                        })
+                        .or_else(|| {
+                            if *last {
+                                None
+                            } else {
+                                *last = true;
+                                items
+                                    .get(*index) // try index
+                                    .or(items.get((*index).saturating_sub(1))) // or the one before
+                                    .or(items.get((*index).saturating_add(1))) // or the one after
+                                    .map(|item| item.identifier().to_owned())
+                            }
+                        })
+                },
+            )
             .collect::<Vec<FeedListItem>>();
 
-        self.tree_state.select(sensible_selection);
+        if !sensible_selection.is_empty() {
+            self.tree_state.select(sensible_selection)
+        } else {
+            self.tree_state.select(
+                self.tree_items
+                    .first()
+                    .map(|first_item| vec![first_item.identifier().to_owned()])
+                    .unwrap_or_default(),
+            )
+        }
     }
 
     fn build_title<'a>(&self, config: &Config) -> Line<'a> {
