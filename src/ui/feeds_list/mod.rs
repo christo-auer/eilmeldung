@@ -50,11 +50,8 @@ impl FeedList {
             last_sync: Instant::now(),
         }
     }
-    pub(super) fn update_tooltip(
-        &self,
-        now_selected: Option<&FeedListItem>,
-    ) -> color_eyre::Result<()> {
-        if let Some(item) = now_selected {
+    pub(super) fn update_tooltip(&self) -> color_eyre::Result<()> {
+        if let Some(item) = self.selected() {
             tooltip(
                 &self.message_sender,
                 item.to_tooltip(&self.config).as_str(),
@@ -561,10 +558,13 @@ impl MessageReceiver for FeedList {
         }
 
         // get selection before
-        let selected_before_item = self.selected().clone();
-        let selected_before = self.view_data.tree_state().selected().to_vec();
+        // let selected_before_item = self.selected().clone();
+        let selected_before = self
+            .view_data
+            .get_selection_with_index(self.view_data.tree_state().selected());
         let mut model_needs_update = false;
         let mut view_needs_update = false;
+        let mut selection_changed = false;
 
         // commands
         if let Message::Command(command) = message {
@@ -588,48 +588,48 @@ impl MessageReceiver for FeedList {
             match command {
                 C::NavigateUp if handle_command => {
                     self.view_data.tree_state_mut().key_up();
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
                 C::NavigateDown if handle_command => {
                     self.view_data.tree_state_mut().key_down();
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
                 C::NavigateRight if handle_command => {
                     self.view_data.tree_state_mut().key_right();
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
                 C::NavigateLeft if handle_command => {
                     self.view_data.tree_state_mut().key_left();
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
                 C::NavigateFirst if handle_command => {
                     self.view_data.tree_state_mut().select_first();
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
                 C::NavigateLast if handle_command => {
                     self.view_data.tree_state_mut().select_last();
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
                 C::FeedListToggleExpand if handle_command => {
                     self.view_data.tree_state_mut().toggle_selected();
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
 
                 C::FeedListExpand if handle_command => {
                     let selected = self.view_data.tree_state().selected().to_vec();
                     self.view_data.tree_state_mut().open(selected);
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
 
                 C::FeedListExpandCategories(scope) if handle_command => {
                     self.expand_scope(scope);
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
 
                 C::FeedListCollapse if handle_command => {
                     let selected = self.view_data.tree_state().selected().to_vec();
                     self.view_data.tree_state_mut().close(&selected);
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
 
                 C::FeedListCollapseAll if handle_command => {
@@ -640,13 +640,13 @@ impl MessageReceiver for FeedList {
                     self.view_data
                         .tree_state_mut()
                         .scroll_down(self.config.input_config.scroll_amount);
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
                 C::NavigatePageUp if handle_command => {
                     self.view_data
                         .tree_state_mut()
                         .scroll_up(self.config.input_config.scroll_amount);
-                    view_needs_update = true;
+                    selection_changed = true;
                 }
                 show_command @ (C::Show(ActionTarget::FeedList, scope)
                 | C::Show(ActionTarget::Current, scope))
@@ -781,6 +781,7 @@ impl MessageReceiver for FeedList {
                         TooltipFlavor::Info,
                     )?;
                     self.model_data.fetch_feed(feed.feed_id.to_owned())?;
+                    model_needs_update = true;
                 }
 
                 E::AsyncFeedFetchFinished(..) => {
@@ -843,30 +844,27 @@ impl MessageReceiver for FeedList {
             }
         }
 
-        let selected_after_item = self.selected();
+        // let selected_after_item = self.selected();
 
         if model_needs_update {
             self.model_data.update().await?;
             self.view_data
                 .update(&self.config, &self.model_data)
                 .await?;
-            self.view_data.ensure_sensible_selection(&selected_before);
+            selection_changed = self.view_data.ensure_sensible_selection(&selected_before);
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
         } else if view_needs_update {
             self.view_data
                 .update(&self.config, &self.model_data)
                 .await?;
-            self.view_data.ensure_sensible_selection(&selected_before);
+            selection_changed = self.view_data.ensure_sensible_selection(&selected_before);
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
         }
 
-        if selected_before_item.as_ref() != selected_after_item.as_ref() {
-            // if self.view_data.yanked_unified_mapping().is_some() {
-            //     view_needs_update = true;
-            // }
-            self.update_tooltip(selected_after_item.as_ref())?;
+        if selection_changed {
+            self.update_tooltip()?;
             self.generate_articles_selected_command()?;
         }
 
