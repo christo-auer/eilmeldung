@@ -42,20 +42,26 @@ impl ConnectivityMonitor {
         info!("checking reachability of service");
         let client = build_client(Duration::from_secs(10))?;
 
-        let mut is_reachable: bool = false;
+        let mut is_reachable: bool = true;
 
         for _ in 0..IS_REACHABLE_RETRIES {
             trace!("polling service for reachability");
             let reachable_result = news_flash.is_reachable(&client).await;
 
-            if matches!(
-                reachable_result,
-                Ok(true) | Err(NewsFlashError::API(FeedApiError::Unsupported))
-            ) {
-                is_reachable = true;
-                break;
+            // Only consider it unreachable on actual network errors
+            match &reachable_result {
+                Err(NewsFlashError::API(FeedApiError::Network(_))) => {
+                    is_reachable = false;
+                    sleep(TIME_BETWEEN_RETRIES).await;
+                }
+                _ => {
+                    // Ok(true), Ok(false), Unsupported, Login, Auth, etc. - not a connectivity issue
+                    // Ok(false) can happen when the server returns non-2xx for HEAD requests,
+                    // which doesn't mean we're offline
+                    is_reachable = true;
+                    break;
+                }
             }
-            sleep(TIME_BETWEEN_RETRIES).await;
         }
 
         match is_reachable {
