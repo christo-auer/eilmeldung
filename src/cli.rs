@@ -36,6 +36,9 @@ pub struct CliArgs {
 
     #[command(flatten)]
     action: CliAction,
+
+    #[arg(long)]
+    quiet: bool,
 }
 
 #[derive(Args, Debug, Getters)]
@@ -78,6 +81,7 @@ async fn print_login_data(cli_args: &CliArgs, news_flash: &NewsFlash) -> color_e
     );
     Ok(true)
 }
+
 async fn sync(
     config: &Config,
     cli_args: &CliArgs,
@@ -87,19 +91,16 @@ async fn sync(
     if !cli_args.action().sync {
         return Ok(false);
     }
-
     let new_articles = news_flash.sync(client, Default::default()).await?;
-    let (mut feeds, feed_mapping) = news_flash.get_feeds()?;
-    let feed_for_feed_id = NewsFlashUtils::generate_id_map(&feeds, |feed| feed.feed_id.to_owned());
-    let feed_mapping_for_feed_id =
-        NewsFlashUtils::generate_id_map(&feed_mapping, |mapping| mapping.feed_id.to_owned());
-    let (mut categories, category_mapping) = news_flash.get_categories()?;
-    let category_for_category_id =
-        NewsFlashUtils::generate_id_map(&categories, |category| category.category_id.to_owned());
-    let category_mapping_for_category_id =
-        NewsFlashUtils::generate_id_map(&category_mapping, |category_mapping| {
-            category_mapping.category_id.to_owned()
-        });
+
+    let (
+        mut feeds,
+        feed_for_feed_id,
+        feed_mapping_for_feed_id,
+        mut categories,
+        category_for_category_id,
+        category_mapping_for_category_id,
+    ) = get_feeds_and_categories(news_flash)?;
 
     sort_feeds_and_categories(
         &mut feeds,
@@ -110,7 +111,7 @@ async fn sync(
 
     let all_unread: i64 = new_articles.values().sum();
 
-    if all_unread > 0 && config.cli.sync_output_all {
+    if !cli_args.quiet() && all_unread > 0 && config.cli.sync_output_all {
         // println!(config.cli.sync_output_format.replac);
         println!(
             "{}",
@@ -122,7 +123,7 @@ async fn sync(
         );
     }
 
-    if config.cli.sync_output_feeds {
+    if !cli_args.quiet() && config.cli.sync_output_feeds {
         feeds
             .iter()
             .filter(|feed| *new_articles.get(&feed.feed_id).unwrap_or(&0) > 0)
@@ -158,6 +159,40 @@ async fn sync(
     }
 
     Ok(true)
+}
+
+fn get_feeds_and_categories(
+    news_flash: &NewsFlash,
+) -> Result<
+    (
+        Vec<Feed>,
+        std::collections::HashMap<news_flash::models::FeedID, Feed>,
+        std::collections::HashMap<news_flash::models::FeedID, news_flash::models::FeedMapping>,
+        Vec<Category>,
+        std::collections::HashMap<CategoryID, Category>,
+        std::collections::HashMap<CategoryID, news_flash::models::CategoryMapping>,
+    ),
+    color_eyre::eyre::Error,
+> {
+    let (feeds, feed_mapping) = news_flash.get_feeds()?;
+    let feed_for_feed_id = NewsFlashUtils::generate_id_map(&feeds, |feed| feed.feed_id.to_owned());
+    let feed_mapping_for_feed_id =
+        NewsFlashUtils::generate_id_map(&feed_mapping, |mapping| mapping.feed_id.to_owned());
+    let (categories, category_mapping) = news_flash.get_categories()?;
+    let category_for_category_id =
+        NewsFlashUtils::generate_id_map(&categories, |category| category.category_id.to_owned());
+    let category_mapping_for_category_id =
+        NewsFlashUtils::generate_id_map(&category_mapping, |category_mapping| {
+            category_mapping.category_id.to_owned()
+        });
+    Ok((
+        feeds,
+        feed_for_feed_id,
+        feed_mapping_for_feed_id,
+        categories,
+        category_for_category_id,
+        category_mapping_for_category_id,
+    ))
 }
 
 fn sort_feeds_and_categories(
@@ -205,6 +240,67 @@ fn sort_feeds_and_categories(
     });
 }
 
+pub async fn export_opml(cli_args: &CliArgs, news_flash: &NewsFlash) -> color_eyre::Result<bool> {
+    let Some(path) = cli_args.action().export_opml.as_ref() else {
+        return Ok(false);
+    };
+    if !cli_args.quiet() {
+        termimad::print_text(&format!(
+            "**exporting OPML** to *{}*\n",
+            path.to_str().unwrap_or_default()
+        ));
+    }
+
+    let opml = news_flash.export_opml().await?;
+    tokio::fs::write(path, opml).await?;
+    if !cli_args.quiet() {
+        termimad::print_text("**done**");
+    }
+    Ok(true)
+}
+
+pub async fn import_opml(
+    cli_args: &CliArgs,
+    news_flash: &NewsFlash,
+    client: &Client,
+) -> color_eyre::Result<bool> {
+    let Some(path) = cli_args.action().import_opml.as_ref() else {
+        return Ok(false);
+    };
+
+    if !cli_args.quiet() {
+        termimad::print_text(&format!(
+            "**importing OPML** from *{}*\n",
+            path.to_str().unwrap_or_default()
+        ));
+    }
+    let opml = tokio::fs::read_to_string(path).await?;
+    news_flash.import_opml(&opml, true, client).await?;
+    if !cli_args.quiet() {
+        termimad::print_text("**done**");
+    }
+    Ok(true)
+}
+
+pub async fn logout(
+    cli_args: &CliArgs,
+    news_flash: &NewsFlash,
+    client: &Client,
+) -> color_eyre::Result<bool> {
+    if !cli_args.action.logout {
+        return Ok(false);
+    };
+
+    if !cli_args.quiet() {
+        termimad::print_text("**logging out**\n");
+    }
+    news_flash.logout(client).await?;
+    if !cli_args.quiet() {
+        termimad::print_text("**done**");
+    }
+    Ok(true)
+}
+
 pub async fn execute_cli_actions(
     config: &Config,
     cli_args: &CliArgs,
@@ -218,6 +314,21 @@ pub async fn execute_cli_actions(
 
     // sync
     if sync(config, cli_args, news_flash, client).await? {
+        return Ok(true);
+    }
+
+    // export opml
+    if export_opml(cli_args, news_flash).await? {
+        return Ok(true);
+    }
+
+    // export opml
+    if import_opml(cli_args, news_flash, client).await? {
+        return Ok(true);
+    }
+
+    // logout opml
+    if logout(cli_args, news_flash, client).await? {
         return Ok(true);
     }
 
