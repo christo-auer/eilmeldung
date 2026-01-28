@@ -111,7 +111,7 @@ async fn sync(
 
     let all_unread: i64 = new_articles.values().sum();
 
-    if !cli_args.quiet() && all_unread > 0 && config.cli.sync_output_all {
+    if !cli_args.quiet() && all_unread > 0 {
         // println!(config.cli.sync_output_format.replac);
         println!(
             "{}",
@@ -123,7 +123,7 @@ async fn sync(
         );
     }
 
-    if !cli_args.quiet() && config.cli.sync_output_feeds {
+    if !cli_args.quiet() {
         feeds
             .iter()
             .filter(|feed| *new_articles.get(&feed.feed_id).unwrap_or(&0) > 0)
