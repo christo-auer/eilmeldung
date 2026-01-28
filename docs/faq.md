@@ -125,6 +125,9 @@ Yes, in your `config.toml` add `focus articles` to your `startup_commands` (`sta
 
 Use the command `expandcategories unread`. Call with `all` to expand all categories and `marked` to expand all categories with marked articles. Create a keybinding for quick action or add it `startup_commands`.
 
+### Can I sync/refresh without starting eilmeldung? 
+
+Yes, use `--sync`. See [CLI Arguments](cli_args.md). This even outputs sync statistics for further shell shenanigans.
 
 ---
 
@@ -157,7 +160,6 @@ read = { fg = "muted" mods = ["dim"] } # shows read items dim with muted color
 ```
 
 
-
 ### Can I configure login information via the configuration file?
 
 Yes! Check out *Automatic Login* in [Configuration](configuration.md#automatic-login).
@@ -179,6 +181,10 @@ password = "cmd:pass my-passwords/eilmeldung"
 Run `eilmeldung --print-login-data` to see the configuration needed for your setup. This will guide you through the login process and output the configuration at the end.
 
 See [Finding the Right Settings](configuration.md#finding-the-right-settings) for details.
+
+### Can I import/export an OPML file from the command line?
+
+Yes, use `--import-opml` and `--export-opml`. See [CLI Arguments](cli_args.md) for details.
 
 ### Do I always have to focus a panel to move/execute a command there?
 
