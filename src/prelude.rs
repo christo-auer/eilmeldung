@@ -5,7 +5,7 @@ pub use super::utils::prelude::*;
 pub use ratatui::prelude::*;
 pub use ratatui::widgets::*;
 
-pub use super::cli::CliArgs;
+pub use super::cli::{CliArgs, execute_cli_actions};
 
 pub use super::messages::prelude::*;
 pub use super::newsflash_utils::{NewsFlashUtils, build_client};

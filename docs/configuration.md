@@ -483,3 +483,6 @@ url = "http://x.y.z.w/api/greader.php/"
 password = "cmd:pass my-passwords/eilmeldung"
 ```
 
+### CLI Options
+
+For options to customize the output of the `--sync` option see [here](cli_args.md).

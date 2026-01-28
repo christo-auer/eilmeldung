@@ -1,16 +1,18 @@
-pub mod dimension;
-pub mod feed_list_content_identfier;
-pub mod input_config;
-pub mod login_configuration;
-pub mod paths;
-pub mod share_target;
-pub mod theme;
+mod cli_config;
+mod dimension;
+mod feed_list_content_identfier;
+mod input_config;
+mod login_configuration;
+mod paths;
+mod share_target;
+mod theme;
 
 use std::path::{Path, PathBuf};
 
 use crate::prelude::*;
 
 pub mod prelude {
+    pub use super::cli_config::CliConfig;
     pub use super::dimension::Dimension;
     pub use super::feed_list_content_identfier::{
         FeedListContentIdentifier, FeedListItemType, LabeledQuery,
@@ -159,6 +161,8 @@ pub struct Config {
     pub share_targets: Vec<ShareTarget>,
 
     pub login_setup: Option<LoginConfiguration>,
+
+    pub cli: CliConfig,
 }
 
 impl Config {
@@ -283,6 +287,7 @@ impl Default for Config {
                 ShareTarget::Telegram,
             ],
             login_setup: None,
+            cli: CliConfig::default(),
         }
     }
 }
