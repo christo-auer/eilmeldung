@@ -161,6 +161,7 @@ async fn sync(
     Ok(true)
 }
 
+#[allow(clippy::type_complexity)]
 fn get_feeds_and_categories(
     news_flash: &NewsFlash,
 ) -> Result<
