@@ -91,13 +91,8 @@ async fn main() -> color_eyre::Result<()> {
         }
     };
 
-    // just print login data and exit
-    if *cli_args.print_login_data() {
-        let login_data = news_flash.get_login_data().await.unwrap();
-        print!(
-            "{}",
-            LoginConfiguration::from(login_data).as_toml(*cli_args.show_secrets())?
-        );
+    // execute CLI actions -> if true, exit after execution (CLI only)
+    if execute_cli_actions(&config, &cli_args, &news_flash, &client).await? {
         return Ok(());
     }
 
