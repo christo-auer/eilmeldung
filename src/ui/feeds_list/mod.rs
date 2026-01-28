@@ -610,29 +610,29 @@ impl MessageReceiver for FeedList {
                     self.view_data.tree_state_mut().select_last();
                     selection_changed = true;
                 }
-                C::FeedListToggleExpand if handle_command => {
+                C::FeedListToggleExpand => {
                     self.view_data.tree_state_mut().toggle_selected();
                     selection_changed = true;
                 }
 
-                C::FeedListExpand if handle_command => {
+                C::FeedListExpand => {
                     let selected = self.view_data.tree_state().selected().to_vec();
                     self.view_data.tree_state_mut().open(selected);
                     selection_changed = true;
                 }
 
-                C::FeedListExpandCategories(scope) if handle_command => {
+                C::FeedListExpandCategories(scope) => {
                     self.expand_scope(scope);
                     selection_changed = true;
                 }
 
-                C::FeedListCollapse if handle_command => {
+                C::FeedListCollapse => {
                     let selected = self.view_data.tree_state().selected().to_vec();
                     self.view_data.tree_state_mut().close(&selected);
                     selection_changed = true;
                 }
 
-                C::FeedListCollapseAll if handle_command => {
+                C::FeedListCollapseAll => {
                     self.view_data.tree_state_mut().close_all();
                 }
 
