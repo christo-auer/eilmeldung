@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.8.1 - 2026-01-28
+
 - two new component style modifiers
   - `unread_count` is applied to unread count label in feed tree
   - `marked_count` is applied to marked count label in feed tree
