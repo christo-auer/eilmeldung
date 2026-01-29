@@ -21,7 +21,8 @@ pub mod prelude {
 use crate::prelude::*;
 
 use chrono::TimeDelta;
-use log::{debug, error, info, trace};
+use log::{debug, error, info, trace, warn};
+use news_flash::error::{FeedApiError, NewsFlashError};
 use ratatui::DefaultTerminal;
 use std::{fmt::Display, path::Path, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
@@ -432,11 +433,59 @@ impl MessageReceiver for App {
 
                 match error {
                     AsyncOperationError::NewsFlashError(news_flash_error) => {
-                        tooltip(
-                            &self.message_sender,
-                            NewsFlashUtils::error_to_message(news_flash_error).as_str(),
-                            TooltipFlavor::Error,
-                        )?;
+                        // Check if this is an auth error - if so, try to re-login and retry
+                        if matches!(news_flash_error, NewsFlashError::API(FeedApiError::Auth)) {
+                            warn!("Auth error detected, attempting re-login");
+                            if self.news_flash_utils.relogin().await {
+                                // Re-login succeeded, retry parameterless operations automatically
+                                let retried = match starting_event.as_ref() {
+                                    Event::AsyncSync => {
+                                        info!("Retrying sync after re-login");
+                                        self.news_flash_utils.sync();
+                                        true
+                                    }
+                                    Event::AsyncSetAllRead => {
+                                        info!("Retrying set_all_read after re-login");
+                                        self.news_flash_utils.set_all_read();
+                                        true
+                                    }
+                                    Event::AsyncLogout => {
+                                        info!("Retrying logout after re-login");
+                                        self.news_flash_utils.logout();
+                                        true
+                                    }
+                                    _ => false,
+                                };
+
+                                if retried {
+                                    tooltip(
+                                        &self.message_sender,
+                                        "Session expired, re-logged in and retrying...",
+                                        TooltipFlavor::Info,
+                                    )?;
+                                } else {
+                                    // For operations with parameters, just notify the user
+                                    tooltip(
+                                        &self.message_sender,
+                                        "Session expired and refreshed. Please try again.",
+                                        TooltipFlavor::Warning,
+                                    )?;
+                                }
+                            } else {
+                                // Re-login failed
+                                tooltip(
+                                    &self.message_sender,
+                                    "Session expired and re-login failed. Please restart the app.",
+                                    TooltipFlavor::Error,
+                                )?;
+                            }
+                        } else {
+                            tooltip(
+                                &self.message_sender,
+                                NewsFlashUtils::error_to_message(news_flash_error).as_str(),
+                                TooltipFlavor::Error,
+                            )?;
+                        }
                     }
                     AsyncOperationError::Report(report) => {
                         tooltip(
