@@ -50,7 +50,16 @@ async fn main() -> color_eyre::Result<()> {
     let client = build_client(Duration::from_secs(config.network_timeout_seconds))?;
 
     let news_flash = match news_flash_attempt {
-        Ok(news_flash) => news_flash,
+        Ok(news_flash) => {
+            // Re-login to refresh session token
+            if let Some(login_data) = news_flash.get_login_data().await {
+                info!("Re-logging in to refresh session");
+                if let Err(e) = news_flash.login(login_data, &client).await {
+                    error!("Failed to re-login: {}. Session may have expired.", e);
+                }
+            }
+            news_flash
+        }
         Err(_) => {
             // this is the initial setup => setup login data
             info!("no profile found => ask user or try config");

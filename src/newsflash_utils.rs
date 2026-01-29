@@ -114,6 +114,28 @@ impl NewsFlashUtils {
         Ok(())
     }
 
+    /// Attempt to re-login using stored credentials. Returns true if successful.
+    pub async fn relogin(&self) -> bool {
+        let news_flash = self.news_flash_lock.read().await;
+        let client = self.client_lock.read().await;
+        
+        if let Some(login_data) = news_flash.get_login_data().await {
+            info!("Attempting re-login to refresh session");
+            match news_flash.login(login_data, &client).await {
+                Ok(()) => {
+                    info!("Re-login successful");
+                    true
+                }
+                Err(e) => {
+                    error!("Re-login failed: {}", e);
+                    false
+                }
+            }
+        } else {
+            error!("No login data available for re-login");
+            false
+        }
+    }
 
     // for polling
     pub fn is_async_operation_running(&self) -> bool {
