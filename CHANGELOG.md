@@ -5,6 +5,7 @@
   - `--import-opml`/`--export-opml` for importing/exports opml directly from the command line for automatic setup; combine with login settings and you can setup `eilmeldung` without manual input!
   - `--logout` to logout
   - for more information checkout `docs/cli_args.md`
+  - **Warning**: You should not execute these commands while eilmeldung is running in another process to avoid data inconsistency!
 
 # 0.8.1 - 2026-01-28
 
