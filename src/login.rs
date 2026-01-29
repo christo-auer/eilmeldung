@@ -272,7 +272,7 @@ Create a new *Application* under your account *Settings* with the following conf
                 .or(plugin_info.website.as_ref())
             {
                 Some(url) => {
-                    self.skin.print_text(&format!("To create an **API Secret**, you have to visit the following website:\n**{url}**\n\n"));
+                    self.skin.print_text(&format!("To create an **API Secret**, you have to visit the following website:\n\n**{url}**\n\n"));
                     self.inquire_open_url(url)?;
                 }
                 None => {

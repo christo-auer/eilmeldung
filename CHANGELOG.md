@@ -6,6 +6,7 @@
   - `--logout` to logout
   - for more information checkout `docs/cli_args.md`
   - **Warning**: You should not execute these commands while eilmeldung is running in another process to avoid data inconsistency!
+- **inoreader** (OAuth2) provider is now supported (**note**: You need a Pro account to create an application token to grand `eilmeldung` access to **inoreader**)
 
 # 0.8.1 - 2026-01-28
 
