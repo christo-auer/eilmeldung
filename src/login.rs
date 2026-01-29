@@ -2,13 +2,18 @@ use std::{cmp::Ordering, fmt::Display};
 
 use crate::prelude::*;
 
-use inquire::{Confirm, Password, Select, Text, min_length, validator::Validation};
+use arboard::Clipboard;
+use color_eyre::eyre::eyre;
+use inquire::{
+    Confirm, Password, Select, Text, min_length,
+    validator::{self, Validation},
+};
 use log::info;
 use news_flash::{
     NewsFlash,
     models::{
-        BasicAuth, DirectLogin, DirectLoginGUI, LoginData, LoginGUI, OAuthData, OAuthLoginGUI,
-        PasswordLogin, PluginInfo, ServicePrice, ServiceType, TokenLogin, Url,
+        ApiSecret, BasicAuth, DirectLogin, DirectLoginGUI, LoginData, LoginGUI, OAuthData,
+        OAuthLoginGUI, PasswordLogin, PluginInfo, ServicePrice, ServiceType, TokenLogin, Url,
     },
 };
 use reqwest::Client;
@@ -16,6 +21,10 @@ use termimad::MadSkin;
 
 const LOGIN_TYPE_PASSWORD: &str = "Username/Password";
 const LOGIN_TYPE_TOKEN: &str = "Token";
+
+const URL_COPY_TO_CLIPBOARD: &str = "Copy URL to clipboard";
+const URL_OPEN_IN_BROWSER: &str = "Open in default webbrowser";
+const URL_MANUAL: &str = "Do nothing, I open URL manually";
 
 pub struct LoginSetup {
     skin: MadSkin,
@@ -70,7 +79,7 @@ impl LoginSetup {
                         vec!["**Provider**", &plugin_info.name],
                         vec!["**URL**", password_login.url.as_deref().unwrap_or("none")],
                         vec!["**User**", &password_login.user],
-                        vec!["**Password**", "************"],
+                        vec!["**Password**", "*redacted*"],
                         summary_basic_auth(&password_login.basic_auth)
                             .iter()
                             .map(String::as_str)
@@ -96,19 +105,23 @@ impl LoginSetup {
             }
 
             OAuth(oauth_data) => {
-                println!("  URL:      {}", oauth_data.url);
-
-                println!("  Custom API Secret:");
-                match oauth_data.custom_api_secret.as_ref() {
-                    Option::None => println!("    No Custom API Secret"),
-                    Some(api_secret) => {
-                        println!("    Client ID:     {}", api_secret.client_id);
-                        println!(
-                            "    Client Secret: {}",
-                            "*".repeat(api_secret.client_secret.len())
-                        );
-                    }
-                }
+                self.print_table(
+                    Option::None,
+                    "|-|-|",
+                    &vec![
+                        vec!["**Provider**", &plugin_info.name],
+                        vec![
+                            "**Client/App ID**",
+                            oauth_data
+                                .custom_api_secret
+                                .as_ref()
+                                .map(|api_secret| &*api_secret.client_id)
+                                .unwrap_or("none"),
+                        ],
+                        vec!["**Client Secret:**", "*redacted*"],
+                        vec!["**URL (Code)**", &oauth_data.url],
+                    ],
+                );
             }
         }
     }
@@ -227,25 +240,121 @@ impl LoginSetup {
 
     fn inquire_oauth_login(
         &self,
-        _plugin_info: &PluginInfo,
-        _oauth_login_gui: &OAuthLoginGUI,
-        _preset_direct_login_data: &Option<OAuthData>,
+        plugin_info: &PluginInfo,
+        oauth_login_gui: &OAuthLoginGUI,
+        preset_direct_login_data: &Option<OAuthData>,
     ) -> color_eyre::Result<LoginData> {
-        // if oauth_login_gui.custom_api_secret {
-        //     self.skin
-        //         .print_text(r#"For this provider you need an API Secret"#);
-        //     self.skin.print_inline(
-        //         &oauth_login_gui
-        //             .custom_api_secret_url
-        //             .as_ref()
-        //             .map(|url| url.to_string())
-        //             .unwrap_or("no url".into()),
-        //     );
-        // }
+        let mut login_data = preset_direct_login_data.clone().unwrap_or(OAuthData {
+            id: plugin_info.id.to_owned(),
+            url: "".to_owned(),
+            custom_api_secret: None,
+        });
 
-        Err(color_eyre::eyre::eyre!(
-            "eilmeldung does not yet support OAuth. You can raise an issue of you need it."
-        ))
+        if oauth_login_gui.custom_api_secret {
+            self.skin.print_text(
+            r#"
+For this provider you need an **API Secret**
+
+Create a new *Application* under your account *Settings* with the following configuration options (if applicable)
+
+|-|-|
+|**Name** | *eilmeldung* or any name you want |
+|**URL** | empty or *https://github.com/christo-auer/eilmeldung* |
+|**Platform** | Linux/MacOS |
+|**Redirect URI** | You **must** set this to `http://localhost` |
+|**Scope** | read and write |
+|-
+                "#);
+
+            match oauth_login_gui
+                .custom_api_secret_url
+                .as_ref()
+                .or(plugin_info.website.as_ref())
+            {
+                Some(url) => {
+                    self.skin.print_text(&format!("To create an **API Secret**, you have to visit the following website:\n**{url}**\n\n"));
+                    self.inquire_open_url(url)?;
+                }
+                None => {
+                    self.skin.print_text(
+                        "To create an **API Secret**, you have to visit the website of the provider and open your settings.",
+                    );
+                    let proceed = inquire::prompt_confirmation("Do you want to continue?")?;
+
+                    if !proceed {
+                        return Err(eyre!("User aborted login setup"));
+                    }
+                }
+            }
+
+            login_data.custom_api_secret =
+                Some(self.inquire_api_secret(login_data.custom_api_secret.as_ref())?);
+        }
+
+        let url = (*oauth_login_gui.login_website)(login_data.custom_api_secret.as_ref());
+
+        match url.as_ref() {
+            Some(url) => {
+                self.skin
+                    .print_text("\nNext you must authorize access by eilmeldung by visiting the following URL.\n");
+                self.skin.print_text(&format!("\n*{url}*\n"));
+                self.skin
+                    .print_text("\n**Important**: After authorizing eilmeldung, you will be forwarded to a **callback URL** and your browser will show an **error** that it can't connect. \n\nThis is **expected**! \n\n**Copy** the URL from the address bar into your **clipboard** and return here.\n\n");
+                self.inquire_open_url(url)?;
+            }
+            None => {
+                return Err(eyre!("Unable to generate login URL."));
+            }
+        }
+
+        login_data.url = self.inquire_url("Paste the URL from the browser here", &None)?;
+
+        Ok(LoginData::OAuth(login_data))
+    }
+
+    fn inquire_api_secret(
+        &self,
+        custom_api_secret: Option<&ApiSecret>,
+    ) -> color_eyre::Result<ApiSecret> {
+        let client_id = inquire::Text::new("Client/App ID")
+            .with_initial_value(
+                custom_api_secret
+                    .map(|api_secret| &api_secret.client_id)
+                    .unwrap_or(&"".to_owned()),
+            )
+            .with_validator(validator::ValueRequiredValidator::new("must not be empty"))
+            .prompt()?;
+        let client_secret = inquire::Password::new("Client Secret")
+            .with_display_mode(inquire::PasswordDisplayMode::Masked)
+            .with_validator(validator::ValueRequiredValidator::new("must not be empty"))
+            .without_confirmation()
+            .prompt()?;
+
+        Ok(ApiSecret {
+            client_id,
+            client_secret,
+        })
+    }
+
+    fn inquire_open_url(&self, url: &Url) -> color_eyre::Result<()> {
+        let choice = Select::new(
+            "Choose how you want to open the URL",
+            vec![URL_OPEN_IN_BROWSER, URL_COPY_TO_CLIPBOARD, URL_MANUAL],
+        )
+        .with_vim_mode(true)
+        .with_starting_cursor(0)
+        .without_filtering()
+        .prompt()?;
+
+        match choice {
+            URL_OPEN_IN_BROWSER => webbrowser::open(url.as_str())?,
+            URL_COPY_TO_CLIPBOARD => {
+                Clipboard::new()?.set_text(url.to_string())?;
+            }
+            _ => {}
+        }
+
+        Ok(())
     }
 
     fn inquire_direct_login(
