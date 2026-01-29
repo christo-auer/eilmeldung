@@ -113,7 +113,7 @@ Complete documentation is available in the `docs/` directory:
 
 ### Which providers are supported?
 
-See [news_flash_gtk for all supported providers](https://gitlab.com/news-flash/news_flash_gtk). Note: inoreader is currently **NOT** directly supported.
+See [news_flash_gtk for all supported providers](https://gitlab.com/news-flash/news_flash_gtk). 
 
 ### Does eilmeldung support smart folders?
 

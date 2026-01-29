@@ -19,8 +19,6 @@ Common questions and answers about eilmeldung.
 
 See [news_flash_gtk for all supported providers](https://gitlab.com/news-flash/news_flash_gtk).
 
-**Note**: inoreader is currently **NOT** directly supported. Create an issue if you need support for inoreader!
-
 ### What does "eilmeldung" mean?
 
 *eilmeldung* is German for *breaking news*.
