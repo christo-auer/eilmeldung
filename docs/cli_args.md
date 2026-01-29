@@ -28,6 +28,8 @@ Run `eilmeldung --help` to display all available command line arguments
 
 All these will exit after finishing.
 
+**Warning**: You should not execute these commands while eilmeldung is running in another process to avoid data inconsistency!
+
 
 | Argument                    | Description                                                                                         |
 | ---                         | ---                                                                                                 |
