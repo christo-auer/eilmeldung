@@ -343,7 +343,7 @@ The `share_targets` array defines available sharing targets. Each entry can be a
 - `<template>`: any occurrence of `{url}` is replaced by the URL of the article and any `{title}` is replaced by its title
   - **Sharing via Webbrowser**: if the template starts with `http://...` or `https://...` the template is interpreted as a web URL and upon sharing the webbrowser is opened with the given URL
   - **Sharing to a Shell Command**: otherwise the template is interpreted as a shell command with arguments. **Note**: 
-    - A new process is spawned in the background whose with `stdin`, `stdout`, and `stderr` redirected to `null`. In particular, you won't see any terminal output.
+    - A new process is spawned in the background with `stdin`, `stdout`, and `stderr` redirected to `null`. In particular, you won't see any terminal output.
     - This does not support any shell features like input output redirection (`>`, etc.), pipes (`|`) or other advanced shell features. Also no shell variables are replaced (`~`, `$HOME`). If you want more sophisticated behaviour, create a shell script and call the shell script.
 
 **Default:**
@@ -379,7 +379,7 @@ You can adjust the layout, that is, the size of the different panels when they a
 - `article_list_focused_height`: height of article list when focused
 - `article_content_focused_height`: height of article content when focused
 
-Each has a *dimension* value whih is a string, e.g., `"10 length"` for ten rows/columns or `"33%"` for 33% of the available width/height. For instance, if the feed list should occupy 25% of the total width when focused, set its value to `"25%"` and if you want have 10 articles visible in the article list, set its height value to `"11 length"` (+1 for the header).
+Each has a *dimension* value which is a string, e.g., `"10 length"` for ten rows/columns or `"33%"` for 33% of the available width/height. For instance, if the feed list should occupy 25% of the total width when focused, set its value to `"25%"` and if you want have 10 articles visible in the article list, set its height value to `"11 length"` (+1 for the header).
 
 
 ### Example: Static Layout (default)
