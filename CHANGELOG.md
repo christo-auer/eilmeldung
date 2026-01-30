@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.8.3 - 2026-01-30
+
 - hotfix: removed hash for `news_flash` from nix package declaration
 - changelog from 0.8.2 for completeness
     - new CLI magic for the people
