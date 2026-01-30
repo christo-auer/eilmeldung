@@ -7,10 +7,10 @@ use ratatui::{
 use std::os::unix::io::{AsRawFd, RawFd};
 
 pub mod prelude {
-    pub use super::html_sanitize;
-    pub use super::to_bubble;
     #[cfg(unix)]
     pub use super::StderrRedirect;
+    pub use super::html_sanitize;
+    pub use super::to_bubble;
 }
 
 pub fn html_sanitize(html_escaped_string: &str) -> String {
