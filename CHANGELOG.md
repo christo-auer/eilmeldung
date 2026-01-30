@@ -7,6 +7,10 @@
   - for more information checkout `docs/cli_args.md`
   - **Warning**: You should not execute these commands while eilmeldung is running in another process to avoid data inconsistency!
 - **inoreader** (OAuth2) provider is now supported (**note**: You need a Pro account to create an application token to grand `eilmeldung` access to **inoreader**)
+- bugfixes
+  - deleting categories works now (thanks to @JanGernert for updating `news_flash` to 3.0.0)
+  - fixed false negatives in reachability checks (thanks to @janbuchar)
+  - re-login to prevent auth errors on sync attempts (thanks to @janbuchar)
 
 # 0.8.1 - 2026-01-28
 
