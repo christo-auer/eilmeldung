@@ -33,7 +33,7 @@ itertools = "0.14.0"
 log = "0.4.28"
 logos = "0.15.1"
 
-news-flash = { git = "https://gitlab.com/news_flash/news_flash.git", version = "2.3.0-alpha.0", rev = "58e4b8b4" }
+news-flash = { version = "3.0.0", features = ["image-downloader"] }
 once_cell = "1.21.3"
 openssl = { version = "0.10.75", features = ["vendored"] }
 parse_datetime = "0.13.1"

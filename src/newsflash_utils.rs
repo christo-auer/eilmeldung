@@ -179,7 +179,7 @@ impl NewsFlashUtils {
         client_var: client,
         start_event: Event::AsyncArticleFatFetch,
         operation: let fat_article = news_flash
-                    .scrap_content_article(&article_id, &client, None)
+                    .scrap_content_article(&article_id, &client)
                     .await?,
         success_event: Event::AsyncArticleFatFetchFinished(fat_article),
     }

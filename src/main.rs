@@ -45,7 +45,10 @@ async fn main() -> color_eyre::Result<()> {
     let config = Arc::new(load_config(config_dir)?);
 
     info!("Initializing NewsFlash");
-    let news_flash_attempt = NewsFlash::try_load(state_dir, config_dir);
+    let news_flash_attempt = NewsFlash::builder()
+        .config_dir(config_dir)
+        .data_dir(state_dir)
+        .try_load();
 
     let client = build_client(Duration::from_secs(config.network_timeout_seconds))?;
 
@@ -82,12 +85,13 @@ async fn main() -> color_eyre::Result<()> {
                 } else {
                     login_data
                 };
-                news_flash = Some(NewsFlash::new(
-                    state_dir,
-                    config_dir,
-                    &login_data.as_ref().unwrap().id(),
-                    None,
-                )?);
+                news_flash = Some(
+                    NewsFlash::builder()
+                        .data_dir(state_dir)
+                        .config_dir(config_dir)
+                        .plugin(login_data.as_ref().unwrap().id())
+                        .create()?,
+                );
                 logged_in = login_setup
                     .login_and_initial_sync(
                         news_flash.as_ref().unwrap(),

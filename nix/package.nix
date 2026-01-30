@@ -20,9 +20,7 @@ rustPlatform.buildRustPackage {
   cargoLock = {
     lockFile = ../Cargo.lock;
     outputHashes = {
-      "nanohtml2text-0.2.1" = "sha256-HyucvnpG6H9NOG1UdIP/X1za03sA3xuLxPG8FW3zsWo=";
-      "news-flash-2.3.0-alpha.0" = "sha256-+o/O+GYktfHnCqCvRE3aguT9w2thNviMkCYSCtvuwJU=";
-      "newsblur_api-0.4.0" = "sha256-3FcfCFxX74uxMkTieGlDH9T+5snlH0j7+0vpswzgdVE=";
+      "news-flash-3.0.0-alpha.0" = "sha256-vrlQsy3e1URSO3ZzP17/qHtFhkPpESbwxpPD3mmMbps=";
       "tui-textarea-0.7.0" = "sha256-3ENi0XCVkhJAj9mgMXXkCY2FZ1VcVrSjfidBCsYdfMA=";
     };
   };
