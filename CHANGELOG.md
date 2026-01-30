@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.8.2 - 2026-01-30
+
 - new CLI magic for the people
   - `--sync` syncs all feeds and outputs (customizable) sync statistics (for you `cron`/`systemd` tweakers)
   - `--import-opml`/`--export-opml` for importing/exports opml directly from the command line for automatic setup; combine with login settings and you can setup `eilmeldung` without manual input!
