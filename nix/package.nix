@@ -20,7 +20,6 @@ rustPlatform.buildRustPackage {
   cargoLock = {
     lockFile = ../Cargo.lock;
     outputHashes = {
-      "news-flash-3.0.0-alpha.0" = "sha256-vrlQsy3e1URSO3ZzP17/qHtFhkPpESbwxpPD3mmMbps=";
       "tui-textarea-0.7.0" = "sha256-3ENi0XCVkhJAj9mgMXXkCY2FZ1VcVrSjfidBCsYdfMA=";
     };
   };
