@@ -1,20 +1,10 @@
 # Unreleased
 
+- bugfix: `libxml` error output messed up TUI; workaround which temporarily redirects `stderr` when scraping an article
+
 # 0.8.3 - 2026-01-30
 
 - hotfix: removed hash for `news_flash` from nix package declaration
-- changelog from 0.8.2 for completeness
-    - new CLI magic for the people
-      - `--sync` syncs all feeds and outputs (customizable) sync statistics (for you `cron`/`systemd` tweakers)
-      - `--import-opml`/`--export-opml` for importing/exports opml directly from the command line for automatic setup; combine with login settings and you can setup `eilmeldung` without manual input!
-      - `--logout` to logout
-      - for more information checkout `docs/cli_args.md`
-      - **Warning**: You should not execute these commands while eilmeldung is running in another process to avoid data inconsistency!
-    - **inoreader** (OAuth2) provider is now supported (**note**: You need a Pro account to create an application token to grand `eilmeldung` access to **inoreader**)
-    - bugfixes
-      - deleting categories works now (thanks to @JanGernert for updating `news_flash` to 3.0.0)
-      - fixed false negatives in reachability checks (thanks to @janbuchar)
-      - re-login to prevent auth errors on sync attempts (thanks to @janbuchar)
 
 
 # 0.8.2 - 2026-01-30

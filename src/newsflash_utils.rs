@@ -178,9 +178,15 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         start_event: Event::AsyncArticleFatFetch,
-        operation: let fat_article = news_flash
-                    .scrap_content_article(&article_id, &client)
-                    .await?,
+        operation: let fat_article = {
+            // Temporarily redirect stderr to suppress libxml xpath errors that would mess up the TUI
+            #[cfg(unix)]
+            let _stderr_redirect = crate::utils::prelude::StderrRedirect::new();
+            
+            news_flash
+                .scrap_content_article(&article_id, &client)
+                .await?
+        },
         success_event: Event::AsyncArticleFatFetchFinished(fat_article),
     }
 
