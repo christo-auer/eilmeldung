@@ -1665,6 +1665,7 @@ dependencies = [
  "indexmap 2.13.0",
  "inquire",
  "itertools 0.14.0",
+ "libc",
  "log",
  "logos",
  "news-flash",
