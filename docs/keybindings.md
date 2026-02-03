@@ -79,7 +79,7 @@ This document provides a comprehensive reference of all default key bindings in 
 
 | Key | Action |
 |-----|--------|
-| `r` | Mark current article as read |
+| `r` | Mark current article as read (and go to next unread article) |
 | `R` | Mark **all** articles as read (asks for confirmation) |
 | `u` | Mark current article as unread |
 | `U` | Mark **all** articles as unread (asks for confirmation) |
