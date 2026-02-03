@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use ratatui::prelude::*;
+use ratatui::{layout::Flex, prelude::*};
 use throbber_widgets_tui::Throbber;
 
 impl Widget for &mut App {
@@ -96,12 +96,29 @@ impl Widget for &mut App {
                 .to_symbol_span(&self.async_operation_throbber)
         };
 
-        let eilmeldung_span = Span::styled(" +++ eilmeldung +++ ", self.config.theme.statusbar());
+        let eilmeldung_span = Span::styled("  eilmeldung  ", self.config.theme.statusbar());
 
-        let title = Line::from(vec![eilmeldung_span, status_span.clone()])
-            .style(self.config.theme.statusbar());
+        // fill top line with status bar color
+        Block::default()
+            .style(self.config.theme.statusbar())
+            .render(top, buf);
 
-        title.render(top, buf);
+        let [top_left, top_main, top_right] = Layout::default()
+            .direction(Direction::Horizontal)
+            .flex(Flex::Center)
+            .constraints([
+                Constraint::Length(1),
+                Constraint::Min(top.width.saturating_sub(2)),
+                Constraint::Length(1),
+            ])
+            .areas::<3>(top);
+
+        Span::styled("", self.config.theme.statusbar().not_reversed()).render(top_left, buf);
+        Span::styled("", self.config.theme.statusbar().not_reversed()).render(top_right, buf);
+
+        let title = Line::from(vec![eilmeldung_span, status_span]);
+
+        title.render(top_main, buf);
 
         if self.command_input.is_active() {
             self.command_input.render(command_line, buf);
@@ -113,8 +130,25 @@ impl Widget for &mut App {
             self.help_popup.render(area, buf);
         }
 
-        let bottom_line = self.tooltip.to_line(&self.config);
+        // fill top line with status bar color
+        Block::default()
+            .style(self.config.theme.statusbar())
+            .render(bottom, buf);
 
-        bottom_line.render(bottom, buf);
+        let [bottom_left, bottom_main, bottom_right] = Layout::default()
+            .direction(Direction::Horizontal)
+            .flex(Flex::Center)
+            .constraints([
+                Constraint::Length(1),
+                Constraint::Min(top.width.saturating_sub(2)),
+                Constraint::Length(1),
+            ])
+            .areas::<3>(bottom);
+
+        let tooltip_line = self.tooltip.to_line(&self.config);
+
+        Span::styled("", tooltip_line.style.not_reversed()).render(bottom_left, buf);
+        Span::styled("", tooltip_line.style.not_reversed()).render(bottom_right, buf);
+        tooltip_line.render(bottom_main, buf);
     }
 }
