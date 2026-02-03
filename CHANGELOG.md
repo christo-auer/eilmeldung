@@ -1,5 +1,8 @@
 # Unreleased
 
+- **Breaking Changes**
+  - `thumbnail_width` is now a *dimension* value, default is `thumbnail_width = "14 length"` (14 columns)
+  - `thumbnail_height` is a *dimension* value which defines the height space reserved for the thumbnail, default is `thumbnail_height = "5 length"` (5 rows)
 - bugfix: `libxml` error output messed up TUI; workaround which temporarily redirects `stderr` when scraping an article
 - improvement: default keybinding of `r` now selects next unread article (instead of jumping to the top)
 - status bar eye candy

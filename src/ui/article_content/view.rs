@@ -218,16 +218,16 @@ impl ArticleContentViewData {
         inner_area: Rect,
         buf: &mut Buffer,
     ) {
-        let thumbnail_width = if config.thumbnail_show {
-            config.thumbnail_width
+        let thumbnail_constraint = if config.thumbnail_show {
+            config.thumbnail_width.as_constraint()
         } else {
-            0
+            Constraint::Length(0)
         };
 
         let [thumbnail_chunk, header_chunk] = Layout::default()
             .direction(Direction::Horizontal)
             .flex(ratatui::layout::Flex::Start)
-            .constraints(vec![Constraint::Max(thumbnail_width), Constraint::Min(1)])
+            .constraints(vec![thumbnail_constraint, Constraint::Min(1)])
             // .margin(1)
             .spacing(1)
             .areas::<2>(inner_area);
@@ -255,7 +255,12 @@ impl ArticleContentViewData {
         let [header_chunk, summary_chunk] = Layout::default()
             .direction(Direction::Vertical)
             .flex(ratatui::layout::Flex::Start)
-            .constraints([Constraint::Max(5), Constraint::Min(1)])
+            .constraints([
+                config.thumbnail_height.as_constraint(),
+                config
+                    .thumbnail_height
+                    .as_complementary_constraint(inner_area.width.saturating_sub(3)),
+            ])
             .horizontal_margin(2)
             .vertical_margin(1)
             .spacing(1)
@@ -292,7 +297,7 @@ impl ArticleContentViewData {
                         stateful_image.resize(Resize::Scale(Some(FilterType::Lanczos3)));
                 }
                 let [centered_chunk] = centered_layout
-                    .constraints([Constraint::Length(config.thumbnail_width)])
+                    .constraints([Constraint::Fill(1)])
                     .areas(thumbnail_chunk);
                 stateful_image.render(centered_chunk, buf, image);
             }
@@ -319,7 +324,7 @@ impl ArticleContentViewData {
                     stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Lanczos3)))
                 }
                 let [centered_chunk] = centered_layout
-                    .constraints([Constraint::Length(config.thumbnail_width)])
+                    .constraints([Constraint::Fill(1)])
                     .areas(thumbnail_chunk);
                 stateful_image.render(centered_chunk, buf, &mut self.placeholder_image);
             }

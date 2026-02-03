@@ -44,7 +44,8 @@ hide_default_sort_order = false
 # Content
 auto_scrape = true
 thumbnail_show = true
-thumbnail_width = 14
+thumbnail_width = "14 length"
+thumbnail_height = "5 length"
 thumbnail_resize = true
 thumbnail_fetch_debounce_millis = 500
 text_max_width = 66

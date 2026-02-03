@@ -188,6 +188,28 @@ Yes, use `--import-opml` and `--export-opml`. See [CLI Arguments](cli_args.md) f
 
 No, the `in <panel> <command>` executes the command in the panel (`feeds`, `articles`, `content`). For instance, to move down in the feed list, the command is `in feeds down`; use this for customizing your key bindings!
 
+### Can I have a larger thumbnail display?
+
+Thumbnail size is determined by the following settings:
+
+```toml
+share_targets = [
+  'hackernews https://news.ycombinator.com/submitlink?u={url}&t={title}', # opens webbrowser
+  'sendmail ./sendmail.sh me@eilmeldung.org "{title}" "{url}"', # passes title and URL to shell script
+  # more share targets
+]
+```toml
+thumbnail_width = "14 length"
+thumbnail_height = "5 length"
+```
+
+These two are dimensions (see [configuratin](configuration.md)) and define the *width and height* of the thumbnail. Due to how images are displayed in the terminal, it is not possible to dynamically adapt the display to optimum space consumption. In other words, the image will always consume the defined width and height, leading to blank regions to either the title of the article on the right or a space to the content of the article. Increase these values to find a settings that suits you, e.g.:
+
+```toml
+thumbnail_width = "30%" # consumes 30% of the available horizontal space
+thumbnail_height = "50%" # consumes 50% of the available vertical space
+```
+
 ---
 
 ## Troubleshooting
