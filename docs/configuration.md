@@ -36,7 +36,7 @@ You can find the default configuration in `examples/default-config.toml`
 
 | Option                            | Type                | Description                                                                                                                     |
 | --------                          | ------              | -------------                                                                                                                   |
-| `startup_commands`                | list                | list of commands to execute on startup, e.g., `startup_commands=["sync", "focus articles"]`                                     |
+| `startup_commands`                | list                | list of commands to execute on startup, e.g., `startup_commands = ["sync", "focus articles"]`                                   |
 | `refresh_fps`                     | integer             | UI refresh rate in frames per second                                                                                            |
 | `network_timeout_seconds`         | integer             | timeout for network operations                                                                                                  |
 | `article_scope`                   | string              | Default article scope: `"all"`, `"unread"`, or `"marked"`                                                                       |
@@ -68,7 +68,8 @@ You can find the default configuration in `examples/default-config.toml`
 | `articles_after_selection`        | integer             | Number of articles to show after selection                                                                                      |
 | `auto_scrape`                     | boolean             | Automatically scrape full article content                                                                                       |
 | `thumbnail_show`                  | boolean             | Show article thumbnails                                                                                                         |
-| `thumbnail_width`                 | integer             | Thumbnail width in characters                                                                                                   |
+| `thumbnail_width`                 | dimension           | Width of region reserved for thumbnail                                                                                          |
+| `thumbnail_height`                | dimension           | Height of region reserved for thumbnail                                                                                         |
 | `thumbnail_resize`                | boolean             | Resize thumbnails to fit (**this may cause slowdowns**)                                                                         |
 | `thumbnail_fetch_debounce_millis` | integer             | Delay before fetching thumbnail (ms)                                                                                            |
 | `text_max_width`                  | integer             | Maximum text width for article content                                                                                          |
