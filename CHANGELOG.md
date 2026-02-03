@@ -1,6 +1,8 @@
 # Unreleased
 
 - bugfix: `libxml` error output messed up TUI; workaround which temporarily redirects `stderr` when scraping an article
+- improvement: default keybinding of `r` now selects next unread article (instead of jumping to the top)
+
 
 # 0.8.3 - 2026-01-30
 
