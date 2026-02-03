@@ -34,7 +34,17 @@ impl<'a> Tooltip<'a> {
             TooltipFlavor::Warning => config.theme.tooltip_warning(),
             TooltipFlavor::Error => config.theme.tooltip_error(),
         };
-        self.contents.clone().style(style)
+
+        let icon = match self.flavor {
+            TooltipFlavor::Info => config.info_icon,
+            TooltipFlavor::Warning => config.warning_icon,
+            TooltipFlavor::Error => config.error_icon,
+        };
+
+        let mut contents = self.contents.clone();
+
+        contents.spans.insert(0, Span::from(format!("{icon} ")));
+        contents.style(style)
     }
 }
 

@@ -51,6 +51,9 @@ You can find the default configuration in `examples/default-config.toml`
 | `marked_icon`                     | char                | Icon for marked articles                                                                                                        |
 | `unmarked_icon`                   | char                | Icon for unmarked articles                                                                                                      |
 | `tag_icon`                        | char                | Icon for tags                                                                                                                   |
+| `info_icon`                       | char                | Icon for information messages                                                                                                   |
+| `warning_icon`                    | char                | Icon for warning messages                                                                                                       |
+| `error_icon`                      | char                | Icon for error messages                                                                                                         |
 | `command_line_prompt_icon`        | char                | Icon for command line prompt                                                                                                    |
 | `scrollbar_begin_symbol`          | char                | Symbol at top of scrollbars                                                                                                     |
 | `scrollbar_end_symbol`            | char                | Symbol at bottom of scrollbars                                                                                                  |

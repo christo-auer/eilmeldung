@@ -16,6 +16,9 @@ marked_icon = ""
 unmarked_icon = " "
 tag_icon = "󰓹"
 command_line_prompt_icon = ""
+info_icon = ''
+warning_icon = ''
+error_icon = ''
 
 # Scrollbar symbols
 scrollbar_begin_symbol = "│"
