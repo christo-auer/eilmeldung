@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.8.4 - 2026-02-04
+
 - **Breaking Changes**
   - `thumbnail_width` is now a *dimension* value, default is `thumbnail_width = "14 length"` (14 columns)
   - `thumbnail_height` is a *dimension* value which defines the height space reserved for the thumbnail, default is `thumbnail_height = "5 length"` (5 rows)
