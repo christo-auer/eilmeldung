@@ -7,6 +7,7 @@ pub mod prelude {
 }
 
 use feed_list_item::FeedListItem;
+use log::info;
 use news_flash::models::{CategoryID, PluginCapabilities, UnifiedMapping, Url};
 use tui_tree_widget::TreeItem;
 
@@ -33,6 +34,8 @@ pub struct FeedList {
 
     is_focused: bool,
     last_sync: Instant,
+
+    search_term: Option<SearchTerm>,
 }
 
 impl FeedList {
@@ -48,6 +51,7 @@ impl FeedList {
             view_data: FeedListViewData::new(&config),
             is_focused: false,
             last_sync: Instant::now(),
+            search_term: None,
         }
     }
     pub(super) fn update_tooltip(&self) -> color_eyre::Result<()> {
@@ -763,6 +767,19 @@ impl MessageReceiver for FeedList {
                     enforce_articles_selected = true;
                 }
 
+                C::InputSearch if handle_command => {
+                    self.message_sender
+                        .send(Message::Command(Command::CommandLineOpen(Some(
+                            "search".to_owned(),
+                        ))))?;
+                }
+
+                C::Search(Some(search_term)) if handle_command => {
+                    info!("searching in feed list for {search_term}");
+                    self.search_term = Some(search_term);
+                    view_needs_update = true;
+                }
+
                 _ => {}
             }
         };
@@ -855,14 +872,14 @@ impl MessageReceiver for FeedList {
         if model_needs_update {
             self.model_data.update().await?;
             self.view_data
-                .update(&self.config, &self.model_data)
+                .update(&self.config, &self.model_data, &self.search_term)
                 .await?;
             selection_changed = self.view_data.ensure_sensible_selection(&selected_before);
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
         } else if view_needs_update {
             self.view_data
-                .update(&self.config, &self.model_data)
+                .update(&self.config, &self.model_data, &self.search_term)
                 .await?;
             selection_changed = self.view_data.ensure_sensible_selection(&selected_before);
             self.message_sender

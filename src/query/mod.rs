@@ -1,8 +1,10 @@
 mod parse;
+mod search_term;
 mod sort_order;
 
 pub mod prelude {
-    pub use super::parse::{QueryParseError, QueryToken};
+    pub use super::parse::{QueryParseError, QueryToken, strip_first_and_last};
+    pub use super::search_term::{SearchTerm, to_search_term};
     pub use super::sort_order::{SortDirection, SortKey, SortOrder, SortOrderParseError};
     pub use super::{ArticleQuery, AugmentedArticleFilter};
 }
@@ -15,14 +17,6 @@ use getset::Getters;
 use news_flash::models::{
     Article, ArticleFilter, ArticleID, Category, Feed, FeedID, Marked, Read, Tag, TagID,
 };
-use regex::Regex;
-
-#[derive(Clone, Debug)]
-pub(super) enum SearchTerm {
-    Verbatim(String),
-    Word(String),
-    Regex(Regex),
-}
 
 #[derive(Clone, Debug)]
 pub(super) enum QueryAtom {
@@ -245,11 +239,7 @@ impl QueryAtom {
             return false;
         };
 
-        match search_term {
-            SearchTerm::Regex(regex) => regex.is_match(&content_string),
-            SearchTerm::Verbatim(term) => content_string.contains(term),
-            SearchTerm::Word(word) => content_string.to_lowercase().contains(&word.to_lowercase()),
-        }
+        search_term.test(&content_string)
     }
 }
 

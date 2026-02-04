@@ -535,10 +535,10 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     view_needs_update = true;
                 }
 
-                C::InputFind if handle_command => {
+                C::InputSearch if handle_command => {
                     self.message_sender
                         .send(Message::Command(C::CommandLineOpen(Some(
-                            "search".to_owned(),
+                            "searcharticles".to_owned(),
                         ))))?;
                 }
 
@@ -557,11 +557,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.search_next(false, false)?;
                 }
 
-                C::ArticleListSearchNext => {
+                C::SearchNext => {
                     self.search_next(true, false)?;
                 }
 
-                C::ArticleListSearchPrevious => {
+                C::SearchPrevious => {
                     self.search_next(true, true)?;
                 }
 

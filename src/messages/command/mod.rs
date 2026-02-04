@@ -239,28 +239,28 @@ pub enum Command {
     NavigateRight,
 
     #[strum(
-        serialize = "find",
-        message = "find",
-        detailed_message = "open prompt to find text"
+        serialize = "_search",
+        message = "_search",
+        detailed_message = "open prompt to search"
     )]
-    InputFind,
+    InputSearch,
 
     #[strum(
-        serialize = "abort",
+        serialize = "_abort",
         message = "abort",
         detailed_message = "abort current dialog"
     )]
     InputAbort,
 
     #[strum(
-        serialize = "submit",
+        serialize = "_submit",
         message = "submit",
         detailed_message = "submit current input"
     )]
     InputSubmit,
 
     #[strum(
-        serialize = "clear",
+        serialize = "_clear",
         message = "clear",
         detailed_message = "clear current input"
     )]
@@ -491,25 +491,32 @@ pub enum Command {
 
     // article list searching
     #[strum(
-        serialize = "search",
-        message = "search <article query>",
+        serialize = "searcharticles",
+        message = "searcharticles <article query>",
         detailed_message = "search for articles matching the query (article list)"
     )]
     ArticleListSearch(ArticleQuery),
 
     #[strum(
+        serialize = "search",
+        message = "search [<search term>]",
+        detailed_message = "search current panel by search term; empty seach term to clear search (all)"
+    )]
+    Search(Option<SearchTerm>),
+
+    #[strum(
         serialize = "searchnext",
         message = "searchnext",
-        detailed_message = "search for the next article matching the query (article list)"
+        detailed_message = "search next matching item (all)"
     )]
-    ArticleListSearchNext,
+    SearchNext,
 
     #[strum(
         serialize = "searchprev",
         message = "searchprev",
-        detailed_message = "search for the previous article matching the query (article list)"
+        detailed_message = "search previous matching item (all)"
     )]
-    ArticleListSearchPrevious,
+    SearchPrevious,
 
     #[strum(
         serialize = "filter",
@@ -665,7 +672,7 @@ impl Display for Command {
             NavigateLast => write!(f, "to last"),
             NavigateLeft => write!(f, "left"),
             NavigateRight => write!(f, "right"),
-            InputFind => write!(f, "open find prompt"),
+            InputSearch => write!(f, "open find prompt"),
             InputAbort => write!(f, "abort current input"),
             InputSubmit => write!(f, "submit current input"),
             InputClear => write!(f, "clear current input"),
@@ -723,8 +730,10 @@ impl Display for Command {
             ArticleListSearch(query) => {
                 write!(f, "search article by query: {}", query.query_string())
             }
-            ArticleListSearchNext => write!(f, "article search next"),
-            ArticleListSearchPrevious => write!(f, "article search previous"),
+            SearchNext => write!(f, "article search next"),
+            SearchPrevious => write!(f, "article search previous"),
+            Search(Some(search_term)) => write!(f, "search for {search_term}"),
+            Search(None) => write!(f, "clear search"),
             ArticleListFilterSet(query) => {
                 write!(f, "filter article list by query: {}", query.query_string())
             }
