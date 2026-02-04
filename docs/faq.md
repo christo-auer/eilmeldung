@@ -193,12 +193,6 @@ No, the `in <panel> <command>` executes the command in the panel (`feeds`, `arti
 Thumbnail size is determined by the following settings:
 
 ```toml
-share_targets = [
-  'hackernews https://news.ycombinator.com/submitlink?u={url}&t={title}', # opens webbrowser
-  'sendmail ./sendmail.sh me@eilmeldung.org "{title}" "{url}"', # passes title and URL to shell script
-  # more share targets
-]
-```toml
 thumbnail_width = "14 length"
 thumbnail_height = "5 length"
 ```
