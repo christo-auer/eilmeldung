@@ -3,7 +3,7 @@
 ![Logo of eilmeldung](docs/images/logo.png) 
   
 
-![Screenshot of eilmeldung](docs/images/hero-shot-2.jpg) 
+![Screenshot of eilmeldung](docs/images/hero-shot.jpg) 
 
 *eilmeldung* is a *TUI RSS reader* based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.  
 - *fast* in every aspect: non-blocking terminal user interface, (neo)vim-inspired keybindings, instant start-up and no clutter
