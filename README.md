@@ -30,7 +30,7 @@
 
 # Showreel
 
-https://github.com/user-attachments/assets/a8a1dc60-0705-4521-a88d-3520923d2891
+https://github.com/user-attachments/assets/ddd731dd-3fce-43c2-80fd-dafb20520873
 
 This video demonstrates
 - basic (vim-like) navigation and reading
