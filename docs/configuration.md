@@ -69,7 +69,7 @@ You can find the default configuration in `examples/default-config.toml`
 | `article_table`                   | string              | Article list column format                                                                                                      |
 | `date_format`                     | string              | Date format (strftime syntax)                                                                                                   |
 | `articles_after_selection`        | integer             | Number of articles to show after selection                                                                                      |
-| `auto_scrape`                     | boolean             | Automatically scrape full article content                                                                                       |
+| `auto_scrape`                     | boolean             | Automatically scrape full article content **when in content panel** (this does not auto-scrape when any of the other panels are active) |
 | `thumbnail_show`                  | boolean             | Show article thumbnails                                                                                                         |
 | `thumbnail_width`                 | dimension           | Width of region reserved for thumbnail                                                                                          |
 | `thumbnail_height`                | dimension           | Height of region reserved for thumbnail                                                                                         |
