@@ -153,6 +153,7 @@ impl ArticlesList {
                 self.model_data.feed_map(),
                 self.model_data.tags_for_article(),
                 self.model_data.tag_map(),
+                self.model_data.last_sync(),
             )
         };
 

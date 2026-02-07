@@ -4,6 +4,7 @@ use std::{
     sync::Arc,
 };
 
+use chrono::{DateTime, Utc};
 use getset::Getters;
 use log::info;
 use news_flash::models::{Article, ArticleID, Feed, FeedID, Marked, Tag, TagID};
@@ -16,6 +17,7 @@ pub struct ArticleListModelData {
     feed_map: HashMap<FeedID, Feed>,
     tags_for_article: HashMap<ArticleID, Vec<TagID>>,
     tag_map: HashMap<TagID, Tag>,
+    last_sync: DateTime<Utc>,
 }
 
 impl ArticleListModelData {
@@ -27,11 +29,15 @@ impl ArticleListModelData {
             feed_map: HashMap::default(),
             tags_for_article: HashMap::default(),
             tag_map: HashMap::default(),
+            last_sync: Default::default(),
         }
     }
 
     pub(super) async fn update(&mut self, filter_state: &FilterState) -> color_eyre::Result<()> {
         let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+
+        // last sync
+        self.last_sync = news_flash.last_sync().await;
 
         // fill model data
         let (feeds, _) = news_flash.get_feeds()?;
@@ -114,6 +120,7 @@ impl ArticleListModelData {
             &self.feed_map,
             &self.tags_for_article,
             &self.tag_map,
+            &self.last_sync,
         )
     }
 

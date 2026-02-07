@@ -119,6 +119,7 @@ pub struct Config {
 
     pub offline_icon: char,
     pub all_label: String,
+    pub last_synced_label: String,
     pub feed_label: String,
     pub category_label: String,
     pub categories_label: String,
@@ -228,6 +229,7 @@ impl Default for Config {
             sync_every_minutes: None,
 
             all_label: "󱀂 All {unread_count}".into(),
+            last_synced_label: " Last Synced".into(),
             feed_label: " {label} {unread_count}".into(),
             category_label: "󰉋 {label} {unread_count}".into(),
             categories_label: "󰉓 Categories {unread_count}".into(),

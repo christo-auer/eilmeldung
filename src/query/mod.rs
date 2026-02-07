@@ -37,6 +37,7 @@ pub(super) enum QueryAtom {
     All(SearchTerm),
     Tag(Vec<String>),
     Tagged,
+    LastSync,
     Newer(DateTime<Utc>),
     Older(DateTime<Utc>),
     SyncedBefore(DateTime<Utc>),
@@ -56,10 +57,11 @@ impl QueryClause {
         article: &Article,
         feed: Option<&Feed>,
         tags: Option<&HashSet<String>>,
+        last_sync: &DateTime<Utc>,
     ) -> bool {
         match self {
-            QueryClause::Id(query_atom) => query_atom.test(article, feed, tags),
-            QueryClause::Not(query_atom) => !query_atom.test(article, feed, tags),
+            QueryClause::Id(query_atom) => query_atom.test(article, feed, tags, last_sync),
+            QueryClause::Not(query_atom) => !query_atom.test(article, feed, tags, last_sync),
         }
     }
 }
@@ -80,10 +82,11 @@ impl ArticleQuery {
         feed_map: &HashMap<FeedID, Feed>,
         tags_for_article: &HashMap<ArticleID, Vec<TagID>>,
         tag_map: &HashMap<TagID, Tag>,
+        last_sync: &DateTime<Utc>,
     ) -> Vec<Article> {
         articles
             .iter()
-            .filter(|article| self.test(article, feed_map, tags_for_article, tag_map))
+            .filter(|article| self.test(article, feed_map, tags_for_article, tag_map, last_sync))
             .cloned()
             .collect::<Vec<Article>>()
     }
@@ -95,6 +98,7 @@ impl ArticleQuery {
         feed_map: &HashMap<FeedID, Feed>,
         tags_for_article: &HashMap<ArticleID, Vec<TagID>>,
         tag_map: &HashMap<TagID, Tag>,
+        last_sync: &DateTime<Utc>,
     ) -> bool {
         let feed = feed_map.get(&article.feed_id);
 
@@ -107,7 +111,7 @@ impl ArticleQuery {
 
         self.query
             .iter()
-            .all(|query_clause| query_clause.test(article, feed, tags.as_ref()))
+            .all(|query_clause| query_clause.test(article, feed, tags.as_ref(), last_sync))
     }
 }
 
@@ -118,6 +122,7 @@ impl QueryAtom {
         article: &Article,
         feed: Option<&Feed>,
         tags: Option<&HashSet<String>>,
+        last_sync: &DateTime<Utc>,
     ) -> bool {
         use QueryAtom::*;
         match self {
@@ -145,6 +150,7 @@ impl QueryAtom {
             Newer(date_time) => article.date > *date_time,
             SyncedAfter(date_time) => article.synced > *date_time,
             SyncedBefore(date_time) => article.synced < *date_time,
+            LastSync => article.synced >= *last_sync,
         }
     }
 

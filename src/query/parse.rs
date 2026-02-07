@@ -144,6 +144,14 @@ pub enum QueryToken {
     )]
     KeyToday,
 
+    #[token("lastsync")]
+    #[strum(
+        serialize = "lastsync",
+        message = "lastsync",
+        detailed_message = "articles retrieved in the last sync operation"
+    )]
+    KeyLastSync,
+
     #[token("syncedbefore:")]
     #[strum(
         serialize = "syncedbefore",
@@ -314,6 +322,7 @@ fn parse_query(
                 None => Some(QueryAtom::Marked(Marked::Unmarked)),
             },
             T::KeyTagged => Some(QueryAtom::Tagged),
+            T::KeyLastSync => Some(QueryAtom::LastSync),
 
             key @ (T::KeyTitle
             | T::KeySummary
