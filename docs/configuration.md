@@ -353,6 +353,28 @@ If you automatically want to tag certain articles, you can you the (bulk) operat
 after_sync_commands = [ "query lastsync", "tag science feed:quanta, "refresh" ]
 ```
 
+### Example: Expand Categories with Unread Articles
+
+If you want to automatically expand only the categories which have unread elements, use the following:
+
+```toml
+after_sync_commands = [ "collapse all", "expandcategories unread" ]
+```
+
+### Example: Chain of Operations
+
+This is my personal chain of operations after a sync:
+
+```toml
+after_sync_commands = [ "query lastsync",                                               # operate on articles that were synced
+                        "read articles title:/Anzeige:|g\\+|heise\\+|heise-Angebot/",   # mark paywall articles and ads as read
+                        "tag reviews title:review",                                     # tag articles with the word review in the title
+                        "collapse all",                                                 # collapse all categories and...
+                        "expandcategories unread",                                      # ...expand all with unread elements
+                        "refresh" ]                                                     # refresh the content
+
+```
+
 ---
 
 ## Share Target Configuration
