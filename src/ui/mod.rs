@@ -186,11 +186,7 @@ impl App {
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
-            batch_processor: BatchProcessor::new(
-                // config_arc.clone(),
-                // news_flash_utils.clone(),
-                // message_sender.clone(),
-            ),
+            batch_processor: BatchProcessor::new(config_arc.clone(), message_sender.clone()),
             help_popup: HelpPopup::new(config_arc.clone(), message_sender.clone()),
             command_confirm: CommandConfirm::new(config_arc.clone(), message_sender.clone()),
             tooltip: Tooltip::new(
@@ -286,7 +282,7 @@ impl App {
             tokio::select! {
 
                 batch_command = self.batch_processor.next(), if can_process_batch => {
-                    if let Some(batch_command) = batch_command {
+                    if let Ok(batch_command) = batch_command {
                         info!("sending next batch command {batch_command:?}");
                         self.message_sender.send(Message::Command(batch_command.to_owned()))?;
                     }
@@ -447,6 +443,9 @@ impl MessageReceiver for App {
             Message::Event(AsyncOperationFailed(error, starting_event)) => {
                 error!("Async operation {} failed: {:?}", error, starting_event);
 
+                // abort any batch operations
+                self.batch_processor.abort();
+
                 match error {
                     AsyncOperationError::NewsFlashError(news_flash_error) => {
                         // Check if this is an auth error - if so, try to re-login and retry
@@ -585,6 +584,16 @@ impl MessageReceiver for App {
                     _ => AppState::ArticleContentDistractionFree,
                 };
                 self.switch_state(new_state)?;
+            }
+
+            Message::Event(Event::AsyncSyncFinished(..)) => {
+                info!(
+                    "scheduling after sync commands: {:?}",
+                    self.config.after_sync_commands
+                );
+                self.batch_processor.show_popup();
+                self.message_sender
+                    .send(Message::Batch(self.config.after_sync_commands.to_vec()))?;
             }
 
             _ => {

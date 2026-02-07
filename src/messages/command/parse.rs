@@ -301,6 +301,17 @@ impl Command {
                     .as_str(),
             )?),
 
+            C::ArticleListQuery(..) => C::ArticleListQuery(ArticleQuery::from_str(
+                expect_something(args, "expecting article query")
+                    .map_err(|_| {
+                        E::ArticleQueryExpected(QueryParseError::KeyOrWordExpected(
+                            0,
+                            "".to_owned(),
+                        ))
+                    })?
+                    .as_str(),
+            )?),
+
             C::ArticleListSort(..) => C::ArticleListSort(SortOrder::from_str(
                 expect_something(args, "expecting sort order")
                     .map_err(|_| {

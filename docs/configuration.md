@@ -20,6 +20,7 @@ You can find the default configuration in `examples/default-config.toml`
   - [Component Styles](#component-styles)
   - [Component Style Modifiers](#component-style-modifiers)
 - [Feed List Configuration](#feed-list-configuration)
+- [After-Sync Commands](#after-sync-commands)
 - [Share Target Configuration](#share-target-configuration)
 - [Layout Configuration](#layout-configuration)
   - [Example: Static Layout (default)](#example-static-layout-default)
@@ -34,53 +35,54 @@ You can find the default configuration in `examples/default-config.toml`
 ## Basic Configuration Options
 
 
-| Option                            | Type                | Description                                                                                                                     |
-| --------                          | ------              | -------------                                                                                                                   |
-| `startup_commands`                | list                | list of commands to execute on startup, e.g., `startup_commands = ["sync", "focus articles"]`                                   |
-| `refresh_fps`                     | integer             | UI refresh rate in frames per second                                                                                            |
-| `network_timeout_seconds`         | integer             | timeout for network operations                                                                                                  |
-| `article_scope`                   | string              | Default article scope: `"all"`, `"unread"`, or `"marked"`                                                                       |
-| `feed_list_scope`                 | string              | Default feed list scope: `"all"`, `"unread"`, or `"marked"`                                                                     |
-| `default_sort_order`              | string (sort order) | Default sort order for articles: e.g., `"date"`, `">date"`, `"feed date"` (see Article Queries for syntax)                      |
-| `hide_default_sort_order`         | boolean             | If true, hides the sort order if the default sort order is applied; otherwise always show sort order                            |
-| `keep_articles_days`              | integer             | amount of days before articles are removed                                                                                      |
-| `sync_every_minutes`              | integer             | Amount of time between automatic sync of all feeds, must be greater than 0 (no automatic sync occurs if this option is omitted) |
-| `offline_icon`                    | char                | Icon displayed when offline                                                                                                     |
-| `read_icon`                       | char                | Icon for read articles                                                                                                          |
-| `unread_icon`                     | char                | Icon for unread articles                                                                                                        |
-| `marked_icon`                     | char                | Icon for marked articles                                                                                                        |
-| `unmarked_icon`                   | char                | Icon for unmarked articles                                                                                                      |
-| `tag_icon`                        | char                | Icon for tags                                                                                                                   |
-| `info_icon`                       | char                | Icon for information messages                                                                                                   |
-| `warning_icon`                    | char                | Icon for warning messages                                                                                                       |
-| `error_icon`                      | char                | Icon for error messages                                                                                                         |
-| `command_line_prompt_icon`        | char                | Icon for command line prompt                                                                                                    |
-| `scrollbar_begin_symbol`          | char                | Symbol at top of scrollbars                                                                                                     |
-| `scrollbar_end_symbol`            | char                | Symbol at bottom of scrollbars                                                                                                  |
-| `scrollbar_thumb_symbol`          | char                | Symbol placed at current position of scrollbars                                                                                 |
-| `scrollbar_track_symbol`          | char                | Symbol placed between top and bottom of scrollbars                                                                              |
-| `all_label`                       | string              | Label format for "All" in feed list                                                                                             |
-| `feed_label`                      | string              | Label format for feeds                                                                                                          |
-| `category_label`                  | string              | Label format for categories                                                                                                     |
-| `categories_label`                | string              | Label format for categories section                                                                                             |
-| `tags_label`                      | string              | Label format for tags section                                                                                                   |
-| `tag_label`                       | string              | Label format for individual tags                                                                                                |
-| `query_label`                     | string              | Label format for query items                                                                                                    |
-| `article_table`                   | string              | Article list column format                                                                                                      |
-| `date_format`                     | string              | Date format (strftime syntax)                                                                                                   |
-| `articles_after_selection`        | integer             | Number of articles to show after selection                                                                                      |
-| `auto_scrape`                     | boolean             | Automatically scrape full article content **when in content panel** (this does not auto-scrape when any of the other panels are active) |
-| `thumbnail_show`                  | boolean             | Show article thumbnails                                                                                                         |
-| `thumbnail_width`                 | dimension           | Width of region reserved for thumbnail                                                                                          |
-| `thumbnail_height`                | dimension           | Height of region reserved for thumbnail                                                                                         |
-| `thumbnail_resize`                | boolean             | Resize thumbnails to fit (**this may cause slowdowns**)                                                                         |
-| `thumbnail_fetch_debounce_millis` | integer             | Delay before fetching thumbnail (ms)                                                                                            |
-| `text_max_width`                  | integer             | Maximum text width for article content                                                                                          |
-| `content_preferred_type`          | string              | Preferred content type: `"plain_text"` or `"markdown"`                                                                          |
-| `feed_list_focused_width`         | dimension           | Width of feed list when focused                                                                                                 |
-| `article_list_focused_width`      | dimension           | Width of article list when focused                                                                                              |
-| `article_list_focused_height`     | dimension           | Height of article list when focused                                                                                             |
-| `article_content_focused_height`  | dimension           | Height of article content when focused                                                                                          |
+| Option                            | Type                | Description                                                                                                                                |
+| --------                          | ------              | -------------                                                                                                                              |
+| `startup_commands`                | list                | list of commands to execute on startup, e.g., `startup_commands = ["sync", "focus articles"]`                                              |
+| `refresh_fps`                     | integer             | UI refresh rate in frames per second                                                                                                       |
+| `network_timeout_seconds`         | integer             | timeout for network operations                                                                                                             |
+| `article_scope`                   | string              | Default article scope: `"all"`, `"unread"`, or `"marked"`                                                                                  |
+| `feed_list_scope`                 | string              | Default feed list scope: `"all"`, `"unread"`, or `"marked"`                                                                                |
+| `default_sort_order`              | string (sort order) | Default sort order for articles: e.g., `"date"`, `">date"`, `"feed date"` (see Article Queries for syntax)                                 |
+| `hide_default_sort_order`         | boolean             | If true, hides the sort order if the default sort order is applied; otherwise always show sort order                                       |
+| `keep_articles_days`              | integer             | amount of days before articles are removed                                                                                                 |
+| `sync_every_minutes`              | integer             | Amount of time between automatic sync of all feeds, must be greater than 0 (no automatic sync occurs if this option is omitted)            |
+| `after_sync_commands`             | list                | List of commands to execute after a sync has finished, e.g., `after_sync_commands = ["query lastsync", "tag rust title:"rust", "refresh"]` |
+| `offline_icon`                    | char                | Icon displayed when offline                                                                                                                |
+| `read_icon`                       | char                | Icon for read articles                                                                                                                     |
+| `unread_icon`                     | char                | Icon for unread articles                                                                                                                   |
+| `marked_icon`                     | char                | Icon for marked articles                                                                                                                   |
+| `unmarked_icon`                   | char                | Icon for unmarked articles                                                                                                                 |
+| `tag_icon`                        | char                | Icon for tags                                                                                                                              |
+| `info_icon`                       | char                | Icon for information messages                                                                                                              |
+| `warning_icon`                    | char                | Icon for warning messages                                                                                                                  |
+| `error_icon`                      | char                | Icon for error messages                                                                                                                    |
+| `command_line_prompt_icon`        | char                | Icon for command line prompt                                                                                                               |
+| `scrollbar_begin_symbol`          | char                | Symbol at top of scrollbars                                                                                                                |
+| `scrollbar_end_symbol`            | char                | Symbol at bottom of scrollbars                                                                                                             |
+| `scrollbar_thumb_symbol`          | char                | Symbol placed at current position of scrollbars                                                                                            |
+| `scrollbar_track_symbol`          | char                | Symbol placed between top and bottom of scrollbars                                                                                         |
+| `all_label`                       | string              | Label format for "All" in feed list                                                                                                        |
+| `feed_label`                      | string              | Label format for feeds                                                                                                                     |
+| `category_label`                  | string              | Label format for categories                                                                                                                |
+| `categories_label`                | string              | Label format for categories section                                                                                                        |
+| `tags_label`                      | string              | Label format for tags section                                                                                                              |
+| `tag_label`                       | string              | Label format for individual tags                                                                                                           |
+| `query_label`                     | string              | Label format for query items                                                                                                               |
+| `article_table`                   | string              | Article list column format                                                                                                                 |
+| `date_format`                     | string              | Date format (strftime syntax)                                                                                                              |
+| `articles_after_selection`        | integer             | Number of articles to show after selection                                                                                                 |
+| `auto_scrape`                     | boolean             | Automatically scrape full article content **when in content panel** (this does not auto-scrape when any of the other panels are active)    |
+| `thumbnail_show`                  | boolean             | Show article thumbnails                                                                                                                    |
+| `thumbnail_width`                 | dimension           | Width of region reserved for thumbnail                                                                                                     |
+| `thumbnail_height`                | dimension           | Height of region reserved for thumbnail                                                                                                    |
+| `thumbnail_resize`                | boolean             | Resize thumbnails to fit (**this may cause slowdowns**)                                                                                    |
+| `thumbnail_fetch_debounce_millis` | integer             | Delay before fetching thumbnail (ms)                                                                                                       |
+| `text_max_width`                  | integer             | Maximum text width for article content                                                                                                     |
+| `content_preferred_type`          | string              | Preferred content type: `"plain_text"` or `"markdown"`                                                                                     |
+| `feed_list_focused_width`         | dimension           | Width of feed list when focused                                                                                                            |
+| `article_list_focused_width`      | dimension           | Width of article list when focused                                                                                                         |
+| `article_list_focused_height`     | dimension           | Height of article list when focused                                                                                                        |
+| `article_content_focused_height`  | dimension           | Height of article content when focused                                                                                                     |
 
 
 **Label Placeholders:**
@@ -326,6 +328,29 @@ feed_list = [
   "feeds",                    # Hierarchical feed tree
   "* tags",                   # Flat tag list
 ]
+```
+---
+
+## After-Sync Commands
+
+You can automate operations after synchronization has finished via the option `after_sync_commands`, which is a list of commands which are executed after the synchronization has finished. Usually, you want to carry out *bulk-operations* on the newly synced articles. For this, the *first* commands should always be `query lastsync` which brings all articles which where just synchronized into the article list. Afterwards, you can execute any operation on them (see below for some examples). To return to your original selection, the command `refresh` is used.
+
+**Note**: Don't call `sync` in `after_sync_commands` to avoid an infinite loop.
+
+### Example: Marking Paywall/Ad Articles as Read
+
+If you can identify paywall articles by their title (e.g., they contain a certain string), you can mark them as read. For instance, on [heise](https://www.heise.de) articles which start with the word `Anzeige:` contain advertisements. For immediately mark them as read, use:
+
+```toml
+after_sync_commands = [ "query lastsync", "read articles title:/^Anzeige:/", "refresh" ]
+```
+
+### Example: Automatic Tagging
+
+If you automatically want to tag certain articles, you can you the (bulk) operation `tag`. 
+
+```toml
+after_sync_commands = [ "query lastsync", "tag science feed:quanta, "refresh" ]
 ```
 
 ---

@@ -153,6 +153,7 @@ impl ArticlesList {
                 self.model_data.feed_map(),
                 self.model_data.tags_for_article(),
                 self.model_data.tag_map(),
+                self.model_data.last_sync(),
             )
         };
 
@@ -587,6 +588,16 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.filter_state.clear_sort_order();
                     model_needs_update = true;
                 }
+
+                C::ArticleListQuery(query) => {
+                    self.message_sender
+                        .send(Message::Event(Event::ArticlesSelected(query.into())))?;
+                }
+
+                C::Refresh => {
+                    model_needs_update = true;
+                }
+
                 _ => {}
             }
         }

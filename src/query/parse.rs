@@ -80,6 +80,10 @@ pub enum QueryToken {
     #[strum(serialize = "~", message = "~", detailed_message = "negation ('not')")]
     Negate,
 
+    #[token("*", priority = 2)]
+    #[strum(serialize = "*", message = "*", detailed_message = "matches all")]
+    KeyTrue,
+
     #[token("read", priority = 2)]
     #[strum(
         serialize = "read",
@@ -143,6 +147,14 @@ pub enum QueryToken {
         detailed_message = "articles from today"
     )]
     KeyToday,
+
+    #[token("lastsync")]
+    #[strum(
+        serialize = "lastsync",
+        message = "lastsync",
+        detailed_message = "articles retrieved in the last sync operation"
+    )]
+    KeyLastSync,
 
     #[token("syncedbefore:")]
     #[strum(
@@ -276,6 +288,8 @@ fn parse_query(
         }
 
         if let Some(query_atom) = match token {
+            T::KeyTrue => Some(QueryAtom::True),
+
             T::KeyRead => match article_filter.as_mut() {
                 Some(article_filter) => {
                     article_filter.unread = Some(if negate { Read::Unread } else { Read::Read });
@@ -314,6 +328,7 @@ fn parse_query(
                 None => Some(QueryAtom::Marked(Marked::Unmarked)),
             },
             T::KeyTagged => Some(QueryAtom::Tagged),
+            T::KeyLastSync => Some(QueryAtom::LastSync),
 
             key @ (T::KeyTitle
             | T::KeySummary

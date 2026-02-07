@@ -141,6 +141,10 @@ Yes, focus the feed list and press `2` / `3` to show only feeds/categories/tags 
 
 **More questions?** See the complete [FAQ](docs/faq.md).
 
+### Can execute automatic operations after synchronisation/refresh?
+
+Yes, via the option `after_sync_commands` [configuration](docs/configuration.md#after-sync_commands) for some recipes.
+
 ---
 
 # Credits

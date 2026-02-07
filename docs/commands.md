@@ -68,6 +68,7 @@ Here are some common command examples to get you started:
 | `quit`    | `quit`                 | All       | Quit eilmeldung                                                                                    |
 | `cmd`     | `cmd [<content>]`      | All       | Open command line with optional pre-filled content                                                 |
 | `redraw`  | `redraw`               | All       | Redraw the screen                                                                                  |
+| `refresh` | `refresh`              | All       | Refreshes the contents of all panels according to the current selections                           |
 | `confirm` | `confirm <command>`    | All       | Ask for confirmation before executing command (typically used in key bindings)                     |
 | `in`      | `in <panel> <command>` | All       | Run a command in the given panel (`feeds`, `articles`, `content`) (typically used in key bindings) |
 | `LOGOUT`  | `LOGOUT NOW`           | All       | Logout and remove ALL local data (requires `NOW` as confirmation)                                  |
@@ -116,6 +117,7 @@ Here are some common command examples to get you started:
 | `filter` | `filter <query>` | Article List | Filter the article list by query. Example: `:filter unread author:john` |
 | `filterapply` | `filterapply` | Article List | Apply the current filter |
 | `filterclear` | `filterclear` | Article List | Clear the current filter and show all articles |
+| `query` | `query <query>` | Article List | Filter ALL articles and show result in article list. Example: `:filter lastsync unread` |
 | `sort` | `sort <sort order>` | Article List | Sort the article list by the specified sort order. Examples: `:sort date`, `:sort >date`, `:sort feed title`, `:sort <feed >date author` |
 | `sortreverse` | `sortreverse` | Article List | Reverse the current sort order (newest <-> oldest, A-Z <-> Z-A). Toggle between ascending and descending |
 | `sortclear` | `sortclear` | Article List | Clear the current sort order and restore the default sort order |

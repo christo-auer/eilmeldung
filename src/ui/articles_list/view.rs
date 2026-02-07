@@ -361,6 +361,7 @@ impl<'a> ArticleListViewData<'a> {
                             model_data.feed_map(),
                             model_data.tags_for_article(),
                             model_data.tag_map(),
+                            model_data.last_sync(),
                         ) =>
                     {
                         config.theme.patch_highlighted(&config.theme.article())

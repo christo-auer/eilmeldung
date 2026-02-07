@@ -565,6 +565,7 @@ impl MessageReceiver for FeedList {
         let mut model_needs_update = false;
         let mut view_needs_update = false;
         let mut selection_changed = false;
+        let mut enforce_articles_selected = false;
 
         // commands
         if let Message::Command(command) = message {
@@ -757,6 +758,11 @@ impl MessageReceiver for FeedList {
                     self.paste_feed_or_category(position)?;
                 }
 
+                C::Refresh => {
+                    model_needs_update = true;
+                    enforce_articles_selected = true;
+                }
+
                 _ => {}
             }
         };
@@ -863,7 +869,7 @@ impl MessageReceiver for FeedList {
                 .send(Message::Command(Command::Redraw))?;
         }
 
-        if selection_changed {
+        if enforce_articles_selected || selection_changed {
             self.update_tooltip()?;
             self.generate_articles_selected_command()?;
         }
