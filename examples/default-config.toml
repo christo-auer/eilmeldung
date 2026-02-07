@@ -7,6 +7,7 @@ feed_list_scope = "all"
 default_sort_order = "<date" 
 keep_articles_days = 30
 # sync_every_minutes = 10  # disabled by default
+after_sync_commands = []
 
 # Icons
 offline_icon = ""
