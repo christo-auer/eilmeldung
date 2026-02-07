@@ -593,6 +593,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.message_sender
                         .send(Message::Event(Event::ArticlesSelected(query.into())))?;
                 }
+
+                C::Refresh => {
+                    model_needs_update = true;
+                }
+
                 _ => {}
             }
         }

@@ -68,6 +68,7 @@ Here are some common command examples to get you started:
 | `quit`    | `quit`                 | All       | Quit eilmeldung                                                                                    |
 | `cmd`     | `cmd [<content>]`      | All       | Open command line with optional pre-filled content                                                 |
 | `redraw`  | `redraw`               | All       | Redraw the screen                                                                                  |
+| `refresh` | `refresh`              | All       | Refreshes the contents of all panels according to the current selections                           |
 | `confirm` | `confirm <command>`    | All       | Ask for confirmation before executing command (typically used in key bindings)                     |
 | `in`      | `in <panel> <command>` | All       | Run a command in the given panel (`feeds`, `articles`, `content`) (typically used in key bindings) |
 | `LOGOUT`  | `LOGOUT NOW`           | All       | Logout and remove ALL local data (requires `NOW` as confirmation)                                  |

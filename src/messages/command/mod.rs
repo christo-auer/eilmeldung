@@ -634,6 +634,13 @@ pub enum Command {
         detailed_message = "redraw screen (all)"
     )]
     Redraw,
+
+    #[strum(
+        serialize = "refresh",
+        message = "refresh",
+        detailed_message = "refreshes contents of all panels according to selections (all)"
+    )]
+    Refresh,
 }
 
 impl Command {
@@ -710,7 +717,8 @@ impl Display for Command {
             ExportOpml(path) => write!(f, "export OPML file to {path}"),
 
             ApplicationQuit => write!(f, "quit application"),
-            Redraw => write!(f, "redraw ui"),
+            Redraw => write!(f, "redraw UI"),
+            Refresh => write!(f, "refresh UI"),
             CommandLineOpen(input) => write!(f, ":{}", input.unwrap_or_default()),
             ArticleListSearch(query) => {
                 write!(f, "search article by query: {}", query.query_string())

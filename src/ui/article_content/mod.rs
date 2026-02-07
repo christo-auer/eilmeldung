@@ -194,6 +194,10 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.share_article(&target)?;
                 }
 
+                C::Refresh => {
+                    view_needs_update = true;
+                }
+
                 _ => {
                     view_needs_update = false;
                 }
