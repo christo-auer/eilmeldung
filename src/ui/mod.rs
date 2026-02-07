@@ -1,5 +1,6 @@
 mod article_content;
 mod articles_list;
+mod batch;
 mod command_confirm;
 mod command_input;
 mod feeds_list;
@@ -10,6 +11,7 @@ mod view;
 pub mod prelude {
     pub use super::article_content::prelude::*;
     pub use super::articles_list::prelude::*;
+    pub use super::batch::BatchProcessor;
     pub use super::command_confirm::CommandConfirm;
     pub use super::command_input::CommandInput;
     pub use super::feeds_list::prelude::*;
@@ -137,6 +139,7 @@ pub struct App {
     command_confirm: CommandConfirm,
     help_popup: HelpPopup<'static>,
     async_operation_throbber: ThrobberState,
+    batch_processor: BatchProcessor,
 
     is_offline: bool,
 
@@ -182,6 +185,11 @@ impl App {
                 config_arc.clone(),
                 news_flash_utils.clone(),
                 message_sender.clone(),
+            ),
+            batch_processor: BatchProcessor::new(
+                // config_arc.clone(),
+                // news_flash_utils.clone(),
+                // message_sender.clone(),
             ),
             help_popup: HelpPopup::new(config_arc.clone(), message_sender.clone()),
             command_confirm: CommandConfirm::new(config_arc.clone(), message_sender.clone()),
@@ -236,14 +244,8 @@ impl App {
 
         // execute all startup commands
         debug!("executing startup commands");
-        self.config
-            .startup_commands
-            .iter()
-            .try_for_each(|command| {
-                debug!("executing {command}");
-                self.message_sender
-                    .send(Message::Command(command.to_owned()))
-            })?;
+        self.message_sender
+            .send(Message::Batch(self.config.startup_commands.to_vec()))?;
 
         info!("Starting command processing loop");
         self.process_commands(&mut message_receiver, terminal)
@@ -278,7 +280,18 @@ impl App {
         );
 
         while self.is_running {
+            let can_process_batch =
+                !self.news_flash_utils.is_async_operation_running() && rx.is_empty();
+
             tokio::select! {
+
+                batch_command = self.batch_processor.next(), if can_process_batch => {
+                    if let Some(batch_command) = batch_command {
+                        info!("sending next batch command {batch_command:?}");
+                        self.message_sender.send(Message::Command(batch_command.to_owned()))?;
+                    }
+                }
+
                 _ = render_interval.tick() => {
                     self.message_sender.send(Message::Event(Event::Tick))?;
                 }
@@ -288,12 +301,15 @@ impl App {
                     if let Some(message) = message {
 
                         // TODO refactor all this
-                        if !self.command_input.is_active() && !self.command_confirm.is_active()
-                            && !self.help_popup.is_modal().unwrap_or(false)
+                        if !self.batch_processor.has_commands()
+                        && !self.command_input.is_active()
+                        && !self.command_confirm.is_active()
+                        && !self.help_popup.is_modal().unwrap_or(false)
                         {
                             self.input_command_generator.process_command(&message).await?;
                         }
 
+                        self.batch_processor.process_command(&message).await?;
                         self.process_command(&message).await?;
                         self.feed_list.process_command(&message).await?;
                         self.articles_list.process_command(&message).await?;

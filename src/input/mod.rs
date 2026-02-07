@@ -200,9 +200,20 @@ impl InputCommandGenerator {
             self.config.input_config.mappings.get(&self.key_sequence) // direct match
                 && (prefix_matches.len() == 1 || timeout || submit)
         {
-            for command in command_sequence.commands.iter() {
-                self.message_sender
-                    .send(Message::Command(command.clone()))?;
+            if command_sequence.commands.len() > 1 {
+                // create a batch of commands
+                self.message_sender.send(Message::Batch(
+                    command_sequence.commands.iter().cloned().collect(),
+                ))?;
+            } else if command_sequence.commands.len() == 1 {
+                // send single command
+                self.message_sender.send(Message::Command(
+                    command_sequence
+                        .commands
+                        .first()
+                        .unwrap_or(&Command::NoOperation)
+                        .to_owned(),
+                ))?;
             }
             self.key_sequence.keys.clear();
             self.message_sender

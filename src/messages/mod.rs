@@ -14,6 +14,7 @@ use crate::prelude::*;
 // comparatively small and the enums are short-lived
 pub enum Message {
     Command(Command),
+    Batch(Vec<Command>),
     Event(Event),
 }
 
