@@ -238,6 +238,15 @@ impl From<ArticleFilter> for AugmentedArticleFilter {
     }
 }
 
+impl From<ArticleQuery> for AugmentedArticleFilter {
+    fn from(article_query: ArticleQuery) -> Self {
+        Self {
+            article_query,
+            ..Self::default()
+        }
+    }
+}
+
 impl AugmentedArticleFilter {
     pub fn new(article_filter: ArticleFilter, article_query: ArticleQuery) -> Self {
         Self {

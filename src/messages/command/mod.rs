@@ -554,6 +554,13 @@ pub enum Command {
     ArticleListSortClear,
 
     #[strum(
+        serialize = "query",
+        message = "query <article query>",
+        detailed_message = "executes a query on all articles (article list)"
+    )]
+    ArticleListQuery(ArticleQuery),
+
+    #[strum(
         serialize = "share",
         message = "share <target>",
         detailed_message = "shares title and url with target (article list, article content)"
@@ -712,6 +719,9 @@ impl Display for Command {
             ArticleListSearchPrevious => write!(f, "article search previous"),
             ArticleListFilterSet(query) => {
                 write!(f, "filter article list by query: {}", query.query_string())
+            }
+            ArticleListQuery(query) => {
+                write!(f, "query all articles by: {}", query.query_string())
             }
             ArticleListFilterApply => write!(f, "apply current article filter"),
             ArticleListFilterClear => write!(f, "clear article filter"),

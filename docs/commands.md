@@ -116,6 +116,7 @@ Here are some common command examples to get you started:
 | `filter` | `filter <query>` | Article List | Filter the article list by query. Example: `:filter unread author:john` |
 | `filterapply` | `filterapply` | Article List | Apply the current filter |
 | `filterclear` | `filterclear` | Article List | Clear the current filter and show all articles |
+| `query` | `query <query>` | Article List | Filter ALL articles and show result in article list. Example: `:filter lastsync unread` |
 | `sort` | `sort <sort order>` | Article List | Sort the article list by the specified sort order. Examples: `:sort date`, `:sort >date`, `:sort feed title`, `:sort <feed >date author` |
 | `sortreverse` | `sortreverse` | Article List | Reverse the current sort order (newest <-> oldest, A-Z <-> Z-A). Toggle between ascending and descending |
 | `sortclear` | `sortclear` | Article List | Clear the current sort order and restore the default sort order |

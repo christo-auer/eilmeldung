@@ -588,6 +588,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.filter_state.clear_sort_order();
                     model_needs_update = true;
                 }
+
+                C::ArticleListQuery(query) => {
+                    self.message_sender
+                        .send(Message::Event(Event::ArticlesSelected(query.into())))?;
+                }
                 _ => {}
             }
         }
