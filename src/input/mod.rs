@@ -202,9 +202,8 @@ impl InputCommandGenerator {
         {
             if command_sequence.commands.len() > 1 {
                 // create a batch of commands
-                self.message_sender.send(Message::Batch(
-                    command_sequence.commands.to_vec(),
-                ))?;
+                self.message_sender
+                    .send(Message::Batch(command_sequence.commands.to_vec()))?;
             } else if command_sequence.commands.len() == 1 {
                 // send single command
                 self.message_sender.send(Message::Command(
