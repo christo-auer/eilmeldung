@@ -80,6 +80,10 @@ pub enum QueryToken {
     #[strum(serialize = "~", message = "~", detailed_message = "negation ('not')")]
     Negate,
 
+    #[token("*", priority = 2)]
+    #[strum(serialize = "*", message = "*", detailed_message = "matches all")]
+    KeyTrue,
+
     #[token("read", priority = 2)]
     #[strum(
         serialize = "read",
@@ -284,6 +288,8 @@ fn parse_query(
         }
 
         if let Some(query_atom) = match token {
+            T::KeyTrue => Some(QueryAtom::True),
+
             T::KeyRead => match article_filter.as_mut() {
                 Some(article_filter) => {
                     article_filter.unread = Some(if negate { Read::Unread } else { Read::Read });

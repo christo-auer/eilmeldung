@@ -26,6 +26,7 @@ pub(super) enum SearchTerm {
 
 #[derive(Clone, Debug)]
 pub(super) enum QueryAtom {
+    True,
     Read(Read),
     Marked(Marked),
     Feed(SearchTerm),
@@ -126,6 +127,7 @@ impl QueryAtom {
     ) -> bool {
         use QueryAtom::*;
         match self {
+            True => true,
             Read(read) => article.unread == *read,
             Marked(marked) => article.marked == *marked,
 

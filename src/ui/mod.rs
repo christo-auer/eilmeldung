@@ -590,6 +590,15 @@ impl MessageReceiver for App {
                 self.switch_state(new_state)?;
             }
 
+            Message::Event(Event::AsyncSyncFinished(..)) => {
+                info!(
+                    "scheduling after sync commands: {:?}",
+                    self.config.after_sync_commands
+                );
+                self.message_sender
+                    .send(Message::Batch(self.config.after_sync_commands.to_vec()))?;
+            }
+
             _ => {
                 needs_redraw = false;
             }
