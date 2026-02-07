@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.9.0 - 2026-02-07
+
 - **NEW**: Automatic article operations after synchronization!
   - want to automatically set mark ads or paywall articles to read?
   - or add tags to articles with certain keywords? Or from your favorite feeds?

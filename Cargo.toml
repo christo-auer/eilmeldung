@@ -1,6 +1,6 @@
 [package]
 name = "eilmeldung"
-version = "0.8.4"
+version = "0.9.0"
 edition = "2024"
 description = "a feature-rich TUI RSS Reader based on the news-flash library"
 homepage = "https://github.com/christo-auer/eilmeldung"
