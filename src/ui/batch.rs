@@ -3,21 +3,12 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use crate::prelude::*;
 
 pub struct BatchProcessor {
-    // config: Arc<Config>,
-    // news_flash_utils: Arc<NewsFlashUtils>,
-    // message_sender: UnboundedSender<Message>,
     command_queue: (UnboundedSender<Command>, UnboundedReceiver<Command>),
 }
 
 impl BatchProcessor {
-    pub fn new(// config: Arc<Config>,
-        // news_flash_utils: Arc<NewsFlashUtils>,
-        // message_sender: UnboundedSender<Message>,
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
-            // config,
-            // news_flash_utils,
-            // message_sender,
             command_queue: mpsc::unbounded_channel(),
         }
     }
@@ -28,6 +19,12 @@ impl BatchProcessor {
 
     pub fn has_commands(&self) -> bool {
         !self.command_queue.1.is_empty()
+    }
+
+    pub fn abort(&mut self) {
+        while self.has_commands() {
+            let _ = self.command_queue.1.try_recv();
+        }
     }
 }
 

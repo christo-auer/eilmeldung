@@ -447,6 +447,9 @@ impl MessageReceiver for App {
             Message::Event(AsyncOperationFailed(error, starting_event)) => {
                 error!("Async operation {} failed: {:?}", error, starting_event);
 
+                // abort any batch operations
+                self.batch_processor.abort();
+
                 match error {
                     AsyncOperationError::NewsFlashError(news_flash_error) => {
                         // Check if this is an auth error - if so, try to re-login and retry
