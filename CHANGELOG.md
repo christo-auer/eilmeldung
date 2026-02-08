@@ -1,5 +1,14 @@
 # Unreleased
 
+- from 0.9.0: **NEW**: Automatic article operations after synchronization!
+  - want to automatically set mark ads or paywall articles to read?
+  - or add tags to articles with certain keywords? Or from your favorite feeds?
+  - this is now possible with the new option `after_sync_commands`!
+  - read more in `docs/configuration.md`, *After-Sync Commands*
+- hotfixes
+  - sensible selection in article list after a article has been marked as read
+  - attempt relogin after logged out
+
 # 0.9.0 - 2026-02-07
 
 - **NEW**: Automatic article operations after synchronization!
