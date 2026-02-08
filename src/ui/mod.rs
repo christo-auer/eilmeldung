@@ -449,7 +449,10 @@ impl MessageReceiver for App {
                 match error {
                     AsyncOperationError::NewsFlashError(news_flash_error) => {
                         // Check if this is an auth error - if so, try to re-login and retry
-                        if matches!(news_flash_error, NewsFlashError::API(FeedApiError::Auth)) {
+                        if matches!(
+                            news_flash_error,
+                            NewsFlashError::API(FeedApiError::Auth) | NewsFlashError::NotLoggedIn
+                        ) {
                             warn!("Auth error detected, attempting re-login");
                             if self.news_flash_utils.relogin().await {
                                 // Re-login succeeded, retry parameterless operations automatically
