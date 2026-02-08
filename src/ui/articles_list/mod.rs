@@ -160,6 +160,7 @@ impl ArticlesList {
             article_query.test(
                 article,
                 self.model_data.feed_map(),
+                self.model_data.category_for_feed(),
                 self.model_data.tags_for_article(),
                 self.model_data.tag_map(),
                 self.model_data.last_sync(),
