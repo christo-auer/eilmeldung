@@ -50,6 +50,9 @@ impl ArticlesList {
         &mut self,
         article_id: Option<&ArticleID>,
     ) -> color_eyre::Result<()> {
+        // get current selection index
+        let current_index = self.view_data.get_table_state().selected().unwrap_or(0);
+
         // save offset distance
         let offset = *self.view_data.get_table_state_mut().offset_mut();
         let offset_distance = self
@@ -73,8 +76,14 @@ impl ArticlesList {
         }
 
         // the previous article is not there, next we select the first unread article
-        self.view_data.get_table_state_mut().select(Some(0));
-        self.select_next_unread()?;
+        // try to select previous index
+        if current_index < self.model_data.articles().len() {
+            self.view_data
+                .get_table_state_mut()
+                .select(Some(current_index));
+        } else {
+            self.select_next_unread()?;
+        }
 
         Ok(())
     }
