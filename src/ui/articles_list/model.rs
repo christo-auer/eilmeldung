@@ -7,7 +7,7 @@ use std::{
 use chrono::{DateTime, Utc};
 use getset::Getters;
 use log::info;
-use news_flash::models::{Article, ArticleID, Feed, FeedID, Marked, Tag, TagID};
+use news_flash::models::{Article, ArticleID, Category, Feed, FeedID, Marked, Tag, TagID};
 
 #[derive(Getters)]
 #[getset(get = "pub(super)")]
@@ -15,6 +15,7 @@ pub struct ArticleListModelData {
     news_flash_utils: Arc<NewsFlashUtils>,
     articles: Vec<Article>,
     feed_map: HashMap<FeedID, Feed>,
+    category_for_feed: HashMap<FeedID, Category>,
     tags_for_article: HashMap<ArticleID, Vec<TagID>>,
     tag_map: HashMap<TagID, Tag>,
     last_sync: DateTime<Utc>,
@@ -25,10 +26,11 @@ impl ArticleListModelData {
         Self {
             news_flash_utils: news_flash_utils.clone(),
 
-            articles: Vec::default(),
-            feed_map: HashMap::default(),
-            tags_for_article: HashMap::default(),
-            tag_map: HashMap::default(),
+            articles: Default::default(),
+            feed_map: Default::default(),
+            category_for_feed: Default::default(),
+            tags_for_article: Default::default(),
+            tag_map: Default::default(),
             last_sync: Default::default(),
         }
     }
@@ -40,11 +42,34 @@ impl ArticleListModelData {
         self.last_sync = news_flash.last_sync().await;
 
         // fill model data
-        let (feeds, _) = news_flash.get_feeds()?;
+        let (feeds, feed_mappings) = news_flash.get_feeds()?;
         self.feed_map = NewsFlashUtils::generate_id_map(&feeds, |f| f.feed_id.clone())
             .into_iter()
             .map(|(k, v)| (k, v.clone()))
             .collect();
+
+        let (categories, _) = news_flash.get_categories()?;
+
+        let category_for_category_id = NewsFlashUtils::generate_id_map(&categories, |category| {
+            category.category_id.to_owned()
+        });
+
+        let feed_mapping_for_feed_id =
+            NewsFlashUtils::generate_id_map(&feed_mappings, |feed_mapping| {
+                feed_mapping.feed_id.to_owned()
+            });
+
+        self.category_for_feed = feeds
+            .iter()
+            .filter_map(|feed| {
+                feed_mapping_for_feed_id
+                    .get(&feed.feed_id)
+                    .and_then(|feed_mapping| {
+                        category_for_category_id.get(&feed_mapping.category_id)
+                    })
+                    .map(|category| (feed.feed_id.to_owned(), category.to_owned()))
+            })
+            .collect::<HashMap<FeedID, Category>>();
 
         let (tags, taggings) = news_flash.get_tags()?;
         self.tag_map = NewsFlashUtils::generate_id_map(&tags, |t| t.tag_id.clone())
@@ -118,6 +143,7 @@ impl ArticleListModelData {
         query.filter(
             &self.articles,
             &self.feed_map,
+            &self.category_for_feed,
             &self.tags_for_article,
             &self.tag_map,
             &self.last_sync,

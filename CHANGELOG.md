@@ -1,5 +1,7 @@
 # Unreleased
 
+- new query key `category`: matches articles from feeds in the matching category (only the direct parent category is considered)
+
 # 0.9.1 - 2026-02-08
 
 - from 0.9.0: **NEW**: Automatic article operations after synchronization!

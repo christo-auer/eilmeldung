@@ -13,7 +13,7 @@ use std::collections::{HashMap, HashSet};
 use chrono::{DateTime, Utc};
 use getset::Getters;
 use news_flash::models::{
-    Article, ArticleFilter, ArticleID, Feed, FeedID, Marked, Read, Tag, TagID,
+    Article, ArticleFilter, ArticleID, Category, Feed, FeedID, Marked, Read, Tag, TagID,
 };
 use regex::Regex;
 
@@ -30,6 +30,7 @@ pub(super) enum QueryAtom {
     Read(Read),
     Marked(Marked),
     Feed(SearchTerm),
+    Category(SearchTerm),
     Title(SearchTerm),
     Summary(SearchTerm),
     Author(SearchTerm),
@@ -57,12 +58,17 @@ impl QueryClause {
         &self,
         article: &Article,
         feed: Option<&Feed>,
+        category: Option<&Category>,
         tags: Option<&HashSet<String>>,
         last_sync: &DateTime<Utc>,
     ) -> bool {
         match self {
-            QueryClause::Id(query_atom) => query_atom.test(article, feed, tags, last_sync),
-            QueryClause::Not(query_atom) => !query_atom.test(article, feed, tags, last_sync),
+            QueryClause::Id(query_atom) => {
+                query_atom.test(article, feed, category, tags, last_sync)
+            }
+            QueryClause::Not(query_atom) => {
+                !query_atom.test(article, feed, category, tags, last_sync)
+            }
         }
     }
 }
@@ -81,13 +87,23 @@ impl ArticleQuery {
         &self,
         articles: &[Article],
         feed_map: &HashMap<FeedID, Feed>,
+        category_for_feed: &HashMap<FeedID, Category>,
         tags_for_article: &HashMap<ArticleID, Vec<TagID>>,
         tag_map: &HashMap<TagID, Tag>,
         last_sync: &DateTime<Utc>,
     ) -> Vec<Article> {
         articles
             .iter()
-            .filter(|article| self.test(article, feed_map, tags_for_article, tag_map, last_sync))
+            .filter(|article| {
+                self.test(
+                    article,
+                    feed_map,
+                    category_for_feed,
+                    tags_for_article,
+                    tag_map,
+                    last_sync,
+                )
+            })
             .cloned()
             .collect::<Vec<Article>>()
     }
@@ -97,11 +113,14 @@ impl ArticleQuery {
         &self,
         article: &Article,
         feed_map: &HashMap<FeedID, Feed>,
+        category_for_feed: &HashMap<FeedID, Category>,
         tags_for_article: &HashMap<ArticleID, Vec<TagID>>,
         tag_map: &HashMap<TagID, Tag>,
         last_sync: &DateTime<Utc>,
     ) -> bool {
         let feed = feed_map.get(&article.feed_id);
+
+        let category = category_for_feed.get(&article.feed_id);
 
         let tags = tags_for_article.get(&article.article_id).map(|tag_ids| {
             tag_ids
@@ -110,9 +129,9 @@ impl ArticleQuery {
                 .collect::<HashSet<String>>()
         });
 
-        self.query
-            .iter()
-            .all(|query_clause| query_clause.test(article, feed, tags.as_ref(), last_sync))
+        self.query.iter().all(|query_clause| {
+            query_clause.test(article, feed, category, tags.as_ref(), last_sync)
+        })
     }
 }
 
@@ -122,6 +141,7 @@ impl QueryAtom {
         &self,
         article: &Article,
         feed: Option<&Feed>,
+        category: Option<&Category>,
         tags: Option<&HashSet<String>>,
         last_sync: &DateTime<Utc>,
     ) -> bool {
@@ -134,12 +154,13 @@ impl QueryAtom {
             Tagged => !tags.map(|tags| tags.is_empty()).unwrap_or(true),
 
             Feed(search_term)
+            | Category(search_term)
             | Title(search_term)
             | Summary(search_term)
             | Author(search_term)
             | FeedUrl(search_term)
             | FeedWebUrl(search_term)
-            | All(search_term) => self.test_string_match(search_term, article, feed),
+            | All(search_term) => self.test_string_match(search_term, article, feed, category),
 
             Tag(search_tags) => {
                 let Some(tags) = tags else {
@@ -162,6 +183,7 @@ impl QueryAtom {
         search_term: &SearchTerm,
         article: &Article,
         feed: Option<&Feed>,
+        category: Option<&Category>,
     ) -> bool {
         let content_string = match self {
             QueryAtom::Feed(_) => {
@@ -169,6 +191,12 @@ impl QueryAtom {
                     return false;
                 };
                 Some(feed.label.clone())
+            }
+            QueryAtom::Category(_) => {
+                let Some(category) = category else {
+                    return false;
+                };
+                Some(category.label.clone())
             }
             QueryAtom::FeedUrl(_) => {
                 let Some(feed) = feed else {

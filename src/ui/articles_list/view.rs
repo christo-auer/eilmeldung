@@ -359,6 +359,7 @@ impl<'a> ArticleListViewData<'a> {
                         if query.test(
                             article,
                             model_data.feed_map(),
+                            model_data.category_for_feed(),
                             model_data.tags_for_article(),
                             model_data.tag_map(),
                             model_data.last_sync(),

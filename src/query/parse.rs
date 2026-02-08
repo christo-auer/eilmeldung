@@ -174,11 +174,19 @@ pub enum QueryToken {
 
     #[token("feed:")]
     #[strum(
-        serialize = "feedafter",
+        serialize = "feed",
         message = "feed:<search term>",
         detailed_message = "articles with a feed matching the search term"
     )]
     KeyFeed,
+
+    #[token("category:")]
+    #[strum(
+        serialize = "category:",
+        message = "category:<search term>",
+        detailed_message = "articles with in a category (direct parent) matching the search term"
+    )]
+    KeyCategory,
 
     #[token("title:")]
     #[strum(
@@ -334,6 +342,7 @@ fn parse_query(
             | T::KeySummary
             | T::KeyAuthor
             | T::KeyFeed
+            | T::KeyCategory
             | T::KeyFeedUrl
             | T::KeyFeedWebUrl
             | T::KeyAll) => match query_lexer.next() {
@@ -344,6 +353,7 @@ fn parse_query(
                         T::KeySummary => QueryAtom::Summary(search_term),
                         T::KeyAuthor => QueryAtom::Author(search_term),
                         T::KeyFeed => QueryAtom::Feed(search_term),
+                        T::KeyCategory => QueryAtom::Category(search_term),
                         T::KeyFeedUrl => QueryAtom::FeedUrl(search_term),
                         T::KeyFeedWebUrl => QueryAtom::FeedWebUrl(search_term),
                         T::KeyAll => QueryAtom::All(search_term),

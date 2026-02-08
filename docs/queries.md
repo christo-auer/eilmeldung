@@ -32,28 +32,29 @@ Query elements are **conjunctive** (AND-ed together), i.e., all specified condit
 
 ## Query Keys
 
-| Key               | Syntax                     | Description                                             | Example                     |
-| -----             | --------                   | -------------                                           | ---------                   |
-| `read`            | `read`                     | Match read articles                                     | `read`                      |
-| `unread`          | `unread`                   | Match unread articles                                   | `unread`                    |
-| `marked`          | `marked`                   | Match marked articles                                   | `marked`                    |
-| `unmarked`        | `unmarked`                 | Match unmarked articles                                 | `unmarked`                  |
-| `tagged`          | `tagged`                   | Match articles with at least one tag                    | `tagged`                    |
-| `title:`          | `title:<search term>`      | Match articles by title                                 | `title:election`            |
-| `summary:`        | `summary:<search term>`    | Match articles by summary/description                   | `summary:"climate change"`  |
-| `author:`         | `author:<search term>`     | Match articles by author                                | `author:smith`              |
-| `feed:`           | `feed:<search term>`       | Match articles by feed name                             | `feed:techcrunch`           |
-| `feedurl:`        | `feedurl:<search term>`    | Match articles by feed URL                              | `feedurl:example.com`       |
-| `feedweburl:`     | `feedweburl:<search term>` | Match articles by feed website URL                      | `feedweburl:github.com`     |
-| `all:`            | `all:<search term>`        | Search across all fields (title, summary, author, feed) | `all:technology`            |
-| `tag:`            | `tag:#tag1,#tag2,...`      | Match articles with any of the specified tags           | `tag:#important,#tech`      |
-| `#tag1,#tag2,...` | `#tag1,#tag2,...`          | Same as `tag:#tag1,#tag2,...`                           | `#important,#tech`          |
-| `newer:`          | `newer:"<time>"`           | Match articles newer than specified time                | `newer:"1 week ago"`        |
-| `older:`          | `older:"<time>"`           | Match articles older than specified time                | `older:"2024-01-01"`        |
-| `today`           | `today`                    | Match articles from the last 24 hours                   | `today`                     |
-| `lastsync`        | `lastsync`                 | Match articles from the last sync (refresh)             | `lastsync`                  |
-| `syncedbefore:`   | `syncedbefore:"<time>"`    | Match articles synced before specified time             | `syncedbefore:"1 hour ago"` |
-| `syncedafter:`    | `syncedafter:"<time>"`     | Match articles synced after specified time              | `syncedafter:"2024-12-01"`  |
+| Key               | Syntax                     | Description                                                       | Example                     |
+| -----             | --------                   | -------------                                                     | ---------                   |
+| `read`            | `read`                     | Match read articles                                               | `read`                      |
+| `unread`          | `unread`                   | Match unread articles                                             | `unread`                    |
+| `marked`          | `marked`                   | Match marked articles                                             | `marked`                    |
+| `unmarked`        | `unmarked`                 | Match unmarked articles                                           | `unmarked`                  |
+| `tagged`          | `tagged`                   | Match articles with at least one tag                              | `tagged`                    |
+| `title:`          | `title:<search term>`      | Match articles by title                                           | `title:election`            |
+| `summary:`        | `summary:<search term>`    | Match articles by summary/description                             | `summary:"climate change"`  |
+| `author:`         | `author:<search term>`     | Match articles by author                                          | `author:smith`              |
+| `feed:`           | `feed:<search term>`       | Match articles by feed name                                       | `feed:techcrunch`           |
+| `category:`       | `category:<search term>`   | Match articles in a feed in the matching *direct parent* category | `category:"IT-News"`        |
+| `feedurl:`        | `feedurl:<search term>`    | Match articles by feed URL                                        | `feedurl:example.com`       |
+| `feedweburl:`     | `feedweburl:<search term>` | Match articles by feed website URL                                | `feedweburl:github.com`     |
+| `all:`            | `all:<search term>`        | Search across all fields (title, summary, author, feed)           | `all:technology`            |
+| `tag:`            | `tag:#tag1,#tag2,...`      | Match articles with any of the specified tags                     | `tag:#important,#tech`      |
+| `#tag1,#tag2,...` | `#tag1,#tag2,...`          | Same as `tag:#tag1,#tag2,...`                                     | `#important,#tech`          |
+| `newer:`          | `newer:"<time>"`           | Match articles newer than specified time                          | `newer:"1 week ago"`        |
+| `older:`          | `older:"<time>"`           | Match articles older than specified time                          | `older:"2024-01-01"`        |
+| `today`           | `today`                    | Match articles from the last 24 hours                             | `today`                     |
+| `lastsync`        | `lastsync`                 | Match articles from the last sync (refresh)                       | `lastsync`                  |
+| `syncedbefore:`   | `syncedbefore:"<time>"`    | Match articles synced before specified time                       | `syncedbefore:"1 hour ago"` |
+| `syncedafter:`    | `syncedafter:"<time>"`     | Match articles synced after specified time                        | `syncedafter:"2024-12-01"`  |
 
 ## Search Term Types
 
@@ -72,12 +73,13 @@ Query elements are **conjunctive** (AND-ed together), i.e., all specified condit
 
 ```
 unread today                                    # Unread articles from today
-feed:bbc ~read                                  # Unread articles from BBC feed
-title:/(?i)breaking|urgent/ newer:"1 hour ago"     # Recent breaking or urgent news (regex OR)
+feed:bbc unread                                 # Unread articles from BBC feed
+category:"IT-News" marked                       # marked articles in feeds belonging to the category "IT-News"
+title:/(?i)breaking|urgent/ newer:"1 hour ago"  # Recent breaking or urgent news (regex OR)
 marked #important                               # Marked articles tagged as important
 all:"climate change" newer:"1 week ago"         # Climate change articles from last week
 ~#politics unread                               # Unread articles without politics tag
-author:/(?i)smith|jones|brown/                   # Articles by Smith, Jones, or Brown (regex OR)
+author:/(?i)smith|jones|brown/                  # Articles by Smith, Jones, or Brown (regex OR)
 title:/(feature|bug|fix)/ feed:/github|gitlab/  # Development-related articles from code hosting platforms
 lastsync unread                                 # All unread articles from the last sync
 ```
@@ -149,11 +151,14 @@ author:smith unread
 
 ## Bulk Operations
 
-Queries can be used for builk operations:
+Queries can be used for builk operations (article list must be focused):
 
 ```
 # Mark old articles as read
 :read older:"2 months ago" unread
+
+# Mark all articles in a category as read
+:read category:"IT-News"
 
 # Tag articles from specific feeds
 :tag tech feed:/(github|gitlab|stackoverflow)/
