@@ -129,6 +129,11 @@ impl ArticleListModelData {
         article_ids: Vec<ArticleID>,
         read: news_flash::models::Read,
     ) -> color_eyre::Result<usize> {
+        // no articles -> no changes needed
+        if article_ids.is_empty() {
+            return Ok(0);
+        }
+
         let article_ids_set: HashSet<ArticleID> = article_ids.iter().cloned().collect();
 
         self.news_flash_utils
@@ -147,6 +152,10 @@ impl ArticleListModelData {
         article_ids: Vec<ArticleID>,
         marked: Marked,
     ) -> color_eyre::Result<usize> {
+        if article_ids.is_empty() {
+            return Ok(0);
+        }
+
         let article_ids_set: HashSet<ArticleID> = article_ids.iter().cloned().collect();
         self.news_flash_utils
             .set_article_marked(article_ids, marked);
@@ -164,6 +173,10 @@ impl ArticleListModelData {
         article_ids: Vec<ArticleID>,
         tag_id: TagID,
     ) -> color_eyre::Result<usize> {
+        if article_ids.is_empty() {
+            return Ok(0);
+        }
+
         let mut counter = 0;
         self.news_flash_utils
             .tag_articles(article_ids.clone(), tag_id.clone());
@@ -186,6 +199,10 @@ impl ArticleListModelData {
         article_ids: Vec<ArticleID>,
         tag_id: TagID,
     ) -> color_eyre::Result<usize> {
+        if article_ids.is_empty() {
+            return Ok(0);
+        }
+
         let mut counter = 0;
         self.news_flash_utils
             .untag_articles(article_ids.clone(), tag_id.clone());
