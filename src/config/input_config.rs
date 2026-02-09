@@ -59,7 +59,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "s"         => "sync",
         "r"         => "read" "in articles nextunread",
         "t"         => "cmd tag",
-        "R"         => "confirm read %",
+        "R"         => "confirm read articles %",
         "M-r"       => "cmd read",
         "u"         => "unread",
         "U"         => "confirm unread %",
