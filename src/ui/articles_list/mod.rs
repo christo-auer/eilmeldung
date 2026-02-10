@@ -557,11 +557,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.search_next(false, false)?;
                 }
 
-                C::SearchNext => {
+                C::SearchNext if handle_command => {
                     self.search_next(true, false)?;
                 }
 
-                C::SearchPrevious => {
+                C::SearchPrevious if handle_command => {
                     self.search_next(true, true)?;
                 }
 

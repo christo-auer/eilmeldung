@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
 use log::error;
@@ -9,7 +9,7 @@ use news_flash::models::{Category, Feed};
 use ratatui::style::Style;
 use ratatui::text::{Span, Text};
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq, Hash)]
 pub enum FeedListItem {
     All,
     Feed(Box<Feed>),
@@ -18,6 +18,21 @@ pub enum FeedListItem {
     Tags,
     Tag(Box<Tag>),
     Query(Box<LabeledQuery>),
+}
+
+impl Debug for FeedListItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use FeedListItem as I;
+        match self {
+            I::All => write!(f, "All"),
+            I::Feed(feed) => write!(f, "Feed({})", feed.feed_id),
+            I::Categories => write!(f, "Categories"),
+            I::Category(category) => write!(f, "Category({})", category.category_id),
+            I::Tags => write!(f, "Tags"),
+            I::Tag(tag) => write!(f, "Tag({})", tag.label),
+            I::Query(query) => write!(f, "Query({})", query.label),
+        }
+    }
 }
 
 #[derive(Clone, Debug, logos::Logos)]

@@ -499,22 +499,22 @@ pub enum Command {
 
     #[strum(
         serialize = "search",
-        message = "search [<search term>]",
-        detailed_message = "search current panel by search term; empty seach term to clear search (all)"
+        message = "search <search term>",
+        detailed_message = "search item by search term (feed list)"
     )]
     Search(Option<SearchTerm>),
 
     #[strum(
         serialize = "searchnext",
         message = "searchnext",
-        detailed_message = "search next matching item (all)"
+        detailed_message = "search next matching item (feed list, article list)"
     )]
     SearchNext,
 
     #[strum(
         serialize = "searchprev",
         message = "searchprev",
-        detailed_message = "search previous matching item (all)"
+        detailed_message = "search previous matching item (feed list, article list)"
     )]
     SearchPrevious,
 

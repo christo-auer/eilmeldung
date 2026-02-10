@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 use super::model::FeedOrCategory;
 use crate::prelude::*;
@@ -6,8 +6,8 @@ use crate::ui::feeds_list::model::FeedListModelData;
 
 use getset::{Getters, MutGetters};
 use log::info;
-use news_flash::models::PluginCapabilities;
 use news_flash::models::{Category, Feed, FeedMapping, NEWSFLASH_TOPLEVEL, UnifiedMapping};
+use news_flash::models::{PluginCapabilities, Tag};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Scrollbar;
 use ratatui::widgets::{Block, Borders};
@@ -31,11 +31,14 @@ pub struct FeedListViewData {
     #[getset(get = "pub")]
     yanked_unified_mapping: Option<UnifiedMapping>,
 
-    #[get(get = "pub")]
-    found_items: Vec<FeedListItem>,
+    #[getset(get = "pub")]
+    found_items: HashSet<FeedListItem>,
 
-    #[get(get = "pub")]
-    path_for_item: HashMap<FeedListItem, Vec<FeedListItem>>,
+    #[getset(get = "pub")]
+    found_paths: HashSet<Vec<FeedListItem>>,
+
+    #[getset(get = "pub")]
+    paths: Vec<Vec<FeedListItem>>,
 }
 
 impl FeedListViewData {
@@ -46,7 +49,8 @@ impl FeedListViewData {
             tree_items: Default::default(),
             yanked_unified_mapping: Default::default(),
             found_items: Default::default(),
-            path_for_item: Default::default(),
+            found_paths: Default::default(),
+            paths: Default::default(),
         }
     }
 }
@@ -84,8 +88,10 @@ impl FeedListViewData {
         model_data: &FeedListModelData,
         search_term: &Option<SearchTerm>,
     ) -> color_eyre::Result<()> {
-        self.tree_items = Vec::new();
-        self.found_items = Vec::new();
+        self.tree_items = Default::default();
+        self.found_items = Default::default();
+        self.found_paths = Default::default();
+        self.paths = Default::default();
 
         for item in config.feed_list.iter() {
             use FeedListContentIdentifier::*;
@@ -104,7 +110,27 @@ impl FeedListViewData {
             }
         }
 
+        let mut path = Vec::new();
+        let tree_items = self.tree_items.to_vec();
+        self.build_paths(&tree_items, &mut path);
+
         Ok(())
+    }
+
+    fn build_paths(&mut self, children: &[TreeItem<FeedListItem>], path: &mut Vec<FeedListItem>) {
+        for child in children.iter() {
+            path.push(child.identifier().to_owned());
+
+            self.paths.push(path.to_vec());
+
+            if self.found_items.contains(child.identifier()) {
+                self.found_paths.insert(path.to_vec());
+            }
+
+            self.build_paths(child.children(), path);
+
+            path.pop();
+        }
     }
 
     fn add_query_item(
@@ -121,7 +147,7 @@ impl FeedListViewData {
             && search_term.test_text(&query_item_text)
         {
             patch_text_style(&mut query_item_text, config.theme.highlighted());
-            self.found_items.push(query_item.to_owned());
+            self.found_items.insert(query_item.to_owned());
         }
 
         self.tree_items
@@ -197,7 +223,7 @@ impl FeedListViewData {
                     && search_term.test_text(&categories_text)
                 {
                     patch_text_style(&mut categories_text, config.theme.highlighted());
-                    self.found_items.push(categories_item.to_owned());
+                    self.found_items.insert(categories_item.to_owned());
                 }
 
                 self.tree_items
@@ -233,8 +259,13 @@ impl FeedListViewData {
                             .map(|count| *count == 0i64)
                             .unwrap_or(false))
                 })
-                .map(|tag| self.gen_tag_item(config, model_data, tag.to_owned()))
+                .cloned()
+                .collect::<Vec<Tag>>()
+                .into_iter()
+                .map(|tag| self.gen_tag_item(config, model_data, tag, search_term))
                 .collect::<Vec<TreeItem<_>>>();
+
+            // let children =
 
             match item_type {
                 FeedListItemType::List => self.tree_items.append(&mut children),
@@ -245,7 +276,7 @@ impl FeedListViewData {
                         && search_term.test_text(&tag_item_text)
                     {
                         patch_text_style(&mut tag_item_text, config.theme.highlighted());
-                        self.found_items.push(tags_item.to_owned());
+                        self.found_items.insert(tags_item.to_owned());
                     }
 
                     let tags_tree_item = TreeItem::new(tags_item, tag_item_text, children)?;
@@ -327,7 +358,7 @@ impl FeedListViewData {
             patch_text_style(&mut identifier_text, config.theme.highlighted());
             // identifier_text.style = config.theme.patch_highlighted(&identifier_text.style);
             // identifier_text = identifier_text.style(config.theme.highlighted());
-            self.found_items.push(identifier.to_owned());
+            self.found_items.insert(identifier.to_owned());
         }
 
         TreeItem::new_leaf(identifier, identifier_text)
@@ -385,7 +416,7 @@ impl FeedListViewData {
             && search_term.test_text(&identifier_text)
         {
             patch_text_style(&mut identifier_text, config.theme.highlighted());
-            self.found_items.push(identifier.to_owned());
+            self.found_items.insert(identifier.to_owned());
         }
 
         if let Some(UnifiedMapping::Category(category_mapping)) = self.yanked_unified_mapping()
@@ -398,10 +429,11 @@ impl FeedListViewData {
     }
 
     fn gen_tag_item(
-        &self,
+        &mut self,
         config: &Config,
         model_data: &FeedListModelData,
         tag: news_flash::models::Tag,
+        search_term: &Option<SearchTerm>,
     ) -> TreeItem<'static, FeedListItem> {
         let count = model_data
             .unread_count_for_tag()
@@ -409,7 +441,13 @@ impl FeedListViewData {
             .copied()
             .unwrap_or(0);
         let tag_item = FeedListItem::Tag(Box::new(tag));
-        let tag_item_text = tag_item.to_text(config, Some(count), None);
+        let mut tag_item_text = tag_item.to_text(config, Some(count), None);
+        if let Some(search_term) = search_term.as_ref()
+            && search_term.test_text(&tag_item_text)
+        {
+            patch_text_style(&mut tag_item_text, config.theme.highlighted());
+            self.found_items.insert(tag_item.to_owned());
+        }
         TreeItem::new_leaf(tag_item, tag_item_text)
     }
 

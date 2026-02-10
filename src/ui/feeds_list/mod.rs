@@ -541,6 +541,61 @@ impl FeedList {
             self.view_data.tree_state_mut().open(path);
         }
     }
+
+    fn search_next(&mut self, reverse: bool) -> color_eyre::Result<()> {
+        if self.view_data.found_items().is_empty() {
+            tooltip(
+                &self.message_sender,
+                "no search term",
+                TooltipFlavor::Warning,
+            )?;
+            return Ok(());
+        }
+
+        // get currently selected item
+        let selected = self.view_data.tree_state().selected();
+
+        let mut paths = self.view_data.paths().to_vec();
+        if reverse {
+            paths.reverse();
+        }
+
+        // find the next index
+        let found_path = paths
+            .iter()
+            .skip_while(|path| **path != selected)
+            .skip(1)
+            .find(|path| self.view_data.found_paths().contains(*path))
+            .cloned();
+
+        let found_path = match found_path {
+            Some(found_path) => Some(found_path),
+            None => {
+                tooltip(
+                    &self.message_sender,
+                    if reverse {
+                        "top reached, starting from bottom"
+                    } else {
+                        "bottom reached, starting from top"
+                    },
+                    TooltipFlavor::Info,
+                )?;
+                paths.first().cloned()
+            }
+        };
+
+        if let Some(found_path) = found_path {
+            let parent = found_path.split_last().map(|split| split.1.to_vec());
+
+            if let Some(parent) = parent {
+                self.view_data.tree_state_mut().open(parent);
+            }
+
+            self.view_data.tree_state_mut().select(found_path.to_vec());
+        }
+
+        Ok(())
+    }
 }
 
 impl MessageReceiver for FeedList {
@@ -778,6 +833,14 @@ impl MessageReceiver for FeedList {
                     info!("searching in feed list for {search_term}");
                     self.search_term = Some(search_term);
                     view_needs_update = true;
+                }
+
+                C::SearchNext if handle_command => {
+                    self.search_next(false)?;
+                }
+
+                C::SearchPrevious if handle_command => {
+                    self.search_next(true)?;
                 }
 
                 _ => {}
