@@ -78,9 +78,7 @@ impl ArticlesList {
         // the previous article is not there, next we select the first unread article
         // try to select previous index
         if current_index < self.model_data.articles().len() {
-            self.view_data
-                .get_table_state_mut()
-                .select(Some(current_index));
+            return self.select_index_and_send_message(Some(current_index));
         } else {
             self.select_next_unread()?;
         }
