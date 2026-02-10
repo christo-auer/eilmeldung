@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.9.2 - 2026-02-10
+
 - changed default mapping of `R` to `confirm read articles %` (before: `confirm read %`): now just the elements in the article list are marked as read instead of all feeds and categories when in the tree panel
 - new query key `category`: matches articles from feeds in the matching category (only the direct parent category is considered)
 - bugfix: content is not updated when article was marked as read
