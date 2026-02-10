@@ -1,5 +1,12 @@
 # Unreleased
 
+- you can now search in the feed list:
+  - press `/` (default mapping) in feed list to open search prompt (command line)
+  - enter a search term
+    - single word: case-insensitive, e.g., `news`
+    - quoted string: exact-match, e.g., `"News"`
+    - or regular expression inclosed in `/`: e.g., `/News.*|Nachrichten/`
+
 # 0.9.2 - 2026-02-10
 
 - changed default mapping of `R` to `confirm read articles %` (before: `confirm read %`): now just the elements in the article list are marked as read instead of all feeds and categories when in the tree panel
