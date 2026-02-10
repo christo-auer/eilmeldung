@@ -1,6 +1,6 @@
 use ratatui::{
-    style::Modifier,
-    text::{Line, Span},
+    style::{Modifier, Style},
+    text::{Line, Span, Text},
 };
 
 #[cfg(unix)]
@@ -10,6 +10,7 @@ pub mod prelude {
     #[cfg(unix)]
     pub use super::StderrRedirect;
     pub use super::html_sanitize;
+    pub use super::patch_text_style;
     pub use super::to_bubble;
 }
 
@@ -78,4 +79,10 @@ impl Drop for StderrRedirect {
             libc::close(self.saved_stderr);
         }
     }
+}
+
+pub fn patch_text_style(text: &mut Text, style: Style) {
+    text.iter_mut()
+        .flat_map(Line::iter_mut)
+        .for_each(|span| span.style = span.style.patch(style));
 }

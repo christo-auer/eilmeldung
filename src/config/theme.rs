@@ -318,6 +318,7 @@ impl Theme {
       tooltip_error,
       selected,
       unread_count,
-      marked_count
+      marked_count,
+      highlighted
     }
 }

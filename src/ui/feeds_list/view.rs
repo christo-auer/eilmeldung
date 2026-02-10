@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::model::FeedOrCategory;
 use crate::prelude::*;
 use crate::ui::feeds_list::model::FeedListModelData;
@@ -31,6 +33,9 @@ pub struct FeedListViewData {
 
     #[get(get = "pub")]
     found_items: Vec<FeedListItem>,
+
+    #[get(get = "pub")]
+    path_for_item: HashMap<FeedListItem, Vec<FeedListItem>>,
 }
 
 impl FeedListViewData {
@@ -41,6 +46,7 @@ impl FeedListViewData {
             tree_items: Default::default(),
             yanked_unified_mapping: Default::default(),
             found_items: Default::default(),
+            path_for_item: Default::default(),
         }
     }
 }
@@ -50,7 +56,7 @@ impl Widget for &mut FeedList {
         let highlight_style = self.config.theme.selected();
 
         let tree_items = self.view_data.tree_items().clone();
-        // let scroll_thumb_icon = self.config.scroll_thumb_icon.to_string();
+
         let tree = Tree::new(&tree_items)
             .unwrap() // TODO error handling
             .block(
@@ -114,7 +120,7 @@ impl FeedListViewData {
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&query_item_text)
         {
-            query_item_text.style = config.theme.patch_highlighted(&query_item_text.style);
+            patch_text_style(&mut query_item_text, config.theme.highlighted());
             self.found_items.push(query_item.to_owned());
         }
 
@@ -190,7 +196,7 @@ impl FeedListViewData {
                 if let Some(search_term) = search_term.as_ref()
                     && search_term.test_text(&categories_text)
                 {
-                    categories_text.style = config.theme.patch_highlighted(&categories_text.style);
+                    patch_text_style(&mut categories_text, config.theme.highlighted());
                     self.found_items.push(categories_item.to_owned());
                 }
 
@@ -238,7 +244,7 @@ impl FeedListViewData {
                     if let Some(search_term) = search_term.as_ref()
                         && search_term.test_text(&tag_item_text)
                     {
-                        tag_item_text.style = config.theme.patch_highlighted(&tag_item_text.style);
+                        patch_text_style(&mut tag_item_text, config.theme.highlighted());
                         self.found_items.push(tags_item.to_owned());
                     }
 
@@ -318,7 +324,9 @@ impl FeedListViewData {
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&identifier_text)
         {
-            identifier_text.style = config.theme.patch_highlighted(&identifier_text.style);
+            patch_text_style(&mut identifier_text, config.theme.highlighted());
+            // identifier_text.style = config.theme.patch_highlighted(&identifier_text.style);
+            // identifier_text = identifier_text.style(config.theme.highlighted());
             self.found_items.push(identifier.to_owned());
         }
 
@@ -376,7 +384,7 @@ impl FeedListViewData {
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&identifier_text)
         {
-            identifier_text.style = config.theme.patch_highlighted(&identifier_text.style);
+            patch_text_style(&mut identifier_text, config.theme.highlighted());
             self.found_items.push(identifier.to_owned());
         }
 
