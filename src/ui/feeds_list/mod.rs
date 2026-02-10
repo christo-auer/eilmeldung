@@ -543,10 +543,18 @@ impl FeedList {
     }
 
     fn search_next(&mut self, reverse: bool) -> color_eyre::Result<()> {
-        if self.view_data.found_items().is_empty() {
+        if self.search_term.is_none() {
             tooltip(
                 &self.message_sender,
                 "no search term",
+                TooltipFlavor::Warning,
+            )?;
+        }
+
+        if self.view_data.found_items().is_empty() {
+            tooltip(
+                &self.message_sender,
+                "no matching item",
                 TooltipFlavor::Warning,
             )?;
             return Ok(());
@@ -833,6 +841,10 @@ impl MessageReceiver for FeedList {
                     info!("searching in feed list for {search_term}");
                     self.search_term = Some(search_term);
                     view_needs_update = true;
+                    self.message_sender.send(Message::Command(Command::In(
+                        Panel::FeedList,
+                        Box::new(Command::SearchNext),
+                    )))?;
                 }
 
                 C::SearchNext if handle_command => {
