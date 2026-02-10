@@ -38,8 +38,6 @@ pub(super) struct FeedListModelData {
     feed_mapping_for_feed: HashMap<FeedID, FeedMapping>,
 
     tags: Vec<Tag>,
-
-
 }
 
 impl From<CategoryID> for FeedOrCategory {
