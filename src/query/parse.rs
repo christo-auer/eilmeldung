@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     prelude::*,
-    query::{QueryAtom, QueryClause, SearchTerm},
+    query::{QueryAtom, QueryClause},
 };
 
 use chrono::DateTime;
@@ -545,38 +545,7 @@ fn parse_query(
     Ok(article_query)
 }
 
-fn strip_first_and_last(s: &mut String) {
+pub fn strip_first_and_last(s: &mut String) {
     s.remove(0);
     s.remove(s.len() - 1);
-}
-
-fn to_search_term(
-    query_token: QueryToken,
-    lexer: &logos::Lexer<'_, QueryToken>,
-) -> Result<SearchTerm, QueryParseError> {
-    match query_token {
-        QueryToken::Regex => {
-            let mut search_term = lexer.slice().to_owned();
-            strip_first_and_last(&mut search_term);
-
-            let regex = regex::Regex::new(&search_term)?;
-            Ok(SearchTerm::Regex(regex))
-        }
-
-        QueryToken::QuotedString => {
-            let mut search_term = lexer.slice().to_owned();
-            strip_first_and_last(&mut search_term);
-            Ok(SearchTerm::Verbatim(search_term))
-        }
-
-        QueryToken::Word => {
-            let search_term = lexer.slice().to_owned();
-            Ok(SearchTerm::Word(search_term))
-        }
-
-        _ => Err(QueryParseError::SearchTermExpected(
-            lexer.span().start,
-            lexer.slice().to_owned(),
-        )),
-    }
 }

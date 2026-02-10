@@ -467,6 +467,8 @@ impl CommandInput {
                 command
                     .as_ref()
                     .starts_with(self.completion_prefix.as_str())
+                    && !command.as_ref().starts_with("_") // exclude commands which start with _
+                // (e.g., input commands)
             })
             .collect::<Vec<Command>>();
 

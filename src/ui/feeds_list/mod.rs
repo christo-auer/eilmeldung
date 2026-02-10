@@ -7,6 +7,7 @@ pub mod prelude {
 }
 
 use feed_list_item::FeedListItem;
+use log::info;
 use news_flash::models::{CategoryID, PluginCapabilities, UnifiedMapping, Url};
 use tui_tree_widget::TreeItem;
 
@@ -33,6 +34,8 @@ pub struct FeedList {
 
     is_focused: bool,
     last_sync: Instant,
+
+    search_term: Option<SearchTerm>,
 }
 
 impl FeedList {
@@ -48,6 +51,7 @@ impl FeedList {
             view_data: FeedListViewData::new(&config),
             is_focused: false,
             last_sync: Instant::now(),
+            search_term: None,
         }
     }
     pub(super) fn update_tooltip(&self) -> color_eyre::Result<()> {
@@ -537,6 +541,69 @@ impl FeedList {
             self.view_data.tree_state_mut().open(path);
         }
     }
+
+    fn search_next(&mut self, reverse: bool) -> color_eyre::Result<()> {
+        if self.search_term.is_none() {
+            tooltip(
+                &self.message_sender,
+                "no search term",
+                TooltipFlavor::Warning,
+            )?;
+        }
+
+        if self.view_data.found_items().is_empty() {
+            tooltip(
+                &self.message_sender,
+                "no matching item",
+                TooltipFlavor::Warning,
+            )?;
+            return Ok(());
+        }
+
+        // get currently selected item
+        let selected = self.view_data.tree_state().selected();
+
+        let mut paths = self.view_data.paths().to_vec();
+        if reverse {
+            paths.reverse();
+        }
+
+        // find the next index
+        let found_path = paths
+            .iter()
+            .skip_while(|path| **path != selected)
+            .skip(1)
+            .find(|path| self.view_data.found_paths().contains(*path))
+            .cloned();
+
+        let found_path = match found_path {
+            Some(found_path) => Some(found_path),
+            None => {
+                tooltip(
+                    &self.message_sender,
+                    if reverse {
+                        "top reached, starting from bottom"
+                    } else {
+                        "bottom reached, starting from top"
+                    },
+                    TooltipFlavor::Info,
+                )?;
+                paths.first().cloned()
+            }
+        };
+
+        if let Some(found_path) = found_path {
+            let parent = found_path.split_last().map(|split| split.1.to_vec());
+
+            if let Some(parent) = parent {
+                self.view_data.tree_state_mut().open(parent);
+            }
+
+            self.view_data.tree_state_mut().select(found_path.to_vec());
+        }
+
+        Ok(())
+    }
 }
 
 impl MessageReceiver for FeedList {
@@ -763,6 +830,31 @@ impl MessageReceiver for FeedList {
                     enforce_articles_selected = true;
                 }
 
+                C::InputSearch if handle_command => {
+                    self.message_sender
+                        .send(Message::Command(Command::CommandLineOpen(Some(
+                            "search".to_owned(),
+                        ))))?;
+                }
+
+                C::Search(Some(search_term)) if handle_command => {
+                    info!("searching in feed list for {search_term}");
+                    self.search_term = Some(search_term);
+                    view_needs_update = true;
+                    self.message_sender.send(Message::Command(Command::In(
+                        Panel::FeedList,
+                        Box::new(Command::SearchNext),
+                    )))?;
+                }
+
+                C::SearchNext if handle_command => {
+                    self.search_next(false)?;
+                }
+
+                C::SearchPrevious if handle_command => {
+                    self.search_next(true)?;
+                }
+
                 _ => {}
             }
         };
@@ -855,14 +947,14 @@ impl MessageReceiver for FeedList {
         if model_needs_update {
             self.model_data.update().await?;
             self.view_data
-                .update(&self.config, &self.model_data)
+                .update(&self.config, &self.model_data, &self.search_term)
                 .await?;
             selection_changed = self.view_data.ensure_sensible_selection(&selected_before);
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
         } else if view_needs_update {
             self.view_data
-                .update(&self.config, &self.model_data)
+                .update(&self.config, &self.model_data, &self.search_term)
                 .await?;
             selection_changed = self.view_data.ensure_sensible_selection(&selected_before);
             self.message_sender

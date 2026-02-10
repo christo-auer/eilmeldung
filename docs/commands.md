@@ -50,7 +50,7 @@ Here are some common command examples to get you started:
 :focus articles                          # Focus the article list panel
 :show unread                             # Show only unread articles in current panel
 :show feeds all                          # Show all articles in the feed list
-:search author:john newer:"3 days"       # Search for articles by John from last 3 days
+:searcharticles author:john newer:"3 days"  # Search for articles by John from last 3 days
 :sort date                               # Sort by date (newest first)
 :sort >date                              # Sort by date (oldest first)
 :sort feed title                         # Sort by feed name, then by title
@@ -85,35 +85,36 @@ Here are some common command examples to get you started:
 | `prevc` | `prevc` | All | Focus previous panel (cycles back to content) |
 | `zen` | `zen` | Article Content | Toggle distraction-free mode (hides all panels except article content) |
 
+
+
 ## Feed List Management
 
-| Command | Syntax | Context | Description |
-|---------|--------|---------|-------------|
-| `sync` | `sync` | Feed List | Sync all feeds |
-| `feedadd` | `feedadd <URL> [<name>]` | Feed List | Add a new feed. Examples: `:feedadd https://example.com/feed.xml`, `:feedadd https://news.site/rss "News Site"` |
-| `categoryadd` | `categoryadd <name>` | Feed List | Add a new category. Example: `:categoryadd Technology` |
-| `tagadd` | `tagadd <name> [<color>]` | Feed List | Add a new tag with optional color (e.g., `red`, `#ff0000`). Press TAB for suggestions. Examples: `:tagadd important red`, `:tagadd tech #0088ff` |
-| `rename` | `rename <new name>` | Feed List | Rename the selected feed, category, or tag. Example: `:rename Tech News` |
-| `remove` | `remove` | Feed List | Remove the selected item (only works for childless items) |
-| `removeall` | `removeall` | Feed List | Remove the selected item with all its children |
-| `feedchangeurl` | `feedchangeurl <URL>` | Feed List | Change the URL of the selected feed. Example: `:feedchangeurl https://newurl.com/feed.xml` |
-| `tagchangecolor` | `tagchangecolor <color>` | Feed List | Change color of selected tag (e.g., `blue`, `#0000ff`). Press TAB for suggestions. Examples: `:tagchangecolor green`, `:tagchangecolor #ff5500` |
-| `toggle` | `toggle` | Feed List | Toggle selected item in the tree |
-| `expand` | `expand` | Feed List | Expands the current item in the tree |
-| `expandcategories` | `expandcategories <scope>` | Feed List | Expand categories with articles in scope, i.e., `all`, `unread` or `marked` articles |
-| `collapse` | `collapse` | Feed List | Collapses the current item in the tree |
-| `collapsall` | `collapseall` | Feed List | Collapses all items in the tree |
-| `yank` | `yank` | Feed List | Yank (copy) the selected feed or category for moving |
-| `paste` | `paste <position>` | Feed List | Paste the yanked item. Position: `before` or `after`. Examples: `:paste after`, `:paste before` |
+| Command            | Syntax                     | Context   | Description                                                                                                                                      |
+| ---------          | --------                   | --------- | -------------                                                                                                                                    |
+| `sync`             | `sync`                     | Feed List | Sync all feeds                                                                                                                                   |
+| `feedadd`          | `feedadd <URL> [<name>]`   | Feed List | Add a new feed. Examples: `:feedadd https://example.com/feed.xml`, `:feedadd https://news.site/rss "News Site"`                                  |
+| `categoryadd`      | `categoryadd <name>`       | Feed List | Add a new category. Example: `:categoryadd Technology`                                                                                           |
+| `tagadd`           | `tagadd <name> [<color>]`  | Feed List | Add a new tag with optional color (e.g., `red`, `#ff0000`). Press TAB for suggestions. Examples: `:tagadd important red`, `:tagadd tech #0088ff` |
+| `rename`           | `rename <new name>`        | Feed List | Rename the selected feed, category, or tag. Example: `:rename Tech News`                                                                         |
+| `remove`           | `remove`                   | Feed List | Remove the selected item (only works for childless items)                                                                                        |
+| `removeall`        | `removeall`                | Feed List | Remove the selected item with all its children                                                                                                   |
+| `feedchangeurl`    | `feedchangeurl <URL>`      | Feed List | Change the URL of the selected feed. Example: `:feedchangeurl https://newurl.com/feed.xml`                                                       |
+| `tagchangecolor`   | `tagchangecolor <color>`   | Feed List | Change color of selected tag (e.g., `blue`, `#0000ff`). Press TAB for suggestions. Examples: `:tagchangecolor green`, `:tagchangecolor #ff5500`  |
+| `toggle`           | `toggle`                   | Feed List | Toggle selected item in the tree                                                                                                                 |
+| `expand`           | `expand`                   | Feed List | Expands the current item in the tree                                                                                                             |
+| `expandcategories` | `expandcategories <scope>` | Feed List | Expand categories with articles in scope, i.e., `all`, `unread` or `marked` articles                                                             |
+| `collapse`         | `collapse`                 | Feed List | Collapses the current item in the tree                                                                                                           |
+| `collapsall`       | `collapseall`              | Feed List | Collapses all items in the tree                                                                                                                  |
+| `yank`             | `yank`                     | Feed List | Yank (copy) the selected feed or category for moving                                                                                             |
+| `paste`            | `paste <position>`         | Feed List | Paste the yanked item. Position: `before` or `after`. Examples: `:paste after`, `:paste before`                                                  |
+| `search`           | `search <searchterm>`      | Feed List | Search item in feed list; search term can be single word, quoted string or regular expression (see [Article Queries](queries.md))                | 
 
 ## Article List
 
 | Command | Syntax | Context | Description |
 |---------|--------|---------|-------------|
 | `nextunread` | `nextunread` | Article List | Select the next unread article in the list |
-| `search` | `search <query>` | Article List | Search for articles matching the query. Example: `:search title:security newer:"1 week"` |
-| `searchnext` | `searchnext` | Article List | Jump to the next article matching the current search query |
-| `searchprev` | `searchprev` | Article List | Jump to the previous article matching the current search query |
+| `searcharticles` | `searcharticles <query>` | Article List | Search for articles matching the query. Example: `:search title:security newer:"1 week"` |
 | `filter` | `filter <query>` | Article List | Filter the article list by query. Example: `:filter unread author:john` |
 | `filterapply` | `filterapply` | Article List | Apply the current filter |
 | `filterclear` | `filterclear` | Article List | Clear the current filter and show all articles |
@@ -155,27 +156,30 @@ These commands support a **scope parameter** to target specific articles:
 
 These commands are typically used via key bindings rather than the command line.
 
-| Command | Syntax | Context | Description |
-|---------|--------|---------|-------------|
-| `up` | `up` | All | Navigate up in the current context |
-| `down` | `down` | All | Navigate down in the current context |
-| `left` | `left` | All | Navigate left in the current context |
-| `right` | `right` | All | Navigate right in the current context |
-| `pageup` | `pageup` | All | Navigate up by one page |
-| `pagedown` | `pagedown` | All | Navigate down by one page |
-| `gotofirst` | `gotofirst` | All | Navigate to the first item |
-| `gotolast` | `gotolast` | All | Navigate to the last item |
+| Command      | Syntax       | Context                 | Description                                                 |
+| ---------    | --------     | ---------               | -------------                                               |
+| `up`         | `up`         | All                     | Navigate up in the current context                          |
+| `down`       | `down`       | All                     | Navigate down in the current context                        |
+| `left`       | `left`       | All                     | Navigate left in the current context                        |
+| `right`      | `right`      | All                     | Navigate right in the current context                       |
+| `pageup`     | `pageup`     | All                     | Navigate up by one page                                     |
+| `pagedown`   | `pagedown`   | All                     | Navigate down by one page                                   |
+| `gotofirst`  | `gotofirst`  | All                     | Navigate to the first item                                  |
+| `gotolast`   | `gotolast`   | All                     | Navigate to the last item                                   |
+| `searchnext` | `searchnext` | Article List, Feed List | Jump to the next item matching the current search query     |
+| `searchprev` | `searchprev` | Article List, Feed List | Jump to the previous item matching the current search query |
+
 
 ## Input-Related Commands
 
 These commands belong to text input (e.g. command-line or search input) and must be assigned to single keys:
 
-| Command   | Syntax   | Context             | Description              |
-| --------- | -------- | ---------           | -------------            |
-| `submit`  | `submit` | Input               | Submit the current input |
-| `abort`   | `abort`  | Input               | Abort the current input  |
-| `clear`   | `clear`  | Input               | Clear the current input  |
-| `find`    | `find`   | Input, Article List | Open find (search) input |
+| Command   | Syntax    | Context                        | Description              |
+| --------- | --------  | ---------                      | -------------            |
+| `_submit` | `_submit` | Input                          | Submit the current input |
+| `_abort`  | `_abort`  | Input                          | Abort the current input  |
+| `_clear`  | `_clear`  | Input                          | Clear the current input  |
+| `_search` | `_search` | Input, Article List, Feed List | Open find (search) input |
 
 ---
 

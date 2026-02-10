@@ -105,7 +105,7 @@ impl<'a> HelpPopup<'a> {
                 state.scroll_offset_x = (state.scroll_offset_x.saturating_add(1))
                     .clamp(0, state.contents.width() as u16)
             }
-            C::InputFind => {
+            C::InputSearch => {
                 if state.search_input.is_none() {
                     let mut text_area = TextArea::default();
                     text_area.set_placeholder_text("search term");

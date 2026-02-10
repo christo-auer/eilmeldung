@@ -221,7 +221,9 @@ impl Default for StyleSet {
             unread: ComponentStyle::default().mods(&[M::Bold]),
             read: ComponentStyle::default().mods(&[M::Dim]),
             selected: ComponentStyle::default().mods(&[M::Reversed]),
-            highlighted: ComponentStyle::default().fg(C::Highlight),
+            highlighted: ComponentStyle::default()
+                .fg(C::Highlight)
+                .mods(&[M::Italic]),
 
             unread_count: ComponentStyle::default().mods(&[M::Italic]),
             marked_count: ComponentStyle::default().mods(&[M::Italic]),
@@ -316,6 +318,7 @@ impl Theme {
       tooltip_error,
       selected,
       unread_count,
-      marked_count
+      marked_count,
+      highlighted
     }
 }

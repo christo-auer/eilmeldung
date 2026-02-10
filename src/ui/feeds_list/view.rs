@@ -1,11 +1,13 @@
+use std::collections::HashSet;
+
 use super::model::FeedOrCategory;
 use crate::prelude::*;
 use crate::ui::feeds_list::model::FeedListModelData;
 
 use getset::{Getters, MutGetters};
 use log::info;
-use news_flash::models::PluginCapabilities;
 use news_flash::models::{Category, Feed, FeedMapping, NEWSFLASH_TOPLEVEL, UnifiedMapping};
+use news_flash::models::{PluginCapabilities, Tag};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Scrollbar;
 use ratatui::widgets::{Block, Borders};
@@ -28,6 +30,15 @@ pub struct FeedListViewData {
 
     #[getset(get = "pub")]
     yanked_unified_mapping: Option<UnifiedMapping>,
+
+    #[getset(get = "pub")]
+    found_items: HashSet<FeedListItem>,
+
+    #[getset(get = "pub")]
+    found_paths: HashSet<Vec<FeedListItem>>,
+
+    #[getset(get = "pub")]
+    paths: Vec<Vec<FeedListItem>>,
 }
 
 impl FeedListViewData {
@@ -37,6 +48,9 @@ impl FeedListViewData {
             tree_state: Default::default(),
             tree_items: Default::default(),
             yanked_unified_mapping: Default::default(),
+            found_items: Default::default(),
+            found_paths: Default::default(),
+            paths: Default::default(),
         }
     }
 }
@@ -46,7 +60,7 @@ impl Widget for &mut FeedList {
         let highlight_style = self.config.theme.selected();
 
         let tree_items = self.view_data.tree_items().clone();
-        // let scroll_thumb_icon = self.config.scroll_thumb_icon.to_string();
+
         let tree = Tree::new(&tree_items)
             .unwrap() // TODO error handling
             .block(
@@ -72,26 +86,70 @@ impl FeedListViewData {
         &mut self,
         config: &Config,
         model_data: &FeedListModelData,
+        search_term: &Option<SearchTerm>,
     ) -> color_eyre::Result<()> {
-        self.tree_items = Vec::new();
+        self.tree_items = Default::default();
+        self.found_items = Default::default();
+        self.found_paths = Default::default();
+        self.paths = Default::default();
 
         for item in config.feed_list.iter() {
             use FeedListContentIdentifier::*;
             match item {
-                Feeds(item_type) => self.add_feeds_item(config, model_data, item_type)?,
-                Categories(item_type) => self.add_categories_item(config, model_data, item_type)?,
-                Tags(item_type) => self.add_tags_item(config, model_data, item_type).await?,
-                Query(labeled_query) => self.add_query_item(config, labeled_query),
+                Feeds(item_type) => {
+                    self.add_feeds_item(config, model_data, item_type, search_term)?
+                }
+                Categories(item_type) => {
+                    self.add_categories_item(config, model_data, item_type, search_term)?
+                }
+                Tags(item_type) => {
+                    self.add_tags_item(config, model_data, item_type, search_term)
+                        .await?
+                }
+                Query(labeled_query) => self.add_query_item(config, labeled_query, search_term),
             }
         }
+
+        let mut path = Vec::new();
+        let tree_items = self.tree_items.to_vec();
+        self.build_paths(&tree_items, &mut path);
 
         Ok(())
     }
 
-    fn add_query_item(&mut self, config: &Config, labeled_query: &LabeledQuery) {
+    fn build_paths(&mut self, children: &[TreeItem<FeedListItem>], path: &mut Vec<FeedListItem>) {
+        for child in children.iter() {
+            path.push(child.identifier().to_owned());
+
+            self.paths.push(path.to_vec());
+
+            if self.found_items.contains(child.identifier()) {
+                self.found_paths.insert(path.to_vec());
+            }
+
+            self.build_paths(child.children(), path);
+
+            path.pop();
+        }
+    }
+
+    fn add_query_item(
+        &mut self,
+        config: &Config,
+        labeled_query: &LabeledQuery,
+        search_term: &Option<SearchTerm>,
+    ) {
         // queries
         let query_item = FeedListItem::Query(Box::new(labeled_query.clone()));
-        let query_item_text = query_item.to_text(config, None, None);
+        let mut query_item_text = query_item.to_text(config, None, None);
+
+        if let Some(search_term) = search_term.as_ref()
+            && search_term.test_text(&query_item_text)
+        {
+            patch_text_style(&mut query_item_text, config.theme.highlighted());
+            self.found_items.insert(query_item.to_owned());
+        }
+
         self.tree_items
             .push(TreeItem::new_leaf(query_item, query_item_text));
     }
@@ -121,25 +179,37 @@ impl FeedListViewData {
         config: &Config,
         model_data: &FeedListModelData,
         item_type: &FeedListItemType,
+        search_term: &Option<SearchTerm>,
     ) -> color_eyre::Result<()> {
         let mut root_items = Vec::new();
 
-        for root in model_data
+        let feeds_or_categories = model_data
             .roots()
             .iter()
             .filter(|feed_or_category| self.include_feed_or_category(model_data, feed_or_category))
-        {
+            .collect::<Vec<&FeedOrCategory>>();
+
+        for root in feeds_or_categories {
             match root {
                 FeedOrCategory::Category(category_id) => {
                     if let Some(category) = model_data.category_map().get(category_id) {
-                        root_items
-                            .push(self.map_category_to_tree_item(config, category, model_data))
+                        root_items.push(self.map_category_to_tree_item(
+                            config,
+                            category,
+                            model_data,
+                            search_term,
+                        ))
                     }
                 }
 
                 FeedOrCategory::Feed(feed_id) => {
                     if let Some(feed) = model_data.feed_map().get(feed_id) {
-                        root_items.push(self.map_feed_to_tree_item(config, feed, model_data))
+                        root_items.push(self.map_feed_to_tree_item(
+                            config,
+                            feed,
+                            model_data,
+                            search_term,
+                        ))
                     }
                 }
             }
@@ -148,7 +218,14 @@ impl FeedListViewData {
         match item_type {
             FeedListItemType::Tree => {
                 let categories_item = FeedListItem::Categories;
-                let categories_text = categories_item.to_text(config, None, None);
+                let mut categories_text = categories_item.to_text(config, None, None);
+                if let Some(search_term) = search_term.as_ref()
+                    && search_term.test_text(&categories_text)
+                {
+                    patch_text_style(&mut categories_text, config.theme.highlighted());
+                    self.found_items.insert(categories_item.to_owned());
+                }
+
                 self.tree_items
                     .push(TreeItem::new(categories_item, categories_text, root_items)?);
             }
@@ -164,6 +241,7 @@ impl FeedListViewData {
         config: &Config,
         model_data: &FeedListModelData,
         item_type: &FeedListItemType,
+        search_term: &Option<SearchTerm>,
     ) -> Result<(), color_eyre::eyre::Error> {
         if model_data
             .features()
@@ -181,14 +259,25 @@ impl FeedListViewData {
                             .map(|count| *count == 0i64)
                             .unwrap_or(false))
                 })
-                .map(|tag| self.gen_tag_item(config, model_data, tag.to_owned()))
+                .cloned()
+                .collect::<Vec<Tag>>()
+                .into_iter()
+                .map(|tag| self.gen_tag_item(config, model_data, tag, search_term))
                 .collect::<Vec<TreeItem<_>>>();
+
+            // let children =
 
             match item_type {
                 FeedListItemType::List => self.tree_items.append(&mut children),
                 FeedListItemType::Tree => {
                     let tags_item = FeedListItem::Tags;
-                    let tag_item_text = tags_item.to_text(config, None, None);
+                    let mut tag_item_text = tags_item.to_text(config, None, None);
+                    if let Some(search_term) = search_term.as_ref()
+                        && search_term.test_text(&tag_item_text)
+                    {
+                        patch_text_style(&mut tag_item_text, config.theme.highlighted());
+                        self.found_items.insert(tags_item.to_owned());
+                    }
 
                     let tags_tree_item = TreeItem::new(tags_item, tag_item_text, children)?;
                     self.tree_items.push(tags_tree_item);
@@ -203,8 +292,9 @@ impl FeedListViewData {
         config: &Config,
         model_data: &FeedListModelData,
         item_type: &FeedListItemType,
+        search_term: &Option<SearchTerm>,
     ) -> Result<(), color_eyre::eyre::Error> {
-        let mut children = model_data
+        let feeds = model_data
             .feeds()
             .iter()
             .filter(|feed| {
@@ -213,8 +303,12 @@ impl FeedListViewData {
                     &FeedOrCategory::Feed(feed.feed_id.to_owned()),
                 )
             })
-            .map(|feed| self.map_feed_to_tree_item(config, feed, model_data))
+            .collect::<Vec<&Feed>>();
+        let mut children = feeds
+            .into_iter()
+            .map(|feed| self.map_feed_to_tree_item(config, feed, model_data, search_term))
             .collect();
+
         match item_type {
             FeedListItemType::List => self.tree_items.append(&mut children),
             FeedListItemType::Tree => self.tree_items.push(TreeItem::new(
@@ -227,10 +321,11 @@ impl FeedListViewData {
     }
 
     fn map_feed_to_tree_item<'a>(
-        &self,
+        &mut self,
         config: &Config,
         feed: &Feed,
         model_data: &FeedListModelData,
+        search_term: &Option<SearchTerm>,
     ) -> TreeItem<'a, FeedListItem> {
         let identifier = FeedListItem::Feed(Box::new(feed.clone()));
         let mut identifier_text = identifier.to_text(
@@ -257,35 +352,53 @@ impl FeedListViewData {
             identifier_text = identifier_text.style(config.theme.yanked());
         }
 
+        if let Some(search_term) = search_term.as_ref()
+            && search_term.test_text(&identifier_text)
+        {
+            patch_text_style(&mut identifier_text, config.theme.highlighted());
+            // identifier_text.style = config.theme.patch_highlighted(&identifier_text.style);
+            // identifier_text = identifier_text.style(config.theme.highlighted());
+            self.found_items.insert(identifier.to_owned());
+        }
+
         TreeItem::new_leaf(identifier, identifier_text)
     }
 
     fn map_category_to_tree_item<'a>(
-        &self,
+        &mut self,
         config: &Config,
         category: &Category,
         model_data: &FeedListModelData,
+        search_term: &Option<SearchTerm>,
     ) -> TreeItem<'a, FeedListItem> {
         let mut children: Vec<TreeItem<'a, FeedListItem>> = Vec::new();
 
-        for child in model_data
-            .category_tree()
-            .get(&category.category_id)
-            .unwrap_or(&Vec::new())
-            .iter()
-            .filter(|feed_or_category| self.include_feed_or_category(model_data, feed_or_category))
-        {
-            children.push(match child {
-                FeedOrCategory::Category(category_id) => {
-                    let child_category = model_data.category_map().get(category_id).unwrap();
-                    self.map_category_to_tree_item(config, child_category, model_data)
-                }
+        if let Some(child_categories) = model_data.category_tree().get(&category.category_id) {
+            let child_categories = child_categories
+                .iter()
+                .filter(|feed_or_category| {
+                    self.include_feed_or_category(model_data, feed_or_category)
+                })
+                .collect::<Vec<&FeedOrCategory>>();
 
-                FeedOrCategory::Feed(feed_id) => {
-                    let feed = model_data.feed_map().get(feed_id).unwrap();
-                    self.map_feed_to_tree_item(config, feed, model_data)
-                }
-            });
+            for child in child_categories {
+                children.push(match child {
+                    FeedOrCategory::Category(category_id) => {
+                        let child_category = model_data.category_map().get(category_id).unwrap();
+                        self.map_category_to_tree_item(
+                            config,
+                            child_category,
+                            model_data,
+                            search_term,
+                        )
+                    }
+
+                    FeedOrCategory::Feed(feed_id) => {
+                        let feed = model_data.feed_map().get(feed_id).unwrap();
+                        self.map_feed_to_tree_item(config, feed, model_data, search_term)
+                    }
+                });
+            }
         }
 
         let identifier = FeedListItem::Category(Box::new(category.clone()));
@@ -299,6 +412,13 @@ impl FeedListViewData {
             .copied();
         let mut identifier_text = identifier.to_text(config, unread_category, marked_category);
 
+        if let Some(search_term) = search_term.as_ref()
+            && search_term.test_text(&identifier_text)
+        {
+            patch_text_style(&mut identifier_text, config.theme.highlighted());
+            self.found_items.insert(identifier.to_owned());
+        }
+
         if let Some(UnifiedMapping::Category(category_mapping)) = self.yanked_unified_mapping()
             && category_mapping.category_id == category.category_id
         {
@@ -309,10 +429,11 @@ impl FeedListViewData {
     }
 
     fn gen_tag_item(
-        &self,
+        &mut self,
         config: &Config,
         model_data: &FeedListModelData,
         tag: news_flash::models::Tag,
+        search_term: &Option<SearchTerm>,
     ) -> TreeItem<'static, FeedListItem> {
         let count = model_data
             .unread_count_for_tag()
@@ -320,7 +441,13 @@ impl FeedListViewData {
             .copied()
             .unwrap_or(0);
         let tag_item = FeedListItem::Tag(Box::new(tag));
-        let tag_item_text = tag_item.to_text(config, Some(count), None);
+        let mut tag_item_text = tag_item.to_text(config, Some(count), None);
+        if let Some(search_term) = search_term.as_ref()
+            && search_term.test_text(&tag_item_text)
+        {
+            patch_text_style(&mut tag_item_text, config.theme.highlighted());
+            self.found_items.insert(tag_item.to_owned());
+        }
         TreeItem::new_leaf(tag_item, tag_item_text)
     }
 

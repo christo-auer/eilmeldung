@@ -50,6 +50,9 @@ pub enum CommandParseError {
     #[error("expecting `NOW` as parameter for confirmation")]
     ConfirmationExpected,
 
+    #[error("search term expected (quoted string, regex or single word)")]
+    SearchTermExpected,
+
     #[error("expecting a word")]
     WordExpected(String),
 
@@ -289,6 +292,11 @@ impl Command {
             C::ArticleListSearch(..) => C::ArticleListSearch(ArticleQuery::from_str(
                 expect_something(args, "expecting article query")?.as_str(),
             )?),
+
+            C::Search(..) => C::Search(Some(
+                expect_from_str::<SearchTerm>(&mut args, "expecting search term")
+                    .map_err(|_| E::SearchTermExpected)?,
+            )),
 
             C::ArticleListFilterSet(..) => C::ArticleListFilterSet(ArticleQuery::from_str(
                 expect_something(args, "expecting article query")
