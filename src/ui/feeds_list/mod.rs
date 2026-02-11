@@ -600,6 +600,7 @@ impl FeedList {
             }
 
             self.view_data.tree_state_mut().select(found_path.to_vec());
+            self.generate_articles_selected_command()?;
         }
 
         Ok(())

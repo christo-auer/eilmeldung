@@ -6,6 +6,9 @@
     - single word: case-insensitive, e.g., `news`
     - quoted string: exact-match, e.g., `"News"`
     - or regular expression inclosed in `/`: e.g., `/News.*|Nachrichten/`
+- new option `zen_mode_show_header`
+  - show header (title, feed, date, etc.) in zen/distraction-free 
+  - default is `false`, add `zen_mode_show_header=true` to your `config.toml` to activate
 
 # 0.9.2 - 2026-02-10
 

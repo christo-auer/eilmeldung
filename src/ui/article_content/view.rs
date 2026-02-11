@@ -339,25 +339,34 @@ impl ArticleContentViewData {
         inner_area: Rect,
         buf: &mut Buffer,
     ) {
-        let summary_area_height = if distraction_free { 0 } else { 4 };
+        let show_header = !distraction_free || config.zen_mode_show_header;
+
         let [summary_area, content_area] = Layout::default()
             .direction(Direction::Vertical)
             .flex(Flex::Start)
-            .constraints([Constraint::Length(summary_area_height), Constraint::Fill(1)])
+            .constraints([
+                Constraint::Length(if show_header { 5 } else { 0 }),
+                Constraint::Fill(1),
+            ])
             .horizontal_margin(2)
             .vertical_margin(1)
             .spacing(1)
             .areas::<2>(inner_area);
-
-        if !distraction_free {
-            self.render_header(model_data, config, summary_area, buf);
-        }
 
         let text_constraint = if distraction_free {
             Constraint::Max(config.text_max_width)
         } else {
             Constraint::Percentage(100)
         };
+
+        if show_header {
+            let [header_area] = Layout::default()
+                .direction(Direction::Horizontal)
+                .flex(ratatui::layout::Flex::Center)
+                .constraints([text_constraint])
+                .areas(summary_area);
+            self.render_header(model_data, config, header_area, buf);
+        }
 
         let [paragraph_area] = Layout::default()
             .direction(Direction::Horizontal)

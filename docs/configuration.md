@@ -44,6 +44,7 @@ You can find the default configuration in `examples/default-config.toml`
 | `feed_list_scope`                 | string              | Default feed list scope: `"all"`, `"unread"`, or `"marked"`                                                                                |
 | `default_sort_order`              | string (sort order) | Default sort order for articles: e.g., `"date"`, `">date"`, `"feed date"` (see Article Queries for syntax)                                 |
 | `hide_default_sort_order`         | boolean             | If true, hides the sort order if the default sort order is applied; otherwise always show sort order                                       |
+| `zen_mode_show_header`            | boolean             | Show header in distraction-free (zen) mode                                                                                                 |
 | `keep_articles_days`              | integer             | amount of days before articles are removed                                                                                                 |
 | `sync_every_minutes`              | integer             | Amount of time between automatic sync of all feeds, must be greater than 0 (no automatic sync occurs if this option is omitted)            |
 | `after_sync_commands`             | list                | List of commands to execute after a sync has finished, e.g., `after_sync_commands = ["query lastsync", "tag rust title:"rust", "refresh"]` |
