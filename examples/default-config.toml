@@ -41,6 +41,7 @@ article_table = "{read},{marked},{tag_icons},{age},{title}"
 date_format = "%m/%d %H:%M"
 articles_after_selection = 3
 hide_default_sort_order = false
+zen_mode_show_header = false
 
 # Content
 auto_scrape = true

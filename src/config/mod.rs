@@ -157,6 +157,7 @@ pub struct Config {
     pub text_max_width: u16,
     pub content_preferred_type: ArticleContentType,
     pub default_sort_order: SortOrder,
+    pub zen_mode_show_header: bool,
 
     pub feed_list_focused_width: Dimension,
     pub article_list_focused_width: Dimension,
@@ -271,6 +272,7 @@ impl Default for Config {
             thumbnail_fetch_debounce_millis: 500,
             text_max_width: 66,
             content_preferred_type: ArticleContentType::Markdown,
+            zen_mode_show_header: false,
 
             feed_list_focused_width: Dimension::Percentage(25),
             article_list_focused_width: Dimension::Percentage(75),
