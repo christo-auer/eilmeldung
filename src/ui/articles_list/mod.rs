@@ -598,8 +598,8 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 }
 
                 C::ArticleListQuery(query) => {
-                    self.message_sender
-                        .send(Message::Event(Event::ArticlesSelected(query.into())))?;
+                    self.filter_state.on_new_article_filter(query.into());
+                    model_needs_update = true;
                 }
 
                 C::Refresh => {
@@ -616,6 +616,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 ArticlesSelected(augmented_article_filter) => {
                     self.filter_state
                         .on_new_article_filter(augmented_article_filter.clone());
+                    self.select_index_and_send_message(Some(0))?;
                     model_needs_update = true;
                 }
 
