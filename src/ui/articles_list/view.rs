@@ -220,7 +220,7 @@ impl<'a> ArticleListViewData<'a> {
 
         spans.push(Span::styled(filter_info, config.theme.header()));
 
-        if !filter_state.uses_default_sort_order() {
+        if !config.hide_default_sort_order || !filter_state.uses_default_sort_order() {
             let filter_text = &format!(
                 " {} {} ",
                 if *filter_state.reverse_sort_order() {
