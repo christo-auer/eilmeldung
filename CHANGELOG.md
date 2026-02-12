@@ -9,7 +9,8 @@
 - new option `zen_mode_show_header`
   - show header (title, feed, date, etc.) in zen/distraction-free 
   - default is `false`, add `zen_mode_show_header=true` to your `config.toml` to activate
-- eilmeldung now fails on `config.toml` files with *unknown settings* instead of silently ignoring them. This is to improve user experience and avoid unexpected behavior.
+- **IMPORTANT**: eilmeldung now fails on `config.toml` files with *unknown settings* instead of silently ignoring them. This is to improve user experience and avoid unexpected behavior.
+- bugfix: select first article when a tree items is selected
 
 # 0.9.2 - 2026-02-10
 
