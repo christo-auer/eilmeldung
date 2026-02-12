@@ -105,7 +105,7 @@ impl ArticleScope {
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub input_config: InputConfig,
     pub theme: Theme,
@@ -156,6 +156,7 @@ pub struct Config {
     pub thumbnail_fetch_debounce_millis: u64,
     pub text_max_width: u16,
     pub content_preferred_type: ArticleContentType,
+    pub hide_default_sort_order: bool,
     pub default_sort_order: SortOrder,
     pub zen_mode_show_header: bool,
 
@@ -280,6 +281,7 @@ impl Default for Config {
             article_content_focused_height: Dimension::Percentage(80),
 
             default_sort_order: SortOrder::new(vec![SortKey::Date(SortDirection::Ascending)]),
+            hide_default_sort_order: true,
 
             feed_list: vec![
                 FeedListContentIdentifier::Query(LabeledQuery {
