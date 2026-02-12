@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.9.3 - 2026-02-12
+
 - you can now search in the feed list:
   - press `/` (default mapping) in feed list to open search prompt (command line)
   - enter a search term
