@@ -9,7 +9,7 @@ use news_flash::models::Url;
 
 pub mod prelude {
     pub use super::parse::CommandParseError;
-    pub use super::{ActionScope, ActionTarget, Command, CommandSequence, Panel, PastePosition};
+    pub use super::{ActionScope, Command, CommandSequence, Panel, PastePosition};
 }
 
 use crate::prelude::*;
@@ -33,7 +33,7 @@ pub enum Panel {
     #[default]
     #[strum(serialize = "feeds")]
     #[strum(
-        message = "feed list",
+        message = "feeds",
         detailed_message = "panel with tree of feeds, categories, tags, etc."
     )]
     FeedList,
@@ -88,8 +88,8 @@ impl FromStr for ActionScope {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use ActionScope::*;
         match s {
-            "." => Ok(Current),
-            "%" => Ok(All),
+            "." | "current" => Ok(Current),
+            "%" | "all" => Ok(All),
             _ => Ok(Query(ArticleQuery::from_str(s)?)),
         }
     }
@@ -113,38 +113,6 @@ impl Display for ActionScope {
             Query(query) => write!(f, "all articles matching {}", query.query_string())?,
         };
         Ok(())
-    }
-}
-
-#[derive(Debug, Clone, Default, strum::EnumIter, strum::EnumMessage, strum::AsRefStr)]
-#[strum(serialize_all = "lowercase")]
-pub enum ActionTarget {
-    #[default]
-    #[strum(message = ".", detailed_message = "currently selected panel")]
-    Current,
-    #[strum(message = "feeds", detailed_message = "feed list")]
-    FeedList,
-    #[strum(message = "articles", detailed_message = "article list")]
-    ArticleList,
-}
-
-impl FromStr for ActionTarget {
-    type Err = color_eyre::Report;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use ActionTarget::*;
-
-        Ok(match s {
-            "." => Current,
-            "feeds" => FeedList,
-            "articles" => ArticleList,
-            _ => return Err(color_eyre::eyre::eyre!("unknown target {s}")),
-        })
-    }
-}
-
-impl Display for ActionTarget {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.get_message().unwrap().fmt(f) // <- if this fails, it must fail hard
     }
 }
 
@@ -413,10 +381,10 @@ pub enum Command {
 
     #[strum(
         serialize = "read",
-        message = "read [[<target>] <scope>]",
+        message = "read [<scope>]",
         detailed_message = "set all articles matching the scope in the target to read (feed list, article list)"
     )]
-    ActionSetRead(ActionTarget, ActionScope),
+    ActionSetRead(ActionScope),
 
     #[strum(
         serialize = "unread",
@@ -477,10 +445,10 @@ pub enum Command {
 
     #[strum(
         serialize = "show",
-        message = "show <target> <article scope>",
+        message = "show <article scope>",
         detailed_message = "show only articles in the article scope (feed list, article list)"
     )]
-    Show(ActionTarget, ArticleScope),
+    Show(ArticleScope),
 
     #[strum(
         serialize = "scrape",
@@ -713,9 +681,9 @@ impl Display for Command {
                 write!(f, "change color of tag to {}", color)
             }
             ArticleListSelectNextUnread => write!(f, "select next unread"),
-            Show(target, ArticleScope::Marked) => write!(f, "show only marked in {target}"),
-            Show(target, ArticleScope::Unread) => write!(f, "show only unread in {target}"),
-            Show(target, ArticleScope::All) => write!(f, "show all in {target}"),
+            Show(ArticleScope::Marked) => write!(f, "show only marked"),
+            Show(ArticleScope::Unread) => write!(f, "show only unread"),
+            Show(ArticleScope::All) => write!(f, "show all"),
             ArticleShare(share_target) => write!(f, "share article to {share_target}"),
 
             ArticleCurrentScrape => write!(f, "scrape content"),
@@ -747,14 +715,8 @@ impl Display for Command {
             ArticleListSortClear => write!(f, "clear current sort order"),
 
             FeedListSync => write!(f, "sync all"),
-            ActionSetRead(target, action_scope) => {
-                write!(
-                    f,
-                    "mark {action_scope} as read in {}",
-                    target
-                        .get_detailed_message()
-                        .unwrap_or(target.to_string().as_str())
-                )
+            ActionSetRead(action_scope) => {
+                write!(f, "mark {action_scope} as read",)
             }
             ActionSetUnread(action_scope) => write!(f, "mark {} as unread", action_scope),
             ActionSetMarked(action_scope) => write!(f, "mark {}", action_scope),

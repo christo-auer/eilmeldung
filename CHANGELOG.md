@@ -1,5 +1,18 @@
 # Unreleased
 
+- **Breaking Changes** `read` and `show` from now on don't accept the target parameter anymore
+  - some context: until now, `read` accepted `current`, `articles` or `feeds` as an optional first parameter, to indicate *where* the operation should be executed. `show` to switch the article scope, had the same optional parameter. These are now removed.
+  - from now on, the `in` meta-command must be used. Here some examples:
+    - `read %` marks all elements in the *currently selected panel* (feeds or articles) as read
+    - `in articles read %` marks all articles in the *articles list* as read
+    - `in feeds read %` marks all feeds/categories in the *feed list* as read (if you really want that)
+    - `show all` shows all items in the *currently selected panel* (feeds or articles)
+    - `in articles show unread` shows only unread articles in the *article list*
+    - `in feeds show marked` shows only items (feeds/catetgories) with marked articles in the *feed list* (tree)
+    - a more complex example in the default binding of `R`: `confirm in articles read %` asks the user if all articles in the article list should be marked as read (`confirm` is also a meta-command which asks for confirmation); if you enter the command in the command line, it will actually tell you what it does underneath
+  - *BTW* `in <panel>` works for all commands, e.g., `in articles down` moves the selection one down in the article list
+  - Note that some commands just work in some panels, e.g., `in content read` doesn't do anything as `read` is only supported in `articles` and `feeds`
+
 # 0.9.3 - 2026-02-12
 
 - you can now search in the feed list:

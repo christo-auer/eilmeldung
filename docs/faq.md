@@ -100,9 +100,9 @@ There is no dedicated setting for this but this can be achived by using the same
 
 ```toml
 [input_config.mappings]
-"1" = ["show feeds all", "show articles all"]
-"2" = ["show feeds unread", "show articles unread"]
-"3" = ["show feeds marked", "show articles marked"]
+"1" = ["in feeds show all",    "in articles show all"]
+"2" = ["in feeds show unread", "in articles show unread"]
+"3" = ["in feeds show marked", "in articles show marked"]
 ```
 
 With this the article list and feed list always have the same scope.

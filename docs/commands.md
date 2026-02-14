@@ -34,7 +34,7 @@ Here are some common command examples to get you started:
 :read                                    # Mark current article as read
 :read %                                  # Mark all articles as read
 :read unread today                       # Mark all unread articles from today as read
-:read feeds %                            # Mark all articles in selected feed as read
+:in feeds read %                         # Mark all articles in selected feed as read
 :filter title:breaking newer:"1 hour"    # Filter breaking news from last hour
 :tag important                           # Tag current article as important
 :tag tech unread                         # Tag all unread articles as tech
@@ -70,7 +70,7 @@ Here are some common command examples to get you started:
 | `redraw`  | `redraw`               | All       | Redraw the screen                                                                                  |
 | `refresh` | `refresh`              | All       | Refreshes the contents of all panels according to the current selections                           |
 | `confirm` | `confirm <command>`    | All       | Ask for confirmation before executing command (typically used in key bindings)                     |
-| `in`      | `in <panel> <command>` | All       | Run a command in the given panel (`feeds`, `articles`, `content`) (typically used in key bindings) |
+| `in`      | `in <panel> <command>` | All       | Run a command in the given panel (`feeds`, `articles`, `content`) (typically used in key bindings or `read`, `show` and `unread`) |
 | `LOGOUT`  | `LOGOUT NOW`           | All       | Logout and remove ALL local data (requires `NOW` as confirmation)                                  |
 | `nop`     | `nop`                  | All       | No operation (useful for unmapping key bindings)                                                   |
 
@@ -143,7 +143,7 @@ These commands support a **scope parameter** to target specific articles:
 | `untag` | `untag <tag name> [<scope>]` | Article List | Remove tag from articles. Examples: `:untag important` (current), `:untag tech marked` (all marked) |
 | `share` | `share <target>` | Article List, Article Content | Share article title and URL. Built-in targets: `clipboard`, `reddit`, `mastodon`, `telegram`, `instapaper`. Custom targets (URL and commands) can be defined in the configuration file. Example: `:share clipboard` |
 
-**Note:** The `show` and `read` commands also supports an optional **target parameter** to specify which panel's selection to use: Target can be `.` (current panel), `feeds` (feed list selection), or `articles` (article list selection). 
+**Note:** By default, the commands `show`, `read` and `unread` is executed in the currently focused panel (feeds or articles). If you want to execute the command in a specific panel, use the `in` meta command, e.g., `in articles read %`, `in feeds show all`, etc.
 
 ## Import/Export
 
