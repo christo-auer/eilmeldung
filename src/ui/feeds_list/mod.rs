@@ -103,11 +103,10 @@ impl FeedList {
                 Tags => {}
                 Categories | Query(_) => {
                     // reroute to article list
-                    self.message_sender
-                        .send(Message::Command(Command::ActionSetRead(
-                            ActionTarget::ArticleList,
-                            ActionScope::All,
-                        )))?;
+                    self.message_sender.send(Message::Command(Command::In(
+                        Panel::ArticleList,
+                        Box::new(Command::ActionSetRead(ActionScope::All)),
+                    )))?;
                 }
             }
 
@@ -232,14 +231,6 @@ impl FeedList {
         }
 
         Ok(())
-    }
-
-    fn target_matches(&self, target: &ActionTarget) -> bool {
-        match target {
-            ActionTarget::Current if self.is_focused => true,
-            ActionTarget::FeedList => true,
-            _ => false,
-        }
     }
 
     fn maybe_selected_category(&self) -> Option<CategoryID> {
@@ -717,27 +708,22 @@ impl MessageReceiver for FeedList {
                         .scroll_up(self.config.input_config.scroll_amount);
                     selection_changed = true;
                 }
-                show_command @ (C::Show(ActionTarget::FeedList, scope)
-                | C::Show(ActionTarget::Current, scope))
-                    if matches!(show_command, C::Show(ActionTarget::FeedList, _))
-                        || handle_command =>
-                {
+                C::Show(scope) if handle_command => {
                     *self.view_data.scope_mut() = scope;
                     view_needs_update = true;
                 }
 
-                C::ActionSetRead(target, action_scope) if self.target_matches(&target) => {
+                C::ActionSetRead(action_scope) if handle_command => {
                     match action_scope {
                         ActionScope::All => self.model_data.set_all_read()?,
                         ActionScope::Current => self.set_current_read()?,
                         query_scope @ ActionScope::Query(_) => {
                             // don't know how to handle article query => "rerouting" to article
                             // list
-                            self.message_sender
-                                .send(Message::Command(Command::ActionSetRead(
-                                    ActionTarget::ArticleList,
-                                    query_scope.to_owned(),
-                                )))?;
+                            self.message_sender.send(Message::Command(Command::In(
+                                Panel::ArticleList,
+                                Box::new(Command::ActionSetRead(query_scope.to_owned())),
+                            )))?;
                         }
                     }
                 }

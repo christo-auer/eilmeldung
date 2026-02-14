@@ -366,14 +366,6 @@ impl ArticlesList {
         Ok(())
     }
 
-    fn target_matches(&self, target: &ActionTarget) -> bool {
-        match target {
-            ActionTarget::Current if self.is_focused => true,
-            ActionTarget::ArticleList => true,
-            _ => false,
-        }
-    }
-
     fn on_tag_or_untag(
         &mut self,
         action_scope: ActionScope,
@@ -467,11 +459,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.select_index_and_send_message(Some(self.model_data.articles().len() - 1))?;
                 }
 
-                show_command @ (C::Show(ActionTarget::ArticleList, scope)
-                | C::Show(ActionTarget::Current, scope))
-                    if matches!(show_command, C::Show(ActionTarget::ArticleList, _))
-                        || handle_command =>
-                {
+                C::Show(scope) if handle_command => {
                     *self.filter_state.article_scope_mut() = scope;
                     model_needs_update = true;
                 }
@@ -481,7 +469,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.open_in_browser(&action_scope)?;
                 }
 
-                C::ActionSetRead(target, action_scope) if self.target_matches(&target) => {
+                C::ActionSetRead(action_scope) => {
                     // first we check if we can reroute this to feed list to make it quicker
                     use ActionScope::*;
                     match action_scope {
@@ -493,13 +481,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
                         // if all articles must be set to read and no adhoc filter is applied, the
                         // feed list can set the articles to read
-                        All if !self.filter_state.apply_article_adhoc_filter()
-                            && !matches!(target, ActionTarget::ArticleList) =>
-                        {
+                        All if !self.filter_state.apply_article_adhoc_filter() => {
                             info!("re-routing set read command to feed list");
-                            self.message_sender.send(Message::Command(C::ActionSetRead(
-                                ActionTarget::FeedList,
-                                ActionScope::Current,
+                            self.message_sender.send(Message::Command(C::In(
+                                Panel::FeedList,
+                                Box::new(C::ActionSetRead(ActionScope::Current)),
                             )))?;
                         }
 

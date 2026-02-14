@@ -17,11 +17,8 @@ pub enum CommandParseError {
     #[error("expecting tag")]
     TagExpected,
 
-    #[error("expecting article scope")]
+    #[error("article scope")]
     ArticleScopeExpected,
-
-    #[error("expecting target or article scope")]
-    TargetOrArticleScopeExpected,
 
     #[error("expecting color")]
     ColorExpected(#[from] ParseColorError),
@@ -34,6 +31,9 @@ pub enum CommandParseError {
 
     #[error("expecting position")]
     PositionExpected,
+
+    #[error("action scope expected")]
+    ActionScopeExpected,
 
     #[error("expecting article search query")]
     ArticleQueryExpected(#[from] QueryParseError),
@@ -152,25 +152,18 @@ impl Command {
             }
 
             C::ActionSetRead(..) => {
-                let old_args = args.clone();
-                let word = expect_word(&mut args, "target or scope")
-                    .map_err(|_| E::TargetOrArticleScopeExpected);
-
-                if eager && let Err(error) = word {
-                    return Err(error);
+                let action_scope: ActionScope = match args {
+                    None => {
+                        if eager {
+                            return Err(E::ActionScopeExpected);
+                        } else {
+                            ActionScope::Current
+                        }
+                    }
+                    _ => expect_from_str(&mut args, "expecting action scope")?,
                 };
 
-                let target = word
-                    .map(|word| match ActionTarget::from_str(word.as_str()) {
-                        Ok(target) => target,
-                        Err(_) => {
-                            args = old_args; // restore old version of args
-                            ActionTarget::Current
-                        }
-                    })
-                    .unwrap_or(ActionTarget::Current);
-
-                C::ActionSetRead(target, ActionScope::from_option_string(args.as_deref())?)
+                C::ActionSetRead(action_scope)
             }
 
             C::ActionSetUnread(..) => {
@@ -263,31 +256,10 @@ impl Command {
                     .map_err(|_| E::ArticleScopeExpected)?,
             ),
 
-            C::Show(..) => {
-                let old_args = args.clone();
-                let word = expect_word(&mut args, "target or scope")
-                    .map_err(|_| E::TargetOrArticleScopeExpected);
-
-                if eager && let Err(error) = word {
-                    return Err(error);
-                };
-
-                let target = word
-                    .map(|word| match ActionTarget::from_str(word.as_str()) {
-                        Ok(target) => target,
-                        Err(_) => {
-                            args = old_args; // restore old version of args
-                            ActionTarget::Current
-                        }
-                    })
-                    .unwrap_or(ActionTarget::Current);
-
-                C::Show(
-                    target,
-                    expect_from_str::<ArticleScope>(&mut args, "expecting article scope")
-                        .map_err(|_| E::ArticleScopeExpected)?,
-                )
-            }
+            C::Show(..) => C::Show(
+                expect_from_str::<ArticleScope>(&mut args, "expecting article scope")
+                    .map_err(|_| E::ArticleScopeExpected)?,
+            ),
 
             C::ArticleListSearch(..) => C::ArticleListSearch(ArticleQuery::from_str(
                 expect_something(args, "expecting article query")?.as_str(),

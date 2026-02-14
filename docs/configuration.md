@@ -343,7 +343,7 @@ You can automate operations after synchronization has finished via the option `a
 If you can identify paywall articles by their title (e.g., they contain a certain string), you can mark them as read. For instance, on [heise](https://www.heise.de) articles which start with the word `Anzeige:` contain advertisements. For immediately mark them as read, use:
 
 ```toml
-after_sync_commands = [ "query lastsync", "read articles title:/^Anzeige:/", "refresh" ]
+after_sync_commands = [ "query lastsync", "in articles read title:/^Anzeige:/", "refresh" ]
 ```
 
 ### Example: Automatic Tagging
@@ -367,12 +367,12 @@ after_sync_commands = [ "collapse all", "expandcategories unread" ]
 This is my personal chain of operations after a sync:
 
 ```toml
-after_sync_commands = [ "query lastsync",                                               # operate on articles that were synced
-                        "read articles title:/Anzeige:|g\\+|heise\\+|heise-Angebot/",   # mark paywall articles and ads as read
-                        "tag reviews title:review",                                     # tag articles with the word review in the title
-                        "collapse all",                                                 # collapse all categories and...
-                        "expandcategories unread",                                      # ...expand all with unread elements
-                        "refresh" ]                                                     # refresh the content
+after_sync_commands = [ "query lastsync",                                                  # operate on articles that were synced
+                        "in articles read title:/Anzeige:|g\\+|heise\\+|heise-Angebot/",   # mark paywall articles and ads as read
+                        "tag reviews title:review",                                        # tag articles with the word review in the title
+                        "collapse all",                                                    # collapse all categories and...
+                        "expandcategories unread",                                         # ...expand all with unread elements
+                        "refresh" ]                                                        # refresh the content
 
 ```
 
