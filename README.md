@@ -139,11 +139,12 @@ Create a tag (`:tagadd readlater red`), bind it to a key, and create a query in 
 
 Yes, focus the feed list and press `2` / `3` to show only feeds/categories/tags with unread / marked articles, show all with `1`. Change the value of the configuration option `feed_list_scope` to either `all`, `unread` or `marked` to set the default value.
 
-**More questions?** See the complete [FAQ](docs/faq.md).
 
 ### Can execute automatic operations after synchronisation/refresh?
 
 Yes, via the option `after_sync_commands` [configuration](docs/configuration.md#after-sync_commands) for some recipes.
+
+**More questions?** See the complete [FAQ](docs/faq.md).
 
 ---
 
