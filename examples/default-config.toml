@@ -1,3 +1,12 @@
+#########################################################################################
+### READ THIS BEFORE USING THIS FILE!
+### This file contains the DEFAULT SETTINGS of eilmeldung and is FOR REFERENCE only!
+### You don't need to copy this file into ~/.config/eilmeldung/ (or similar) as these
+### settings are applied AUTOMATICALLY (that's what DEFAULT means).
+### Start with your own BLANK config.toml and insert ONLY the settings you want to have
+### DIFFERENT from this file!
+#########################################################################################
+
 # Basic Configuration
 startup_commands = []
 refresh_fps = 10
