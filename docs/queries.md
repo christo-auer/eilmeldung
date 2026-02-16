@@ -151,7 +151,7 @@ author:smith unread
 
 ## Bulk Operations
 
-Queries can be used for builk operations (article list must be focused):
+Queries can be used for bulk operations (article list must be focused):
 
 ```
 # Mark old articles as read
