@@ -267,7 +267,7 @@ impl<'a> ArticleListViewData<'a> {
                     .iter()
                     .map(|placeholder| match *placeholder {
                         "{title}" => {
-                            html_sanitize(article.title.as_deref().unwrap_or("no title")).into()
+                            html_sanitize(article.title.as_deref().or(article.summary.as_deref()).unwrap_or("no title and summary")).into()
                         }
                         "{tag_icons}" => Line::from(
                             match model_data.tags_for_article().get(&article.article_id) {
