@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.9.4 - 2026-02-18
+
 - **Breaking Changes** `read` and `show` from now on don't accept the target parameter anymore
   - some context: until now, `read` accepted `current`, `articles` or `feeds` as an optional first parameter, to indicate *where* the operation should be executed. `show` to switch the article scope, had the same optional parameter. These are now removed.
   - from now on, the `in` meta-command must be used. Here some examples:
