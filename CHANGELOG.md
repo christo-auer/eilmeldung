@@ -12,6 +12,7 @@
     - a more complex example in the default binding of `R`: `confirm in articles read %` asks the user if all articles in the article list should be marked as read (`confirm` is also a meta-command which asks for confirmation); if you enter the command in the command line, it will actually tell you what it does underneath
   - *BTW* `in <panel>` works for all commands, e.g., `in articles down` moves the selection one down in the article list
   - Note that some commands just work in some panels, e.g., `in content read` doesn't do anything as `read` is only supported in `articles` and `feeds`
+- small improvement: If no title is given, the summary is shown in the article list. This is useful for, e.g., Mastodon tuts
 
 # 0.9.3 - 2026-02-12
 
