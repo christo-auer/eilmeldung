@@ -139,6 +139,9 @@ pub struct Config {
     pub unread_icon: char,
     pub marked_icon: char,
     pub unmarked_icon: char,
+    pub enclosure_video_icon: char,
+    pub enclosure_audio_icon: char,
+    pub enclosure_image_icon: char,
     pub command_line_prompt_icon: char,
     pub article_scope: ArticleScope,
     pub feed_list_scope: ArticleScope,
@@ -164,6 +167,8 @@ pub struct Config {
     pub article_list_focused_width: Dimension,
     pub article_list_focused_height: Dimension,
     pub article_content_focused_height: Dimension,
+
+    pub enclosure_command: String,
 
     pub feed_list: Vec<FeedListContentIdentifier>,
 
@@ -257,6 +262,9 @@ impl Default for Config {
             info_icon: '',
             warning_icon: '',
             error_icon: '',
+            enclosure_video_icon: '',
+            enclosure_audio_icon: '',
+            enclosure_image_icon: '',
             article_scope: ArticleScope::Unread,
             feed_list_scope: ArticleScope::All,
             scrollbar_begin_symbol: '│',
@@ -282,6 +290,8 @@ impl Default for Config {
 
             default_sort_order: SortOrder::new(vec![SortKey::Date(SortDirection::Ascending)]),
             hide_default_sort_order: true,
+
+            enclosure_command: "xdg-open {url}".into(),
 
             feed_list: vec![
                 FeedListContentIdentifier::Query(LabeledQuery {

@@ -2,6 +2,7 @@ use crate::prelude::*;
 
 use std::{
     io::Cursor,
+    process::Stdio,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -9,7 +10,7 @@ use std::{
 use getset::Getters;
 use htmd::HtmlToMarkdown;
 use image::ImageReader;
-use news_flash::models::{Article, ArticleID, FatArticle, Feed, Tag, Thumbnail};
+use news_flash::models::{Article, ArticleID, Enclosure, FatArticle, Feed, Tag, Thumbnail};
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -27,6 +28,7 @@ pub struct ArticleContentModelData {
     feed: Option<Feed>,
     tags: Option<Vec<Tag>>,
     fat_article: Option<FatArticle>,
+    enclosures: Option<Vec<Enclosure>>,
 
     // Processed content
     markdown_content: Option<String>,
@@ -58,6 +60,7 @@ impl ArticleContentModelData {
             thumbnail_fetch_running: false,
             instant_since_article_selected: None,
             duration_since_last_article_change: None,
+            enclosures: None,
         }
     }
 
@@ -103,6 +106,8 @@ impl ArticleContentModelData {
                 .filter_map(|tagging| tag_for_tag_id.remove(&tagging.tag_id))
                 .collect::<Vec<Tag>>(),
         );
+
+        self.enclosures = Some(news_flash.get_enclosures(article_id)?);
 
         self.article = Some(article);
 
@@ -242,5 +247,36 @@ impl ArticleContentModelData {
 
     pub(super) fn clean_string(string: &str) -> String {
         string.replace("\r", "").replace("\n", "")
+    }
+
+    pub(crate) async fn open_enclosure(
+        &self,
+        config: &Config,
+        enclosure: &Enclosure,
+    ) -> color_eyre::Result<()> {
+        let command = config
+            .enclosure_command
+            .replace("{url}", enclosure.url.as_ref())
+            .replace("{type}", <EnclosureType>::from(enclosure).as_ref())
+            .replace("{mime}", enclosure.mime_type.as_deref().unwrap_or("*/*"));
+
+        let args = shell_words::split(&command)?;
+
+        let Some((cmd, args)) = args.split_first() else {
+            return Err(color_eyre::eyre::eyre!(
+                "invalid enclosure command: no command found"
+            ));
+        };
+
+        let mut command = std::process::Command::new(cmd);
+
+        command
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .args(args)
+            .spawn()?;
+
+        Ok(())
     }
 }

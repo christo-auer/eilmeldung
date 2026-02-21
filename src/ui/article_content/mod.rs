@@ -12,7 +12,7 @@ use view::ArticleContentViewData;
 use crate::prelude::*;
 use std::sync::Arc;
 
-use news_flash::models::{ArticleID, Thumbnail};
+use news_flash::models::{ArticleID, Enclosure, Thumbnail};
 use tokio::sync::mpsc::UnboundedSender;
 
 pub struct ArticleContent {
@@ -139,6 +139,49 @@ impl ArticleContent {
 
         Ok(())
     }
+
+    async fn open_enclosure(
+        &self,
+        enclosure_type: Option<EnclosureType>,
+    ) -> color_eyre::Result<()> {
+        let Some(enclosures) = self.model_data.enclosures() else {
+            tooltip(
+                &self.message_sender,
+                "no enclosures available",
+                TooltipFlavor::Warning,
+            )?;
+            return Ok(());
+        };
+
+        let enclosures_matching_type = enclosures
+            .iter()
+            .filter(|enclosure| {
+                enclosure_type
+                    .map(|enclosure_type| enclosure_type == (*enclosure).into())
+                    .unwrap_or(true)
+            })
+            .collect::<Vec<&Enclosure>>();
+
+        let matching_enclosure = enclosures_matching_type
+            .iter()
+            .find(|enclosure| enclosure.is_default)
+            .or_else(|| enclosures_matching_type.first());
+
+        let Some(matching_enclosure) = matching_enclosure else {
+            tooltip(
+                &self.message_sender,
+                "no matching enclosure found",
+                TooltipFlavor::Warning,
+            )?;
+            return Ok(());
+        };
+
+        self.model_data
+            .open_enclosure(&self.config, matching_enclosure)
+            .await?;
+
+        Ok(())
+    }
 }
 
 impl crate::messages::MessageReceiver for ArticleContent {
@@ -196,6 +239,10 @@ impl crate::messages::MessageReceiver for ArticleContent {
 
                 C::Refresh => {
                     view_needs_update = true;
+                }
+
+                C::ArticleOpenEnclosure(enclosure_type) => {
+                    self.open_enclosure(enclosure_type).await?;
                 }
 
                 _ => {
