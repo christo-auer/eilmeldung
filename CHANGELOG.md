@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.9.5 - 2026-02-21
+
 - **enclosures** are now supported!
   - small icons underneath the article title (in the article panel) show you which enclosures are available
   - press `e` to open the enclosure which calls `xdg-open` (`open` on macos) with the URL to the enclosure (`e` call the new command `openenclosure`)
