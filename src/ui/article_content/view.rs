@@ -185,21 +185,21 @@ impl ArticleContentViewData {
 
         let enclosures = model_data.enclosures().clone().unwrap_or_default();
 
-        tags_and_enclosures.push(to_enclosure_span(
+        tags_and_enclosures.append(&mut to_enclosure_bubble(
             config,
             &enclosures,
             |enclosure| enclosure.is_video(),
             config.enclosure_video_icon,
         ));
 
-        tags_and_enclosures.push(to_enclosure_span(
+        tags_and_enclosures.append(&mut to_enclosure_bubble(
             config,
             &enclosures,
             |enclosure| enclosure.is_image(),
             config.enclosure_image_icon,
         ));
 
-        tags_and_enclosures.push(to_enclosure_span(
+        tags_and_enclosures.append(&mut to_enclosure_bubble(
             config,
             &enclosures,
             |enclosure| enclosure.is_audio(),
@@ -468,18 +468,18 @@ impl ArticleContentViewData {
     }
 }
 
-fn to_enclosure_span<P>(
+fn to_enclosure_bubble<P>(
     config: &Config,
     enclosures: &'_ [Enclosure],
     predicate: P,
     icon: char,
-) -> Span<'static>
+) -> Vec<Span<'static>>
 where
-    P: FnMut(&&Enclosure) -> bool,
+    P: FnMut(&Enclosure) -> bool,
 {
-    let count = enclosures.iter().filter(predicate).count();
-    if count > 0 {
-        Span::styled(format!("{}{} ", icon, count), config.theme.paragraph())
+    let any_enclosures = enclosures.iter().any(predicate);
+    if any_enclosures {
+        to_bubble(Span::styled(format!("{}", icon), config.theme.paragraph())).spans
     } else {
         Default::default()
     }

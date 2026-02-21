@@ -176,9 +176,24 @@ impl ArticleContent {
             return Ok(());
         };
 
-        self.model_data
+        match self
+            .model_data
             .open_enclosure(&self.config, matching_enclosure)
-            .await?;
+            .await
+        {
+            Ok(cmd) => tooltip(
+                &self.message_sender,
+                &*format!("openend enclosure with {cmd}"),
+                TooltipFlavor::Info,
+            )?,
+            Err(err) => {
+                return tooltip(
+                    &self.message_sender,
+                    err.to_string().as_str(),
+                    TooltipFlavor::Error,
+                );
+            }
+        }
 
         Ok(())
     }

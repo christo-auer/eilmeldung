@@ -77,6 +77,14 @@ feed_list = [
   "tags",
 ]
 
+# Enclosures
+enclosure_command = "xdg-open {url}"
+# enclosure_command = "open {url}" # for macos
+# video_enclosure_command is not set by default (enclosure command is used)
+# audio_enclosure_command is not set by default (enclosure command is used)
+# image_enclosure_command is not set by default (enclosure command is used)
+
+
 # Share Targets
 share_targets = [
   "clipboard",

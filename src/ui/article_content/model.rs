@@ -253,12 +253,16 @@ impl ArticleContentModelData {
         &self,
         config: &Config,
         enclosure: &Enclosure,
-    ) -> color_eyre::Result<()> {
-        let command = config
-            .enclosure_command
-            .replace("{url}", enclosure.url.as_ref())
-            .replace("{type}", <EnclosureType>::from(enclosure).as_ref())
-            .replace("{mime}", enclosure.mime_type.as_deref().unwrap_or("*/*"));
+    ) -> color_eyre::Result<String> {
+        let command = match <EnclosureType>::from(enclosure) {
+            EnclosureType::Audio => config.audio_enclosure_command.as_ref(),
+            EnclosureType::Image => config.image_enclosure_command.as_ref(),
+            EnclosureType::Video => config.video_enclosure_command.as_ref(),
+        }
+        .unwrap_or(&config.enclosure_command)
+        .replace("{url}", enclosure.url.as_ref())
+        .replace("{type}", <EnclosureType>::from(enclosure).as_ref())
+        .replace("{mime}", enclosure.mime_type.as_deref().unwrap_or("*/*"));
 
         let args = shell_words::split(&command)?;
 
@@ -277,6 +281,6 @@ impl ArticleContentModelData {
             .args(args)
             .spawn()?;
 
-        Ok(())
+        Ok(cmd.to_owned())
     }
 }

@@ -25,6 +25,7 @@ The configuration file location is `~/.config/eilmeldung/config.toml` (Linux) or
 - [Feed List Configuration](#feed-list-configuration)
 - [After-Sync Commands](#after-sync-commands)
 - [Share Target Configuration](#share-target-configuration)
+- [Opening Enclosures](#opening-enclosures)
 - [Layout Configuration](#layout-configuration)
   - [Example: Static Layout (default)](#example-static-layout-default)
   - [Example: Dynamic Layout](#example-dynamic-layout)
@@ -87,6 +88,10 @@ The configuration file location is `~/.config/eilmeldung/config.toml` (Linux) or
 | `article_list_focused_width`      | dimension           | Width of article list when focused                                                                                                         |
 | `article_list_focused_height`     | dimension           | Height of article list when focused                                                                                                        |
 | `article_content_focused_height`  | dimension           | Height of article content when focused                                                                                                     |
+| `enclosure_command`               | string              | Command with which enclosure URLs are opened (see [Opening Enclosures](opening-enclosures)) |
+| `video_enclosure_command`               | string (optional)   | Command with which video enclosure URLs are opened (see [Opening Enclosures](opening-enclosures)) |
+| `audio_enclosure_command`               | string (optional)   | Command with which audio enclosure URLs are opened (see [Opening Enclosures](opening-enclosures)) |
+| `image_enclosure_command`               | string (optional)    | Command with which image enclosure URLs are opened (see [Opening Enclosures](opening-enclosures)) |
 
 
 **Label Placeholders:**
@@ -424,6 +429,29 @@ share_targets = [
   'org-mode xdg-open \"org-protocol://capture?template=L&url=\"{url}\"&title=\"{title}\"\"' # share on emacs/org-mode (by @luogni)
 ]
 ```
+
+## Opening Enclosures
+
+With the command `openenclosure`, an enclosure of an article can be opened by passing it to an external command. This external command is defined by the option `enclosure_command`. There are three placeholders that are replaced in `enclosure_command`:
+
+- `{url}`: URL to enclosure
+- `{mime}`: MIME type of enclosure
+- `{type}`: type of enclosure, either `video`, `audio`, `image`
+
+For instance, `enclosure_command = "xdg-open {url}"` calls `xdg-open` with the URL of the enclosure. If you want different commands depending on the type you can either write a small script which evaluated `{type}` or use the following options:
+
+- `video_enclosure_command`: command for opening video enclosures
+- `audio_enclosure_command`: command for opening audio enclosures
+- `image_enclosure_command`: command for opening image enclosures
+
+These commands can use the same placeolders. An example configuration could be:
+
+```toml
+audio_enclosure_command = "vlc {url}"
+video_enclosure_command = "mpv {url}"
+```
+
+
 
 ## Layout Configuration
 
