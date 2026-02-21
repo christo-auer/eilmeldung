@@ -6,6 +6,7 @@ use std::{io::Cursor, sync::Arc};
 use getset::{Getters, MutGetters};
 use image::ImageReader;
 use log::info;
+use news_flash::models::Enclosure;
 use ratatui::layout::Flex;
 use ratatui_image::{
     FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
@@ -173,7 +174,7 @@ impl ArticleContentViewData {
         };
 
         let tags = model_data.tags().as_deref().unwrap_or_default();
-        let tag_texts = tags
+        let mut tags_and_enclosures = tags
             .iter()
             .flat_map(|tag| {
                 let mut line = NewsFlashUtils::tag_to_line(tag, config, None);
@@ -181,6 +182,29 @@ impl ArticleContentViewData {
                 line
             })
             .collect::<Vec<Span>>();
+
+        let enclosures = model_data.enclosures().clone().unwrap_or_default();
+
+        tags_and_enclosures.append(&mut to_enclosure_bubble(
+            config,
+            &enclosures,
+            |enclosure| enclosure.is_video(),
+            config.enclosure_video_icon,
+        ));
+
+        tags_and_enclosures.append(&mut to_enclosure_bubble(
+            config,
+            &enclosures,
+            |enclosure| enclosure.is_image(),
+            config.enclosure_image_icon,
+        ));
+
+        tags_and_enclosures.append(&mut to_enclosure_bubble(
+            config,
+            &enclosures,
+            |enclosure| enclosure.is_audio(),
+            config.enclosure_audio_icon,
+        ));
 
         let author = html_sanitize(
             article
@@ -205,7 +229,7 @@ impl ArticleContentViewData {
             ]),
             Line::styled(title, config.theme.paragraph()),
             Line::styled(author, config.theme.paragraph()),
-            Line::from(tag_texts),
+            Line::from(tags_and_enclosures),
         ];
 
         summary_lines
@@ -441,6 +465,23 @@ impl ArticleContentViewData {
         }
 
         total_lines
+    }
+}
+
+fn to_enclosure_bubble<P>(
+    config: &Config,
+    enclosures: &'_ [Enclosure],
+    predicate: P,
+    icon: char,
+) -> Vec<Span<'static>>
+where
+    P: FnMut(&Enclosure) -> bool,
+{
+    let any_enclosures = enclosures.iter().any(predicate);
+    if any_enclosures {
+        to_bubble(Span::styled(format!("{}", icon), config.theme.paragraph())).spans
+    } else {
+        Default::default()
     }
 }
 

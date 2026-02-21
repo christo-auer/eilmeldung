@@ -139,6 +139,7 @@ These commands support a **scope parameter** to target specific articles:
 | `mark` | `mark [<scope>]` | Article List | Mark articles (starred/bookmarked). Examples: `:mark` (current), `:mark %` (all), `:mark unread` (all unread) |
 | `unmark` | `unmark [<scope>]` | Article List | Unmark articles. Examples: `:unmark` (current), `:unmark %` (all) |
 | `open` | `open [<scope>]` | Article List | Open articles in the web browser. Examples: `:open` (current), `:open marked` (all marked) |
+| `openenclosure` | `open [<type>]` | Article Content | Opens an enclosure of the article (if available), if a type (`audio`, `video`, `image`) is given, the enclosure of the given type is openend (see also configuration options `enclosure_command`) |
 | `tag` | `tag <tag name> [<scope>]` | Article List | Add tag to articles. Examples: `:tag important` (current), `:tag tech unread` (all unread), `:tag news %` (all articles) |
 | `untag` | `untag <tag name> [<scope>]` | Article List | Remove tag from articles. Examples: `:untag important` (current), `:untag tech marked` (all marked) |
 | `share` | `share <target>` | Article List, Article Content | Share article title and URL. Built-in targets: `clipboard`, `reddit`, `mastodon`, `telegram`, `instapaper`. Custom targets (URL and commands) can be defined in the configuration file. Example: `:share clipboard` |

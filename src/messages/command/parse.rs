@@ -47,6 +47,9 @@ pub enum CommandParseError {
     #[error("sort order expected")]
     SortOrderExpected(#[from] SortOrderParseError),
 
+    #[error("enclosure type expected")]
+    EnclosureTypeExpected,
+
     #[error("expecting `NOW` as parameter for confirmation")]
     ConfirmationExpected,
 
@@ -260,6 +263,15 @@ impl Command {
                 expect_from_str::<ArticleScope>(&mut args, "expecting article scope")
                     .map_err(|_| E::ArticleScopeExpected)?,
             ),
+
+            C::ArticleOpenEnclosure(..) => match args {
+                None if !eager => C::ArticleOpenEnclosure(None),
+                None => return Err(E::EnclosureTypeExpected),
+                Some(..) => C::ArticleOpenEnclosure(Some(
+                    expect_from_str(&mut args, "enclosure type expected")
+                        .map_err(|_| E::EnclosureTypeExpected)?,
+                )),
+            },
 
             C::ArticleListSearch(..) => C::ArticleListSearch(ArticleQuery::from_str(
                 expect_something(args, "expecting article query")?.as_str(),

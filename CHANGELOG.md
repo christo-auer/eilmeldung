@@ -1,5 +1,14 @@
 # Unreleased
 
+- **enclosures** are now supported!
+  - small icons underneath the article title (in the article panel) show you which enclosures are available
+  - press `e` to open the enclosure which calls `xdg-open` (`open` on macos) with the URL to the enclosure (`e` call the new command `openenclosure`)
+  - you can customize which command handles which type of enclosure (`video`, `audio`, `image`)
+  - want to quickly open a podcast in VLC? set `audio_enclosure_command = "vlc {url}"`
+  - you want to use mpv to watch videos? set `video_enclosure_command = "mpv {url}"`
+  - more documentation under `docs/configuration.md` (Opening Enclosures)
+
+
 # 0.9.4 - 2026-02-18
 
 - **Breaking Changes** `read` and `show` from now on don't accept the target parameter anymore

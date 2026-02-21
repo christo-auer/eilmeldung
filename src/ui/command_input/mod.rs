@@ -160,6 +160,9 @@ impl CommandInput {
             Err(E::CommandExpected) => self.generate_help_content_command(&current_part)?,
             Err(E::PanelExpected) => self.generate_help_content_panel(&current_part)?,
             Err(E::ColorExpected(..)) => self.generate_help_content_color(&current_part)?,
+            Err(E::EnclosureTypeExpected) => {
+                self.generate_help_content_enclosure_type(&current_part)?
+            }
 
             Err(E::ShareTargetExpected) => {
                 self.generate_help_content_share_target(&current_part)?
@@ -688,6 +691,24 @@ impl CommandInput {
         self.hide_help_dialog()?;
         self.completion_targets = None;
         Ok(())
+    }
+
+    fn generate_help_content_enclosure_type(
+        &mut self,
+        current_part: &str,
+    ) -> color_eyre::Result<()> {
+        self.generate_help_content_enum::<EnclosureType>(
+            current_part,
+            "Enclosure Type",
+            |enclosure_type| Some(enclosure_type.as_ref().to_owned()),
+            |enclosure_type| enclosure_type.get_message().unwrap_or_default().to_owned(),
+            |enclosure_type| {
+                enclosure_type
+                    .get_detailed_message()
+                    .unwrap_or_default()
+                    .to_owned()
+            },
+        )
     }
 }
 

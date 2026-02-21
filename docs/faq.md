@@ -53,6 +53,18 @@ In `eilmeldung`, select an article and share it with `share hackernews` or `shar
 
 See [Share Target Configuration](configuration.md#share-target-configuration) for details and examples.
 
+### Can I open enclosures? Can I open a video/audio/image enclosure in a custom program?
+
+Yes, you can: the command `openenclosure` call the command given in the option `enclosure_command`, which you can customize. If you want different commands depending on the command, you can further customize, for instance:
+
+```toml
+audio_enclosure_command = "vlc {url}"
+video_enclosure_command = "mpv {url}"
+image_enclosure_command = "firefox {url}"
+```
+
+See [Opening Enclosures](configuration.md#opening-enclosures) for more information.
+
 ### Does eilmeldung support smart folders?
 
 Yes, by using queries in the feed list. For example:
