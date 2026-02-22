@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
 };
 use tokio::sync::mpsc::UnboundedSender;
-use tui_textarea::TextArea;
+use ratatui_textarea::TextArea;
 
 #[derive(Default)]
 pub struct PopupState<'a> {

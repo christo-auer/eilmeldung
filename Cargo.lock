@@ -1675,6 +1675,7 @@ dependencies = [
  "percent-encoding",
  "ratatui 0.30.0",
  "ratatui-image",
+ "ratatui-textarea",
  "regex",
  "reqwest",
  "rstest",
@@ -1695,7 +1696,6 @@ dependencies = [
  "tui-logger",
  "tui-markdown",
  "tui-prompts",
- "tui-textarea",
  "tui-tree-widget",
  "url",
  "webbrowser",
@@ -5038,6 +5038,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ratatui-textarea"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de236b7cc74b3f7dea227b3fbad97bf459cddf552b6503d888fb9a106eda59ab"
+dependencies = [
+ "ratatui-core",
+ "ratatui-crossterm",
+ "ratatui-widgets",
+ "unicode-width 0.2.0",
+]
+
+[[package]]
 name = "ratatui-widgets"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6754,17 +6766,6 @@ dependencies = [
  "itertools 0.14.0",
  "ratatui 0.29.0",
  "ratatui-macros 0.6.0",
- "unicode-width 0.2.0",
-]
-
-[[package]]
-name = "tui-textarea"
-version = "0.7.0"
-source = "git+https://github.com/phsym/tui-textarea?rev=e2ec4d3#e2ec4d37eb5d638a9a2237e0145bcf908494a329"
-dependencies = [
- "crossterm 0.29.0",
- "ratatui-core",
- "ratatui-widgets",
  "unicode-width 0.2.0",
 ]
 

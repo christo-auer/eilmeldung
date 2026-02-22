@@ -6,7 +6,7 @@ use log::trace;
 use ratatui::{crossterm::event::KeyCode, layout::Flex};
 use strum::{EnumMessage, IntoEnumIterator};
 use tokio::sync::mpsc::UnboundedSender;
-use tui_textarea::TextArea;
+use ratatui_textarea::TextArea;
 
 pub struct CommandInput {
     config: Arc<Config>,
