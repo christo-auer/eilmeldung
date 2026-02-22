@@ -133,7 +133,7 @@ These commands support a **scope parameter** to target specific articles:
 
 | Command | Syntax | Context | Description |
 |---------|--------|---------|-------------|
-| `show` | `show [<target>] <scope>` | Article List, Feed List | Filter articles by scope: `all`, `unread`, or `marked`. Examples: `:show unread`, `:show feeds marked`, `:show articles all` |
+| `show` | `show <scope>` | Article List, Feed List | Filter articles by scope: `all`, `unread`, or `marked`. Examples: `:show unread`, `:show marked`, `:in articles show all`|
 | `read` | `read [<scope>]` | Feed List, Article List | Mark articles as read. Examples: `:read` (current), `:read %` (all), `:read unread today` (unread from today), `:read feed:bbc` (all from BBC) |
 | `unread` | `unread [<scope>]` | Feed List, Article List | Mark articles as unread. Examples: `:unread` (current), `:unread %` (all), `:unread marked` (all marked) |
 | `mark` | `mark [<scope>]` | Article List | Mark articles (starred/bookmarked). Examples: `:mark` (current), `:mark %` (all), `:mark unread` (all unread) |
