@@ -21,10 +21,10 @@
 Here are some examples to get you started:
 
 ```
-tag paywall title:/heise\+/ feed:heise   # tags all articles from heise titles containing "heise+" with tag paywall
-read #paywall                         # marks all articles with the tag #paywall is read
+tag paywall title:/heise\+/ feed:heise   # tags all articles from heise with titles containing "heise+" with tag paywall
+read #paywall                         # marks all articles with the tag #paywall as read
 filter newer:"1 hour ago" unread          # show only unread articles which are newer than one hour
-read unread feed:pitchfork summary:rap    # marks all unread articles from pitchfork which contain rap (Case-insensitive) as read
+read unread feed:pitchfork summary:rap    # marks all unread articles from pitchfork which contain rap (case-insensitive) as read
 ```
 
 Query elements are **conjunctive** (AND-ed together), i.e., all specified conditions must be met for an article to match. To create more complex filters, use negation (`~`) or regular expressions with OR operators in case of search terms.

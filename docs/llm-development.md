@@ -81,4 +81,4 @@ I am using [neovim](https://neovim.io/) with [opencode](https://opencode.ai/). H
 
 - [tutor.md](https://github.com/user-attachments/files/24354660/tutor.md): Tutor helping to understand new concepts
 - [explainer.md](https://github.com/user-attachments/files/24354664/explainer.md): For understanding code bases
-- [unit-tester.md](https://github.com/user-attachments/files/24354665/unit-tester.md): For creating unit test. Note how the LLM should **deny** creating tests on implementations or unclear specification.
+- [unit-tester.md](https://github.com/user-attachments/files/24354665/unit-tester.md): For creating unit tests. Note how the LLM should **deny** creating tests on implementations or unclear specification.

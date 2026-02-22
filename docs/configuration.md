@@ -51,7 +51,7 @@ The configuration file location is `~/.config/eilmeldung/config.toml` (Linux) or
 | `zen_mode_show_header`            | boolean             | Show header in distraction-free (zen) mode                                                                                                 |
 | `keep_articles_days`              | integer             | amount of days before articles are removed                                                                                                 |
 | `sync_every_minutes`              | integer             | Amount of time between automatic sync of all feeds, must be greater than 0 (no automatic sync occurs if this option is omitted)            |
-| `after_sync_commands`             | list                | List of commands to execute after a sync has finished, e.g., `after_sync_commands = ["query lastsync", "tag rust title:"rust", "refresh"]` |
+| `after_sync_commands`             | list                | List of commands to execute after a sync has finished, e.g., `after_sync_commands = ["query lastsync", "tag rust title:rust", "refresh"]` |
 | `offline_icon`                    | char                | Icon displayed when offline                                                                                                                |
 | `read_icon`                       | char                | Icon for read articles                                                                                                                     |
 | `unread_icon`                     | char                | Icon for unread articles                                                                                                                   |
@@ -107,7 +107,7 @@ The configuration file location is `~/.config/eilmeldung/config.toml` (Linux) or
 
 **Dimension:** Is a string:
 - **Percentage**: `"n%"` where `n` is a number from 1 to 100, e.g., `"33%"`, meaning 33% of the available width/height
-- **Length**: `"n length"` where `n` is a positive, e.g., `"10 length"`, meaning 10 rows (height)  or 10 columns (width)
+- **Length**: `"n length"` where `n` is a positive integer, e.g., `"10 length"`, meaning 10 rows (height)  or 10 columns (width)
 
 
 ---
@@ -348,7 +348,7 @@ You can automate operations after synchronization has finished via the option `a
 
 ### Example: Marking Paywall/Ad Articles as Read
 
-If you can identify paywall articles by their title (e.g., they contain a certain string), you can mark them as read. For instance, on [heise](https://www.heise.de) articles which start with the word `Anzeige:` contain advertisements. For immediately mark them as read, use:
+If you can identify paywall articles by their title (e.g., they contain a certain string), you can mark them as read. For instance, on [heise](https://www.heise.de) articles which start with the word `Anzeige:` contain advertisements. To immediately mark them as read, use:
 
 ```toml
 after_sync_commands = [ "query lastsync", "in articles read title:/^Anzeige:/", "refresh" ]
@@ -356,10 +356,10 @@ after_sync_commands = [ "query lastsync", "in articles read title:/^Anzeige:/", 
 
 ### Example: Automatic Tagging
 
-If you automatically want to tag certain articles, you can you the (bulk) operation `tag`. 
+If you automatically want to tag certain articles, you can use the (bulk) operation `tag`. 
 
 ```toml
-after_sync_commands = [ "query lastsync", "tag science feed:quanta, "refresh" ]
+after_sync_commands = [ "query lastsync", "tag science feed:quanta", "refresh" ]
 ```
 
 ### Example: Expand Categories with Unread Articles
@@ -444,7 +444,7 @@ For instance, `enclosure_command = "xdg-open {url}"` calls `xdg-open` with the U
 - `audio_enclosure_command`: command for opening audio enclosures
 - `image_enclosure_command`: command for opening image enclosures
 
-These commands can use the same placeolders. An example configuration could be:
+These commands can use the same placeholders. An example configuration could be:
 
 ```toml
 audio_enclosure_command = "vlc {url}"
@@ -493,7 +493,7 @@ https://github.com/user-attachments/assets/ffc51e67-1842-4b49-a798-6a5d65b04265
 
 ### Example: Fully Dynamic Layout
 
-Here is an example where there feed list completely vanishes when the article list is focused, and the article list completely vanishes when the content is focused:
+Here is an example where the feed list completely vanishes when the article list is focused, and the article list completely vanishes when the content is focused:
 
 ```toml
 feed_list_focused_width = "33%"
@@ -531,7 +531,7 @@ Upon first starting `eilmeldung`, the user is asked to enter login information a
 Configuration options with type *secret* are strings which
 
 - either contain the secret itself (e.g, `password = "abcd1234" `); storing password in *clear text* is **NOT RECOMMENDED**
-- or contain a command with prefix `cmd:` which outputs the secret on its output (e.g., `password = "cmd:pass my-passwords/eilmeldung"`); **THIS IS THE WAY**
+- or contain a command with prefix `cmd:` which outputs the secret to stdout (e.g., `password = "cmd:pass my-passwords/eilmeldung"`); **THIS IS THE WAY**
 
 ### Finding the Right Settings
 
@@ -555,7 +555,7 @@ password = "*******"
 ```
 
 Note that the password is *redacted*! You have to replace the contents of `password`  with your actual password command. If you, for some reason, want to output the password values verbatim, add the command line switch `--show-secrets`.
-Simply copy and paste this into you `config.toml`.
+Simply copy and paste this into your `config.toml`.
 
 ```toml
 [login_setup]

@@ -57,9 +57,9 @@ This document provides a comprehensive reference of all default key bindings in 
 | `g f` / `g a` / `g c` | Jump directly to feeds / articles / content panel                                   |
 | `C-j`                 | Move down in feeds list (from anywhere)                                             |
 | `C-k`                 | Move up in feeds list (from anywhere)                                               |
-| `J`                   | Move up in article content (from anywhere)                                          | 
+| `J`                   | Move down in article content (from anywhere)                                          | 
 | `K`                   | Move up in article content (from anywhere)                                          | 
-| `M-j`                 | Move up in article list (from anywhere)                                             |
+| `M-j`                 | Move down in article list (from anywhere)                                             |
 | `M-k`                 | Move up in article list (from anywhere)                                             | 
 
 ---

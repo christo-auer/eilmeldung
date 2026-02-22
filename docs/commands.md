@@ -104,7 +104,7 @@ Here are some common command examples to get you started:
 | `expand`           | `expand`                   | Feed List | Expands the current item in the tree                                                                                                             |
 | `expandcategories` | `expandcategories <scope>` | Feed List | Expand categories with articles in scope, i.e., `all`, `unread` or `marked` articles                                                             |
 | `collapse`         | `collapse`                 | Feed List | Collapses the current item in the tree                                                                                                           |
-| `collapsall`       | `collapseall`              | Feed List | Collapses all items in the tree                                                                                                                  |
+| `collapseall`  | `collapseall`              | Feed List | Collapses all items in the tree                                                                                                                  |
 | `yank`             | `yank`                     | Feed List | Yank (copy) the selected feed or category for moving                                                                                             |
 | `paste`            | `paste <position>`         | Feed List | Paste the yanked item. Position: `before` or `after`. Examples: `:paste after`, `:paste before`                                                  |
 | `search`           | `search <searchterm>`      | Feed List | Search item in feed list; search term can be single word, quoted string or regular expression (see [Article Queries](queries.md))                | 
@@ -114,7 +114,7 @@ Here are some common command examples to get you started:
 | Command | Syntax | Context | Description |
 |---------|--------|---------|-------------|
 | `nextunread` | `nextunread` | Article List | Select the next unread article in the list |
-| `searcharticles` | `searcharticles <query>` | Article List | Search for articles matching the query. Example: `:search title:security newer:"1 week"` |
+| `searcharticles` | `searcharticles <query>` | Article List | Search for articles matching the query. Example: `:searcharticles title:security newer:"1 week"` |
 | `filter` | `filter <query>` | Article List | Filter the article list by query. Example: `:filter unread author:john` |
 | `filterapply` | `filterapply` | Article List | Apply the current filter |
 | `filterclear` | `filterclear` | Article List | Clear the current filter and show all articles |
@@ -139,12 +139,12 @@ These commands support a **scope parameter** to target specific articles:
 | `mark` | `mark [<scope>]` | Article List | Mark articles (starred/bookmarked). Examples: `:mark` (current), `:mark %` (all), `:mark unread` (all unread) |
 | `unmark` | `unmark [<scope>]` | Article List | Unmark articles. Examples: `:unmark` (current), `:unmark %` (all) |
 | `open` | `open [<scope>]` | Article List | Open articles in the web browser. Examples: `:open` (current), `:open marked` (all marked) |
-| `openenclosure` | `open [<type>]` | Article Content | Opens an enclosure of the article (if available), if a type (`audio`, `video`, `image`) is given, the enclosure of the given type is openend (see also configuration options `enclosure_command`) |
+| `openenclosure` | `open [<type>]` | Article Content | Opens an enclosure of the article (if available), if a type (`audio`, `video`, `image`) is given, the enclosure of the given type is opened (see also configuration options `enclosure_command`) |
 | `tag` | `tag <tag name> [<scope>]` | Article List | Add tag to articles. Examples: `:tag important` (current), `:tag tech unread` (all unread), `:tag news %` (all articles) |
 | `untag` | `untag <tag name> [<scope>]` | Article List | Remove tag from articles. Examples: `:untag important` (current), `:untag tech marked` (all marked) |
 | `share` | `share <target>` | Article List, Article Content | Share article title and URL. Built-in targets: `clipboard`, `reddit`, `mastodon`, `telegram`, `instapaper`. Custom targets (URL and commands) can be defined in the configuration file. Example: `:share clipboard` |
 
-**Note:** By default, the commands `show`, `read` and `unread` is executed in the currently focused panel (feeds or articles). If you want to execute the command in a specific panel, use the `in` meta command, e.g., `in articles read %`, `in feeds show all`, etc.
+**Note:** By default, the commands `show`, `read` and `unread` are executed in the currently focused panel (feeds or articles). If you want to execute the command in a specific panel, use the `in` meta command, e.g., `in articles read %`, `in feeds show all`, etc.
 
 ## Import/Export
 
@@ -186,7 +186,7 @@ These commands belong to text input (e.g. command-line or search input) and must
 
 ## Sorting Articles
 
-Articles can be sorted by one or more criteria. Sort orders directly via the `sort` command, e.g.
+Articles can be sorted by one or more criteria. Set sort orders directly via the `sort` command, e.g.
 
 ```
 sort feed date
@@ -195,9 +195,9 @@ sort feed date
 Sorts articles first by feed (ascending) and then by date (newest-first).
 
 To reverse the sorting order, use `sortreverse`. To revert to the default sorting order, use `sortclear`.
-The [Configuration](docs/configuration.md) option `default_sort_order = "..."` defines the default sorting order.
-An [Article Queries](docs/queries.md) can also contain a sort order which takes precedence or the default sorting order.
-A sorting order defined by the command `sort` in turn takes precedence of the sorting order from the query. The priority is therefore (from highest to lowest):
+The [Configuration](configuration.md) option `default_sort_order = "..."` defines the default sorting order.
+An [Article Query](queries.md) can also contain a sort order which takes precedence over the default sorting order.
+A sorting order defined by the command `sort` in turn takes precedence over the sorting order from the query. The priority is therefore (from highest to lowest):
 
 - sort order from `sort` command
 - sort order from `query`

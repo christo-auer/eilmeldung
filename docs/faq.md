@@ -55,7 +55,7 @@ See [Share Target Configuration](configuration.md#share-target-configuration) fo
 
 ### Can I open enclosures? Can I open a video/audio/image enclosure in a custom program?
 
-Yes, you can: the command `openenclosure` call the command given in the option `enclosure_command`, which you can customize. If you want different commands depending on the command, you can further customize, for instance:
+Yes, you can: the command `openenclosure` call the command given in the option `enclosure_command`, which you can customize. If you want different commands depending on the type, you can further customize, for instance:
 
 ```toml
 audio_enclosure_command = "vlc {url}"
@@ -108,7 +108,7 @@ feed_list = [
 
 ### Can I sync what the feed list and article list show (all/unread/marked)?
 
-There is no dedicated setting for this but this can be achived by using the same value for `article_scope` and `feed_list_scope` and remapping the keybindings for changing the scope:
+There is no dedicated setting for this but this can be achieved by using the same value for `article_scope` and `feed_list_scope` and remapping the keybindings for changing the scope:
 
 ```toml
 [input_config.mappings]
@@ -209,7 +209,7 @@ thumbnail_width = "14 length"
 thumbnail_height = "5 length"
 ```
 
-These two are dimensions (see [configuratin](configuration.md)) and define the *width and height* of the thumbnail. Due to how images are displayed in the terminal, it is not possible to dynamically adapt the display to optimum space consumption. In other words, the image will always consume the defined width and height, leading to blank regions to either the title of the article on the right or a space to the content of the article. Increase these values to find a settings that suits you, e.g.:
+These two are dimensions (see [configuration](configuration.md)) and define the *width and height* of the thumbnail. Due to how images are displayed in the terminal, it is not possible to dynamically adapt the display to optimum space consumption. In other words, the image will always consume the defined width and height, leading to blank regions to either the title of the article on the right or a space to the content of the article. Increase these values to find a settings that suits you, e.g.:
 
 ```toml
 thumbnail_width = "30%" # consumes 30% of the available horizontal space

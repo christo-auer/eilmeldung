@@ -8,8 +8,8 @@
 *eilmeldung* is a *TUI RSS reader* based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.  
 - *fast* in every aspect: non-blocking terminal user interface, (neo)vim-inspired keybindings, instant start-up and no clutter
 - *stands* on the shoulder of *giants*: based on the news-flash library, *eilmeldung* supports many RSS providers, is efficient and reliable
-- *powerful* and yet *easy to use out-of-the-box*: sane defaults which work for most, and yet configurable to meet anyones requirements, from keybindings to colors, from displayed content to RSS provider
-- read news like a pro: filter and search news with a easy-to-learn powerful *query language*, activate *zen mode* to focus on the article content and nothing else
+- *powerful* and yet *easy to use out-of-the-box*: sane defaults which work for most, and yet configurable to meet anyone's requirements, from keybindings to colors, from displayed content to RSS provider
+- read news like a pro: filter and search news with an easy-to-learn powerful *query language*, activate *zen mode* to focus on the article content and nothing else
 
 *eilmeldung* is German for *breaking news*
 
@@ -35,8 +35,8 @@ https://github.com/user-attachments/assets/ddd731dd-3fce-43c2-80fd-dafb20520873
 This video demonstrates
 - basic (vim-like) navigation and reading
 - *zen* mode: just show content
-- creating new tags and tagging a article
-- *filtering* and *searching* article list by using a article queries
+- creating new tags and tagging an article
+- *filtering* and *searching* article list by using article queries
 - *tagging* multiple articles by using an article query
 
 ---
@@ -72,7 +72,7 @@ For a comprehensive getting started guide, see **[Getting Started](docs/getting-
 
 # Quick Reference
 
-Here some key bindings to get you started.
+Here are some key bindings to get you started.
 
 | Key             | Action                                                        |
 | -----           | --------                                                      |
@@ -140,7 +140,7 @@ Create a tag (`:tagadd readlater red`), bind it to a key, and create a query in 
 Yes, focus the feed list and press `2` / `3` to show only feeds/categories/tags with unread / marked articles, show all with `1`. Change the value of the configuration option `feed_list_scope` to either `all`, `unread` or `marked` to set the default value.
 
 
-### Can execute automatic operations after synchronisation/refresh?
+### Can I execute automatic operations after synchronisation/refresh?
 
 Yes, via the option `after_sync_commands` [configuration](docs/configuration.md#after-sync_commands) for some recipes.
 
@@ -155,7 +155,7 @@ Yes, via the option `after_sync_commands` [configuration](docs/configuration.md#
 *eilmeldung* was inspired by other awesome programs and libraries:
 
 - [news-flash](https://gitlab.com/news-flash/news_flash) library and [news-flash GTK](https://gitlab.com/news-flash/news_flash_gtk), a modern Gnome/GTK RSS reader, both implemented in rust
-- [newsboat](https://newsboat.org/) which has been me TUI RSS reader of choice for many years
+- [newsboat](https://newsboat.org/) which has been my TUI RSS reader of choice for many years
 - [spotify-player](https://github.com/aome510/spotify-player), a TUI spotify music player written in rust. In particular, the theming system and how input is handled has been a great inspiration for *eilmeldung*
 - [vifm](https://vifm.info/), [neomutt](https://neomutt.org/) with [notmuch](https://notmuchmail.org/) inspired the filtering and article query systems
 - [neovim](https://neovim.io/) and [vim](https://www.vim.org/) for their philosophy on user input

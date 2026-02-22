@@ -52,7 +52,7 @@ All these will exit after finishing.
 
 
 - In `sync_output_format`:
-    - `{label}` is replaced with either the content from `all_label_format` for `feed_label_format`
+    - `{label}` is replaced with either the content from `all_label_format` or `feed_label_format`
     - `{count}` is replaced with the amount of newly synced articles
 - In `feed_label_format`
   - `{category}` is replaced by the name of the parent category (or the empty string if there is no parent category)

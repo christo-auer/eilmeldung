@@ -26,7 +26,7 @@ Reproduce behavior with `--log-file` and `--log-level TRACE` and insert the rele
 **Context**
  - Version: (`eilmeldung --version`)
  - OS: macOS or Linux
- - Package: binaries from GitHub, homebew, nix, etc.
+ - Package: binaries from GitHub, homebrew, nix, etc.
  - Terminal Emulator: ghostty, foot, kitty, Konsole, etc.
  - RSS Provider: local RSS, freshRSS, etc.
 
