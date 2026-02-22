@@ -9,8 +9,8 @@ use ratatui::{
     text::{Line, Span, Text},
     widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
 };
-use tokio::sync::mpsc::UnboundedSender;
 use ratatui_textarea::TextArea;
+use tokio::sync::mpsc::UnboundedSender;
 
 #[derive(Default)]
 pub struct PopupState<'a> {

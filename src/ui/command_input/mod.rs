@@ -4,9 +4,9 @@ use std::{str::FromStr, sync::Arc};
 
 use log::trace;
 use ratatui::{crossterm::event::KeyCode, layout::Flex};
+use ratatui_textarea::TextArea;
 use strum::{EnumMessage, IntoEnumIterator};
 use tokio::sync::mpsc::UnboundedSender;
-use ratatui_textarea::TextArea;
 
 pub struct CommandInput {
     config: Arc<Config>,
