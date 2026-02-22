@@ -120,7 +120,7 @@ The configuration file location is `~/.config/eilmeldung/config.toml` (Linux) or
 startup_commands = ["sync", "focus articles", "show articles all"]
 ```
 
-You can use any command in `startup_commands` however keep in mind that some commands are executed asynchronously (e.g., `sync`) and the new information may not be available when the next command is executed.
+You can use any command in `startup_commands`, even asynchronous ones. A popup will appear to show you the progress of operations.
 
 ## Default Sort Order
 
