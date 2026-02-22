@@ -19,9 +19,6 @@ rustPlatform.buildRustPackage {
   
   cargoLock = {
     lockFile = ../Cargo.lock;
-    outputHashes = {
-      "tui-textarea-0.7.0" = "sha256-3ENi0XCVkhJAj9mgMXXkCY2FZ1VcVrSjfidBCsYdfMA=";
-    };
   };
   
   nativeBuildInputs = [
