@@ -47,7 +47,7 @@ This video demonstrates
 
 - **Homebrew**: `brew tap christo-auer/eilmeldung  https://github.com/christo-auer/eilmeldung && brew install eilmeldung`
 - **Arch (AUR)**: `paru -S eilmeldung` or `yay -S eilmeldung`
-- **Cargo**: `cargo install --locked --git https://github.com/christo-auer/eilmeldung` (you need to install [build dependencies](docs/installation.md) first!)
+- **Cargo**: `cargo install eilmeldung` (you need to install [build dependencies](docs/installation.md) first!)
 
 **Important**: You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!
 

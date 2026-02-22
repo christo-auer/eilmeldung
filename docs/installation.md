@@ -53,13 +53,12 @@ In order to compile `eilmeldung` from source, you need `cargo` with a `rust` com
 | Fedora       | `# dnf install cargo rust perl libxml2-devel openssl-devel clang sqlite-devel`                           |
 | Arch         | `# pacman -S cargo base-devel clang perl libxml2 openssl libsixel sqlite3`                             |
 
+```bash
+cargo install eilmeldung
+```
 To compile the latest unreleased version (`HEAD` in `main`):
 ```bash
 cargo install --locked --git https://github.com/christo-auer/eilmeldung
-```
-and for the latest tag:
-```bash
-cargo install --locked --git https://github.com/christo-auer/eilmeldung/tree/0.9.5
 ```
 
 ---
