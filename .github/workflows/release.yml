@@ -242,7 +242,34 @@ jobs:
           name: eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}
           path: package/eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}.tar.gz
 
-  release:
+  release-crates-io:
+    name: Release on crates.io
+    runs-on: ubuntu-latest
+    needs: [build_macos, build_musl]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            openssl \
+            pkg-config \
+            libxml2-dev \
+            libsqlite3-dev \
+            llvm \
+            clang
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish
+        run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  release-github:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: [build_macos, build_musl]
@@ -282,6 +309,7 @@ jobs:
           prerelease: false
           files: |
             ./artifacts/**/eilmeldung-*.tar.gz
+
   homebrew-bump:
         name: Update Homebrew formula sha256
         runs-on: ubuntu-latest
