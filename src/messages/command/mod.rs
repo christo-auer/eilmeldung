@@ -542,6 +542,13 @@ pub enum Command {
     ArticleListFilterSet(ArticleQuery),
 
     #[strum(
+        serialize = "filtersticky",
+        message = "filtersticky <article query>",
+        detailed_message = "filter articles by query sticky, i.e., always apply filter (article list)"
+    )]
+    ArticleListFilterSetSticky(ArticleQuery),
+
+    #[strum(
         serialize = "filterapply",
         message = "filterapply",
         detailed_message = "apply current filter (article list)"
@@ -755,7 +762,18 @@ impl Display for Command {
             Search(Some(search_term)) => write!(f, "search for {search_term}"),
             Search(None) => write!(f, "clear search"),
             ArticleListFilterSet(query) => {
-                write!(f, "filter article list by query: {}", query.query_string())
+                write!(
+                    f,
+                    "filter current article list by query: {}",
+                    query.query_string()
+                )
+            }
+            ArticleListFilterSetSticky(query) => {
+                write!(
+                    f,
+                    "always filter article list by query: {}",
+                    query.query_string()
+                )
             }
             ArticleListQuery(query) => {
                 write!(f, "query all articles by: {}", query.query_string())

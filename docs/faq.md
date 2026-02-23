@@ -139,6 +139,12 @@ Use the command `expandcategories unread`. Call with `all` to expand all categor
 
 Yes, use `--sync`. See [CLI Arguments](cli_args.md). This even outputs sync statistics for further shell shenanigans.
 
+### What is the difference between `filter` and `filtersticky`? My filter/query is reset/not applied when changing the entry in the feed tree?
+
+`filter` (keymap `=`) applies the filter to the current article list. When chaning the selection in the feed tree, the filter ist *not applied automatically* (press `+ +` to re-apply, command `filterapply`).
+
+Use `filtersticky` to create a filter which is *always applied* automatically. You can reset the filter with `+ r` (command `filterclear`).
+
 ---
 
 ## Configuration & Customization

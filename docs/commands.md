@@ -115,7 +115,8 @@ Here are some common command examples to get you started:
 |---------|--------|---------|-------------|
 | `nextunread` | `nextunread` | Article List | Select the next unread article in the list |
 | `searcharticles` | `searcharticles <query>` | Article List | Search for articles matching the query. Example: `:searcharticles title:security newer:"1 week"` |
-| `filter` | `filter <query>` | Article List | Filter the article list by query. Example: `:filter unread author:john` |
+| `filter` | `filter <query>` | Article List | Filter the article list by query (non-sticky filter is not applied when changing when choosing another entry in feed list). Example: `:filter unread author:john` |
+| `filtersticky` | `filtersticky <query>` | Article List | *Always* filter the article list by query. Example: `:filtersticky unread today` |
 | `filterapply` | `filterapply` | Article List | Apply the current filter |
 | `filterclear` | `filterclear` | Article List | Clear the current filter and show all articles |
 | `query` | `query <query>` | Article List | Filter ALL articles and show result in article list. Example: `:filter lastsync unread` |
