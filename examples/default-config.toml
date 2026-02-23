@@ -63,6 +63,7 @@ text_max_width = 66
 content_preferred_type = "markdown"
 
 # Layout
+show_top_bar = true
 feed_list_focused_width = "25%"
 article_list_focused_width = "75%"
 article_list_focused_height = "20%"

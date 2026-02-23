@@ -119,6 +119,7 @@ pub struct Config {
 
     pub after_sync_commands: Vec<Command>,
 
+    pub show_top_bar: bool,
     pub offline_icon: char,
     pub all_label: String,
     pub last_synced_label: String,
@@ -242,6 +243,7 @@ impl Default for Config {
 
             after_sync_commands: Default::default(),
 
+            show_top_bar: true,
             all_label: "󱀂 All {unread_count}".into(),
             last_synced_label: " Last Synced".into(),
             feed_label: " {label} {unread_count}".into(),

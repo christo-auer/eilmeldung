@@ -52,6 +52,7 @@ The configuration file location is `~/.config/eilmeldung/config.toml` (Linux) or
 | `keep_articles_days`              | integer             | amount of days before articles are removed                                                                                                 |
 | `sync_every_minutes`              | integer             | Amount of time between automatic sync of all feeds, must be greater than 0 (no automatic sync occurs if this option is omitted)            |
 | `after_sync_commands`             | list                | List of commands to execute after a sync has finished, e.g., `after_sync_commands = ["query lastsync", "tag rust title:rust", "refresh"]` |
+| `show_top_bar`                    | boolean             | Show top bar, if set to `false` the status icon is displayed at the bottom right |
 | `offline_icon`                    | char                | Icon displayed when offline                                                                                                                |
 | `read_icon`                       | char                | Icon for read articles                                                                                                                     |
 | `unread_icon`                     | char                | Icon for unread articles                                                                                                                   |
