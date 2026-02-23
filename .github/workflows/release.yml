@@ -342,7 +342,7 @@ jobs:
     name: Publish ${{ matrix.package }} to AUR
     runs-on: ubuntu-latest
     container: archlinux:latest
-    needs: release
+    needs: release-github
     permissions:
       contents: read
     strategy:
