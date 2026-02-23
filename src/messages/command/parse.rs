@@ -282,16 +282,24 @@ impl Command {
                     .map_err(|_| E::SearchTermExpected)?,
             )),
 
-            C::ArticleListFilterSet(..) => C::ArticleListFilterSet(ArticleQuery::from_str(
-                expect_something(args, "expecting article query")
-                    .map_err(|_| {
-                        E::ArticleQueryExpected(QueryParseError::KeyOrWordExpected(
-                            0,
-                            "".to_owned(),
-                        ))
-                    })?
-                    .as_str(),
-            )?),
+            filter @ (C::ArticleListFilterSet(..) | C::ArticleListFilterSetSticky(..)) => {
+                let query = ArticleQuery::from_str(
+                    expect_something(args, "expecting article query")
+                        .map_err(|_| {
+                            E::ArticleQueryExpected(QueryParseError::KeyOrWordExpected(
+                                0,
+                                "".to_owned(),
+                            ))
+                        })?
+                        .as_str(),
+                )?;
+
+                match filter {
+                    C::ArticleListFilterSet(..) => C::ArticleListFilterSet(query),
+                    C::ArticleListFilterSetSticky(..) => C::ArticleListFilterSetSticky(query),
+                    _ => unreachable!(),
+                }
+            }
 
             C::ArticleListQuery(..) => C::ArticleListQuery(ArticleQuery::from_str(
                 expect_something(args, "expecting article query")

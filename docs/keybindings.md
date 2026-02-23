@@ -144,6 +144,8 @@ You can create new tags with `:tagadd urgent red` (press **TAB** for autocomplet
 
 See [Article Queries](queries.md) for how to craft powerful queries.
 
+**Note**: `=` executes `filter` which is *non-sticky*, i.e., when you change the any in the feed tree, it is not applied automatically. If you want to apply a *stick* filter, you have to use `filtersticky`, i.e., re-map `=` to `cmd filtersticky`.
+
 ---
 
 ## Sorting Articles

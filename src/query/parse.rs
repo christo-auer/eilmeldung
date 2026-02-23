@@ -301,6 +301,7 @@ fn parse_query(
             T::KeyRead => match article_filter.as_mut() {
                 Some(article_filter) => {
                     article_filter.unread = Some(if negate { Read::Unread } else { Read::Read });
+                    negate = false; // handled directly
                     None
                 }
                 None => Some(QueryAtom::Read(Read::Read)),
@@ -308,6 +309,7 @@ fn parse_query(
             T::KeyUnread => match article_filter.as_mut() {
                 Some(article_filter) => {
                     article_filter.unread = Some(if negate { Read::Read } else { Read::Unread });
+                    negate = false; // handled directly
                     None
                 }
                 None => Some(QueryAtom::Read(Read::Unread)),
@@ -319,6 +321,7 @@ fn parse_query(
                     } else {
                         Marked::Marked
                     });
+                    negate = false; // handled directly
                     None
                 }
 
@@ -331,6 +334,7 @@ fn parse_query(
                     } else {
                         Marked::Unmarked
                     });
+                    negate = false; // handled directly
                     None
                 }
                 None => Some(QueryAtom::Marked(Marked::Unmarked)),
@@ -445,6 +449,7 @@ fn parse_query(
                         T::KeySyncedAfter => T::KeySyncedBefore,
                         _ => unreachable!(),
                     };
+                    negate = false; // handled directly
                 }
 
                 match time_key {

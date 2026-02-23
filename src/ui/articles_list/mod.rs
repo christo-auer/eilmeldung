@@ -553,7 +553,13 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
                 C::ArticleListFilterSet(article_adhoc_filter) => {
                     self.filter_state
-                        .on_new_article_adhoc_filter(article_adhoc_filter.clone());
+                        .on_new_article_adhoc_filter(article_adhoc_filter.clone(), false);
+                    model_needs_update = true;
+                }
+
+                C::ArticleListFilterSetSticky(article_adhoc_filter) => {
+                    self.filter_state
+                        .on_new_article_adhoc_filter(article_adhoc_filter.clone(), true);
                     model_needs_update = true;
                 }
 
@@ -564,6 +570,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
                 C::ArticleListFilterClear => {
                     *self.filter_state.apply_article_adhoc_filter_mut() = false;
+                    *self.filter_state.sticky_adhoc_filter_mut() = false;
                     model_needs_update = true;
                 }
 

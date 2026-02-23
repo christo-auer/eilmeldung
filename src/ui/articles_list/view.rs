@@ -37,6 +37,9 @@ pub struct FilterState {
 
     #[get_mut = "pub(super)"]
     apply_article_adhoc_filter: bool,
+
+    #[get_mut = "pub(super)"]
+    sticky_adhoc_filter: bool,
 }
 
 // impl Default for FilterState {
@@ -65,6 +68,7 @@ impl FilterState {
             adhoc_sort_order: None,
             apply_article_adhoc_filter: false,
             reverse_sort_order: false,
+            sticky_adhoc_filter: false,
         }
     }
 
@@ -128,12 +132,17 @@ impl FilterState {
 
     pub fn on_new_article_filter(&mut self, article_filter: AugmentedArticleFilter) {
         self.augmented_article_filter = Some(article_filter);
-        self.apply_article_adhoc_filter = false;
+        self.apply_article_adhoc_filter = self.sticky_adhoc_filter;
     }
 
-    pub fn on_new_article_adhoc_filter(&mut self, article_adhoc_filter: ArticleQuery) {
+    pub fn on_new_article_adhoc_filter(
+        &mut self,
+        article_adhoc_filter: ArticleQuery,
+        sticky: bool,
+    ) {
         self.article_adhoc_filter = Some(article_adhoc_filter);
         self.apply_article_adhoc_filter = true;
+        self.sticky_adhoc_filter = sticky;
     }
 
     pub fn clear_sort_order(&mut self) {

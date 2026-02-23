@@ -1,5 +1,10 @@
 # Unreleased
 
+- new command `filtersticky` for filter queries which are applied everywhere
+  - `filter` is applied to the current article list and deactivated as soon as another entry in the feed list is selected
+  - `filtersticky` (same syntax as filter) defines a filter which is always applied (use `filterclear` or `+ r` to reset) 
+- bugfix in article queries: negation (`~`) was not applied in certain circumstances (if the key itself could handle the negation)
+
 # 0.9.5 - 2026-02-21
 
 - **enclosures** are now supported!
