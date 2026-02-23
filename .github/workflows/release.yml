@@ -313,7 +313,7 @@ jobs:
   homebrew-bump:
         name: Update Homebrew formula sha256
         runs-on: ubuntu-latest
-        needs: release
+        needs: release-github
         permissions:
           contents: write
         environment: ${{ inputs.environment }}
