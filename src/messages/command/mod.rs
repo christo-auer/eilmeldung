@@ -570,6 +570,13 @@ pub enum Command {
     ArticleListSort(SortOrder),
 
     #[strum(
+        serialize = "sortfeeds",
+        message = "sortfeeds",
+        detailed_message = "sorts the feeds alphabetically (cannot be undone)"
+    )]
+    FeedListSort,
+
+    #[strum(
         serialize = "sortreverse",
         message = "sortreverse",
         detailed_message = "reverse the current sort order (article list)"
@@ -735,6 +742,7 @@ impl Display for Command {
             FeedListTagChangeColor(color) => {
                 write!(f, "change color of tag to {}", color)
             }
+            FeedListSort => write!(f, "sort feed list alphabetically"),
             ArticleListSelectNextUnread => write!(f, "select next unread"),
             Show(ArticleScope::Marked) => write!(f, "show only marked"),
             Show(ArticleScope::Unread) => write!(f, "show only unread"),

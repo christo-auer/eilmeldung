@@ -170,6 +170,24 @@ For complete sorting documentation, see [Commands](commands.md#sorting-articles)
 
 ---
 
+## Feed List Management
+
+These start all with `c` for *change*.
+
+| Key   | Action                                                                               |
+| ----- | --------                                                                             |
+| `c w` | Rename selected element                                                              |
+| `c d` | Remove selected element (move children/subentries up)                                |
+| `c x` | Remove selected element and all its children/subentries                              |
+| `c f` | Add a feed (opens command line)                                                      |
+| `c a` | Add a category (opens command line)                                                  |
+| `c u` | Change URL of feed (opens command line)                                              |
+| `c y` | *Yank* selected element for move operation (feed or category)                        |
+| `c p` | *Paste* yanked element *after* selected element (or *into* if cateogry is selected)  |
+| `c P` | *Paste* yanked element *before* selected element (or *into* if cateogry is selected) |
+| `c c` | Change color of selected tag                                                         |
+| `c s` | Sorts feeds alphabetically                                                           |
+
 ## Command Line
 
 | Key | Action |

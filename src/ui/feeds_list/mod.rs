@@ -596,6 +596,10 @@ impl FeedList {
 
         Ok(())
     }
+
+    async fn sort(&self) -> color_eyre::Result<()> {
+        self.model_data.sort().await
+    }
 }
 
 impl MessageReceiver for FeedList {
@@ -810,6 +814,11 @@ impl MessageReceiver for FeedList {
 
                 C::FeedListPasteFeedOrCategory(position) => {
                     self.paste_feed_or_category(position)?;
+                }
+
+                C::FeedListSort => {
+                    self.sort().await?;
+                    model_needs_update = true;
                 }
 
                 C::Refresh => {

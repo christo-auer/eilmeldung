@@ -93,6 +93,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "c p"       => "paste after",
         "c P"       => "paste before",
         "c c"       => "cmd tagchangecolor",
+        "c s"       => "confirm sortfeeds",
         "S"         => "cmd share",
         "e"         => "openenclosure",
         "E"         => "cmd openenclosure",

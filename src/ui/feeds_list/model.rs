@@ -144,6 +144,13 @@ impl FeedListModelData {
             }
         });
 
+        self.feeds.sort_by(|feed_a, feed_b| {
+            feed_a
+                .label
+                .to_uppercase()
+                .cmp(&feed_b.label.to_uppercase())
+        });
+
         self.category_tree.iter_mut().for_each(|(_, entries)| {
             entries.sort_by(|a, b| {
                 use FeedOrCategory::*;
@@ -416,6 +423,12 @@ impl FeedListModelData {
         category_mapping: CategoryMapping,
     ) -> color_eyre::Result<()> {
         self.news_flash_utils.move_category(category_mapping);
+        Ok(())
+    }
+
+    pub(super) async fn sort(&self) -> color_eyre::Result<()> {
+        let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+        news_flash.sort_alphabetically().await?;
         Ok(())
     }
 }

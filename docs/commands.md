@@ -104,10 +104,11 @@ Here are some common command examples to get you started:
 | `expand`           | `expand`                   | Feed List | Expands the current item in the tree                                                                                                             |
 | `expandcategories` | `expandcategories <scope>` | Feed List | Expand categories with articles in scope, i.e., `all`, `unread` or `marked` articles                                                             |
 | `collapse`         | `collapse`                 | Feed List | Collapses the current item in the tree                                                                                                           |
-| `collapseall`  | `collapseall`              | Feed List | Collapses all items in the tree                                                                                                                  |
+| `collapseall`      | `collapseall`              | Feed List | Collapses all items in the tree                                                                                                                  |
 | `yank`             | `yank`                     | Feed List | Yank (copy) the selected feed or category for moving                                                                                             |
 | `paste`            | `paste <position>`         | Feed List | Paste the yanked item. Position: `before` or `after`. Examples: `:paste after`, `:paste before`                                                  |
 | `search`           | `search <searchterm>`      | Feed List | Search item in feed list; search term can be single word, quoted string or regular expression (see [Article Queries](queries.md))                | 
+| 'sortfeeds`        | `sortfeeds`                | Feed List | Sort feed list alphabetically (cannot be undone)                                                                                                 |
 
 ## Article List
 

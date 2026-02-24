@@ -4,6 +4,7 @@
   - `filter` is applied to the current article list and deactivated as soon as another entry in the feed list is selected
   - `filtersticky` (same syntax as filter) defines a filter which is always applied (use `filterclear` or `+ r` to reset) 
 - want more real estate? That is in eilmeldung at least? Set `show_top_bar = false` in `config.toml` to hide the top bar and gain one whole line of juicy news contents. The status icon is displayed at the bottom right after this.
+- new command `sortfeeds` (key binding `c s`) to sort all feeds alphabetically (this cannot be undone, you have to recreate your manual order afterwards)
 - bugfix in article queries: negation (`~`) was not applied in certain circumstances (if the key itself could handle the negation)
 
 # 0.9.5 - 2026-02-21
