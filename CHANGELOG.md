@@ -1,5 +1,7 @@
 # Unreleased
 
+# 0.9.6 - 2026-02-25
+
 - *first* things *first*
   - `eilmeldung` is now on [terminaltrove](https://terminaltrove.com/eilmeldung/)!
   - and also on [crates.io](https://crates.io/crates/eilmeldung) --- `cargo install eilmeldung` everybody!
