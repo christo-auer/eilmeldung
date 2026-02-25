@@ -1,6 +1,7 @@
 
 push-remote = "origin"
 tag-name = "{{version}}"
+publish = false
 
 pre-release-replacements = [
   {file="CHANGELOG.md", search="# Unreleased", replace="# Unreleased\n\n# {{version}} - {{date}}"},
