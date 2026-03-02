@@ -22,15 +22,10 @@ use crate::{connectivity::ConnectivityMonitor, prelude::*};
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
-    info!("Starting eilmeldung application");
-
-    info!("parsing CLI args");
     let cli_args = CliArgs::parse();
-    let config_dir = cli_args
-        .config_dir()
-        .as_ref()
-        .map(Path::new)
-        .unwrap_or(PROJECT_DIRS.config_dir());
+
+    let config_dir = resolve_config_dir(&cli_args);
+
     let state_dir = cli_args
         .state_dir()
         .as_ref()
@@ -42,11 +37,12 @@ async fn main() -> color_eyre::Result<()> {
     debug!("Error handling and logging initialized");
 
     info!("Loading configuration");
-    let config = Arc::new(load_config(config_dir)?);
+    info!("using config dir: {config_dir:?}");
+    let config = Arc::new(load_config(&config_dir)?);
 
     info!("Initializing NewsFlash");
     let news_flash_attempt = NewsFlash::builder()
-        .config_dir(config_dir)
+        .config_dir(&config_dir)
         .data_dir(state_dir)
         .try_load();
 
@@ -88,7 +84,7 @@ async fn main() -> color_eyre::Result<()> {
                 news_flash = Some(
                     NewsFlash::builder()
                         .data_dir(state_dir)
-                        .config_dir(config_dir)
+                        .config_dir(&config_dir)
                         .plugin(login_data.as_ref().unwrap().id())
                         .create()?,
                 );
