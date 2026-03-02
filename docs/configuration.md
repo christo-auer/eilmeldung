@@ -1,14 +1,21 @@
 # Configuration 
 
 **eilmeldung** uses a TOML configuration file to customize behavior, appearance, and key bindings. The configuration file is optional, eilmeldung works out-of-the-box with sensible defaults.
-The configuration file location is `~/.config/eilmeldung/config.toml` (Linux) or `~/Library/Application Support/org.christo-auer.eilmeldung/config.toml`.
 
-**Note:** Icons and special characters require a terminal and font that support [Nerd Fonts](https://www.nerdfonts.com/).
+**eilmeldung** tries the following directories in order:
 
+- `~/.config/eilmeldung` Linux or `~/Library/Application Support/org.christo-auer.eilmeldung/config.toml` on macos
+- if this doesn't exist: `$XDG_CONFIG_HOME/eilmeldung` (same as before for Linux)
+- if this doesn't exist: `$HOME/.config/eilmeldung`
+- if this doesn't exist: reverts to the first directory in the list and the default configuration is loaded
+
+You can overwrite this behavior by using the `--config-dir <PATH>` [Command Line Option](cli_args.md) which takes precedence over all.
 
  **Important**: You don't need a `config.toml` file. If you don't provide your own `config.toml` *eilmeldung* uses sensible defaults. If you are interested in what these defaults are, you can consult `examples/default-config.toml`.
 
  **Note**: You should not use `examples/default-config.toml` as your configuration as this will cause breaking changes with future releases. Start with an empty `config.toml` and add all the settings you want to have *different* from the default configuration.
+
+**Note:** Icons and special characters require a terminal and font that support [Nerd Fonts](https://www.nerdfonts.com/).
 
 ---
 

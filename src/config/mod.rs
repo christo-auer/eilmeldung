@@ -7,7 +7,10 @@ mod paths;
 mod share_target;
 mod theme;
 
-use std::path::{Path, PathBuf};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 use crate::prelude::*;
 
@@ -20,6 +23,7 @@ pub mod prelude {
     pub use super::input_config::InputConfig;
     pub use super::login_configuration::LoginConfiguration;
     pub use super::paths::{CONFIG_FILE, PROJECT_DIRS};
+    pub use super::resolve_config_dir;
     pub use super::share_target::ShareTarget;
     pub use super::theme::Theme;
     pub use super::{ArticleContentType, ArticleScope, Config, ConfigError, load_config};
@@ -331,6 +335,48 @@ impl Default for Config {
             cli: CliConfig::default(),
         }
     }
+}
+
+fn try_path(path: &Path) -> Option<PathBuf> {
+    if !path.try_exists().unwrap_or(false) {
+        return None;
+    }
+    Some(PathBuf::from(path))
+}
+
+fn extend_eilmeldung(prefix: Option<&str>, path: &str) -> PathBuf {
+    let mut path_buf = PathBuf::from(path);
+
+    if let Some(prefix) = prefix {
+        path_buf.push(prefix);
+    };
+
+    path_buf.push("eilmeldung");
+    path_buf
+}
+
+pub fn resolve_config_dir(cli_args: &CliArgs) -> PathBuf {
+    // CLI has priority
+    if let Some(cli_config_path) = cli_args.config_dir() {
+        return PathBuf::from(cli_config_path);
+    };
+
+    // then try "official path"
+    try_path(PROJECT_DIRS.config_dir())
+        // or $XDG_CONFIG_HOME/eilmeldung
+        .or_else(|| {
+            env::var("XDG_CONFIG_HOME")
+                .ok()
+                .and_then(|path| try_path(&extend_eilmeldung(None, &path)))
+        })
+        // or $HOME/.config/eilmeldung
+        .or_else(|| {
+            env::var("HOME")
+                .ok()
+                .and_then(|home_path| try_path(&extend_eilmeldung(Some(".config"), &home_path)))
+        })
+        // if none worked, revert to "official" one
+        .unwrap_or(PathBuf::from(PROJECT_DIRS.config_dir()))
 }
 
 pub fn load_config(config_dir: &Path) -> color_eyre::Result<Config> {
