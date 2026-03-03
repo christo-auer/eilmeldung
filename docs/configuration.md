@@ -4,7 +4,7 @@
 
 **eilmeldung** tries the following directories in order:
 
-- `~/.config/eilmeldung` Linux or `~/Library/Application Support/org.christo-auer.eilmeldung/config.toml` on macos
+- `~/.config/eilmeldung` Linux or `~/Library/Application Support/org.christo-auer.eilmeldung` on macos
 - if this doesn't exist: `$XDG_CONFIG_HOME/eilmeldung` (same as before for Linux)
 - if this doesn't exist: `$HOME/.config/eilmeldung`
 - if this doesn't exist: reverts to the first directory in the list and the default configuration is loaded

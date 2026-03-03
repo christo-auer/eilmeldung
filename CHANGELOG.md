@@ -1,5 +1,11 @@
 # Unreleased
 
+- configuration directory resolution is now a bit more flexible, in particular, using `~/.config/eilmeldung/` in macos is now possible. **eilmeldung** tries the following directories on startup:
+  - `~/.config/eilmeldung` Linux or `~/Library/Application Support/org.christo-auer.eilmeldung` on macos
+  - if this doesn't exist: `$XDG_CONFIG_HOME/eilmeldung` (same as before for Linux)
+  - if this doesn't exist: `$HOME/.config/eilmeldung`
+  - if this doesn't exist: reverts to the first directory in the list and the default configuration is loaded
+
 # 0.9.6 - 2026-02-25
 
 - *first* things *first*
