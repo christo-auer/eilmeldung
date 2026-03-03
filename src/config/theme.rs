@@ -9,6 +9,7 @@ pub struct ColorPalette {
     foreground: Color,
     muted: Color,
     highlight: Color,
+    flagged: Color,
     accent_primary: Color,
     accent_secondary: Color,
     accent_tertiary: Color,
@@ -27,6 +28,7 @@ impl Default for ColorPalette {
             foreground: C::White,
             muted: C::DarkGray,
             highlight: C::Yellow,
+            flagged: C::Red,
             accent_primary: C::Magenta,
             accent_secondary: C::Blue,
             accent_tertiary: C::Cyan,
@@ -48,6 +50,7 @@ pub enum StyleColor {
     Foreground,
     Muted,
     Highlight,
+    Flagged,
     AccentPrimary,
     AccentSecondary,
     AccentTertiary,
@@ -74,6 +77,7 @@ impl<'de> serde::de::Deserialize<'de> for StyleColor {
             "foreground" => C::Foreground,
             "muted" => C::Muted,
             "highlight" => C::Highlight,
+            "flagged" => C::Flagged,
             "accent_primary" => C::AccentPrimary,
             "accent_secondary" => C::AccentSecondary,
             "accent_tertiary" => C::AccentTertiary,
@@ -186,6 +190,7 @@ pub struct StyleSet {
     read: ComponentStyle,
     selected: ComponentStyle,
     highlighted: ComponentStyle,
+    flagged: ComponentStyle,
 }
 
 impl Default for StyleSet {
@@ -225,6 +230,8 @@ impl Default for StyleSet {
                 .fg(C::Highlight)
                 .mods(&[M::Italic]),
 
+            flagged: ComponentStyle::default().fg(C::Flagged),
+
             unread_count: ComponentStyle::default().mods(&[M::Italic]),
             marked_count: ComponentStyle::default().mods(&[M::Italic]),
         }
@@ -246,6 +253,14 @@ macro_rules! component_funs {
     };
 }
 
+macro_rules! patch_funs {
+    {$($prop:ident),*} => {
+        $(pub fn $prop(&self, style: &Style) -> Style {
+            style.patch(self.to_style(&self.style_set.$prop))
+        })*
+    };
+}
+
 impl Theme {
     pub fn color(&self, style_color: StyleColor) -> Option<Color> {
         use StyleColor as SC;
@@ -255,6 +270,7 @@ impl Theme {
             SC::Foreground => self.color_palette.foreground,
             SC::Muted => self.color_palette.muted,
             SC::Highlight => self.color_palette.highlight,
+            SC::Flagged => self.color_palette.flagged,
             SC::AccentPrimary => self.color_palette.accent_primary,
             SC::AccentSecondary => self.color_palette.accent_secondary,
             SC::AccentTertiary => self.color_palette.accent_tertiary,
@@ -283,20 +299,12 @@ impl Theme {
         }
     }
 
-    pub fn patch_unread(&self, style: &Style) -> Style {
-        style.patch(self.to_style(&self.style_set.unread))
-    }
-
-    pub fn patch_read(&self, style: &Style) -> Style {
-        style.patch(self.to_style(&self.style_set.read))
-    }
-
-    pub fn patch_selected(&self, style: &Style) -> Style {
-        style.patch(self.to_style(&self.style_set.selected))
-    }
-
-    pub fn patch_highlighted(&self, style: &Style) -> Style {
-        style.patch(self.to_style(&self.style_set.highlighted))
+    patch_funs! {
+        unread,
+        read,
+        selected,
+        highlighted,
+        flagged
     }
 
     component_funs! {
@@ -316,9 +324,7 @@ impl Theme {
       tooltip_info,
       tooltip_warning,
       tooltip_error,
-      selected,
       unread_count,
-      marked_count,
-      highlighted
+      marked_count
     }
 }

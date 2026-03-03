@@ -468,6 +468,20 @@ pub enum Command {
     ActionSetUnmarked(ActionScope),
 
     #[strum(
+        serialize = "flag",
+        message = "flag <scope>",
+        detailed_message = "flags all articles matching the scope (article list)"
+    )]
+    ActionSetFlagged(ActionScope),
+
+    #[strum(
+        serialize = "unflag",
+        message = "unflag <scope>",
+        detailed_message = "unflags all articles matching the scope (article list)"
+    )]
+    ActionSetUnflagged(ActionScope),
+
+    #[strum(
         serialize = "open",
         message = "open",
         detailed_message = "opens all articles matching the scope in the webbrowser (article list)"
@@ -818,6 +832,8 @@ impl Display for Command {
             ActionSetUnread(action_scope) => write!(f, "mark {} as unread", action_scope),
             ActionSetMarked(action_scope) => write!(f, "mark {}", action_scope),
             ActionSetUnmarked(action_scope) => write!(f, "unmark {}", action_scope),
+            ActionSetFlagged(action_scope) => write!(f, "flag {}", action_scope),
+            ActionSetUnflagged(action_scope) => write!(f, "unflag {}", action_scope),
             ActionOpenInBrowser(action_scope) => write!(f, "open {} in browser", action_scope),
             ActionTagArticles(action_scope, tag) => {
                 write!(f, "add #{} to {}", tag, &action_scope)

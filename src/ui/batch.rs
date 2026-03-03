@@ -63,7 +63,7 @@ impl BatchProcessor {
                         '',
                         self.config
                             .theme
-                            .patch_highlighted(&self.config.theme.paragraph()),
+                            .highlighted(&self.config.theme.paragraph()),
                     )
                 } else {
                     (' ', self.config.theme.paragraph())

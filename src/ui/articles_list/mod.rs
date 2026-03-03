@@ -144,7 +144,6 @@ impl ArticlesList {
         if let Some(index) = self.view_data.get_table_state().selected() {
             return self.model_data.articles().get(index).cloned();
         }
-
         None
     }
 
@@ -157,11 +156,13 @@ impl ArticlesList {
         let predicate = |article: &Article| {
             article_query.test(
                 article,
-                self.model_data.feed_map(),
-                self.model_data.category_for_feed(),
-                self.model_data.tags_for_article(),
-                self.model_data.tag_map(),
-                self.model_data.last_sync(),
+                &ArticleQueryContext {
+                    feed_map: self.model_data.feed_map(),
+                    category_for_feed: self.model_data.category_for_feed(),
+                    tags_for_article: self.model_data.tags_for_article(),
+                    tag_map: self.model_data.tag_map(),
+                    last_sync: self.model_data.last_sync(),
+                },
             )
         };
 
@@ -199,7 +200,22 @@ impl ArticlesList {
         use ActionScope as S;
         Ok(match action_scope {
             S::All => self.model_data.articles().clone(),
-            S::Current => self.get_current_article().iter().cloned().collect(),
+            S::Current => {
+                if self.view_data.flagged_articles().is_empty() {
+                    self.get_current_article().iter().cloned().collect()
+                } else {
+                    self.model_data
+                        .articles()
+                        .iter()
+                        .filter(|article| {
+                            self.view_data
+                                .flagged_articles()
+                                .contains(&article.article_id)
+                        })
+                        .cloned()
+                        .collect()
+                }
+            }
             direction @ (S::Above | S::Below) => {
                 if let Some(index) = self.view_data.table_state().selected() {
                     let offset = if matches!(direction, S::Above) { 1 } else { 0 };
@@ -406,6 +422,34 @@ impl ArticlesList {
         }
         Ok(())
     }
+
+    fn set_action_scope_flagged(
+        &mut self,
+        action_scope: &ActionScope,
+        flag: bool,
+    ) -> color_eyre::Result<()> {
+        let articles = match action_scope {
+            ActionScope::Current => self
+                .get_current_article()
+                .map(|article| article.article_id)
+                .iter()
+                .cloned()
+                .collect(),
+            action_scope => self.get_article_ids_by_action_scope(action_scope)?,
+        };
+
+        let flagged_articles = self.view_data.flagged_articles_mut();
+
+        if flag {
+            flagged_articles.extend(articles);
+        } else {
+            articles.iter().for_each(|article_id| {
+                flagged_articles.remove(article_id);
+            });
+        }
+
+        Ok(())
+    }
 }
 
 impl crate::messages::MessageReceiver for ArticlesList {
@@ -481,6 +525,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 // actions
                 C::ActionOpenInBrowser(action_scope) => {
                     self.open_in_browser(&action_scope)?;
+                    self.view_data.flagged_articles_mut().clear();
                 }
 
                 C::ActionSetRead(action_scope) if handle_command => {
@@ -505,6 +550,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
                         _ => {
                             self.set_action_scope_read_status(&action_scope, Read::Read)?;
+                            self.view_data.flagged_articles_mut().clear();
                             view_needs_update = true;
                         }
                     }
@@ -512,26 +558,41 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
                 C::ActionSetUnread(action_scope) => {
                     self.set_action_scope_read_status(&action_scope, Read::Unread)?;
+                    self.view_data.flagged_articles_mut().clear();
                     view_needs_update = true;
                 }
 
                 C::ActionSetMarked(action_scope) => {
                     self.set_action_scope_marked_status(&action_scope, Marked::Marked)?;
+                    self.view_data.flagged_articles_mut().clear();
+                    view_needs_update = true;
+                }
+
+                C::ActionSetFlagged(action_scope) => {
+                    self.set_action_scope_flagged(&action_scope, true)?;
+                    view_needs_update = true;
+                }
+
+                C::ActionSetUnflagged(action_scope) => {
+                    self.set_action_scope_flagged(&action_scope, false)?;
                     view_needs_update = true;
                 }
 
                 C::ActionSetUnmarked(action_scope) => {
                     self.set_action_scope_marked_status(&action_scope, Marked::Unmarked)?;
+                    self.view_data.flagged_articles_mut().clear();
                     view_needs_update = true;
                 }
 
                 C::ActionTagArticles(action_scope, tag_name) => {
                     self.on_tag_or_untag(action_scope, tag_name, true)?;
+                    self.view_data.flagged_articles_mut().clear();
                     view_needs_update = true;
                 }
 
                 C::ActionUntagArticles(action_scope, tag_name) => {
                     self.on_tag_or_untag(action_scope, tag_name, false)?;
+                    self.view_data.flagged_articles_mut().clear();
                     view_needs_update = true;
                 }
 

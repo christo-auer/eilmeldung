@@ -78,6 +78,8 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "0 v"       => "confirm in articles unmark above",
         "$ v"       => "confirm in articles unmark below",
         "M-v"       => "cmd unmark",
+        "f"         => "flag" "in articles down",
+        "F"         => "unflag" "in articles down",
         "1"         => "show all",
         "2"         => "show unread",
         "3"         => "show marked",

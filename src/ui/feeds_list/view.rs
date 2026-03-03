@@ -57,7 +57,7 @@ impl FeedListViewData {
 
 impl Widget for &mut FeedList {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        let highlight_style = self.config.theme.selected();
+        let highlight_style = self.config.theme.selected(&Default::default());
 
         let tree_items = self.view_data.tree_items().clone();
 
@@ -146,7 +146,10 @@ impl FeedListViewData {
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&query_item_text)
         {
-            patch_text_style(&mut query_item_text, config.theme.highlighted());
+            patch_text_style(
+                &mut query_item_text,
+                config.theme.highlighted(&Default::default()),
+            );
             self.found_items.insert(query_item.to_owned());
         }
 
@@ -222,7 +225,10 @@ impl FeedListViewData {
                 if let Some(search_term) = search_term.as_ref()
                     && search_term.test_text(&categories_text)
                 {
-                    patch_text_style(&mut categories_text, config.theme.highlighted());
+                    patch_text_style(
+                        &mut categories_text,
+                        config.theme.highlighted(&Default::default()),
+                    );
                     self.found_items.insert(categories_item.to_owned());
                 }
 
@@ -275,7 +281,10 @@ impl FeedListViewData {
                     if let Some(search_term) = search_term.as_ref()
                         && search_term.test_text(&tag_item_text)
                     {
-                        patch_text_style(&mut tag_item_text, config.theme.highlighted());
+                        patch_text_style(
+                            &mut tag_item_text,
+                            config.theme.highlighted(&Default::default()),
+                        );
                         self.found_items.insert(tags_item.to_owned());
                     }
 
@@ -355,9 +364,10 @@ impl FeedListViewData {
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&identifier_text)
         {
-            patch_text_style(&mut identifier_text, config.theme.highlighted());
-            // identifier_text.style = config.theme.patch_highlighted(&identifier_text.style);
-            // identifier_text = identifier_text.style(config.theme.highlighted());
+            patch_text_style(
+                &mut identifier_text,
+                config.theme.highlighted(&Default::default()),
+            );
             self.found_items.insert(identifier.to_owned());
         }
 
@@ -415,7 +425,10 @@ impl FeedListViewData {
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&identifier_text)
         {
-            patch_text_style(&mut identifier_text, config.theme.highlighted());
+            patch_text_style(
+                &mut identifier_text,
+                config.theme.highlighted(&Default::default()),
+            );
             self.found_items.insert(identifier.to_owned());
         }
 
@@ -445,7 +458,10 @@ impl FeedListViewData {
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&tag_item_text)
         {
-            patch_text_style(&mut tag_item_text, config.theme.highlighted());
+            patch_text_style(
+                &mut tag_item_text,
+                config.theme.highlighted(&Default::default()),
+            );
             self.found_items.insert(tag_item.to_owned());
         }
         TreeItem::new_leaf(tag_item, tag_item_text)

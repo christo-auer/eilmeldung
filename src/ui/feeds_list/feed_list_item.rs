@@ -108,9 +108,9 @@ impl FeedListItem {
 
         if let Some(unread_count) = unread_count {
             if unread_count > 0 {
-                style = config.theme.patch_unread(&style);
+                style = config.theme.unread(&style);
             } else {
-                style = config.theme.patch_read(&style);
+                style = config.theme.read(&style);
             }
         }
 

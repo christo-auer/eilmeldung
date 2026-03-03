@@ -142,11 +142,13 @@ impl ArticleListModelData {
     pub(super) fn get_queried_articles(&self, query: &ArticleQuery) -> Vec<Article> {
         query.filter(
             &self.articles,
-            &self.feed_map,
-            &self.category_for_feed,
-            &self.tags_for_article,
-            &self.tag_map,
-            &self.last_sync,
+            &ArticleQueryContext {
+                feed_map: self.feed_map(),
+                category_for_feed: self.category_for_feed(),
+                tags_for_article: self.tags_for_article(),
+                tag_map: self.tag_map(),
+                last_sync: self.last_sync(),
+            },
         )
     }
 

@@ -6,7 +6,7 @@ pub mod prelude {
     pub use super::parse::{QueryParseError, QueryToken, strip_first_and_last};
     pub use super::search_term::{SearchTerm, to_search_term};
     pub use super::sort_order::{SortDirection, SortKey, SortOrder, SortOrderParseError};
-    pub use super::{ArticleQuery, AugmentedArticleFilter};
+    pub use super::{ArticleQuery, ArticleQueryContext, AugmentedArticleFilter};
 }
 
 use crate::prelude::*;
@@ -75,56 +75,44 @@ pub struct ArticleQuery {
     sort_order: Option<SortOrder>,
 }
 
+pub struct ArticleQueryContext<'a> {
+    pub feed_map: &'a HashMap<FeedID, Feed>,
+    pub category_for_feed: &'a HashMap<FeedID, Category>,
+    pub tags_for_article: &'a HashMap<ArticleID, Vec<TagID>>,
+    pub tag_map: &'a HashMap<TagID, Tag>,
+    pub last_sync: &'a DateTime<Utc>,
+}
+
 impl ArticleQuery {
     #[inline(always)]
-    pub fn filter(
-        &self,
-        articles: &[Article],
-        feed_map: &HashMap<FeedID, Feed>,
-        category_for_feed: &HashMap<FeedID, Category>,
-        tags_for_article: &HashMap<ArticleID, Vec<TagID>>,
-        tag_map: &HashMap<TagID, Tag>,
-        last_sync: &DateTime<Utc>,
-    ) -> Vec<Article> {
+    pub fn filter(&self, articles: &[Article], context: &ArticleQueryContext) -> Vec<Article> {
         articles
             .iter()
-            .filter(|article| {
-                self.test(
-                    article,
-                    feed_map,
-                    category_for_feed,
-                    tags_for_article,
-                    tag_map,
-                    last_sync,
-                )
-            })
+            .filter(|article| self.test(article, context))
             .cloned()
             .collect::<Vec<Article>>()
     }
 
     #[inline(always)]
-    pub fn test(
-        &self,
-        article: &Article,
-        feed_map: &HashMap<FeedID, Feed>,
-        category_for_feed: &HashMap<FeedID, Category>,
-        tags_for_article: &HashMap<ArticleID, Vec<TagID>>,
-        tag_map: &HashMap<TagID, Tag>,
-        last_sync: &DateTime<Utc>,
-    ) -> bool {
-        let feed = feed_map.get(&article.feed_id);
+    pub fn test(&self, article: &Article, context: &ArticleQueryContext) -> bool {
+        let feed = context.feed_map.get(&article.feed_id);
 
-        let category = category_for_feed.get(&article.feed_id);
+        let category = context.category_for_feed.get(&article.feed_id);
 
-        let tags = tags_for_article.get(&article.article_id).map(|tag_ids| {
-            tag_ids
-                .iter()
-                .filter_map(|tag_id| tag_map.get(tag_id).map(|tag| tag.label.to_string()))
-                .collect::<HashSet<String>>()
-        });
+        let tags = context
+            .tags_for_article
+            .get(&article.article_id)
+            .map(|tag_ids| {
+                tag_ids
+                    .iter()
+                    .filter_map(|tag_id| {
+                        context.tag_map.get(tag_id).map(|tag| tag.label.to_string())
+                    })
+                    .collect::<HashSet<String>>()
+            });
 
         self.query.iter().all(|query_clause| {
-            query_clause.test(article, feed, category, tags.as_ref(), last_sync)
+            query_clause.test(article, feed, category, tags.as_ref(), context.last_sync)
         })
     }
 }
