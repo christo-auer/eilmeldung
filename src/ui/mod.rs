@@ -239,7 +239,11 @@ impl App {
             .send(Message::Command(Command::PanelFocus(Panel::FeedList)))?;
 
         // execute all startup commands
-        debug!("executing startup commands");
+        debug!(
+            "executing startup commands: {:?}",
+            self.config.startup_commands
+        );
+        self.batch_processor.show_popup();
         self.message_sender
             .send(Message::Batch(self.config.startup_commands.to_vec()))?;
 
