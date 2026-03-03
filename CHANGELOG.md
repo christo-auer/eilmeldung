@@ -5,6 +5,7 @@
   - if this doesn't exist: `$XDG_CONFIG_HOME/eilmeldung` (same as before for Linux)
   - if this doesn't exist: `$HOME/.config/eilmeldung`
   - if this doesn't exist: reverts to the first directory in the list and the default configuration is loaded
+- optimiziation: batch commands (e.g., `startup_commands`) are now only blocking if they contain more than one entry
 
 # 0.9.6 - 2026-02-25
 

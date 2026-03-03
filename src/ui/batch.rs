@@ -56,9 +56,9 @@ impl BatchProcessor {
             .iter()
             .enumerate()
             .map(|(index, command)| {
-                let (state, style) = if index < self.current_command_index {
+                let (state, style) = if index < self.current_command_index.saturating_sub(1) {
                     ('', self.config.theme.inactive())
-                } else if index == self.current_command_index {
+                } else if index == self.current_command_index.saturating_sub(1) {
                     (
                         '',
                         self.config
@@ -109,6 +109,22 @@ impl BatchProcessor {
 impl MessageReceiver for BatchProcessor {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         if let Message::Batch(commands) = message {
+            // no commands in batch? -> return
+            if commands.is_empty() {
+                self.show_popup = false;
+                return Ok(());
+            }
+
+            // if its just one command, execute it directly
+            if commands.len() == 1
+                && let Some(command) = commands.first()
+            {
+                self.show_popup = false;
+                self.message_sender
+                    .send(Message::Command(command.to_owned()))?;
+                return Ok(());
+            }
+
             // add sentinel value for "end of batch"
             let mut commands = commands.to_vec();
             commands.push(Command::NoOperation);
