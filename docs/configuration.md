@@ -1,6 +1,5 @@
 # Configuration 
 
-
  **Important**: You don't need a `config.toml` file. If you don't provide your own `config.toml` *eilmeldung* uses sensible defaults. If you are interested in what these defaults are, you can consult `examples/default-config.toml`.
 
  **Note**: You should not use `examples/default-config.toml` as your configuration as this will cause breaking changes with future releases. Start with an empty `config.toml` and add all the settings you want to have *different* from the default configuration.
