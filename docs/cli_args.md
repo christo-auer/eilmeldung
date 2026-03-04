@@ -8,14 +8,15 @@ Run `eilmeldung --help` to display all available command line arguments
 
 ### General
 
-| Argument                          | Description                                                    |
-| ---                               | ---                                                            |
-| `--log-file <LOG_FILE>`           | Log file (must be writable)                                    |
-| `--log-level <LOG_LEVEL>`         | Log level (OFF, ERROR, WARN, INFO, DEBUG, TRACE), default INFO |
-| `-c`, `--config-dir <CONFIG_DIR>` | Directory with config files (config.toml, etc.)                |
-| `-s`, `--state-dir <STATE_DIR>`   | Directory with state files (database, etc.)                    |
-| `-h`, `--help`                    | Print help                                                     |
-| `-V`, `--version`                 | Print version                                                  |
+| Argument                               | Description                                                                                    |
+| ---                                    | ---                                                                                            |
+| `--log-file <LOG_FILE>`                | Log file (must be writable)                                                                    |
+| `--log-level <LOG_LEVEL>`              | Log level (OFF, ERROR, WARN, INFO, DEBUG, TRACE), default INFO                                 |
+| `-c`, `--config-dir <CONFIG_DIR>`      | Directory with config files (config.toml, etc.)                                                |
+| `--news-flash-config-dir <CONFIG_DIR>` | Directory with news-flash configuration files (`newsflash.json`, authentication configuration) |
+| `--news-flash-state-dir <STATE_DIR>`   | Directory with news-flash state files (database, cache, etc.)                                  |
+| `-h`, `--help`                         | Print help                                                                                     |
+| `-V`, `--version`                      | Print version                                                                                  |
 
 ### Login Related
 

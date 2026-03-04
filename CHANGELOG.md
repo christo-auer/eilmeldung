@@ -1,10 +1,13 @@
 # Unreleased
 
 - configuration directory resolution is now a bit more flexible, in particular, using `~/.config/eilmeldung/` in macos is now possible. **eilmeldung** tries the following directories on startup:
-  - `~/.config/eilmeldung` Linux or `~/Library/Application Support/org.christo-auer.eilmeldung` on macos
-  - if this doesn't exist: `$XDG_CONFIG_HOME/eilmeldung` (same as before for Linux)
-  - if this doesn't exist: `$HOME/.config/eilmeldung`
-  - if this doesn't exist: reverts to the first directory in the list and the default configuration is loaded
+  - `$XDG_CONFIG_HOME/eilmeldung/config.toml` on Linux **and** macos
+  - if this doesn't exist: `$HOME/.config/eilmeldung/config.toml` on Linux **and** macos
+  - if this doesn't exist
+    - Linux: default config is used
+    - macos: `~/Library/Application Support/org.christo-auer.eilmeldung/config.toml`
+  - if none of the above exists, the default configuration is used
+  - by using CLI arguments (see `docs/cli_args.md`) you can adjust the location of eilmeldung's `config.toml`, news-flash configuration and state directories
 - optimiziation: batch commands (e.g., `startup_commands`) are now only blocking if they contain more than one entry
 
 # 0.9.6 - 2026-02-25

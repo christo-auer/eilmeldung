@@ -1,26 +1,18 @@
 # Configuration 
 
-**eilmeldung** uses a TOML configuration file to customize behavior, appearance, and key bindings. The configuration file is optional, eilmeldung works out-of-the-box with sensible defaults.
-
-**eilmeldung** tries the following directories in order:
-
-- `~/.config/eilmeldung` Linux or `~/Library/Application Support/org.christo-auer.eilmeldung` on macos
-- if this doesn't exist: `$XDG_CONFIG_HOME/eilmeldung` (same as before for Linux)
-- if this doesn't exist: `$HOME/.config/eilmeldung`
-- if this doesn't exist: reverts to the first directory in the list and the default configuration is loaded
-
-You can overwrite this behavior by using the `--config-dir <PATH>` [Command Line Option](cli_args.md) which takes precedence over all.
-
  **Important**: You don't need a `config.toml` file. If you don't provide your own `config.toml` *eilmeldung* uses sensible defaults. If you are interested in what these defaults are, you can consult `examples/default-config.toml`.
 
  **Note**: You should not use `examples/default-config.toml` as your configuration as this will cause breaking changes with future releases. Start with an empty `config.toml` and add all the settings you want to have *different* from the default configuration.
 
 **Note:** Icons and special characters require a terminal and font that support [Nerd Fonts](https://www.nerdfonts.com/).
 
----
-
+**eilmeldung** uses a TOML configuration file to customize behavior, appearance, and key bindings. The configuration file is optional, eilmeldung works out-of-the-box with sensible defaults.
 ## Table of Contents
 
+
+- [Location of Configuration Files](#location-of-configuration-files)
+  - [eilmeldung Configuration File](#eilmeldung-configuration-file)
+  - [news-flash State Files](#news-flash-state-files)
 - [Basic Configuration Options](#basic-configuration-options)
 - [Default Sort Order](#default-sort-order)
 - [Input Configuration](#input-configuration)
@@ -42,6 +34,38 @@ You can overwrite this behavior by using the `--config-dir <PATH>` [Command Line
   - [Finding the Right Settings](#finding-the-right-settings)
 
 ---
+
+
+## Location of Configuration Files
+
+### eilmeldung Configuration File
+**eilmeldung** tries the following locations for `config.toml` in order:
+
+- `$XDG_CONFIG_HOME/eilmeldung/config.toml` on Linux **and** macos
+- if this doesn't exist: `$HOME/.config/eilmeldung/config.toml` 
+- if this doesn't exist
+  - Linux: default config is used
+  - macos: `~/Library/Application Support/org.christo-auer.eilmeldung/config.toml`
+- if none of the above exists, the default configuration is used
+
+You can overwrite this behavior by using the `--config-dir <PATH>` [Command Line Option](cli_args.md) which takes precedence over all.
+
+### news-flash State Files
+
+news-flash configuration files (`newsflash.json` and authentication files) are stored in:
+
+- Linux: `$XDG_CONFIG_HOME/eilmeldung` (which is usually `~/.config/eilmeldung`)
+- macos: `~/Library/Application Support/org.christo-auer.eilmeldung`
+
+news-flash local database and caches are stored in:
+
+- Linux: `$XDG_DATA_HOME/eilmeldung` which is usually (`~/.local/state/eilmeldung`)
+- macos: `~/Library/Application Support/org.christo-auer.eilmeldung`
+
+You can change this behaviour by using the [Command Line Options](cli_args.md) `--news-flash-config-dir` and `--news-flash-state-dir`
+
+---
+
 
 ## Basic Configuration Options
 

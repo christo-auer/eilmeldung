@@ -22,13 +22,17 @@ pub struct CliArgs {
     #[arg(long)]
     log_level: Option<LevelFilter>,
 
-    /// Directory with config files (config.toml, etc.)
+    /// Directory with eilmeldung config file (config.toml)
     #[arg(short, long)]
     config_dir: Option<String>,
 
-    /// Directory with state files (database, etc.)
-    #[arg(short, long)]
-    state_dir: Option<String>,
+    /// Directory with news-flash config files (newsflash.json, authentication configuration)
+    #[arg(long)]
+    news_flash_config_dir: Option<String>,
+
+    /// Directory with news-flash state files (database, etc.)
+    #[arg(long)]
+    news_flash_state_dir: Option<String>,
 
     /// Show secrets when printing login data
     #[arg(long)]

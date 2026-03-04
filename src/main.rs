@@ -24,10 +24,16 @@ use crate::{connectivity::ConnectivityMonitor, prelude::*};
 async fn main() -> color_eyre::Result<()> {
     let cli_args = CliArgs::parse();
 
-    let config_dir = resolve_config_dir(&cli_args);
+    let eilmeldung_config_dir = resolve_eilmeldung_config_dir(&cli_args);
+
+    let news_flash_config_dir = cli_args
+        .news_flash_config_dir()
+        .as_ref()
+        .map(Path::new)
+        .unwrap_or(PROJECT_DIRS.config_dir());
 
     let state_dir = cli_args
-        .state_dir()
+        .news_flash_state_dir()
         .as_ref()
         .map(Path::new)
         .unwrap_or(PROJECT_DIRS.state_dir().unwrap_or(PROJECT_DIRS.data_dir()));
@@ -36,13 +42,16 @@ async fn main() -> color_eyre::Result<()> {
     crate::logging::init_logging(&cli_args)?;
     debug!("Error handling and logging initialized");
 
+    info!("eilmeldung config dir: {eilmeldung_config_dir:?}");
+    info!("newsflash config dir: {news_flash_config_dir:?}");
+    info!("state dir: {state_dir:?}");
+
     info!("Loading configuration");
-    info!("using config dir: {config_dir:?}");
-    let config = Arc::new(load_config(&config_dir)?);
+    let config = Arc::new(load_config(&eilmeldung_config_dir)?);
 
     info!("Initializing NewsFlash");
     let news_flash_attempt = NewsFlash::builder()
-        .config_dir(&config_dir)
+        .config_dir(news_flash_config_dir)
         .data_dir(state_dir)
         .try_load();
 
@@ -84,7 +93,7 @@ async fn main() -> color_eyre::Result<()> {
                 news_flash = Some(
                     NewsFlash::builder()
                         .data_dir(state_dir)
-                        .config_dir(&config_dir)
+                        .config_dir(news_flash_config_dir)
                         .plugin(login_data.as_ref().unwrap().id())
                         .create()?,
                 );
