@@ -121,7 +121,7 @@ impl ArticlesList {
             .map(|(index, _)| index)
     }
 
-    pub(super) fn open_in_browser(&self, action_scope: &ActionScope) -> color_eyre::Result<()> {
+    pub(super) fn open_in_browser(&mut self, action_scope: &ActionScope) -> color_eyre::Result<()> {
         let articles = self.get_articles_by_action_scope(action_scope)?;
 
         for article in articles.iter() {
@@ -194,7 +194,7 @@ impl ArticlesList {
     }
 
     pub(super) fn get_articles_by_action_scope(
-        &self,
+        &mut self,
         action_scope: &ActionScope,
     ) -> color_eyre::Result<Vec<Article>> {
         use ActionScope as S;
@@ -204,7 +204,8 @@ impl ArticlesList {
                 if self.view_data.flagged_articles().is_empty() {
                     self.get_current_article().iter().cloned().collect()
                 } else {
-                    self.model_data
+                    let flagged_articles = self
+                        .model_data
                         .articles()
                         .iter()
                         .filter(|article| {
@@ -213,7 +214,9 @@ impl ArticlesList {
                                 .contains(&article.article_id)
                         })
                         .cloned()
-                        .collect()
+                        .collect();
+                    self.view_data.flagged_articles_mut().clear();
+                    flagged_articles
                 }
             }
             direction @ (S::Above | S::Below) => {
@@ -235,7 +238,7 @@ impl ArticlesList {
     }
 
     pub(super) fn get_article_ids_by_action_scope(
-        &self,
+        &mut self,
         action_scope: &ActionScope,
     ) -> color_eyre::Result<Vec<ArticleID>> {
         Ok(self
@@ -250,9 +253,8 @@ impl ArticlesList {
         action_scope: &ActionScope,
         read: Read,
     ) -> color_eyre::Result<usize> {
-        let amount = self
-            .model_data
-            .set_read_status(self.get_article_ids_by_action_scope(action_scope)?, read)?;
+        let articles = self.get_article_ids_by_action_scope(action_scope)?;
+        let amount = self.model_data.set_read_status(articles, read)?;
 
         tooltip(
             &self.message_sender,
@@ -276,9 +278,8 @@ impl ArticlesList {
         action_scope: &ActionScope,
         marked: Marked,
     ) -> color_eyre::Result<usize> {
-        let amount = self
-            .model_data
-            .set_marked_status(self.get_article_ids_by_action_scope(action_scope)?, marked)?;
+        let articles = self.get_article_ids_by_action_scope(action_scope)?;
+        let amount = self.model_data.set_marked_status(articles, marked)?;
 
         tooltip(
             &self.message_sender,
@@ -525,7 +526,6 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 // actions
                 C::ActionOpenInBrowser(action_scope) => {
                     self.open_in_browser(&action_scope)?;
-                    self.view_data.flagged_articles_mut().clear();
                 }
 
                 C::ActionSetRead(action_scope) if handle_command => {
@@ -550,7 +550,6 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
                         _ => {
                             self.set_action_scope_read_status(&action_scope, Read::Read)?;
-                            self.view_data.flagged_articles_mut().clear();
                             view_needs_update = true;
                         }
                     }
@@ -558,13 +557,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
                 C::ActionSetUnread(action_scope) => {
                     self.set_action_scope_read_status(&action_scope, Read::Unread)?;
-                    self.view_data.flagged_articles_mut().clear();
                     view_needs_update = true;
                 }
 
                 C::ActionSetMarked(action_scope) => {
                     self.set_action_scope_marked_status(&action_scope, Marked::Marked)?;
-                    self.view_data.flagged_articles_mut().clear();
                     view_needs_update = true;
                 }
 
@@ -580,19 +577,16 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
                 C::ActionSetUnmarked(action_scope) => {
                     self.set_action_scope_marked_status(&action_scope, Marked::Unmarked)?;
-                    self.view_data.flagged_articles_mut().clear();
                     view_needs_update = true;
                 }
 
                 C::ActionTagArticles(action_scope, tag_name) => {
                     self.on_tag_or_untag(action_scope, tag_name, true)?;
-                    self.view_data.flagged_articles_mut().clear();
                     view_needs_update = true;
                 }
 
                 C::ActionUntagArticles(action_scope, tag_name) => {
                     self.on_tag_or_untag(action_scope, tag_name, false)?;
-                    self.view_data.flagged_articles_mut().clear();
                     view_needs_update = true;
                 }
 
