@@ -27,13 +27,13 @@ async fn main() -> color_eyre::Result<()> {
     let eilmeldung_config_dir = resolve_eilmeldung_config_dir(&cli_args);
 
     let news_flash_config_dir = cli_args
-        .news_flash_config()
+        .news_flash_config_dir()
         .as_ref()
         .map(Path::new)
         .unwrap_or(PROJECT_DIRS.config_dir());
 
     let state_dir = cli_args
-        .state_dir()
+        .news_flash_state_dir()
         .as_ref()
         .map(Path::new)
         .unwrap_or(PROJECT_DIRS.state_dir().unwrap_or(PROJECT_DIRS.data_dir()));
