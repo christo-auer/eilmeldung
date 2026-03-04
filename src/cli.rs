@@ -27,11 +27,11 @@ pub struct CliArgs {
     config_dir: Option<String>,
 
     /// Directory with news-flash config files (newsflash.json, authentication configuration)
-    #[arg(short, long)]
+    #[arg(long)]
     news_flash_config_dir: Option<String>,
 
     /// Directory with news-flash state files (database, etc.)
-    #[arg(short, long)]
+    #[arg(long)]
     news_flash_state_dir: Option<String>,
 
     /// Show secrets when printing login data
