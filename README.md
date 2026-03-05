@@ -22,6 +22,7 @@
 - [Quick Start](#quick-start)
 - [Quick Reference](#quick-reference)
 - [Documentation](#documentation)
+- [Alternatives](#alternatives)
 - [FAQ](#faq)
 - [Credits](#credits)
 - [Contributing](#contributing)
@@ -106,6 +107,18 @@ Complete documentation is available in the `docs/` directory:
 - **[Configuration Guide](docs/configuration.md)** - Customize appearance and behavior
 - **[Command Line Arguments](docs/cli_args.md)** - Available CLI options
 - **[FAQ](docs/faq.md)** - Frequently asked questions
+
+---
+
+# Alternatives
+
+Of course, there are many awesome alternatives to *eilmeldung*. Check them out!
+
+- [newsboat](https://newsboat.org/) is the battle-proven classic
+- [feedr](https://github.com/bahdotsh/feedr) is a feature-rich terminal-based RSS feed reader written in Rust
+- [russ](https://github.com/ckampfe/russ)  is a TUI RSS/Atom reader with vim-like controls and a local-first, offline-first focus.
+- [elfeed](https://github.com/skeeto/elfeed) provides RSS in emacs
+- [tuifeed](https://github.com/veeso/tuifeed), a terminal news feed reader with a fancy ui 
 
 ---
 
