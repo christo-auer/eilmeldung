@@ -729,6 +729,11 @@ impl MessageReceiver for FeedList {
                                 Box::new(Command::ActionSetRead(query_scope.to_owned())),
                             )))?;
                         }
+                        ActionScope::Above | ActionScope::Below => tooltip(
+                            &self.message_sender,
+                            "this is not supported in the feed list",
+                            TooltipFlavor::Warning,
+                        )?,
                     }
                 }
 
