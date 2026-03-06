@@ -73,6 +73,21 @@ pub enum ActionScope {
         detailed_message = "currently selected item"
     )]
     Current,
+
+    #[strum(
+        serialize = "above",
+        message = "above",
+        detailed_message = "currently selected item and all above"
+    )]
+    Above,
+
+    #[strum(
+        serialize = "below",
+        message = "below",
+        detailed_message = "currently selected item and all below"
+    )]
+    Below,
+
     #[strum(serialize = "all", message = "all", detailed_message = "all items")]
     All,
     #[strum(
@@ -86,11 +101,13 @@ impl FromStr for ActionScope {
     type Err = CommandParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use ActionScope::*;
+        use ActionScope as S;
         match s {
-            "." | "current" => Ok(Current),
-            "%" | "all" => Ok(All),
-            _ => Ok(Query(ArticleQuery::from_str(s)?)),
+            "." | "current" => Ok(S::Current),
+            "%" | "all" => Ok(S::All),
+            "above" => Ok(S::Above),
+            "below" => Ok(S::Below),
+            _ => Ok(S::Query(ArticleQuery::from_str(s)?)),
         }
     }
 }
@@ -106,11 +123,13 @@ impl ActionScope {
 
 impl Display for ActionScope {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use ActionScope::*;
+        use ActionScope as S;
         match self {
-            Current => write!(f, "current article")?,
-            All => write!(f, "all articles")?,
-            Query(query) => write!(f, "all articles matching {}", query.query_string())?,
+            S::Current => write!(f, "current article")?,
+            S::All => write!(f, "all articles")?,
+            S::Below => write!(f, "current article and all below")?,
+            S::Above => write!(f, "current article and all above")?,
+            S::Query(query) => write!(f, "all articles matching {}", query.query_string())?,
         };
         Ok(())
     }

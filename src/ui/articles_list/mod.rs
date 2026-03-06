@@ -196,11 +196,25 @@ impl ArticlesList {
         &self,
         action_scope: &ActionScope,
     ) -> color_eyre::Result<Vec<Article>> {
-        use ActionScope::*;
+        use ActionScope as S;
         Ok(match action_scope {
-            All => self.model_data.articles().clone(),
-            Current => self.get_current_article().iter().cloned().collect(),
-            Query(query) => self.model_data.get_queried_articles(query).to_vec(),
+            S::All => self.model_data.articles().clone(),
+            S::Current => self.get_current_article().iter().cloned().collect(),
+            direction @ (S::Above | S::Below) => {
+                if let Some(index) = self.view_data.table_state().selected() {
+                    let offset = if matches!(direction, S::Above) { 1 } else { 0 };
+                    let (above, below) = self.model_data.articles().split_at(index + offset);
+                    (if matches!(direction, S::Above) {
+                        above
+                    } else {
+                        below
+                    })
+                    .to_vec()
+                } else {
+                    Default::default()
+                }
+            }
+            S::Query(query) => self.model_data.get_queried_articles(query).to_vec(),
         })
     }
 
@@ -469,7 +483,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.open_in_browser(&action_scope)?;
                 }
 
-                C::ActionSetRead(action_scope) => {
+                C::ActionSetRead(action_scope) if handle_command => {
                     // first we check if we can reroute this to feed list to make it quicker
                     use ActionScope::*;
                     match action_scope {
