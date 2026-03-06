@@ -145,6 +145,10 @@ Yes, use `--sync`. See [CLI Arguments](cli_args.md). This even outputs sync stat
 
 Use `filtersticky` to create a filter which is *always applied* automatically. You can reset the filter with `+ r` (command `filterclear`).
 
+### Can I mark all articles above or below the selected article as read/unread/marked/unmarked?
+
+Yes! The commands `read`, `unread`, `mark` and `unmark` accept `above` or `below` as scopes. There are default key mappings: `0 r` and `$ r` for marking all articles above/below (and including) the selected article as read. The same works for `u` (unread), `m` (mark) and `v` (unmark).
+
 ---
 
 ## Configuration & Customization

@@ -1,5 +1,13 @@
 # Unreleased
 
+- 🎉 **Version 1.0.0** 🎉 
+  - for the last two months, I've incoporated all the helpful feedback from you, the users! Thanks to all of you!
+  - as I feel *eilmeldung* is pretty much feature-complete, I've decided to go v1.0.0!
+  - that said, if you have suggestions for improvements, feel free to crate an issue!
+  - also, development of *eilmeldung* does not halt but will propably proceed in a slower pace with less (breaking) features
+- you can now mark all articles *above* and *below* the selected articles as read (or unread, marked or unmarked)
+  - the commands `read`, `unread`, `mark` and `unmark` accept `above` or `below` as scopes
+  - there are default key mappings: `0 r` and `$ r` for marking all articles above/below (and including) the selected article as read. The same works for `u` (unread), `m` (mark) and `v` (unmark)
 - configuration directory resolution is now a bit more flexible, in particular, using `~/.config/eilmeldung/` in macos is now possible. **eilmeldung** tries the following directories on startup:
   - `$XDG_CONFIG_HOME/eilmeldung/config.toml` on Linux **and** macos
   - if this doesn't exist: `$HOME/.config/eilmeldung/config.toml` on Linux **and** macos

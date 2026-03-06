@@ -129,9 +129,11 @@ Here are some common command examples to get you started:
 ## Article Actions
 
 These commands support a **scope parameter** to target specific articles:
-- `.` or omitted: current article only
-- `%`: all articles  
-- Any query: all articles matching the query
+- `.` or `current` or omitted: currently selected item only
+- `%` or `all`: all items  
+- `below`: all articles below (and including) the currently selected article (only in article list)
+- `above`: all articles above (and including) the currently selected article (only in article list)
+- Any query: all articles matching the query (only in article list)
 
 | Command | Syntax | Context | Description |
 |---------|--------|---------|-------------|

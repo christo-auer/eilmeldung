@@ -89,6 +89,8 @@ This document provides a comprehensive reference of all default key bindings in 
 
 **Note**: These commands are context-dependent! In the article list, they act on the *current article* or *all articles* in the list. On the feed list/tree they act on the *current category/feed* or *all categories/feeds*.
 
+**Note**: To mark all articles *above* (and inlucding) the current article as read, press `0 r`; for all articles after `$ r`. This also works for `u`.
+
 ---
 
 ## Marking Articles
@@ -101,6 +103,8 @@ This document provides a comprehensive reference of all default key bindings in 
 | `V` | Unmark **all** articles (asks for confirmation) |
 
 **Note**: These commands are context-dependent! In the article list, they act on the *current article* or *all articles* in the list. On the feed list/tree they act on the *current category/feed* or *all categories/feeds*.
+
+**Note**: To mark all articles *above* and inlucding the current article, press `0 m`; for all articles after `$ m`. This also works for `v`.
 
 ---
 
