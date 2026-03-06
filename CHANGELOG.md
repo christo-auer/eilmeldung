@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.0.0 - 2026-03-06
+
 - 🎉 **Version 1.0.0** 🎉 
   - for the last two months, I've incoporated all the helpful feedback from you, the users! Thanks to all of you!
   - as I feel *eilmeldung* is pretty much feature-complete, I've decided to go v1.0.0!
