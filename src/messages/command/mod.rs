@@ -482,6 +482,13 @@ pub enum Command {
     ActionSetUnflagged(ActionScope),
 
     #[strum(
+        serialize = "flaginvert",
+        message = "flaginvert <scope>",
+        detailed_message = "inverts flagged articles (article list)"
+    )]
+    ActionFlagInvert(ActionScope),
+
+    #[strum(
         serialize = "open",
         message = "open",
         detailed_message = "opens all articles matching the scope in the webbrowser (article list)"
@@ -834,6 +841,7 @@ impl Display for Command {
             ActionSetUnmarked(action_scope) => write!(f, "unmark {}", action_scope),
             ActionSetFlagged(action_scope) => write!(f, "flag {}", action_scope),
             ActionSetUnflagged(action_scope) => write!(f, "unflag {}", action_scope),
+            ActionFlagInvert(action_scope) => write!(f, "invert flags {}", action_scope),
             ActionOpenInBrowser(action_scope) => write!(f, "open {} in browser", action_scope),
             ActionTagArticles(action_scope, tag) => {
                 write!(f, "add #{} to {}", tag, &action_scope)

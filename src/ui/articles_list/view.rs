@@ -1,10 +1,8 @@
 use crate::prelude::*;
 use crate::ui::articles_list::model::ArticleListModelData;
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use getset::{Getters, MutGetters};
-use news_flash::models::ArticleID;
 use news_flash::models::{ArticleFilter, Marked, Read};
 use ratatui::layout::Constraint;
 use ratatui::layout::Rect;
@@ -188,9 +186,6 @@ pub struct ArticleListViewData<'a> {
 
     #[getset(get_mut = "pub(super)", get = "pub(super)")]
     article_lines: Option<u16>,
-
-    #[getset(get_mut = "pub(super)", get = "pub(super)")]
-    flagged_articles: HashSet<ArticleID>,
 }
 
 impl<'a> ArticleListViewData<'a> {
@@ -354,9 +349,9 @@ impl<'a> ArticleListViewData<'a> {
                             .map(|url| url.to_string())
                             .unwrap_or("?".into())
                             .into(),
-                        "{flagged}" => if self.flagged_articles().is_empty() {
+                        "{flagged}" => if model_data.flagged_articles().is_empty() {
                             "".to_string()
-                        } else if self.flagged_articles().contains(&article.article_id) {
+                        } else if model_data.flagged_articles().contains(&article.article_id) {
                             format!(" {}", config.flagged_icon)
                         } else {
                             "  ".to_string()
@@ -376,6 +371,7 @@ impl<'a> ArticleListViewData<'a> {
                                 tags_for_article: model_data.tags_for_article(),
                                 tag_map: model_data.tag_map(),
                                 last_sync: model_data.last_sync(),
+                                flagged: &model_data.flagged_articles(),
                             },
                         ) =>
                     {
@@ -390,7 +386,7 @@ impl<'a> ArticleListViewData<'a> {
                     config.theme.unread(&style)
                 };
 
-                if self.flagged_articles().contains(&article.article_id) {
+                if model_data.flagged_articles().contains(&article.article_id) {
                     style = config.theme.flagged(&style);
                 }
 
@@ -401,7 +397,7 @@ impl<'a> ArticleListViewData<'a> {
         let constraint_for_placeholder = |placeholder: &str| {
             if placeholder == "{read}"
                 || placeholder == "{marked}"
-                || (placeholder == "{flagged}" && !self.flagged_articles.is_empty())
+                || (placeholder == "{flagged}" && !model_data.flagged_articles().is_empty())
             {
                 Constraint::Length(2)
             } else if placeholder == "{flagged}" {

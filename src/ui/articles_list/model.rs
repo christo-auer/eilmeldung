@@ -5,11 +5,11 @@ use std::{
 };
 
 use chrono::{DateTime, Utc};
-use getset::Getters;
+use getset::{Getters, MutGetters};
 use log::info;
 use news_flash::models::{Article, ArticleID, Category, Feed, FeedID, Marked, Tag, TagID};
 
-#[derive(Getters)]
+#[derive(Getters, MutGetters)]
 #[getset(get = "pub(super)")]
 pub struct ArticleListModelData {
     news_flash_utils: Arc<NewsFlashUtils>,
@@ -19,6 +19,9 @@ pub struct ArticleListModelData {
     tags_for_article: HashMap<ArticleID, Vec<TagID>>,
     tag_map: HashMap<TagID, Tag>,
     last_sync: DateTime<Utc>,
+
+    #[get_mut = "pub(super)"]
+    flagged_articles: HashSet<ArticleID>,
 }
 
 impl ArticleListModelData {
@@ -32,6 +35,7 @@ impl ArticleListModelData {
             tags_for_article: Default::default(),
             tag_map: Default::default(),
             last_sync: Default::default(),
+            flagged_articles: Default::default(),
         }
     }
 
@@ -148,6 +152,7 @@ impl ArticleListModelData {
                 tags_for_article: self.tags_for_article(),
                 tag_map: self.tag_map(),
                 last_sync: self.last_sync(),
+                flagged: &self.flagged_articles,
             },
         )
     }

@@ -11,7 +11,7 @@ use news_flash::models::{Article, ArticleID, Marked, Read, Tag};
 use view::ArticleListViewData;
 
 use crate::prelude::*;
-use std::sync::Arc;
+use std::{collections::HashSet, mem::take, sync::Arc};
 
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -162,6 +162,7 @@ impl ArticlesList {
                     tags_for_article: self.model_data.tags_for_article(),
                     tag_map: self.model_data.tag_map(),
                     last_sync: self.model_data.last_sync(),
+                    flagged: self.model_data.flagged_articles(),
                 },
             )
         };
@@ -201,7 +202,7 @@ impl ArticlesList {
         Ok(match action_scope {
             S::All => self.model_data.articles().clone(),
             S::Current => {
-                if self.view_data.flagged_articles().is_empty() {
+                if self.model_data.flagged_articles().is_empty() {
                     self.get_current_article().iter().cloned().collect()
                 } else {
                     let flagged_articles = self
@@ -209,13 +210,13 @@ impl ArticlesList {
                         .articles()
                         .iter()
                         .filter(|article| {
-                            self.view_data
+                            self.model_data
                                 .flagged_articles()
                                 .contains(&article.article_id)
                         })
                         .cloned()
                         .collect();
-                    self.view_data.flagged_articles_mut().clear();
+                    self.model_data.flagged_articles_mut().clear();
                     flagged_articles
                 }
             }
@@ -439,7 +440,7 @@ impl ArticlesList {
             action_scope => self.get_article_ids_by_action_scope(action_scope)?,
         };
 
-        let flagged_articles = self.view_data.flagged_articles_mut();
+        let flagged_articles = self.model_data.flagged_articles_mut();
 
         if flag {
             flagged_articles.extend(articles);
@@ -448,6 +449,47 @@ impl ArticlesList {
                 flagged_articles.remove(article_id);
             });
         }
+
+        Ok(())
+    }
+
+    fn invert_flagged(&mut self, action_scope: &ActionScope) -> color_eyre::Result<()> {
+        let to_invert: HashSet<ArticleID> = HashSet::from_iter(match action_scope {
+            ActionScope::Current => self
+                .get_current_article()
+                .map(|article| article.article_id)
+                .iter()
+                .cloned()
+                .collect(),
+            action_scope => self.get_article_ids_by_action_scope(action_scope)?,
+        });
+
+        let flagged: HashSet<ArticleID> = take(self.model_data.flagged_articles_mut());
+
+        let to_flag: HashSet<&ArticleID> = to_invert.difference(&flagged).collect();
+        let to_unflag: HashSet<&ArticleID> = to_invert.intersection(&flagged).collect();
+
+        *self.model_data.flagged_articles_mut() = flagged
+            .iter()
+            .collect::<HashSet<&ArticleID>>()
+            .difference(&to_unflag)
+            .cloned()
+            .collect::<HashSet<&ArticleID>>()
+            .union(&to_flag)
+            .cloned()
+            .cloned()
+            .collect::<HashSet<ArticleID>>();
+
+        // *self.model_data.flagged_articles_mut() = HashSet::from_iter(
+        //     self.model_data
+        //         .articles()
+        //         .iter()
+        //         .map(|article| &article.article_id)
+        //         .cloned(),
+        // )
+        // .difference(&flagged)
+        // .cloned()
+        // .collect();
 
         Ok(())
     }
@@ -572,6 +614,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
                 C::ActionSetUnflagged(action_scope) => {
                     self.set_action_scope_flagged(&action_scope, false)?;
+                    view_needs_update = true;
+                }
+
+                C::ActionFlagInvert(action_scope) => {
+                    self.invert_flagged(&action_scope)?;
                     view_needs_update = true;
                 }
 

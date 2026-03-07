@@ -124,6 +124,14 @@ pub enum QueryToken {
     )]
     KeyTagged,
 
+    #[token("flagged", priority = 2)]
+    #[strum(
+        serialize = "flagged",
+        message = "flagged",
+        detailed_message = "flagged articles"
+    )]
+    KeyFlagged,
+
     #[token("newer:")]
     #[strum(
         serialize = "newer",
@@ -341,6 +349,7 @@ fn parse_query(
             },
             T::KeyTagged => Some(QueryAtom::Tagged),
             T::KeyLastSync => Some(QueryAtom::LastSync),
+            T::KeyFlagged => Some(QueryAtom::Flagged),
 
             key @ (T::KeyTitle
             | T::KeySummary
