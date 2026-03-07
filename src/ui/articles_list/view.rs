@@ -371,7 +371,7 @@ impl<'a> ArticleListViewData<'a> {
                                 tags_for_article: model_data.tags_for_article(),
                                 tag_map: model_data.tag_map(),
                                 last_sync: model_data.last_sync(),
-                                flagged: &model_data.flagged_articles(),
+                                flagged: model_data.flagged_articles(),
                             },
                         ) =>
                     {

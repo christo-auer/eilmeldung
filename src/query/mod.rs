@@ -121,7 +121,7 @@ impl ArticleQuery {
                 category,
                 tags.as_ref(),
                 context.last_sync,
-                &context.flagged,
+                context.flagged,
             )
         })
     }
