@@ -1,5 +1,16 @@
 # Unreleased
 
+- level up your workflow with 🚩s!
+  - select (*flag*) multiple articles to execute bulk-operations
+  - press `f` to flag articles and then press `r` to mark them as *read*
+  - this also works for `m` (mark), `u` (unread), `t` (tag), `o` (open in browser), you get it!
+  - `d` deletes a flag and `i` inverts it
+  - the uppercase variants (`F`, `D`, `I`) operate on *all* articles and prepending `0` or `$` flags articles *before*/*after* the selected article
+  - for *pro-users*: there are commands `flag`, `unflag` and `flaginvert` which even accept queries:
+    - `flag unread today` selects all articles which are from today and unread
+    - `unflag older:"1 hour ago"` unflags all articles which are older than one hour
+  - there is even a new query key `flagged`! 🚩🚩🚩
+
 # 1.0.0 - 2026-03-06
 
 - 🎉 **Version 1.0.0** 🎉 

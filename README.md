@@ -157,6 +157,14 @@ Yes, focus the feed list and press `2` / `3` to show only feeds/categories/tags 
 
 Yes, via the option `after_sync_commands` [configuration](docs/configuration.md#after-sync_commands) for some recipes.
 
+### Can I select articles and then mark them as read/unread/tag them etc.?
+
+Yes, you can *flag* them by pressing `f` and then press `r` to mark all flagged articles as read. Similarly for `u`(unread), `m` (mark), `t` (tag), etc.
+
+Checkout [FAQ](docs/faq.md#features--capabilities)!
+
+---
+
 **More questions?** See the complete [FAQ](docs/faq.md).
 
 ---

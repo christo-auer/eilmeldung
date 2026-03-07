@@ -149,6 +149,17 @@ Use `filtersticky` to create a filter which is *always applied* automatically. Y
 
 Yes! The commands `read`, `unread`, `mark` and `unmark` accept `above` or `below` as scopes. There are default key mappings: `0 r` and `$ r` for marking all articles above/below (and including) the selected article as read. The same works for `u` (unread), `m` (mark) and `v` (unmark).
 
+### Can I select more articles and then execute an operation on them?
+
+Yes! In `eilmeldung` this is called `flag`ing: Press `f` to flag one or more articles and then any command is executed on all flagged articles (e.g. `r` for marking them as read). Of course, `m` (mark), `t` (tag), `o` (open in browser) all work as expected.
+To *unflag* press `d` (*delete* flag) and to *invert the flag state*  press `i`. The upper-case variants flag/unflag *all articles* in the article list. And you can even flag all articles *above*/*below* by prepending `0` or `$`.
+
+For experts: `flag`/`unflag`/`invertflag` are commands just like `read`, `tag`, etc. You can `flag` by a *query* e.g. `flag unread` flags all unread articles. And: `flagged` is a query key which matches flagged articles.
+
+Customize your workflow!
+
+If you want to learn more, checkout [Key Bindings](keybindings.md#flagging-articles) and [Commands](commands.md#article-actions)
+
 ---
 
 ## Configuration & Customization

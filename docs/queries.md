@@ -39,6 +39,7 @@ Query elements are **conjunctive** (AND-ed together), i.e., all specified condit
 | `marked`          | `marked`                   | Match marked articles                                             | `marked`                    |
 | `unmarked`        | `unmarked`                 | Match unmarked articles                                           | `unmarked`                  |
 | `tagged`          | `tagged`                   | Match articles with at least one tag                              | `tagged`                    |
+| `flagged`         | `flagged`                  | Match flagged articles (`~flagged` for unflagged articles)        | `flagged`                   |
 | `title:`          | `title:<search term>`      | Match articles by title                                           | `title:election`            |
 | `summary:`        | `summary:<search term>`    | Match articles by summary/description                             | `summary:"climate change"`  |
 | `author:`         | `author:<search term>`     | Match articles by author                                          | `author:smith`              |
@@ -82,6 +83,7 @@ all:"climate change" newer:"1 week ago"         # Climate change articles from l
 author:/(?i)smith|jones|brown/                  # Articles by Smith, Jones, or Brown (regex OR)
 title:/(feature|bug|fix)/ feed:/github|gitlab/  # Development-related articles from code hosting platforms
 lastsync unread                                 # All unread articles from the last sync
+tag flagged #readlater                          # Tag all flagged articles with `#readlater` (note: `tag #readlater` would also work)
 ```
 
 

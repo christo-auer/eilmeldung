@@ -14,8 +14,9 @@ This document provides a comprehensive reference of all default key bindings in 
 - [Reading Articles](#reading-articles)
 - [Read/Unread Status](#readunread-status)
 - [Marking Articles](#marking-articles)
-- [Zen Mode](#zen-mode)
 - [Tags](#tags)
+- [Flagging Articles](#flagging-articles)
+- [Zen Mode](#zen-mode)
 - [Article Views](#article-views)
 - [Searching & Filtering](#searching--filtering)
 - [Sorting Articles](#sorting-articles)
@@ -92,7 +93,6 @@ This document provides a comprehensive reference of all default key bindings in 
 **Note**: To mark all articles *above* (and inlucding) the current article as read, press `0 r`; for all articles after `$ r`. This also works for `u`.
 
 ---
-
 ## Marking Articles
 
 | Key | Action |
@@ -102,9 +102,38 @@ This document provides a comprehensive reference of all default key bindings in 
 | `v` | Unmark current article |
 | `V` | Unmark **all** articles (asks for confirmation) |
 
-**Note**: These commands are context-dependent! In the article list, they act on the *current article* or *all articles* in the list. On the feed list/tree they act on the *current category/feed* or *all categories/feeds*.
+---
+## Tags
 
-**Note**: To mark all articles *above* and inlucding the current article, press `0 m`; for all articles after `$ m`. This also works for `v`.
+| Key | Action |
+|-----|--------|
+| `t` | Open command line to tag article (e.g., `:tag tech`), **TAB** to autocomplete tag names |
+
+You can create new tags with `:tagadd urgent red` (press **TAB** for autocomplete colors!). Once created, you can bulk-tag articles: `:tag tech unread` tags all unread articles as `tech`.
+
+---
+
+## Flagging Articles
+
+You can flag (select) articles to execute bulk-operations like read, unread, mark, tag, etc. on them.
+
+
+| Key | Action |
+|-----|--------|
+| `f` | Flag article |
+| `F` | Flag **all** articles |
+| `d` | Unflag current article (*d*elete flag) |
+| `D` | Unflag **all** articles  |
+| `i` | Invert flag of current article (*d*elete flag) |
+| `I` | Invert flag **all** articles  |
+| `Alt-f`/`Alt-d`/`Alt-d` | Open command line with `flag`/`unflag`/`flaginvert` with query (e.g., `:flag unread today`) |
+
+
+**Note**: These commands only work for article list!
+
+After flagging article, you can bulk-execute any of the above commands on them (`r` for `read`, `m` for `mark`, `t` for `tag`, you get it).
+
+**Note**: To flag flag of all articles *above* and including the current article, press `0 f`; for all articles after `$ f` etc. This also works for `d` and `i`.
 
 ---
 
@@ -113,16 +142,6 @@ This document provides a comprehensive reference of all default key bindings in 
 | Key | Action |
 |-----|--------|
 | `z` | Toggle distraction-free mode (hides all panels except article content) |
-
----
-
-## Tags
-
-| Key | Action |
-|-----|--------|
-| `t` | Open command line to tag article (e.g., `:tag tech`), **TAB** to autocomplete tag names |
-
-You can create new tags with `:tagadd urgent red` (press **TAB** for autocomplete colors!). Once created, you can bulk-tag articles: `:tag tech unread` tags all unread articles as `tech`.
 
 ---
 
