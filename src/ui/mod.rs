@@ -186,7 +186,11 @@ impl App {
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
-            batch_processor: BatchProcessor::new(config_arc.clone(), message_sender.clone()),
+            batch_processor: BatchProcessor::new(
+                config_arc.clone(),
+                news_flash_utils.clone(),
+                message_sender.clone(),
+            ),
             help_popup: HelpPopup::new(config_arc.clone(), message_sender.clone()),
             command_confirm: CommandConfirm::new(config_arc.clone(), message_sender.clone()),
             tooltip: Tooltip::new(
@@ -281,7 +285,7 @@ impl App {
 
         while self.is_running {
             let can_process_batch =
-                !self.news_flash_utils.is_async_operation_running() && rx.is_empty();
+                !self.batch_processor.waiting_for_async_operation() && rx.is_empty();
 
             tokio::select! {
 

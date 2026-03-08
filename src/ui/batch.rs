@@ -6,19 +6,27 @@ use crate::prelude::*;
 
 pub struct BatchProcessor {
     config: Arc<Config>,
+    news_flash_utils: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
     command_queue: (UnboundedSender<Command>, UnboundedReceiver<Command>),
+    current_command_async: bool,
     show_popup: bool,
     popup_strings: Vec<String>,
     current_command_index: usize,
 }
 
 impl BatchProcessor {
-    pub fn new(config: Arc<Config>, message_sender: UnboundedSender<Message>) -> Self {
+    pub fn new(
+        config: Arc<Config>,
+        news_flash_utils: Arc<NewsFlashUtils>,
+        message_sender: UnboundedSender<Message>,
+    ) -> Self {
         Self {
             config,
             message_sender,
+            news_flash_utils,
             command_queue: mpsc::unbounded_channel(),
+            current_command_async: false,
             show_popup: false,
             popup_strings: Default::default(),
             current_command_index: 0,
@@ -33,6 +41,8 @@ impl BatchProcessor {
             .await
             .ok_or(color_eyre::eyre::eyre!("batch command receiver closed"))?;
 
+        self.current_command_async = command.is_async();
+
         if self.show_popup {
             self.current_command_index += 1;
             self.update_popup()?;
@@ -44,6 +54,10 @@ impl BatchProcessor {
         }
 
         Ok(command)
+    }
+
+    pub fn waiting_for_async_operation(&self) -> bool {
+        self.current_command_async && self.news_flash_utils.is_async_operation_running()
     }
 
     pub fn show_popup(&mut self) {

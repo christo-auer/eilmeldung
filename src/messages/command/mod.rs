@@ -863,6 +863,30 @@ impl Display for Command {
     }
 }
 
+impl Command {
+    pub(crate) fn is_async(&self) -> bool {
+        use Command as C;
+        match self {
+            C::FeedListSync
+            | C::FeedListCategoryAdd(..)
+            | C::FeedListFeedAdd(..)
+            | C::FeedListTagChangeColor(..)
+            | C::FeedListRenameEntity(..)
+            | C::FeedListRemoveEntity
+            | C::FeedListRemoveEntityWithChildren
+            | C::FeedListFeedChangeUrl(..)
+            | C::FeedListPasteFeedOrCategory(..)
+            | C::TagAdd(..)
+            | C::ImportOpml(..)
+            | C::ExportOpml(..)
+            | C::Logout(..) => true,
+            C::CommandConfirm(command) => command.is_async(),
+            C::In(_, command) => command.is_async(),
+            _ => false,
+        }
+    }
+}
+
 #[derive(Clone, Debug, serde::Deserialize, Default)]
 #[serde(transparent)]
 pub struct CommandSequence {
