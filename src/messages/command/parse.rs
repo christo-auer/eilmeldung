@@ -283,7 +283,14 @@ impl Command {
             },
 
             C::ArticleListSearch(..) => C::ArticleListSearch(ArticleQuery::from_str(
-                expect_something(args, "expecting article query")?.as_str(),
+                expect_something(args, "expecting article query")
+                    .map_err(|_| {
+                        E::ArticleQueryExpected(QueryParseError::KeyOrWordExpected(
+                            0,
+                            "".to_owned(),
+                        ))
+                    })?
+                    .as_str(),
             )?),
 
             C::Search(..) => C::Search(Some(

@@ -157,7 +157,7 @@ impl CommandInput {
             Err(E::CommandNameExpected(..)) => {
                 self.generate_help_content_command_name(&current_part)?
             }
-            Err(E::CommandExpected) => self.generate_help_content_command(&current_part)?,
+            Err(E::CommandExpected) => self.generate_help_content_command_name(&current_part)?,
             Err(E::PanelExpected) => self.generate_help_content_panel(&current_part)?,
             Err(E::ColorExpected(..)) => self.generate_help_content_color(&current_part)?,
             Err(E::EnclosureTypeExpected) => {
@@ -191,6 +191,7 @@ impl CommandInput {
             .collect::<Vec<&String>>();
 
         let (_, current_word) = self.get_current_word();
+        trace!("current word: {current_word}");
 
         let num_targets = completion_targets.len();
         let completion = match completion_targets
@@ -214,9 +215,15 @@ impl CommandInput {
 
         if let Some(completion) = completion {
             if !current_word.is_empty() {
-                self.text_input.delete_word();
+                self.delete_word();
             }
             self.text_input.insert_str(completion);
+        }
+    }
+
+    fn delete_word(&mut self) {
+        while !self.get_current_word().1.is_empty() {
+            self.text_input.delete_word();
         }
     }
 
@@ -501,6 +508,7 @@ impl CommandInput {
 
         let targets = Command::iter()
             .map(|target| target.as_ref().to_owned())
+            .filter(|command| !command.starts_with("_"))
             .collect::<Vec<String>>();
 
         self.completion_targets = Some(targets);
@@ -510,11 +518,11 @@ impl CommandInput {
         Ok(())
     }
 
-    fn generate_help_content_command(&mut self, _current_part: &str) -> color_eyre::Result<()> {
-        self.hide_help_dialog()?;
-        self.completion_targets = None;
-        Ok(())
-    }
+    // fn generate_help_content_command(&mut self, _current_part: &str) -> color_eyre::Result<()> {
+    //     self.hide_help_dialog()?;
+    //     self.completion_targets = None;
+    //     Ok(())
+    // }
 
     fn generate_help_content_color(&mut self, current_part: &str) -> color_eyre::Result<()> {
         use Color as C;
