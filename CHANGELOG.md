@@ -14,6 +14,7 @@
 - bugfixes
   - login setup now works as expected if a different provider is selected
   - marking articles while article content is focused now works as expected
+  - tab-completion in command line now works more reliably
 
 # 1.0.0 - 2026-03-06
 

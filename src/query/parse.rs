@@ -134,7 +134,7 @@ pub enum QueryToken {
 
     #[token("newer:")]
     #[strum(
-        serialize = "newer",
+        serialize = "newer:",
         message = "newer:<time>",
         detailed_message = "articles newer than the defined time"
     )]
@@ -142,7 +142,7 @@ pub enum QueryToken {
 
     #[token("older:")]
     #[strum(
-        serialize = "older",
+        serialize = "older:",
         message = "older:<time>",
         detailed_message = "articles older than the defined time"
     )]
@@ -166,7 +166,7 @@ pub enum QueryToken {
 
     #[token("syncedbefore:")]
     #[strum(
-        serialize = "syncedbefore",
+        serialize = "syncedbefore:",
         message = "syncedbefore:<time>",
         detailed_message = "articles synced before the defined time"
     )]
@@ -174,7 +174,7 @@ pub enum QueryToken {
 
     #[token("syncedafter:")]
     #[strum(
-        serialize = "syncedafter",
+        serialize = "syncedafter:",
         message = "syncedafter:<time>",
         detailed_message = "articles synced after the defined time"
     )]
@@ -182,7 +182,7 @@ pub enum QueryToken {
 
     #[token("feed:")]
     #[strum(
-        serialize = "feed",
+        serialize = "feed:",
         message = "feed:<search term>",
         detailed_message = "articles with a feed matching the search term"
     )]
@@ -198,7 +198,7 @@ pub enum QueryToken {
 
     #[token("title:")]
     #[strum(
-        serialize = "title",
+        serialize = "title:",
         message = "title:<search term>",
         detailed_message = "articles with a title matching the search term"
     )]
@@ -206,7 +206,7 @@ pub enum QueryToken {
 
     #[token("summary:")]
     #[strum(
-        serialize = "summary",
+        serialize = "summary:",
         message = "summary:<search term>",
         detailed_message = "articles with a summary matching the search term"
     )]
@@ -214,7 +214,7 @@ pub enum QueryToken {
 
     #[token("author:")]
     #[strum(
-        serialize = "author",
+        serialize = "author:",
         message = "author:<search term>",
         detailed_message = "articles with an author matching the search term"
     )]
@@ -222,7 +222,7 @@ pub enum QueryToken {
 
     #[token("all:")]
     #[strum(
-        serialize = "all",
+        serialize = "all:",
         message = "all:<search term>",
         detailed_message = "articles with any field containing the search term"
     )]
@@ -230,7 +230,7 @@ pub enum QueryToken {
 
     #[token("feedurl:")]
     #[strum(
-        serialize = "feedurl",
+        serialize = "feedurl:",
         message = "feedurl:<search term>",
         detailed_message = "articles with a feed URL containing the search term"
     )]
@@ -238,7 +238,7 @@ pub enum QueryToken {
 
     #[token("feedweburl:")]
     #[strum(
-        serialize = "feedweburl",
+        serialize = "feedweburl:",
         message = "feedweburl:<search term>",
         detailed_message = "articles with a feed web URL containing the search term"
     )]
@@ -246,7 +246,7 @@ pub enum QueryToken {
 
     #[token("tag:")]
     #[strum(
-        serialize = "tag",
+        serialize = "tag:",
         message = "tag:<tag list>",
         detailed_message = "articles containing all listed tags"
     )]
@@ -254,7 +254,7 @@ pub enum QueryToken {
 
     #[token("sort:")]
     #[strum(
-        serialize = "sort",
+        serialize = "sort:",
         message = "tag:\"<sort order>\"",
         detailed_message = "sorts the articles by the given sort order"
     )]
