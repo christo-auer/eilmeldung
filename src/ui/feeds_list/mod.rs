@@ -597,6 +597,66 @@ impl FeedList {
         Ok(())
     }
 
+    fn item_has_unread(&self, item: &FeedListItem) -> bool {
+        match item {
+            FeedListItem::All => *self.model_data.unread_count_all() > 0,
+            FeedListItem::Feed(feed) => self
+                .model_data
+                .unread_count_for_feed_or_category()
+                .get(&FeedOrCategory::Feed(feed.feed_id.clone()))
+                .map(|count| *count > 0)
+                .unwrap_or(false),
+            FeedListItem::Category(category) => self
+                .model_data
+                .unread_count_for_feed_or_category()
+                .get(&FeedOrCategory::Category(category.category_id.clone()))
+                .map(|count| *count > 0)
+                .unwrap_or(false),
+            FeedListItem::Tag(tag) => self
+                .model_data
+                .unread_count_for_tag()
+                .get(&tag.tag_id)
+                .map(|count| *count > 0)
+                .unwrap_or(false),
+            FeedListItem::Categories | FeedListItem::Tags | FeedListItem::Query(_) => false,
+        }
+    }
+
+    fn select_next_unread(&mut self) -> color_eyre::Result<()> {
+        let selected = self.view_data.tree_state().selected();
+        let paths = self.view_data.paths().to_vec();
+
+        // find the current or next path that has unread items
+        let found_path = paths
+            .iter()
+            .skip_while(|path| **path != selected)
+            .find(|path| {
+                path.last()
+                    .map(|item| self.item_has_unread(item))
+                    .unwrap_or(false)
+            })
+            .cloned();
+
+        if let Some(found_path) = found_path {
+            let parent = found_path.split_last().map(|split| split.1.to_vec());
+
+            if let Some(parent) = parent {
+                self.view_data.tree_state_mut().open(parent);
+            }
+
+            self.view_data.tree_state_mut().select(found_path.to_vec());
+            self.generate_articles_selected_command()?;
+        } else {
+            tooltip(
+                &self.message_sender,
+                "no unread items",
+                TooltipFlavor::Warning,
+            )?;
+        }
+
+        Ok(())
+    }
+
     async fn sort(&self) -> color_eyre::Result<()> {
         self.model_data.sort().await
     }
@@ -672,6 +732,10 @@ impl MessageReceiver for FeedList {
                 }
                 C::NavigateLast if handle_command => {
                     self.view_data.tree_state_mut().select_last();
+                    selection_changed = true;
+                }
+                C::SelectNextUnread if handle_command => {
+                    self.select_next_unread()?;
                     selection_changed = true;
                 }
                 C::FeedListToggleExpand => {
