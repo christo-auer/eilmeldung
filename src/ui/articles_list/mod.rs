@@ -218,8 +218,7 @@ impl ArticlesList {
                 if self.model_data.flagged_articles().is_empty() {
                     self.get_current_article().iter().cloned().collect()
                 } else {
-                    let flagged_articles = self
-                        .model_data
+                    self.model_data
                         .articles()
                         .iter()
                         .filter(|article| {
@@ -228,9 +227,10 @@ impl ArticlesList {
                                 .contains(&article.article_id)
                         })
                         .cloned()
-                        .collect();
-                    self.model_data.flagged_articles_mut().clear();
-                    flagged_articles
+                        .collect()
+                    // self.model_data.flagged_articles_mut().clear(); // don't so that other
+                    // operations also can work on flagged articles --- user should clear flags
+                    // manually
                 }
             }
             direction @ (S::Above | S::Below) => {
@@ -514,7 +514,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
             return Ok(());
         }
 
-        let current_article = self.get_current_article().map(|article| article.article_id);
+        let mut current_article = self.get_current_article().map(|article| article.article_id);
         let mut model_needs_update = false;
         let mut view_needs_update = false;
 
@@ -738,6 +738,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 ArticlesSelected(augmented_article_filter) => {
                     self.filter_state
                         .on_new_article_filter(augmented_article_filter.clone());
+                    current_article = None;
                     self.select_index_and_send_message(Some(0))?;
                     model_needs_update = true;
                 }

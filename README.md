@@ -159,7 +159,7 @@ Yes, via the option `after_sync_commands` [configuration](docs/configuration.md#
 
 ### Can I select articles and then mark them as read/unread/tag them etc.?
 
-Yes, you can *flag* them by pressing `f` and then press `r` to mark all flagged articles as read. Similarly for `u`(unread), `m` (mark), `t` (tag), etc.
+Yes, you can *flag* them by pressing `f` and then press `r` to mark all flagged articles as read. Similarly for `u`(unread), `m` (mark), `t` (tag), etc. Press `D` to remove all flags.
 
 Checkout [FAQ](docs/faq.md#features--capabilities)!
 
