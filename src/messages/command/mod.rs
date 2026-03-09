@@ -267,6 +267,13 @@ pub enum Command {
     NavigateRight,
 
     #[strum(
+        serialize = "nextunread",
+        message = "nextunread",
+        detailed_message = "select next unread item (feed list, article list)"
+    )]
+    SelectNextUnread,
+
+    #[strum(
         serialize = "_search",
         message = "_search",
         detailed_message = "open prompt to search"
@@ -517,13 +524,6 @@ pub enum Command {
     TagAdd(String, Option<Color>),
 
     // article list commands
-    #[strum(
-        serialize = "nextunread",
-        message = "nextunread",
-        detailed_message = "selected next unread item (article list)"
-    )]
-    ArticleListSelectNextUnread,
-
     #[strum(
         serialize = "show",
         message = "show <article scope>",
@@ -783,7 +783,7 @@ impl Display for Command {
                 write!(f, "change color of tag to {}", color)
             }
             FeedListSort => write!(f, "sort feed list alphabetically"),
-            ArticleListSelectNextUnread => write!(f, "select next unread"),
+            SelectNextUnread => write!(f, "select next unread"),
             Show(ArticleScope::Marked) => write!(f, "show only marked"),
             Show(ArticleScope::Unread) => write!(f, "show only unread"),
             Show(ArticleScope::All) => write!(f, "show all"),

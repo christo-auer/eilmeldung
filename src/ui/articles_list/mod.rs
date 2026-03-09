@@ -644,7 +644,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                         ))))?;
                 }
 
-                C::ArticleListSelectNextUnread => {
+                C::SelectNextUnread if handle_command => {
                     self.select_next_unread()?;
                 }
 
