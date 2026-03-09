@@ -95,11 +95,11 @@ impl FeedList {
         if let Some(selected) = self.selected().as_ref() {
             match selected {
                 All => self.model_data.set_all_read()?,
-                Feed(feed) => self.model_data.set_feed_read(vec![feed.feed_id.clone()])?,
+                Feed(feed) => self.model_data.set_feed_read(feed.feed_id.clone())?,
                 Category(category) => self
                     .model_data
-                    .set_category_read(vec![category.category_id.clone()])?,
-                Tag(tag) => self.model_data.set_tag_read(vec![tag.tag_id.clone()])?,
+                    .set_category_read(category.category_id.clone())?,
+                Tag(tag) => self.model_data.set_tag_read(tag.tag_id.clone())?,
                 Tags => {}
                 Categories | Query(_) => {
                     // reroute to article list
@@ -599,7 +599,6 @@ impl FeedList {
 
     fn item_has_unread(&self, item: &FeedListItem) -> bool {
         match item {
-            FeedListItem::All => *self.model_data.unread_count_all() > 0,
             FeedListItem::Feed(feed) => self
                 .model_data
                 .unread_count_for_feed_or_category()
@@ -612,13 +611,14 @@ impl FeedList {
                 .get(&FeedOrCategory::Category(category.category_id.clone()))
                 .map(|count| *count > 0)
                 .unwrap_or(false),
-            FeedListItem::Tag(tag) => self
-                .model_data
-                .unread_count_for_tag()
-                .get(&tag.tag_id)
-                .map(|count| *count > 0)
-                .unwrap_or(false),
-            FeedListItem::Categories | FeedListItem::Tags | FeedListItem::Query(_) => false,
+            // All and Tag have unread counts, however, at this point in time we don't have the
+            // update-to-date numbers and also, we assume, that the user wants to navigte only to
+            // feeds and categories
+            FeedListItem::Tag(_)
+            | FeedListItem::All
+            | FeedListItem::Categories
+            | FeedListItem::Tags
+            | FeedListItem::Query(_) => false,
         }
     }
 
@@ -646,6 +646,11 @@ impl FeedList {
 
             self.view_data.tree_state_mut().select(found_path.to_vec());
             self.generate_articles_selected_command()?;
+            // tell article list to select the next unread article (which must be there!)
+            self.message_sender.send(Message::Command(Command::In(
+                Panel::ArticleList,
+                Box::new(Command::SelectNextUnread),
+            )))?;
         } else {
             tooltip(
                 &self.message_sender,
@@ -735,6 +740,7 @@ impl MessageReceiver for FeedList {
                     selection_changed = true;
                 }
                 C::SelectNextUnread if handle_command => {
+                    self.model_data.update().await?; // update first to get most recent data
                     self.select_next_unread()?;
                     selection_changed = true;
                 }

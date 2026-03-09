@@ -10,7 +10,7 @@ use ratatui::style::Color;
 
 use crate::prelude::*;
 
-#[derive(Hash, Eq, PartialEq, Debug)]
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub enum FeedOrCategory {
     Feed(FeedID),
     Category(CategoryID),
@@ -112,15 +112,7 @@ impl FeedListModelData {
             |a| a.article_id.clone(),
         );
 
-        self.unread_count_for_tag = HashMap::new();
-
-        for tag in self.tags.iter() {
-            let filter = ArticleFilter::tag_unread(&tag.tag_id);
-            self.unread_count_for_tag.insert(
-                tag.tag_id.clone(),
-                news_flash.get_articles(filter)?.len() as i64,
-            );
-        }
+        self.unread_count_for_tag = self.update_unread_count_for_tags(&news_flash)?;
 
         // build category/feed tree
         self.category_tree = HashMap::new();
@@ -249,6 +241,23 @@ impl FeedListModelData {
         Ok(())
     }
 
+    fn update_unread_count_for_tags(
+        &self,
+        news_flash: &tokio::sync::RwLockReadGuard<'_, news_flash::NewsFlash>,
+    ) -> color_eyre::Result<HashMap<TagID, i64>> {
+        let mut unread_count_for_tag = HashMap::new();
+
+        for tag in self.tags.iter() {
+            let filter = ArticleFilter::tag_unread(&tag.tag_id);
+            unread_count_for_tag.insert(
+                tag.tag_id.clone(),
+                news_flash.get_articles(filter)?.len() as i64,
+            );
+        }
+
+        Ok(unread_count_for_tag)
+    }
+
     fn count_recursive(
         category_id: &CategoryID,
         tree: &HashMap<CategoryID, Vec<FeedOrCategory>>,
@@ -312,26 +321,47 @@ impl FeedListModelData {
         Ok(())
     }
 
-    pub(super) fn set_all_read(&self) -> color_eyre::Result<()> {
+    pub(super) fn set_all_read(&mut self) -> color_eyre::Result<()> {
         self.news_flash_utils.set_all_read();
+        self.unread_count_for_tag.clear();
+        self.unread_count_for_feed_or_category.clear();
         Ok(())
     }
 
-    pub(super) fn set_feed_read(&self, feed_ids: Vec<FeedID>) -> color_eyre::Result<()> {
-        self.news_flash_utils.set_feed_read(feed_ids);
+    pub(super) fn set_feed_read(&mut self, feed_id: FeedID) -> color_eyre::Result<()> {
+        self.unread_count_for_feed_or_category
+            .entry(FeedOrCategory::Feed(feed_id.to_owned()))
+            .and_modify(|entry| *entry = 0);
+        self.news_flash_utils.set_feed_read(vec![feed_id]);
         Ok(())
     }
 
-    pub(super) fn set_category_read(
-        &self,
-        category_ids: Vec<CategoryID>,
-    ) -> color_eyre::Result<()> {
-        self.news_flash_utils.set_category_read(category_ids);
+    pub(super) fn set_category_read(&mut self, category_id: CategoryID) -> color_eyre::Result<()> {
+        self.set_read_count_zero_recursively(&FeedOrCategory::Category(category_id.to_owned()));
+        self.news_flash_utils.set_category_read(vec![category_id]);
         Ok(())
     }
 
-    pub(super) fn set_tag_read(&self, tag_ids: Vec<TagID>) -> color_eyre::Result<()> {
-        self.news_flash_utils.set_tag_read(tag_ids);
+    fn set_read_count_zero_recursively(&mut self, entry: &FeedOrCategory) {
+        if let FeedOrCategory::Category(category_id) = &entry
+            && let Some(children) = self.category_tree().get(category_id).cloned()
+        {
+            children
+                .iter()
+                .for_each(|child| self.set_read_count_zero_recursively(child));
+        }
+
+        if let Some(count) = self.unread_count_for_feed_or_category.get_mut(entry) {
+            *count = 0;
+        }
+    }
+
+    pub(super) fn set_tag_read(&mut self, tag_id: TagID) -> color_eyre::Result<()> {
+        self.unread_count_for_tag
+            .entry(tag_id.to_owned())
+            .and_modify(|entry| *entry = 0);
+
+        self.news_flash_utils.set_tag_read(vec![tag_id]);
         Ok(())
     }
 
