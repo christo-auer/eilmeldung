@@ -260,6 +260,14 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.open_enclosure(enclosure_type).await?;
                 }
 
+                set_read_command @ C::ActionSetRead(_) => {
+                    // don't know what to do with this -> re-route to article list
+                    self.message_sender.send(Message::Command(C::In(
+                        Panel::ArticleList,
+                        Box::new(set_read_command),
+                    )))?;
+                }
+
                 _ => {
                     view_needs_update = false;
                 }
