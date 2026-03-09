@@ -10,6 +10,10 @@
     - `flag unread today` selects all articles which are from today and unread
     - `unflag older:"1 hour ago"` unflags all articles which are older than one hour
   - there is even a new query key `flagged`! 🚩🚩🚩
+- `nextunread` now also works in the feed list 
+  - as you already now, pressing `r` in the *article list* automatically selects the next unread article
+  - now this also works in the *feed list* (big thanks to @janbuchar for his PR!)
+  - and when you press `r` in the article list and no unread article is left, *eilmeldung* automatically selects the next unread item in the feed list! How cool is that?!
 - improvement: often used async operations are now non-blocking
 - bugfixes
   - login setup now works as expected if a different provider is selected

@@ -6,7 +6,7 @@ pub mod prelude {
 }
 
 use crate::ui::articles_list::{model::ArticleListModelData, view::FilterState};
-use log::info;
+use log::{info, trace};
 use news_flash::models::{Article, ArticleID, Marked, Read, Tag};
 use view::ArticleListViewData;
 
@@ -80,7 +80,7 @@ impl ArticlesList {
         if current_index < self.model_data.articles().len() {
             return self.select_index_and_send_message(Some(current_index));
         } else {
-            self.select_next_unread()?;
+            self.select_index_and_send_message(Some(0))?;
         }
 
         Ok(())
@@ -107,7 +107,20 @@ impl ArticlesList {
 
     pub(super) fn select_next_unread(&mut self) -> color_eyre::Result<()> {
         let select = self.first_unread();
-        self.select_index_and_send_message(select)
+
+        match select {
+            Some(_) => self.select_index_and_send_message(select)?,
+            None => {
+                // ask feed list to select the next unread item
+                trace!("no next unread item");
+                self.message_sender.send(Message::Command(Command::In(
+                    Panel::FeedList,
+                    Box::new(Command::SelectNextUnread),
+                )))?;
+            }
+        }
+
+        Ok(())
     }
 
     fn first_unread(&self) -> Option<usize> {
