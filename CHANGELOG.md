@@ -11,6 +11,8 @@
     - `unflag older:"1 hour ago"` unflags all articles which are older than one hour
   - there is even a new query key `flagged`! 🚩🚩🚩
 - improvement: often used async operations are now non-blocking
+- bugfixes
+  - login setup now works as expected if a different provider is selected
 
 # 1.0.0 - 2026-03-06
 

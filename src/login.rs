@@ -8,7 +8,7 @@ use inquire::{
     Confirm, Password, Select, Text, min_length,
     validator::{self, Validation},
 };
-use log::info;
+use log::{info, trace};
 use news_flash::{
     NewsFlash,
     models::{
@@ -426,7 +426,6 @@ Create a new *Application* under your account *Settings* with the following conf
 
     fn inquire_password(&self, prompt: &str) -> color_eyre::Result<String> {
         Ok(Password::new(prompt)
-            .with_validator(min_length!(1, "minimum length of one character needed"))
             .with_display_mode(inquire::PasswordDisplayMode::Masked)
             .prompt()?)
     }
@@ -539,7 +538,7 @@ Create a new *Application* under your account *Settings* with the following conf
             .as_ref()
             .and_then(|login_data| NewsFlash::list_backends().remove(&login_data.id()));
 
-        self.print_header()?;
+        trace!("preset login data {preset_login_data:?}");
 
         self.skin
             .print_inline("\n**Welcome** to **+++ eilmeldung +++**\n\n");
@@ -548,13 +547,22 @@ Create a new *Application* under your account *Settings* with the following conf
         );
 
         loop {
+            trace!("preset plugin {selected_plugin_info:?}");
             selected_plugin_info = Some(self.inquire_plugin_info(&selected_plugin_info)?);
 
             let plugin_info: &PluginInfo = selected_plugin_info.as_ref().unwrap();
 
-            use LoginGUI::*;
+            trace!("next plugin info {plugin_info:?}");
+
+            // if plugin id has changed, start from scratch
+            if let Some(new_login_data) = login_data.as_mut()
+                && new_login_data.id() != plugin_info.id
+            {
+                login_data.take();
+            }
+
             login_data = Some(match &plugin_info.login_gui {
-                Direct(direct_login_gui) => self.inquire_direct_login(
+                LoginGUI::Direct(direct_login_gui) => self.inquire_direct_login(
                     plugin_info,
                     direct_login_gui,
                     &login_data.as_ref().and_then(|login_data| match login_data {
@@ -562,7 +570,7 @@ Create a new *Application* under your account *Settings* with the following conf
                         _ => Option::None,
                     }),
                 )?,
-                OAuth(oath_login_gui) => self.inquire_oauth_login(
+                LoginGUI::OAuth(oath_login_gui) => self.inquire_oauth_login(
                     plugin_info,
                     oath_login_gui,
                     &login_data.as_ref().and_then(|login_data| match login_data {
@@ -570,7 +578,7 @@ Create a new *Application* under your account *Settings* with the following conf
                         _ => Option::None,
                     }),
                 )?,
-                None => LoginData::None(plugin_info.id.clone()),
+                LoginGUI::None => LoginData::None(plugin_info.id.clone()),
             });
 
             self.print_summary(plugin_info, login_data.as_ref().unwrap());
@@ -626,25 +634,5 @@ Create a new *Application* under your account *Settings* with the following conf
                 Ok(true)
             }
         }
-    }
-
-    fn print_header(&self) -> color_eyre::Result<()> {
-        let (width, _) = ratatui::crossterm::terminal::size()?;
-
-        if width > 91 {
-            println!(
-                r#"
-   _     _     _         (_) |              | |   | |                      _     _     _   
- _| |_ _| |_ _| |_    ___ _| |_ __ ___   ___| | __| |_   _ _ __   __ _   _| |_ _| |_ _| |_ 
-|_   _|_   _|_   _|  / _ \ | | '_ ` _ \ / _ \ |/ _` | | | | '_ \ / _` | |_   _|_   _|_   _|
-  |_|   |_|   |_|   |  __/ | | | | | | |  __/ | (_| | |_| | | | | (_| |   |_|   |_|   |_|  
-                     \___|_|_|_| |_| |_|\___|_|\__,_|\__,_|_| |_|\__, |                    
-                                                                  __/ |                    
-                                                                 |___/                     
-            "#,
-            );
-        }
-
-        Ok(())
     }
 }
