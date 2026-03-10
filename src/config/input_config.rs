@@ -95,6 +95,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "$ i"       => "flaginvert below",
         "I"         => "flaginvert all",
         "M-i"       => "cmd flaginvert",
+
         "1"         => "show all",
         "2"         => "show unread",
         "3"         => "show marked",
@@ -112,6 +113,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "c d"       => "confirm remove",
         "c x"       => "confirm removeall",
         "c f"       => "cmd feedadd",
+        "c e"       => "confirm feedadd https://github.com/christo-auer/eilmeldung/releases.atom eilmeldung releases",
         "c a"       => "cmd categoryadd",
         "c u"       => "cmd feedchangeurl",
         "c y"       => "yank",
@@ -123,6 +125,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "e"         => "openenclosure",
         "E"         => "cmd openenclosure",
         "?"         => "helpinput",
+
     ]
 }
 

@@ -194,7 +194,7 @@ impl App {
             help_popup: HelpPopup::new(config_arc.clone(), message_sender.clone()),
             command_confirm: CommandConfirm::new(config_arc.clone(), message_sender.clone()),
             tooltip: Tooltip::new(
-                "Welcome to eilmeldung".into(),
+                "Stay up-to-date! Press `c e` to add eilmeldung release feed!".into(),
                 crate::ui::tooltip::TooltipFlavor::Info,
             ),
             async_operation_throbber: ThrobberState::default(),

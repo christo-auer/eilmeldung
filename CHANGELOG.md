@@ -1,5 +1,6 @@
 # Unreleased
 
+- stay up-to-date: press `c e` to add eilmeldung release RSS feed!
 - level up your workflow with 🚩s!
   - select (*flag*) multiple articles to execute bulk-operations
   - press `f` to flag articles and then press `r` to mark them as *read*

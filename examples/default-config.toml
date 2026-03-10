@@ -175,6 +175,7 @@ timeout_millis = 5000
 "c d"       = ["confirm remove"]
 "c x"       = ["confirm removeall"]
 "c f"       = ["cmd feedadd"]
+"c e"       = ["confirm feedadd https://github.com/christo-auer/eilmeldung/releases.atom eilmeldung releases"]
 "c a"       = ["cmd categoryadd"]
 "c u"       = ["cmd feedchangeurl"]
 "c y"       = ["yank"]
