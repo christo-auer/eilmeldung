@@ -1,3 +1,5 @@
+- 📢 Stay up-to-date! Subscribe to the [eilmeldung release atom feed](https://github.com/christo-auer/eilmeldung/releases.atom)!
+- 🤖 Want to use your **AI/LLM chatbot with eilmeldung** to select and summarize articles? Or do you want eilmeldung to stay clear all this AI fuzz? Take part in the [survey (demo inside)](https://github.com/christo-auer/eilmeldung/issues/197) and let me know what you think!
 
 
 ![Logo of eilmeldung](docs/images/logo.png) 
