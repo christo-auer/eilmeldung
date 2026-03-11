@@ -215,7 +215,7 @@ impl ArticlesList {
         Ok(match action_scope {
             S::All => self.model_data.articles().clone(),
             S::Current => {
-                if self.model_data.flagged_articles().is_empty() {
+                if self.model_data.effectively_flagged_articles().is_empty() {
                     self.get_current_article().iter().cloned().collect()
                 } else {
                     self.model_data
@@ -223,7 +223,7 @@ impl ArticlesList {
                         .iter()
                         .filter(|article| {
                             self.model_data
-                                .flagged_articles()
+                                .effectively_flagged_articles()
                                 .contains(&article.article_id)
                         })
                         .cloned()

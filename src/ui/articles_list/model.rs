@@ -108,6 +108,17 @@ impl ArticleListModelData {
         self.filter_articles(filter_state).await
     }
 
+    pub(super) fn effectively_flagged_articles(&self) -> Vec<ArticleID> {
+        self.flagged_articles
+            .intersection(&HashSet::from_iter(
+                self.articles
+                    .iter()
+                    .map(|article| article.article_id.to_owned()),
+            ))
+            .cloned()
+            .collect()
+    }
+
     async fn filter_articles(&mut self, filter_state: &FilterState) -> color_eyre::Result<()> {
         let Some(augmented_article_filter) = filter_state.augmented_article_filter().as_ref()
         else {

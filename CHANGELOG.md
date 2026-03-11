@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: flagging now persists when the article list is changed
+
 # 1.1.0 - 2026-03-11
 
 - 📢 Stay up-to-date! Subscribe to the [eilmeldung release atom feed](https://github.com/christo-auer/eilmeldung/releases.atom)! Press `c e` in eilmeldung to automatically add the feed!
