@@ -72,6 +72,11 @@ impl Widget for &mut App {
             ])
             .areas(articles_chunk);
 
+        // store areas for mouse hit-testing
+        self.panel_areas.feed_list = feeds_list_chunk;
+        self.panel_areas.articles_list = articles_list_chunk;
+        self.panel_areas.article_content = article_content_chunk;
+
         // render stuff
         self.feed_list.render(feeds_list_chunk, buf);
         self.articles_list.render(articles_list_chunk, buf);

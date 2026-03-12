@@ -34,6 +34,10 @@ pub fn input_reader(message_sender: UnboundedSender<Message>) -> color_eyre::Res
                 trace!("resized to {width} {height}");
                 message_sender.send(Message::Event(Event::Resized(width, height)))?;
             }
+            event::Event::Mouse(mouse_event) => {
+                trace!("mouse event: {:?}", mouse_event);
+                message_sender.send(Message::Event(Event::Mouse(mouse_event)))?;
+            }
             event => trace!("ignoring event {:?}", event),
         }
     }

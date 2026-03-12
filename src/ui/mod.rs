@@ -25,6 +25,8 @@ use crate::prelude::*;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
+use ratatui::crossterm::event::{MouseButton, MouseEventKind};
+use ratatui::prelude::Rect;
 use ratatui::DefaultTerminal;
 use std::{fmt::Display, path::Path, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
@@ -122,6 +124,41 @@ impl AppState {
     }
 }
 
+/// Stores the last rendered areas of the three main panels for mouse hit-testing.
+#[derive(Default, Clone, Copy)]
+struct PanelAreas {
+    feed_list: Rect,
+    articles_list: Rect,
+    article_content: Rect,
+}
+
+impl PanelAreas {
+    fn panel_at(&self, col: u16, row: u16) -> Option<Panel> {
+        if self.feed_list.contains((col, row).into()) {
+            Some(Panel::FeedList)
+        } else if self.articles_list.contains((col, row).into()) {
+            Some(Panel::ArticleList)
+        } else if self.article_content.contains((col, row).into()) {
+            Some(Panel::ArticleContent)
+        } else {
+            None
+        }
+    }
+
+    /// Returns the row offset relative to the inner area of the articles panel (excluding border).
+    fn article_row_offset(&self, row: u16) -> Option<u16> {
+        let area = self.articles_list;
+        // Account for the border (1 row top)
+        let inner_top = area.y + 1;
+        let inner_bottom = area.y + area.height.saturating_sub(1);
+        if row >= inner_top && row < inner_bottom {
+            Some(row - inner_top)
+        } else {
+            None
+        }
+    }
+}
+
 pub struct App {
     state: AppState,
 
@@ -144,6 +181,8 @@ pub struct App {
     is_offline: bool,
 
     is_running: bool,
+
+    panel_areas: PanelAreas,
 }
 
 impl App {
@@ -199,6 +238,7 @@ impl App {
             ),
             async_operation_throbber: ThrobberState::default(),
             is_offline: false,
+            panel_areas: PanelAreas::default(),
         };
 
         info!("App instance created with initial state: FeedSelection");
@@ -386,6 +426,67 @@ impl App {
     fn logout(&self) {
         self.news_flash_utils.logout();
     }
+
+    fn handle_mouse_event(
+        &mut self,
+        mouse_event: ratatui::crossterm::event::MouseEvent,
+    ) -> color_eyre::Result<()> {
+        // Skip mouse events when a modal/dialog is active
+        if self.command_input.is_active()
+            || self.command_confirm.is_active()
+            || self.help_popup.is_modal().unwrap_or(false)
+        {
+            return Ok(());
+        }
+
+        let col = mouse_event.column;
+        let row = mouse_event.row;
+
+        match mouse_event.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                if let Some(panel) = self.panel_areas.panel_at(col, row) {
+                    // Focus the clicked panel
+                    let target_state: AppState = panel.into();
+                    if self.state != target_state {
+                        self.switch_state(target_state)?;
+                    }
+
+                    // For article list: click to select a specific row
+                    if panel == Panel::ArticleList {
+                        if let Some(row_offset) = self.panel_areas.article_row_offset(row) {
+                            self.message_sender.send(Message::Event(
+                                Event::MouseArticleClick(row_offset),
+                            ))?;
+                        }
+                    }
+                }
+            }
+
+            MouseEventKind::ScrollDown => {
+                if let Some(panel) = self.panel_areas.panel_at(col, row) {
+                    self.message_sender
+                        .send(Message::Command(Command::In(
+                            panel,
+                            Box::new(Command::NavigateDown),
+                        )))?;
+                }
+            }
+
+            MouseEventKind::ScrollUp => {
+                if let Some(panel) = self.panel_areas.panel_at(col, row) {
+                    self.message_sender
+                        .send(Message::Command(Command::In(
+                            panel,
+                            Box::new(Command::NavigateUp),
+                        )))?;
+                }
+            }
+
+            _ => {}
+        }
+
+        Ok(())
+    }
 }
 
 impl MessageReceiver for App {
@@ -434,6 +535,10 @@ impl MessageReceiver for App {
                 trace!("terminal resized, forcing redraw");
                 self.message_sender
                     .send(Message::Command(Command::Redraw))?;
+            }
+
+            Message::Event(Event::Mouse(mouse_event)) => {
+                self.handle_mouse_event(*mouse_event)?;
             }
 
             Message::Event(Tick) => {

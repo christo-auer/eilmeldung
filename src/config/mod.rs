@@ -186,6 +186,8 @@ pub struct Config {
     pub login_setup: Option<LoginConfiguration>,
 
     pub cli: CliConfig,
+
+    pub enable_mouse: bool,
 }
 
 impl Config {
@@ -335,6 +337,7 @@ impl Default for Config {
             ],
             login_setup: None,
             cli: CliConfig::default(),
+            enable_mouse: false,
         }
     }
 }

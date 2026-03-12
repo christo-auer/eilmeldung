@@ -15,6 +15,10 @@ use std::{path::Path, sync::Arc, time::Duration};
 use clap::Parser;
 use log::{debug, error, info};
 use news_flash::{NewsFlash, models::LoginData};
+use ratatui::crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
+    execute,
+};
 use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
 
 mod prelude;
@@ -127,10 +131,15 @@ async fn main() -> color_eyre::Result<()> {
         ConnectivityMonitor::new(news_flash_utils.clone(), message_sender.clone());
 
     // create the main app
-    let app = App::new(config, news_flash_utils.clone(), message_sender);
+    let app = App::new(config.clone(), news_flash_utils.clone(), message_sender);
 
     info!("Initializing terminal");
     let terminal = ratatui::init();
+
+    if config.enable_mouse {
+        info!("Enabling mouse capture");
+        execute!(std::io::stdout(), EnableMouseCapture)?;
+    }
 
     // startup task which reads the crossterm events
     let _input_reader_handle = spawn_blocking(move || {
@@ -143,6 +152,11 @@ async fn main() -> color_eyre::Result<()> {
 
     info!("Starting application main loop");
     let result = app.run(message_receiver, terminal).await;
+
+    if config.enable_mouse {
+        info!("Disabling mouse capture");
+        let _ = execute!(std::io::stdout(), DisableMouseCapture);
+    }
 
     info!("Application loop ended, restoring terminal");
     ratatui::restore();

@@ -748,6 +748,18 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     view_needs_update = true;
                 }
 
+                MouseArticleClick(row_offset) => {
+                    // Select the article at the clicked row offset
+                    let offset = self.view_data.get_table_state_mut().offset();
+                    let target_index = offset + *row_offset as usize;
+                    if target_index < self.model_data.articles().len() {
+                        self.view_data
+                            .get_table_state_mut()
+                            .select(Some(target_index));
+                        self.select_index_and_send_message(None)?;
+                    }
+                }
+
                 event if event.caused_model_update() => model_needs_update = true,
 
                 _ => {}
