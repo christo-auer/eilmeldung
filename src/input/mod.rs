@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use log::{info, trace};
-use ratatui::crossterm::event;
+use ratatui::crossterm::event::{self, MouseEventKind};
 use ratatui::text::{Line, Span, Text};
 use throbber_widgets_tui::{Throbber, ThrobberState, VERTICAL_BLOCK};
 use tokio::sync::mpsc::UnboundedSender;
@@ -35,8 +35,11 @@ pub fn input_reader(message_sender: UnboundedSender<Message>) -> color_eyre::Res
                 message_sender.send(Message::Event(Event::Resized(width, height)))?;
             }
             event::Event::Mouse(mouse_event) => {
-                trace!("mouse event: {:?}", mouse_event);
-                message_sender.send(Message::Event(Event::Mouse(mouse_event)))?;
+                // Filter out Moved events — we only care about clicks, drags, and scrolls
+                if !matches!(mouse_event.kind, MouseEventKind::Moved) {
+                    trace!("mouse event: {:?}", mouse_event);
+                    message_sender.send(Message::Event(Event::Mouse(mouse_event)))?;
+                }
             }
             event => trace!("ignoring event {:?}", event),
         }

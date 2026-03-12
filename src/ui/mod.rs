@@ -487,6 +487,9 @@ impl App {
                         }
                         _ => {}
                     }
+
+                    self.message_sender
+                        .send(Message::Command(Command::Redraw))?;
                 }
             }
 
@@ -588,6 +591,8 @@ impl MessageReceiver for App {
 
             Message::Event(Event::Mouse(mouse_event)) => {
                 self.handle_mouse_event(*mouse_event)?;
+                // handle_mouse_event sends its own Redraw when needed (e.g. during drag)
+                needs_redraw = false;
             }
 
             Message::Event(Tick) => {
