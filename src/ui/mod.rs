@@ -517,20 +517,18 @@ impl App {
             MouseEventKind::ScrollDown => {
                 if let Some(panel) = self.panel_areas.panel_at(col, row) {
                     self.message_sender
-                        .send(Message::Command(Command::In(
-                            panel,
-                            Box::new(Command::NavigateDown),
-                        )))?;
+                        .send(Message::Event(Event::MouseScrollDown(panel)))?;
+                    self.message_sender
+                        .send(Message::Command(Command::Redraw))?;
                 }
             }
 
             MouseEventKind::ScrollUp => {
                 if let Some(panel) = self.panel_areas.panel_at(col, row) {
                     self.message_sender
-                        .send(Message::Command(Command::In(
-                            panel,
-                            Box::new(Command::NavigateUp),
-                        )))?;
+                        .send(Message::Event(Event::MouseScrollUp(panel)))?;
+                    self.message_sender
+                        .send(Message::Command(Command::Redraw))?;
                 }
             }
 

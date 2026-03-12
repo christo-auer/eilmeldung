@@ -1016,6 +1016,14 @@ impl MessageReceiver for FeedList {
                     }
                 }
 
+                E::MouseScrollDown(Panel::FeedList) => {
+                    self.view_data.tree_state_mut().scroll_down(1);
+                }
+
+                E::MouseScrollUp(Panel::FeedList) => {
+                    self.view_data.tree_state_mut().scroll_up(1);
+                }
+
                 event if event.caused_model_update() => model_needs_update = true,
                 _ => {}
             }

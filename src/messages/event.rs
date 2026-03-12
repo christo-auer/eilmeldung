@@ -135,6 +135,10 @@ pub enum Event {
     // mouse click on feed list at screen position (col, row)
     MouseFeedClick(u16, u16),
 
+    // mouse scroll viewport without moving selection (panel, lines)
+    MouseScrollUp(Panel),
+    MouseScrollDown(Panel),
+
     // terminal resized
     Resized(u16, u16),
 

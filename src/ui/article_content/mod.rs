@@ -343,6 +343,14 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     view_needs_update = self.update_thumbnail_fetching_state()?;
                 }
 
+                MouseScrollDown(Panel::ArticleContent) => {
+                    self.view_data.scroll_down();
+                }
+
+                MouseScrollUp(Panel::ArticleContent) => {
+                    self.view_data.scroll_up();
+                }
+
                 event if event.caused_model_update() => {
                     view_needs_update = true;
                 }

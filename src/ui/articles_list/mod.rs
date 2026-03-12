@@ -760,6 +760,17 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     }
                 }
 
+                MouseScrollDown(Panel::ArticleList) => {
+                    let offset = self.view_data.get_table_state_mut().offset_mut();
+                    let max = self.model_data.articles().len().saturating_sub(1);
+                    *offset = (*offset).saturating_add(1).min(max);
+                }
+
+                MouseScrollUp(Panel::ArticleList) => {
+                    let offset = self.view_data.get_table_state_mut().offset_mut();
+                    *offset = (*offset).saturating_sub(1);
+                }
+
                 event if event.caused_model_update() => model_needs_update = true,
 
                 _ => {}
