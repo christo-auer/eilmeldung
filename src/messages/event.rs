@@ -132,6 +132,9 @@ pub enum Event {
     // mouse click on article list at row offset from top of inner area
     MouseArticleClick(u16),
 
+    // mouse click on feed list at screen position (col, row)
+    MouseFeedClick(u16, u16),
+
     // terminal resized
     Resized(u16, u16),
 

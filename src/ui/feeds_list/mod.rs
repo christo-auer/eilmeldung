@@ -9,6 +9,7 @@ pub mod prelude {
 use feed_list_item::FeedListItem;
 use log::info;
 use news_flash::models::{CategoryID, PluginCapabilities, UnifiedMapping, Url};
+use ratatui::layout::Position;
 use tui_tree_widget::TreeItem;
 
 use crate::{
@@ -1006,6 +1007,13 @@ impl MessageReceiver for FeedList {
                     )?;
                     model_needs_update = true;
                     // self.model_data.sync()?;
+                }
+
+                E::MouseFeedClick(col, row) => {
+                    let pos = Position::new(*col, *row);
+                    if self.view_data.tree_state_mut().click_at(pos) {
+                        selection_changed = true;
+                    }
                 }
 
                 event if event.caused_model_update() => model_needs_update = true,

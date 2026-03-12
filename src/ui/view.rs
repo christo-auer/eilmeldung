@@ -44,20 +44,29 @@ impl Widget for &mut App {
             ])
             .areas(area);
 
-        let (articles_constraint_height, article_content_constraint_height) = match self.state {
-            AppState::FeedSelection | AppState::ArticleSelection => (
-                self.config.article_list_focused_height.as_constraint(),
-                self.config
-                    .article_list_focused_height
-                    .as_complementary_constraint(middle.height),
-            ),
-            _ => (
-                self.config
-                    .article_content_focused_height
-                    .as_complementary_constraint(middle.height),
-                self.config.article_content_focused_height.as_constraint(),
-            ),
-        };
+        let (articles_constraint_height, article_content_constraint_height) =
+            if let Some(override_height) = self.articles_height_override {
+                // User is dragging the border — use absolute heights
+                (
+                    Constraint::Length(override_height),
+                    Constraint::Min(0),
+                )
+            } else {
+                match self.state {
+                    AppState::FeedSelection | AppState::ArticleSelection => (
+                        self.config.article_list_focused_height.as_constraint(),
+                        self.config
+                            .article_list_focused_height
+                            .as_complementary_constraint(middle.height),
+                    ),
+                    _ => (
+                        self.config
+                            .article_content_focused_height
+                            .as_complementary_constraint(middle.height),
+                        self.config.article_content_focused_height.as_constraint(),
+                    ),
+                }
+            };
 
         let [feeds_list_chunk, articles_chunk] = Layout::default()
             .direction(Direction::Horizontal)

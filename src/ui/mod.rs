@@ -157,6 +157,15 @@ impl PanelAreas {
             None
         }
     }
+
+    /// Returns true if the row is on the horizontal border between the articles list and article content.
+    fn is_on_horizontal_border(&self, col: u16, row: u16) -> bool {
+        // The border is at the bottom edge of articles_list / top edge of article_content
+        let border_row = self.articles_list.y + self.articles_list.height;
+        let in_column_range = col >= self.articles_list.x
+            && col < self.articles_list.x + self.articles_list.width;
+        row == border_row && in_column_range
+    }
 }
 
 pub struct App {
@@ -183,6 +192,11 @@ pub struct App {
     is_running: bool,
 
     panel_areas: PanelAreas,
+
+    /// When Some, the user is dragging the horizontal border; stores the initial row of the drag.
+    drag_resize_active: bool,
+    /// Override for the articles/content split height (absolute row count for articles list).
+    articles_height_override: Option<u16>,
 }
 
 impl App {
@@ -239,6 +253,8 @@ impl App {
             async_operation_throbber: ThrobberState::default(),
             is_offline: false,
             panel_areas: PanelAreas::default(),
+            drag_resize_active: false,
+            articles_height_override: None,
         };
 
         info!("App instance created with initial state: FeedSelection");
@@ -444,6 +460,12 @@ impl App {
 
         match mouse_event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
+                // Check if clicking on the horizontal border to start a drag-resize
+                if self.panel_areas.is_on_horizontal_border(col, row) {
+                    self.drag_resize_active = true;
+                    return Ok(());
+                }
+
                 if let Some(panel) = self.panel_areas.panel_at(col, row) {
                     // Focus the clicked panel
                     let target_state: AppState = panel.into();
@@ -451,15 +473,42 @@ impl App {
                         self.switch_state(target_state)?;
                     }
 
-                    // For article list: click to select a specific row
-                    if panel == Panel::ArticleList {
-                        if let Some(row_offset) = self.panel_areas.article_row_offset(row) {
-                            self.message_sender.send(Message::Event(
-                                Event::MouseArticleClick(row_offset),
-                            ))?;
+                    match panel {
+                        Panel::ArticleList => {
+                            if let Some(row_offset) = self.panel_areas.article_row_offset(row) {
+                                self.message_sender.send(Message::Event(
+                                    Event::MouseArticleClick(row_offset),
+                                ))?;
+                            }
                         }
+                        Panel::FeedList => {
+                            self.message_sender
+                                .send(Message::Event(Event::MouseFeedClick(col, row)))?;
+                        }
+                        _ => {}
                     }
                 }
+            }
+
+            MouseEventKind::Drag(MouseButton::Left) => {
+                if self.drag_resize_active {
+                    // Calculate the new articles list height based on drag position
+                    let articles_top = self.panel_areas.articles_list.y;
+                    let content_bottom = self.panel_areas.article_content.y
+                        + self.panel_areas.article_content.height;
+                    let total_height = content_bottom.saturating_sub(articles_top);
+                    // Clamp: minimum 3 rows for each panel
+                    let new_articles_height = row
+                        .saturating_sub(articles_top)
+                        .clamp(3, total_height.saturating_sub(3));
+                    self.articles_height_override = Some(new_articles_height);
+                    self.message_sender
+                        .send(Message::Command(Command::Redraw))?;
+                }
+            }
+
+            MouseEventKind::Up(MouseButton::Left) => {
+                self.drag_resize_active = false;
             }
 
             MouseEventKind::ScrollDown => {
