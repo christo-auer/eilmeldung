@@ -1,6 +1,11 @@
 # Unreleased
 
-- bugfix: flagging now persists when the article list is changed
+- **Important**: due to the update of the news-flash library you may need to logout and login again:
+  - run `eilmeldung --logout`
+  - or in *eilmeldung* run the command `LOGOUT NOW` (press `:` to open the command line)
+- bugfix: 
+  - flagging now persists when the article list is changed
+  - updated news-flash library to 3.0.1 along with all other deps; the update of news-flash implements a workaround for some misbehaving webservers which deliver RSS content as `text/html`
 
 # 1.1.0 - 2026-03-11
 

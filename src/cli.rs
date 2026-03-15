@@ -78,11 +78,16 @@ async fn print_login_data(cli_args: &CliArgs, news_flash: &NewsFlash) -> color_e
         return Ok(false);
     }
 
-    let login_data = news_flash.get_login_data().await.unwrap();
+    let Some(login_data) = news_flash.get_login_data().await else {
+        print!("no login data found!");
+        return Ok(true);
+    };
+
     print!(
         "{}",
         LoginConfiguration::from(login_data).as_toml(*cli_args.show_secrets())?
     );
+
     Ok(true)
 }
 
