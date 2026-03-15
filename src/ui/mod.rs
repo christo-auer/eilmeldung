@@ -5,6 +5,7 @@ mod command_confirm;
 mod command_input;
 mod feeds_list;
 mod help_popup;
+mod mouse;
 mod tooltip;
 mod view;
 
@@ -16,6 +17,7 @@ pub mod prelude {
     pub use super::command_input::CommandInput;
     pub use super::feeds_list::prelude::*;
     pub use super::help_popup::HelpPopup;
+    pub use super::mouse::PanelAreas;
     pub use super::tooltip::{Tooltip, TooltipFlavor, tooltip};
     pub use super::{App, AppState};
 }
@@ -25,9 +27,8 @@ use crate::prelude::*;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
-use ratatui::crossterm::event::{MouseButton, MouseEventKind};
-use ratatui::prelude::Rect;
 use ratatui::DefaultTerminal;
+use ratatui::crossterm::event::{MouseButton, MouseEventKind};
 use std::{fmt::Display, path::Path, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -124,50 +125,6 @@ impl AppState {
     }
 }
 
-/// Stores the last rendered areas of the three main panels for mouse hit-testing.
-#[derive(Default, Clone, Copy)]
-struct PanelAreas {
-    feed_list: Rect,
-    articles_list: Rect,
-    article_content: Rect,
-}
-
-impl PanelAreas {
-    fn panel_at(&self, col: u16, row: u16) -> Option<Panel> {
-        if self.feed_list.contains((col, row).into()) {
-            Some(Panel::FeedList)
-        } else if self.articles_list.contains((col, row).into()) {
-            Some(Panel::ArticleList)
-        } else if self.article_content.contains((col, row).into()) {
-            Some(Panel::ArticleContent)
-        } else {
-            None
-        }
-    }
-
-    /// Returns the row offset relative to the inner area of the articles panel (excluding border).
-    fn article_row_offset(&self, row: u16) -> Option<u16> {
-        let area = self.articles_list;
-        // Account for the border (1 row top)
-        let inner_top = area.y + 1;
-        let inner_bottom = area.y + area.height.saturating_sub(1);
-        if row >= inner_top && row < inner_bottom {
-            Some(row - inner_top)
-        } else {
-            None
-        }
-    }
-
-    /// Returns true if the row is on the horizontal border between the articles list and article content.
-    fn is_on_horizontal_border(&self, col: u16, row: u16) -> bool {
-        // The border is at the bottom edge of articles_list / top edge of article_content
-        let border_row = self.articles_list.y + self.articles_list.height;
-        let in_column_range = col >= self.articles_list.x
-            && col < self.articles_list.x + self.articles_list.width;
-        row == border_row && in_column_range
-    }
-}
-
 pub struct App {
     state: AppState,
 
@@ -193,8 +150,9 @@ pub struct App {
 
     panel_areas: PanelAreas,
 
-    /// When Some, the user is dragging the horizontal border; stores the initial row of the drag.
+    /// When true, the user is dragging the horizontal border; stores the initial row of the drag.
     drag_resize_active: bool,
+
     /// Override for the articles/content split height (absolute row count for articles list).
     articles_height_override: Option<u16>,
 }
@@ -476,9 +434,8 @@ impl App {
                     match panel {
                         Panel::ArticleList => {
                             if let Some(row_offset) = self.panel_areas.article_row_offset(row) {
-                                self.message_sender.send(Message::Event(
-                                    Event::MouseArticleClick(row_offset),
-                                ))?;
+                                self.message_sender
+                                    .send(Message::Event(Event::MouseArticleClick(row_offset)))?;
                             }
                         }
                         Panel::FeedList => {
@@ -496,17 +453,25 @@ impl App {
             MouseEventKind::Drag(MouseButton::Left) => {
                 if self.drag_resize_active {
                     // Calculate the new articles list height based on drag position
-                    let articles_top = self.panel_areas.articles_list.y;
-                    let content_bottom = self.panel_areas.article_content.y
-                        + self.panel_areas.article_content.height;
+                    let articles_top = self.panel_areas.articles_list().y;
+                    let content_bottom = self.panel_areas.article_content().y
+                        + self.panel_areas.article_content().height;
                     let total_height = content_bottom.saturating_sub(articles_top);
                     // Clamp: minimum 3 rows for each panel
                     let new_articles_height = row
                         .saturating_sub(articles_top)
                         .clamp(3, total_height.saturating_sub(3));
-                    self.articles_height_override = Some(new_articles_height);
-                    self.message_sender
-                        .send(Message::Command(Command::Redraw))?;
+
+                    let old_articles_height =
+                        self.articles_height_override.replace(new_articles_height);
+
+                    // only redraw if height has changed
+                    if let Some(old_articles_height) = old_articles_height
+                        && old_articles_height != new_articles_height
+                    {
+                        self.message_sender
+                            .send(Message::Command(Command::Redraw))?;
+                    }
                 }
             }
 

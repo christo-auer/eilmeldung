@@ -165,6 +165,10 @@ Yes, you can *flag* them by pressing `f` and then press `r` to mark all flagged 
 
 Checkout [FAQ](docs/faq.md#features--capabilities)!
 
+### Is mouse input supported?
+
+Yes, there is rudimentary mouse support with the option `mouse_support = true` (default is `false`). See [Mouse Support](docs/keybindings.md#mouse-support)]
+
 ---
 
 **More questions?** See the complete [FAQ](docs/faq.md).

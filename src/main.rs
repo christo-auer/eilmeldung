@@ -136,7 +136,7 @@ async fn main() -> color_eyre::Result<()> {
     info!("Initializing terminal");
     let terminal = ratatui::init();
 
-    if config.enable_mouse {
+    if config.mouse_support {
         info!("Enabling mouse capture");
         execute!(std::io::stdout(), EnableMouseCapture)?;
     }
@@ -153,7 +153,7 @@ async fn main() -> color_eyre::Result<()> {
     info!("Starting application main loop");
     let result = app.run(message_receiver, terminal).await;
 
-    if config.enable_mouse {
+    if config.mouse_support {
         info!("Disabling mouse capture");
         let _ = execute!(std::io::stdout(), DisableMouseCapture);
     }

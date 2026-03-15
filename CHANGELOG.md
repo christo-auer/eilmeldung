@@ -3,6 +3,12 @@
 - **Important**: due to the update of the news-flash library you may need to logout and login again:
   - run `eilmeldung --logout`
   - or in *eilmeldung* run the command `LOGOUT NOW` (press `:` to open the command line)
+- as [requested](https://github.com/christo-auer/eilmeldung/issues/200) by multiple users, eilmeldung now has basic **mouse support** (*disabled* by default)
+  - thanks to @gwicho38 for the fork!
+  - set `mouse_support = true` to enable
+  - selection by clicking is supported in the feed and article list
+  - scrolling support in the article list and the article content
+  - drag the border between the articles and the content to resize (note that this overrides static layout settings from the config file)
 - bugfix: 
   - flagging now persists when the article list is changed
   - updated news-flash library to 3.0.1 along with all other deps; the update of news-flash implements a workaround for some misbehaving webservers which deliver RSS content as `text/html`

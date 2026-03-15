@@ -22,6 +22,7 @@ This document provides a comprehensive reference of all default key bindings in 
 - [Sorting Articles](#sorting-articles)
 - [Command Line](#command-line)
 - [Customizing Key Bindings](#customizing-key-bindings)
+- [Mouse Support](#mouse-support)
 
 ---
 
@@ -253,3 +254,10 @@ All key bindings can be customized in your configuration file. See the [Input Co
 ```
 
 See the [default configuration](../examples/default-config.toml) for the complete list of default key bindings.
+
+## Mouse Support
+
+Mouse support is disabled by default. Enable it by `mouse_support = true`:
+- selection by a mouse click is supported in the feed and article list
+- rudimentary scrolling support in the article list and the article content
+- drag the border between the articles and the content to resize (note that this overrides layout settings from the config file)
