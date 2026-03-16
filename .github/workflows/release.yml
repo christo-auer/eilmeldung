@@ -147,7 +147,7 @@ jobs:
           tar -czf eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}.tar.gz eilmeldung/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}
           path: package/eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}.tar.gz
@@ -237,7 +237,7 @@ jobs:
           tar -czf eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}.tar.gz eilmeldung/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}
           path: package/eilmeldung-${{ matrix.target }}-${{ steps.tag.outputs.TAG_NAME }}.tar.gz

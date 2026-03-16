@@ -1,5 +1,9 @@
 # Unreleased
 
+- another hotfix :-/
+  - removed optimization flags as they cause compilation errors in arch
+  - updated github worksflows to latest version to prevent warnings
+
 # 1.2.2 - 2026-03-16
 
 - update github workflows
