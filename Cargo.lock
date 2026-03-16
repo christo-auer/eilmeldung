@@ -6403,7 +6403,8 @@ dependencies = [
 [[package]]
 name = "the-other-tui-markdown"
 version = "0.1.0"
-source = "git+file:///home/chris/Documents/workspace/the-other-tui-markdown#33c4154eb08c673e194bcd7c9b0db817928becb6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d1e918c0bbc64d92da8a0016a03711ac2ab76042ae5f671523ff5ab45fa16c2"
 dependencies = [
  "pulldown-cmark",
  "ratatui-core",

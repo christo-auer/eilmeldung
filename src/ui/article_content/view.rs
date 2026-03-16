@@ -43,7 +43,8 @@ pub struct ArticleContentViewData {
     // Throbber state for loading animations
     thumbnail_fetching_throbber: ThrobberState,
 
-    url_for_hint: HashMap<String, String>,
+    #[getset(get = "pub(super)")]
+    url_for_hint: HashMap<u16, String>,
 }
 
 impl Default for ArticleContentViewData {
@@ -458,7 +459,7 @@ impl ArticleContentViewData {
     }
 
     fn markdown_to_text(&mut self, markdown: &str, config: &Config) -> Text<'static> {
-        let url_for_hint = Arc::new(Mutex::new(HashMap::<String, String>::new()));
+        let url_for_hint = Arc::new(Mutex::new(HashMap::<u16, String>::new()));
         let counter = Arc::new(AtomicU16::new(0));
         let show_url = config.content_show_url;
 
@@ -487,15 +488,13 @@ impl ArticleContentViewData {
             .with_link(move |alt, url| {
                 let mut url_for_hint = inner_link_url_for_hint.lock().unwrap();
                 let counter = inner_link_counter.fetch_add(1, Ordering::Relaxed) + 1;
-                url_for_hint
-                    .entry(format!("{counter}"))
-                    .or_insert(url.to_owned());
+                url_for_hint.entry(counter).or_insert(url.to_owned());
                 let mut spans = vec![
                     Span::styled(format!("{url_icon}({counter})"), url_hint_style),
-                    Span::styled(format!("{alt} "), alt_url_text_style),
+                    Span::styled(alt.to_owned(), alt_url_text_style),
                 ];
                 if show_url {
-                    spans.push(Span::styled(format!("({url})"), url_url_text_style));
+                    spans.push(Span::styled(format!(" ({url})"), url_url_text_style));
                 }
 
                 spans
@@ -503,16 +502,14 @@ impl ArticleContentViewData {
             .with_image(move |alt, url| {
                 let mut url_for_hint = inner_image_url_for_hint.lock().unwrap();
                 let counter = inner_image_counter.fetch_add(1, Ordering::Relaxed) + 1;
-                url_for_hint
-                    .entry(format!("{counter}"))
-                    .or_insert(url.to_owned());
+                url_for_hint.entry(counter).or_insert(url.to_owned());
                 let mut spans = vec![
                     Span::styled(format!("{image_icon}({counter})"), image_hint_style),
-                    Span::styled(format!("{alt} "), alt_text_image_style),
+                    Span::styled(alt.to_owned(), alt_text_image_style),
                 ];
 
                 if show_url {
-                    spans.push(Span::styled(format!("({url})"), url_image_style));
+                    spans.push(Span::styled(format!(" ({url})"), url_image_style));
                 }
                 spans
             })

@@ -197,6 +197,25 @@ impl ArticleContent {
 
         Ok(())
     }
+
+    fn open_hint(&self, hint: u16, command: &Command) -> color_eyre::Result<()> {
+        let Some(url) = self.view_data.url_for_hint().get(&hint) else {
+            tooltip(
+                &self.message_sender,
+                "unknown hint number",
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        match command {
+            Command::ContentFollowHint(..) => webbrowser::open(url)?,
+            Command::ContentCopyHint(..) => arboard::Clipboard::new()?.set_text(url.to_string())?,
+            _ => {}
+        }
+
+        Ok(())
+    }
 }
 
 impl crate::messages::MessageReceiver for ArticleContent {
@@ -258,6 +277,10 @@ impl crate::messages::MessageReceiver for ArticleContent {
 
                 C::ArticleOpenEnclosure(enclosure_type) => {
                     self.open_enclosure(enclosure_type).await?;
+                }
+
+                hint_command @ (C::ContentFollowHint(hint) | C::ContentCopyHint(hint)) => {
+                    self.open_hint(hint, &hint_command)?;
                 }
 
                 set_read_command @ C::ActionSetRead(_) => {

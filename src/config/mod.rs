@@ -300,7 +300,7 @@ impl Default for Config {
             text_max_width: 66,
             content_preferred_type: ArticleContentType::Markdown,
             zen_mode_show_header: false,
-            content_show_url: true,
+            content_show_url: false,
 
             feed_list_focused_width: Dimension::Percentage(25),
             article_list_focused_width: Dimension::Percentage(75),

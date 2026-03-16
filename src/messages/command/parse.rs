@@ -342,7 +342,11 @@ impl Command {
                     .as_str(),
             )?),
 
-            C::FollowUrl(..) => C::FollowUrl(expect_from_str(&mut args, "URL hint")?),
+            C::ContentFollowHint(..) => {
+                C::ContentFollowHint(expect_from_str(&mut args, "URL hint")?)
+            }
+
+            C::ContentCopyHint(..) => C::ContentCopyHint(expect_from_str(&mut args, "URL hint")?),
 
             C::ArticleShare(..) => C::ArticleShare(
                 expect_word(&mut args, "expecting share target")

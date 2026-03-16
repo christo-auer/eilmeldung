@@ -610,11 +610,18 @@ pub enum Command {
     ArticleListSort(SortOrder),
 
     #[strum(
-        serialize = "follow",
-        message = "follow <url hint>",
-        detailed_message = "opens the URL for the given hint (article content)"
+        serialize = "hintfollow",
+        message = "hintfollow <url hint>",
+        detailed_message = "opens the URL of the given hint (article content)"
     )]
-    FollowUrl(i16),
+    ContentFollowHint(u16),
+
+    #[strum(
+        serialize = "hintcopy",
+        message = "hintcopy <url hint>",
+        detailed_message = "copies the URL of the given hint (article content)"
+    )]
+    ContentCopyHint(u16),
 
     #[strum(
         serialize = "sortfeeds",
@@ -838,7 +845,8 @@ impl Display for Command {
             ArticleListSort(sort_order) => write!(f, "sort article list by {}", sort_order),
             ArticleListSortReverse => write!(f, "reverse current sort order"),
             ArticleListSortClear => write!(f, "clear current sort order"),
-            FollowUrl(hint) => write!(f, "open URL behind {hint}"),
+            ContentFollowHint(hint) => write!(f, "open URL behind {hint}"),
+            ContentCopyHint(hint) => write!(f, "copiy URL behind {hint}"),
 
             FeedListSync => write!(f, "sync all"),
             ActionSetRead(action_scope) => {
