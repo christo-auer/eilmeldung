@@ -157,6 +157,8 @@ pub struct Config {
     pub scrollbar_end_symbol: char,
     pub scrollbar_track_symbol: char,
     pub scrollbar_thumb_symbol: char,
+    pub image_icon: char,
+    pub url_icon: char,
 
     pub articles_after_selection: usize,
     pub auto_scrape: bool,
@@ -170,6 +172,7 @@ pub struct Config {
     pub hide_default_sort_order: bool,
     pub default_sort_order: SortOrder,
     pub zen_mode_show_header: bool,
+    pub content_show_url: bool,
 
     pub feed_list_focused_width: Dimension,
     pub article_list_focused_width: Dimension,
@@ -284,6 +287,8 @@ impl Default for Config {
             scrollbar_end_symbol: '│',
             scrollbar_track_symbol: ' ',
             scrollbar_thumb_symbol: '│',
+            image_icon: '',
+            url_icon: '',
 
             articles_after_selection: 3,
             auto_scrape: true,
@@ -295,6 +300,7 @@ impl Default for Config {
             text_max_width: 66,
             content_preferred_type: ArticleContentType::Markdown,
             zen_mode_show_header: false,
+            content_show_url: true,
 
             feed_list_focused_width: Dimension::Percentage(25),
             article_list_focused_width: Dimension::Percentage(75),

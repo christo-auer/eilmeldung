@@ -57,6 +57,7 @@ string_manipulation_utf8 = "0.3.0"
 strum = { version = "0.27.2", features = ["derive", "strum_macros"] }
 termimad = "0.34.0"
 text-splitter = { version = "0.28.0", features = ["markdown"] }
+the-other-tui-markdown = { git = "file:///home/chris/Documents/workspace/the-other-tui-markdown", version = "0.1.0" }
 thiserror = "2.0.17"
 throbber-widgets-tui = "0.10.0"
 tokio = { version = "1.47.1", features = ["macros", "tokio-macros", "time" ] }

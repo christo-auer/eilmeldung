@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{num::ParseIntError, str::FromStr};
 
 use news_flash::models::Url;
 use ratatui::style::{Color, ParseColorError};
@@ -55,6 +55,9 @@ pub enum CommandParseError {
 
     #[error("search term expected (quoted string, regex or single word)")]
     SearchTermExpected,
+
+    #[error("URL hint expected")]
+    UrlHintExpected(#[from] ParseIntError),
 
     #[error("expecting a word")]
     WordExpected(String),
@@ -338,6 +341,8 @@ impl Command {
                     })?
                     .as_str(),
             )?),
+
+            C::FollowUrl(..) => C::FollowUrl(expect_from_str(&mut args, "URL hint")?),
 
             C::ArticleShare(..) => C::ArticleShare(
                 expect_word(&mut args, "expecting share target")
