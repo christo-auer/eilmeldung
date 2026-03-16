@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.2.2 - 2026-03-16
+
 - update github workflows
 
 # 1.2.1 - 2026-03-16
