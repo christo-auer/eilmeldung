@@ -10,16 +10,12 @@ keywords = [ "rss", "tui", "news", "newsflash" ]
 categories = [ "command-line-utilities" ]
 publish = true
 
-# disabled for now as it causes compilation errors on Arch
-# [profile.release]
-# codegen-units = 1
-# lto = true
-# opt-level = 3
-# strip = true
-#
-# # has dep which must be compiled with -O0
-# [profile.dev.package.aws-lc-sys]
-# opt-level = 0
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true
+
 
 [dependencies]
 arboard = { version = "3.6.1", default-features = false, features = ["wayland-data-control" ] }
