@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.2.2 - 2026-03-16
+
 - hotfix: compilation problem under arch fixed, `aws-lc-sys` dependency does not support optimization with `-O3`, must be `-O0`
 - release notes for 1.2.0
   - **Important**: due to the update of the news-flash library you may need to logout and login again:
