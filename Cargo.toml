@@ -17,7 +17,7 @@ opt-level = 3
 strip = true
 
 # has dep which must be compiled with -O0
-[profile.release.aws-lc-sys]
+[profile.dev.package.aws-lc-sys]
 opt-level = 0
 
 [dependencies]
