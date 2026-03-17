@@ -613,7 +613,7 @@ impl FeedList {
                 .map(|count| *count > 0)
                 .unwrap_or(false),
             // All and Tag have unread counts, however, at this point in time we don't have the
-            // update-to-date numbers and also, we assume, that the user wants to navigte only to
+            // update-to-date numbers and also, we assume, that the user wants to navigate only to
             // feeds and categories
             FeedListItem::Tag(_)
             | FeedListItem::All
@@ -626,6 +626,14 @@ impl FeedList {
     fn select_next_unread(&mut self) -> color_eyre::Result<()> {
         let selected = self.view_data.tree_state().selected();
         let paths = self.view_data.paths().to_vec();
+
+        // this only works for categories or feeds
+        if !matches!(
+            selected.last(),
+            Some(FeedListItem::Category(..)) | Some(FeedListItem::Feed(..))
+        ) {
+            return Ok(());
+        }
 
         // find the current or next path that has unread items
         let found_path = paths

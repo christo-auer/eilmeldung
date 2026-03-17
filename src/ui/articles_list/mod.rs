@@ -6,7 +6,7 @@ pub mod prelude {
 }
 
 use crate::ui::articles_list::{model::ArticleListModelData, view::FilterState};
-use log::{info, trace};
+use log::trace;
 use news_flash::models::{Article, ArticleID, Marked, Read, Tag};
 use view::ArticleListViewData;
 
@@ -584,30 +584,8 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 }
 
                 C::ActionSetRead(action_scope) if handle_command => {
-                    // first we check if we can reroute this to feed list to make it quicker
-                    use ActionScope::*;
-                    match action_scope {
-                        // queries must be handled by article list
-                        Query(_) => {
-                            self.set_action_scope_read_status(&action_scope, Read::Read)?;
-                            view_needs_update = true;
-                        }
-
-                        // if all articles must be set to read and no adhoc filter is applied, the
-                        // feed list can set the articles to read
-                        All if !self.filter_state.apply_article_adhoc_filter() => {
-                            info!("re-routing set read command to feed list");
-                            self.message_sender.send(Message::Command(C::In(
-                                Panel::FeedList,
-                                Box::new(C::ActionSetRead(ActionScope::Current)),
-                            )))?;
-                        }
-
-                        _ => {
-                            self.set_action_scope_read_status(&action_scope, Read::Read)?;
-                            view_needs_update = true;
-                        }
-                    }
+                    self.set_action_scope_read_status(&action_scope, Read::Read)?;
+                    view_needs_update = true;
                 }
 
                 C::ActionSetUnread(action_scope) => {

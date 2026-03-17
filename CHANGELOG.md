@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: infinite loop when marking a query as read in feed list
+
 # 1.2.3 - 2026-03-16
 
 - another hotfix :-/
