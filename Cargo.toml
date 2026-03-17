@@ -10,11 +10,11 @@ keywords = [ "rss", "tui", "news", "newsflash" ]
 categories = [ "command-line-utilities" ]
 publish = true
 
-# [profile.release]
-# codegen-units = 1
-# lto = true
-# opt-level = 3
-# strip = true
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true
 
 
 [dependencies]
