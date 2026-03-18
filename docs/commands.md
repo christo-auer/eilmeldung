@@ -49,7 +49,7 @@ Here are some common command examples to get you started:
 :exportopml backup.opml                  # Export feeds to OPML file
 :focus articles                          # Focus the article list panel
 :show unread                             # Show only unread articles in current panel
-:show feeds all                          # Show all articles in the feed list
+:in feeds show all                          # Show all articles in the feed list
 :searcharticles author:john newer:"3 days"  # Search for articles by John from last 3 days
 :sort date                               # Sort by date (newest first)
 :sort >date                              # Sort by date (oldest first)
