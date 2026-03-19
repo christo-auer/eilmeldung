@@ -1,6 +1,9 @@
 # Unreleased
 
-- bugfix: infinite loop when marking a query as read in feed list
+- bugfix
+  - infinite loop when marking a query as read in feed list
+  - fixed bug where two articles are marked at once
+
 
 # 1.2.3 - 2026-03-16
 
