@@ -7,7 +7,8 @@ use news_flash::{
     NewsFlash,
     error::NewsFlashError,
     models::{
-        ArticleID, CategoryID, CategoryMapping, FeedID, FeedMapping, Marked, Read, Tag, TagID, Url,
+        ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping, Marked, Read,
+        Tag, TagID, Url,
     },
 };
 
@@ -546,4 +547,84 @@ impl NewsFlashUtils {
             }
         }
     }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn get_feeds_and_categories(
+    news_flash: &NewsFlash,
+) -> Result<
+    (
+        Vec<Feed>,
+        std::collections::HashMap<news_flash::models::FeedID, Feed>,
+        std::collections::HashMap<news_flash::models::FeedID, news_flash::models::FeedMapping>,
+        Vec<Category>,
+        std::collections::HashMap<CategoryID, Category>,
+        std::collections::HashMap<CategoryID, news_flash::models::CategoryMapping>,
+    ),
+    color_eyre::eyre::Error,
+> {
+    let (feeds, feed_mapping) = news_flash.get_feeds()?;
+    let feed_for_feed_id = NewsFlashUtils::generate_id_map(&feeds, |feed| feed.feed_id.to_owned());
+    let feed_mapping_for_feed_id =
+        NewsFlashUtils::generate_id_map(&feed_mapping, |mapping| mapping.feed_id.to_owned());
+    let (categories, category_mapping) = news_flash.get_categories()?;
+    let category_for_category_id =
+        NewsFlashUtils::generate_id_map(&categories, |category| category.category_id.to_owned());
+    let category_mapping_for_category_id =
+        NewsFlashUtils::generate_id_map(&category_mapping, |category_mapping| {
+            category_mapping.category_id.to_owned()
+        });
+    Ok((
+        feeds,
+        feed_for_feed_id,
+        feed_mapping_for_feed_id,
+        categories,
+        category_for_category_id,
+        category_mapping_for_category_id,
+    ))
+}
+
+pub fn sort_feeds_and_categories(
+    feeds: &mut [Feed],
+    categories: &mut [Category],
+    feed_mapping_for_feed_id: &std::collections::HashMap<
+        news_flash::models::FeedID,
+        news_flash::models::FeedMapping,
+    >,
+    category_mapping_for_category_id: &std::collections::HashMap<
+        news_flash::models::CategoryID,
+        news_flash::models::CategoryMapping,
+    >,
+) {
+    let category_cmp = |c1: Option<&CategoryID>, c2: Option<&CategoryID>| {
+        let sort_index_for_c1 = c1.and_then(|c_id| {
+            category_mapping_for_category_id
+                .get(c_id)
+                .map(|mapping| &mapping.sort_index)
+        });
+        let sort_index_for_c2 = c2.and_then(|c_id| {
+            category_mapping_for_category_id
+                .get(c_id)
+                .map(|mapping| &mapping.sort_index)
+        });
+
+        sort_index_for_c1.cmp(&sort_index_for_c2)
+    };
+
+    categories.sort_by(|c1, c2| category_cmp(Some(&c1.category_id), Some(&c2.category_id)));
+
+    feeds.sort_by(|f1, f2| {
+        let feed_mapping_for_f1 = feed_mapping_for_feed_id.get(&f1.feed_id);
+        let feed_mapping_for_f2 = feed_mapping_for_feed_id.get(&f2.feed_id);
+
+        category_cmp(
+            feed_mapping_for_f1.map(|mapping| &mapping.category_id),
+            feed_mapping_for_f2.map(|mapping| &mapping.category_id),
+        )
+        .then(
+            feed_mapping_for_f1
+                .map(|feed_mapping| feed_mapping.sort_index)
+                .cmp(&feed_mapping_for_f2.map(|feed_mapping| feed_mapping.sort_index)),
+        )
+    });
 }

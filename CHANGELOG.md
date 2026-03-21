@@ -1,5 +1,12 @@
 # Unreleased
 
+- Want to get a **desktop notification** after synchronization? *eilmeldung* now *notifies* you with new articles count and per new articles per feed!
+  - By default, the new option `notify_after_sync` is set to `true` and uses [notify-rust](https://docs.rs/notify-rust/latest/notify_rust/) to generate a desktop notification on Linux via dbus (should also work under macos, though not tested)! This should work for most out-of-the-box if you have to have a working desktop notification system (which is usually installed by default unless you use something very customized).
+  - Of course, you can customize the exact notification output to your likings (see `notify_after_sync_stats_format`)!
+  - And if you want to call a *custom command* or *your fancy shell script*, you can do this by setting option `notify_after_sync_cmd`!
+  - See the full documentation in `docs/configuration.md` *Notify after Sync*.
+  - Happy notifying everyone!
+
 # 1.2.4 - 2026-03-19
 
 - this is a patch release squashing two irritating bugs (thanks to @luogni for reporting and helping to find the bug)

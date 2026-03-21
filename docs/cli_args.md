@@ -42,7 +42,7 @@ All these will exit after finishing.
 
 ### Sync Output
 
-`--sync` outputs sync statistics and its format is defined in `config.toml` in the section `[cli]`.
+`--sync` outputs sync statistics and its format is defined in `config.toml` in the section `[cli_sync_stats_format]`.
 
 
 | Option               | Description                    | Default                   |
@@ -71,9 +71,6 @@ feed:Music/The Quietus:2
 feed:News/SPIEGEL:15
 feed:News/zeit.de:30
 ```
-
-
----
 
 ---
 
