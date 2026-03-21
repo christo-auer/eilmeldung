@@ -1,10 +1,10 @@
-mod cli_config;
 mod dimension;
 mod feed_list_content_identfier;
 mod input_config;
 mod login_configuration;
 mod paths;
 mod share_target;
+mod sync_stats;
 mod theme;
 
 use std::{
@@ -15,7 +15,6 @@ use std::{
 use crate::prelude::*;
 
 pub mod prelude {
-    pub use super::cli_config::CliConfig;
     pub use super::dimension::Dimension;
     pub use super::feed_list_content_identfier::{
         FeedListContentIdentifier, FeedListItemType, LabeledQuery,
@@ -25,6 +24,7 @@ pub mod prelude {
     pub use super::paths::{CONFIG_FILE, PROJECT_DIRS};
     pub use super::resolve_eilmeldung_config_dir;
     pub use super::share_target::ShareTarget;
+    pub use super::sync_stats::SyncStatsOutputFormat;
     pub use super::theme::Theme;
     pub use super::{ArticleContentType, ArticleScope, Config, ConfigError, load_config};
 }
@@ -123,6 +123,10 @@ pub struct Config {
 
     pub after_sync_commands: Vec<Command>,
 
+    pub notify_after_sync: bool,
+    pub notify_after_sync_cmd: Option<String>,
+    pub notify_after_sync_stats_format: SyncStatsOutputFormat,
+
     pub mouse_support: bool,
 
     pub show_top_bar: bool,
@@ -187,7 +191,7 @@ pub struct Config {
 
     pub login_setup: Option<LoginConfiguration>,
 
-    pub cli: CliConfig,
+    pub cli_sync_stats_format: SyncStatsOutputFormat,
 }
 
 impl Config {
@@ -249,6 +253,10 @@ impl Default for Config {
             sync_every_minutes: None,
 
             after_sync_commands: Default::default(),
+            notify_after_sync: true,
+            notify_after_sync_cmd: None,
+            notify_after_sync_stats_format: SyncStatsOutputFormat::notify_default(),
+            cli_sync_stats_format: SyncStatsOutputFormat::cli_default(),
 
             show_top_bar: true,
             all_label: "󱀂 All {unread_count}".into(),
@@ -336,7 +344,6 @@ impl Default for Config {
                 ShareTarget::Telegram,
             ],
             login_setup: None,
-            cli: CliConfig::default(),
             mouse_support: false,
         }
     }

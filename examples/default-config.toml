@@ -96,6 +96,20 @@ share_targets = [
   "telegram",
 ]
 
+# notify after sync
+notify_after_sync = true
+# notify_after_sync_cmd is not set (dbus is used instead)
+
+[notify_after_sync_stats_format]
+sync_output_format = "{count} {label}"
+all_label_format = "New Unread Items"
+feed_label_format = "{category}: {label}"
+
+[cli_sync_stats_format]
+sync_output_format = "{label}:{count}"
+all_label_format = "all:All"
+feed_label_format = "feed:{category}/{label}"
+
 # Input Configuration
 [input_config]
 scroll_amount = 10

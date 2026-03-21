@@ -3,7 +3,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::prelude::*;
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum TooltipFlavor {
     Info,
     Warning,
@@ -53,9 +53,16 @@ pub fn tooltip<'a, T: Into<&'a str>>(
     content: T,
     flavor: TooltipFlavor,
 ) -> color_eyre::Result<()> {
+    let content: &str = content.into();
     message_sender.send(Message::Event(Event::Tooltip(Tooltip::from_str(
-        content.into(),
-        flavor,
+        content, flavor,
     ))))?;
+
+    match flavor {
+        TooltipFlavor::Warning => log::warn!("{}", content,),
+        TooltipFlavor::Error => log::error!("{}", content,),
+        _ => {}
+    }
+
     Ok(())
 }

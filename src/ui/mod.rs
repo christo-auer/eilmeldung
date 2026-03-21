@@ -27,8 +27,11 @@ use crate::prelude::*;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
+use notify_rust::{Notification, Timeout};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{MouseButton, MouseEventKind};
+use std::collections::HashMap;
+use std::process::Stdio;
 use std::{fmt::Display, path::Path, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -502,6 +505,100 @@ impl App {
 
         Ok(())
     }
+
+    async fn after_sync_notify(
+        &self,
+        new_articles: &HashMap<news_flash::models::FeedID, i64>,
+    ) -> color_eyre::Result<()> {
+        // don't do anything if no notification is wanted or needed
+        if !self.config.notify_after_sync || new_articles.values().sum::<i64>() == 0 {
+            return Ok(());
+        }
+
+        let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+
+        let output = self
+            .config
+            .notify_after_sync_stats_format
+            .gen_output(&news_flash, new_articles)?;
+
+        let Some((summary, body)) = output.split_once("\n") else {
+            tooltip(
+                &self.message_sender,
+                "invalid format of sync stats",
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        match self.config.notify_after_sync_cmd.as_ref() {
+            None => self.notify_via_lib(summary, body)?,
+            Some(command) => self.notify_via_command(command, summary, body)?,
+        }
+
+        Ok(())
+    }
+
+    fn notify_via_lib(&self, summary: &str, body: &str) -> color_eyre::Result<()> {
+        Notification::new()
+            .summary(summary)
+            .body(body)
+            .icon("rss")
+            .timeout(Timeout::default())
+            .show()?;
+
+        Ok(())
+    }
+
+    fn notify_via_command(
+        &self,
+        command: &str,
+        summary: &str,
+        body: &str,
+    ) -> color_eyre::Result<()> {
+        let split = shell_words::split(
+            &command
+                .replace("{summary}", summary)
+                .replace("{body}", body),
+        );
+        let Ok(args) = split else {
+            tooltip(
+                &self.message_sender,
+                &*format!(
+                    "invalid notify after sync cmd: {command}: {}",
+                    split.unwrap_err()
+                ),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        let Some((command, args)) = args.split_first() else {
+            tooltip(
+                &self.message_sender,
+                &*format!("invalid notify after sync cmd: {command}",),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        let spawn = std::process::Command::new(command)
+            .args(args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .spawn();
+
+        let Ok(_) = spawn else {
+            tooltip(
+                &self.message_sender,
+                &*format!("unable to execute {command}: {}", spawn.unwrap_err()),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        Ok(())
+    }
 }
 
 impl MessageReceiver for App {
@@ -719,7 +816,7 @@ impl MessageReceiver for App {
                 self.switch_state(new_state)?;
             }
 
-            Message::Event(Event::AsyncSyncFinished(..)) => {
+            Message::Event(Event::AsyncSyncFinished(new_articles)) => {
                 info!(
                     "scheduling after sync commands: {:?}",
                     self.config.after_sync_commands
@@ -727,6 +824,8 @@ impl MessageReceiver for App {
                 self.batch_processor.show_popup();
                 self.message_sender
                     .send(Message::Batch(self.config.after_sync_commands.to_vec()))?;
+
+                self.after_sync_notify(new_articles).await?;
             }
 
             _ => {
