@@ -4,10 +4,7 @@ use crate::prelude::*;
 use clap::{Args, Parser};
 use getset::Getters;
 use log::LevelFilter;
-use news_flash::{
-    NewsFlash,
-    models::{Category, CategoryID, Feed},
-};
+use news_flash::NewsFlash;
 use reqwest::Client;
 
 #[derive(Parser, Debug, Getters)]
@@ -102,152 +99,16 @@ async fn sync(
     }
     let new_articles = news_flash.sync(client, Default::default()).await?;
 
-    let (
-        mut feeds,
-        feed_for_feed_id,
-        feed_mapping_for_feed_id,
-        mut categories,
-        category_for_category_id,
-        category_mapping_for_category_id,
-    ) = get_feeds_and_categories(news_flash)?;
-
-    sort_feeds_and_categories(
-        &mut feeds,
-        &mut categories,
-        &feed_mapping_for_feed_id,
-        &category_mapping_for_category_id,
-    );
-
-    let all_unread: i64 = new_articles.values().sum();
-
-    if !cli_args.quiet() && all_unread > 0 {
-        // println!(config.cli.sync_output_format.replac);
+    if !*cli_args.quiet() {
         println!(
             "{}",
             config
-                .cli
-                .sync_output_format
-                .replace("{label}", &config.cli.all_label_format)
-                .replace("{count}", &all_unread.to_string())
+                .cli_sync_stats_format
+                .gen_output(news_flash, &new_articles)?
         );
     }
 
-    if !cli_args.quiet() {
-        feeds
-            .iter()
-            .filter(|feed| *new_articles.get(&feed.feed_id).unwrap_or(&0) > 0)
-            .for_each(|feed| {
-                println!(
-                    "{}",
-                    config
-                        .cli
-                        .sync_output_format
-                        .replace("{label}", &config.cli.feed_label_format)
-                        .replace(
-                            "{category}",
-                            feed_mapping_for_feed_id
-                                .get(&feed.feed_id)
-                                .and_then(|mapping| category_for_category_id
-                                    .get(&mapping.category_id)
-                                    .map(|category| &*category.label))
-                                .unwrap_or_default(),
-                        )
-                        .replace(
-                            "{label}",
-                            feed_for_feed_id
-                                .get(&feed.feed_id)
-                                .map(|feed| &feed.label)
-                                .unwrap_or(&"".to_owned()),
-                        )
-                        .replace(
-                            "{count}",
-                            &new_articles.get(&feed.feed_id).unwrap_or(&0).to_string()
-                        )
-                );
-            });
-    }
-
     Ok(true)
-}
-
-#[allow(clippy::type_complexity)]
-fn get_feeds_and_categories(
-    news_flash: &NewsFlash,
-) -> Result<
-    (
-        Vec<Feed>,
-        std::collections::HashMap<news_flash::models::FeedID, Feed>,
-        std::collections::HashMap<news_flash::models::FeedID, news_flash::models::FeedMapping>,
-        Vec<Category>,
-        std::collections::HashMap<CategoryID, Category>,
-        std::collections::HashMap<CategoryID, news_flash::models::CategoryMapping>,
-    ),
-    color_eyre::eyre::Error,
-> {
-    let (feeds, feed_mapping) = news_flash.get_feeds()?;
-    let feed_for_feed_id = NewsFlashUtils::generate_id_map(&feeds, |feed| feed.feed_id.to_owned());
-    let feed_mapping_for_feed_id =
-        NewsFlashUtils::generate_id_map(&feed_mapping, |mapping| mapping.feed_id.to_owned());
-    let (categories, category_mapping) = news_flash.get_categories()?;
-    let category_for_category_id =
-        NewsFlashUtils::generate_id_map(&categories, |category| category.category_id.to_owned());
-    let category_mapping_for_category_id =
-        NewsFlashUtils::generate_id_map(&category_mapping, |category_mapping| {
-            category_mapping.category_id.to_owned()
-        });
-    Ok((
-        feeds,
-        feed_for_feed_id,
-        feed_mapping_for_feed_id,
-        categories,
-        category_for_category_id,
-        category_mapping_for_category_id,
-    ))
-}
-
-fn sort_feeds_and_categories(
-    feeds: &mut [Feed],
-    categories: &mut [Category],
-    feed_mapping_for_feed_id: &std::collections::HashMap<
-        news_flash::models::FeedID,
-        news_flash::models::FeedMapping,
-    >,
-    category_mapping_for_category_id: &std::collections::HashMap<
-        news_flash::models::CategoryID,
-        news_flash::models::CategoryMapping,
-    >,
-) {
-    let category_cmp = |c1: Option<&CategoryID>, c2: Option<&CategoryID>| {
-        let sort_index_for_c1 = c1.and_then(|c_id| {
-            category_mapping_for_category_id
-                .get(c_id)
-                .map(|mapping| &mapping.sort_index)
-        });
-        let sort_index_for_c2 = c2.and_then(|c_id| {
-            category_mapping_for_category_id
-                .get(c_id)
-                .map(|mapping| &mapping.sort_index)
-        });
-
-        sort_index_for_c1.cmp(&sort_index_for_c2)
-    };
-
-    categories.sort_by(|c1, c2| category_cmp(Some(&c1.category_id), Some(&c2.category_id)));
-
-    feeds.sort_by(|f1, f2| {
-        let feed_mapping_for_f1 = feed_mapping_for_feed_id.get(&f1.feed_id);
-        let feed_mapping_for_f2 = feed_mapping_for_feed_id.get(&f2.feed_id);
-
-        category_cmp(
-            feed_mapping_for_f1.map(|mapping| &mapping.category_id),
-            feed_mapping_for_f2.map(|mapping| &mapping.category_id),
-        )
-        .then(
-            feed_mapping_for_f1
-                .map(|feed_mapping| feed_mapping.sort_index)
-                .cmp(&feed_mapping_for_f2.map(|feed_mapping| feed_mapping.sort_index)),
-        )
-    });
 }
 
 pub async fn export_opml(cli_args: &CliArgs, news_flash: &NewsFlash) -> color_eyre::Result<bool> {
