@@ -432,11 +432,11 @@ In the following, you see how you can customize the notification.
 
 The notification format (what is displayed) is defined in the section `[notify_after_sync_stats_format]` with:
 
-| Option               | Description                                        | Default                |
-| ---                  | ---                                                | ---                    |
-| `sync_output_format` | Format of a line in the output                     | `{count} {label}`      |
-| `all_label_format`   | Label of summary                                   | `New Unread Items`     |
-| `feed_label_format`  | Label of a feed (leave empty to not display feeds) | `{category}: {label}` |
+| Option               | Description                                        | Default             |
+| ---                  | ---                                                | ---                 |
+| `sync_output_format` | Format of a line in the output                     | `{label}: {count}` |
+| `all_label_format`   | Label of summary                                   | `New Unread Items`  |
+| `feed_label_format`  | Label of a feed (leave empty to not display feeds) | `{label}`           |
 
 
 - In `sync_output_format`:
@@ -449,15 +449,15 @@ The notification format (what is displayed) is defined in the section `[notify_a
 With the default settings, you get:
 
 ```
-71 New Unread Items                  # this is the summary (usually bold)
-6 Games: Polygon.com
-6 IT-News: Golem.de
-7 IT-News: heise online News
-2 IT-News: Phoronix
-3 Music: Pitchfork
-2 Music: The Quietus
-16 News: SPIEGEL
-30 News: zeit.de
+New Unread Items: 71                  # this is the summary (usually bold)
+Polygon.com: 6
+Golem.de: 6
+heise online News: 7
+Phoronix: 2
+Pitchfork: 3
+The Quietus: 2
+SPIEGEL: 16
+zeit.de: 30
 ```
 
 ### Notify Command
