@@ -29,9 +29,9 @@ impl SyncStatsOutputFormat {
 
     pub fn notify_default() -> Self {
         Self {
-            sync_output_format: "{count} {label}".to_owned(),
+            sync_output_format: "{label}: {count}".to_owned(),
             all_label_format: "New Unread Items".to_owned(),
-            feed_label_format: "{category}: {label}".to_owned(),
+            feed_label_format: "{label}".to_owned(),
         }
     }
 
