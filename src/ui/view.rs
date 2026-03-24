@@ -5,88 +5,43 @@ use throbber_widgets_tui::Throbber;
 
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        if self.state == AppState::ArticleContentDistractionFree
-            && !self.command_input.is_active()
-            && !self.command_confirm.is_active()
-            && !self.help_popup.is_modal().unwrap_or(false)
-        {
-            self.article_content.render(area, buf);
-            return;
+        // render status bar
+        let mut area = self.render_status_bar(area, buf);
+
+        // render command line (if visible)
+        area = self.render_command_line(area.to_owned(), buf);
+
+        // render the main panels
+        self.render_panels(area, buf);
+
+        // and finally the pop if visible
+        if self.help_popup.is_visible() {
+            self.help_popup.render(area, buf);
         }
+    }
+}
 
-        let (feeds_constraint_width, articles_constraint_width) = match self.state {
-            AppState::FeedSelection => (
-                self.config.feed_list_focused_width.as_constraint(),
-                self.config
-                    .feed_list_focused_width
-                    .as_complementary_constraint(area.width),
-            ),
-            _ => (
-                self.config
-                    .article_list_focused_width
-                    .as_complementary_constraint(area.width),
-                self.config.article_list_focused_width.as_constraint(),
-            ),
-        };
+impl App {
+    fn render_status_bar(&self, area: Rect, buf: &mut Buffer) -> Rect {
+        // in zen mode we only lower status bar if the tooltip is Warning or Error
+        let render_bottom_bar = !matches!(self.state, AppState::ArticleContentDistractionFree)
+            || matches!(
+                self.tooltip.flavor,
+                TooltipFlavor::Warning | TooltipFlavor::Error
+            );
 
-        let command_line_visible =
-            self.command_input.is_active() || self.command_confirm.is_active();
+        // render top bar only if option is set to true and not in zen mode
+        let render_top_bar = self.config.show_top_bar
+            && !matches!(self.state, AppState::ArticleContentDistractionFree);
 
-        let top_bar_height = if self.config.show_top_bar { 1 } else { 0 };
-
-        let [top, middle, command_line, bottom] = Layout::default()
+        let [top, middle, bottom] = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(top_bar_height), // Top bar
-                Constraint::Min(0),                 // Middle: takes remaining space
-                Constraint::Length(if command_line_visible { 3 } else { 0 }),
-                Constraint::Length(1), // Bottom: fixed 1 line
+                Constraint::Length(if render_top_bar { 1 } else { 0 }), // Top bar
+                Constraint::Min(0), // Middle: takes remaining space
+                Constraint::Length(if render_bottom_bar { 1 } else { 0 }), // Bottom: fixed 1 line
             ])
             .areas(area);
-
-        let (articles_constraint_height, article_content_constraint_height) =
-            if let Some(override_height) = self.articles_height_override {
-                // User is dragging the border — use absolute heights
-                (Constraint::Length(override_height), Constraint::Min(0))
-            } else {
-                match self.state {
-                    AppState::FeedSelection | AppState::ArticleSelection => (
-                        self.config.article_list_focused_height.as_constraint(),
-                        self.config
-                            .article_list_focused_height
-                            .as_complementary_constraint(middle.height),
-                    ),
-                    _ => (
-                        self.config
-                            .article_content_focused_height
-                            .as_complementary_constraint(middle.height),
-                        self.config.article_content_focused_height.as_constraint(),
-                    ),
-                }
-            };
-
-        let [feeds_list_chunk, articles_chunk] = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(vec![feeds_constraint_width, articles_constraint_width])
-            .areas::<2>(middle);
-
-        let [articles_list_chunk, article_content_chunk] = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                articles_constraint_height,
-                article_content_constraint_height,
-            ])
-            .areas(articles_chunk);
-
-        // store areas for mouse hit-testing
-        *self.panel_areas.feed_list_mut() = feeds_list_chunk;
-        *self.panel_areas.articles_list_mut() = articles_list_chunk;
-        *self.panel_areas.article_content_mut() = article_content_chunk;
-
-        // render stuff
-        self.feed_list.render(feeds_list_chunk, buf);
-        self.articles_list.render(articles_list_chunk, buf);
-        self.article_content.render(article_content_chunk, buf);
 
         let status_span = if self.is_offline {
             // when offline display offline icon
@@ -109,7 +64,7 @@ impl Widget for &mut App {
                 .to_symbol_span(&self.async_operation_throbber)
         };
 
-        if self.config.show_top_bar {
+        if render_top_bar {
             let eilmeldung_span =
                 Span::styled("  eilmeldung  ", self.config.theme.statusbar());
 
@@ -136,39 +91,116 @@ impl Widget for &mut App {
             title.render(top_main, buf);
         }
 
-        if self.command_input.is_active() {
-            self.command_input.render(command_line, buf);
-        } else if self.command_confirm.is_active() {
-            self.command_confirm.render(command_line, buf);
+        if render_bottom_bar {
+            // fill top line with status bar color
+            Block::default()
+                .style(self.config.theme.statusbar())
+                .render(bottom, buf);
+
+            let status_icon_length = if !render_top_bar { 1 } else { 0 };
+
+            let [bottom_left, bottom_main, status, bottom_right] = Layout::default()
+                .direction(Direction::Horizontal)
+                .flex(Flex::Center)
+                .constraints([
+                    Constraint::Length(1),
+                    Constraint::Min(top.width.saturating_sub(2 + status_icon_length)),
+                    Constraint::Length(status_icon_length),
+                    Constraint::Length(1),
+                ])
+                .areas::<4>(bottom);
+
+            let tooltip_line = self.tooltip.to_line(&self.config);
+
+            Span::styled(status_span.content, tooltip_line.style).render(status, buf);
+            Span::styled("", tooltip_line.style.not_reversed()).render(bottom_left, buf);
+            Span::styled("", tooltip_line.style.not_reversed()).render(bottom_right, buf);
+            tooltip_line.render(bottom_main, buf);
         }
 
-        if self.help_popup.is_visible() {
-            self.help_popup.render(area, buf);
+        middle
+    }
+
+    fn render_command_line(&mut self, area: Rect, buf: &mut Buffer) -> Rect {
+        if self.command_input.is_active() || self.command_confirm.is_active() {
+            let [panels_chunk, command_line_chunk] =
+                Layout::vertical(vec![Constraint::Min(0), Constraint::Length(3)]).areas::<2>(area);
+
+            if self.command_input.is_active() {
+                self.command_input.render(command_line_chunk, buf);
+            } else if self.command_confirm.is_active() {
+                self.command_confirm.render(command_line_chunk, buf);
+            }
+
+            panels_chunk
+        } else {
+            area
+        }
+    }
+
+    fn render_panels(&mut self, area: Rect, buf: &mut Buffer) {
+        if self.state == AppState::ArticleContentDistractionFree {
+            self.article_content.render(area, buf);
+            return;
         }
 
-        // fill top line with status bar color
-        Block::default()
-            .style(self.config.theme.statusbar())
-            .render(bottom, buf);
+        let (feeds_constraint_width, articles_constraint_width) = match self.state {
+            AppState::FeedSelection => (
+                self.config.feed_list_focused_width.as_constraint(),
+                self.config
+                    .feed_list_focused_width
+                    .as_complementary_constraint(area.width),
+            ),
+            _ => (
+                self.config
+                    .article_list_focused_width
+                    .as_complementary_constraint(area.width),
+                self.config.article_list_focused_width.as_constraint(),
+            ),
+        };
 
-        let status_icon_length = if !self.config.show_top_bar { 1 } else { 0 };
+        let (articles_constraint_height, article_content_constraint_height) =
+            if let Some(override_height) = self.articles_height_override {
+                // User is dragging the border — use absolute heights
+                (Constraint::Length(override_height), Constraint::Min(0))
+            } else {
+                match self.state {
+                    AppState::FeedSelection | AppState::ArticleSelection => (
+                        self.config.article_list_focused_height.as_constraint(),
+                        self.config
+                            .article_list_focused_height
+                            .as_complementary_constraint(area.height),
+                    ),
+                    _ => (
+                        self.config
+                            .article_content_focused_height
+                            .as_complementary_constraint(area.height),
+                        self.config.article_content_focused_height.as_constraint(),
+                    ),
+                }
+            };
 
-        let [bottom_left, bottom_main, status, bottom_right] = Layout::default()
+        let [feeds_list_chunk, articles_chunk] = Layout::default()
             .direction(Direction::Horizontal)
-            .flex(Flex::Center)
+            .constraints(vec![feeds_constraint_width, articles_constraint_width])
+            .areas::<2>(area);
+
+        let [articles_list_chunk, article_content_chunk] = Layout::default()
+            .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(1),
-                Constraint::Min(top.width.saturating_sub(2 + status_icon_length)),
-                Constraint::Length(status_icon_length),
-                Constraint::Length(1),
+                articles_constraint_height,
+                article_content_constraint_height,
             ])
-            .areas::<4>(bottom);
+            .areas(articles_chunk);
 
-        let tooltip_line = self.tooltip.to_line(&self.config);
+        // store areas for mouse hit-testing
+        *self.panel_areas.feed_list_mut() = feeds_list_chunk;
+        *self.panel_areas.articles_list_mut() = articles_list_chunk;
+        *self.panel_areas.article_content_mut() = article_content_chunk;
 
-        Span::styled(status_span.content, tooltip_line.style).render(status, buf);
-        Span::styled("", tooltip_line.style.not_reversed()).render(bottom_left, buf);
-        Span::styled("", tooltip_line.style.not_reversed()).render(bottom_right, buf);
-        tooltip_line.render(bottom_main, buf);
+        // render stuff
+        self.feed_list.render(feeds_list_chunk, buf);
+        self.articles_list.render(articles_list_chunk, buf);
+        self.article_content.render(article_content_chunk, buf);
     }
 }
