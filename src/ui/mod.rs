@@ -510,6 +510,14 @@ impl App {
         &self,
         new_articles: &HashMap<news_flash::models::FeedID, i64>,
     ) -> color_eyre::Result<()> {
+        // show a tooltip
+        let new_count = new_articles.values().sum::<i64>();
+        tooltip(
+            &self.message_sender,
+            &*format!("{new_count} new articles synced"),
+            TooltipFlavor::Info,
+        )?;
+
         // don't do anything if no notification is wanted or needed
         if !self.config.notify_after_sync || new_articles.values().sum::<i64>() == 0 {
             return Ok(());

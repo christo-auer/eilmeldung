@@ -874,6 +874,7 @@ impl MessageReceiver for FeedList {
                         TooltipFlavor::Error,
                     )?,
                 },
+
                 C::FeedListSync => {
                     tooltip(&self.message_sender, "syncing all", TooltipFlavor::Info)?;
                     self.model_data.sync()?;
@@ -969,11 +970,6 @@ impl MessageReceiver for FeedList {
                 }
 
                 E::AsyncSyncFinished(_) => {
-                    tooltip(
-                        &self.message_sender,
-                        "finished syncing",
-                        TooltipFlavor::Info,
-                    )?;
                     model_needs_update = true;
                 }
 
