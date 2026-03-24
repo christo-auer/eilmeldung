@@ -6,6 +6,7 @@
   - And if you want to call a *custom command* or *your fancy shell script*, you can do this by setting option `notify_after_sync_cmd`!
   - See the full documentation in `docs/configuration.md` *Notify after Sync*.
   - Happy notifying everyone!
+- some minor bugfixes/imprvoements
 
 # 1.2.4 - 2026-03-19
 
