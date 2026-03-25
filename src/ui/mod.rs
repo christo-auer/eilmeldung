@@ -372,7 +372,7 @@ impl App {
             Err(error) => {
                 tooltip(
                     &self.message_sender,
-                    &*format!("Unable to read OPML file: {error}"),
+                    &*format!("unable to read OPML file: {error}"),
                     TooltipFlavor::Error,
                 )?;
                 return Ok(());
@@ -392,7 +392,7 @@ impl App {
         if let Err(error) = tokio::fs::write(Path::new(path_str), opml).await {
             tooltip(
                 &self.message_sender,
-                &*format!("Unable to write OPML file: {error}"),
+                &*format!("unable to write OPML file: {error}"),
                 TooltipFlavor::Error,
             )?;
             return Ok(());
@@ -548,12 +548,22 @@ impl App {
     }
 
     fn notify_via_lib(&self, summary: &str, body: &str) -> color_eyre::Result<()> {
-        Notification::new()
+        let result = Notification::new()
             .summary(summary)
             .body(body)
             .icon("rss")
             .timeout(Timeout::default())
-            .show()?;
+            .show();
+
+        if let Err(error) = result {
+            tooltip(
+                &self.message_sender,
+                &*format!(
+                    "unable to send desktop notification while after_sync_notify=true: {error}"
+                ),
+                TooltipFlavor::Error,
+            )?
+        };
 
         Ok(())
     }

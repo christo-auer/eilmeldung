@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: when not notification service is running, eilmeldung is not crashing when notifying about new articles (there is an error message now). set `notify_after_sync=false` to deactivate notification.
+
 # 1.3.0 - 2026-03-24
 
 - Want to get a **desktop notification** after synchronization? *eilmeldung* now *notifies* you with new articles count and per new articles per feed!
