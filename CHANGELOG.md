@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.3.1 - 2026-03-25
+
 - bugfix: when not notification service is running, eilmeldung is not crashing when notifying about new articles (there is an error message now). set `notify_after_sync=false` to deactivate notification.
 
 # 1.3.0 - 2026-03-24
