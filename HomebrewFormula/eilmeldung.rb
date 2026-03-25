@@ -2,7 +2,7 @@ class Eilmeldung < Formula
   desc "a feature-rich TUI RSS reader based on the newsflash library"
   homepage "https://github.com/christo-auer/eilmeldung"
   url "https://github.com/christo-auer/eilmeldung/archive/refs/tags/1.3.1.tar.gz"
-  sha256 "replaced by CI on release of 1.3.1"
+  sha256 "1034b434b52abb0abf5dfc13bdfcf5ca1177d200cd12f4260c90f08f269803cc"
   license "GPL-3.0"
   head "https://github.com/christo-auer/eilmeldung.git", branch: "main"
   version "1.3.1"
