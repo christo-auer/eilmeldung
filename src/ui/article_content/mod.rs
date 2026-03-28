@@ -88,12 +88,12 @@ impl ArticleContent {
         Ok(())
     }
 
-    fn share_article(&self, target_str: &String) -> color_eyre::Result<()> {
+    fn share_url(&self, target_str: &str, title: &str, url: &Url) -> color_eyre::Result<()> {
         let Some(target) = self
             .config
             .share_targets
             .iter()
-            .find(|target| target.as_ref() == *target_str)
+            .find(|target| target.as_ref() == target_str)
         else {
             tooltip(
                 &self.message_sender,
@@ -103,6 +103,23 @@ impl ArticleContent {
             return Ok(());
         };
 
+        match target.share(title, url) {
+            Ok(()) => tooltip(
+                &self.message_sender,
+                &*format!("shared with {}", target),
+                TooltipFlavor::Info,
+            )?,
+            Err(error) => tooltip(
+                &self.message_sender,
+                &*format!("unable to shared with {}: {}", target, error),
+                TooltipFlavor::Error,
+            )?,
+        }
+
+        Ok(())
+    }
+
+    fn share_article(&self, target_str: &str) -> color_eyre::Result<()> {
         let Some(article) = self.model_data.article() else {
             tooltip(
                 &self.message_sender,
@@ -122,20 +139,8 @@ impl ArticleContent {
         };
 
         let title: &str = article.title.as_deref().unwrap_or("no title");
-        let url: &Url = url.as_ref();
 
-        match target.share(title, url) {
-            Ok(()) => tooltip(
-                &self.message_sender,
-                &*format!("shared with {}", target),
-                TooltipFlavor::Info,
-            )?,
-            Err(error) => tooltip(
-                &self.message_sender,
-                &*format!("unable to shared with {}: {}", target, error),
-                TooltipFlavor::Error,
-            )?,
-        }
+        self.share_url(target_str, title, url.as_ref())?;
 
         Ok(())
     }
@@ -208,9 +213,38 @@ impl ArticleContent {
             return Ok(());
         };
 
+        let url_result = Url::parse(url);
+
+        let Ok(url) = url_result else {
+            tooltip(
+                &self.message_sender,
+                &*format!("cannot open invalid URL: {}", url_result.unwrap_err()),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        let title = self
+            .model_data
+            .article()
+            .as_ref()
+            .and_then(|article| article.title.as_ref())
+            .map(|title| format!("Link from {title}"))
+            .unwrap_or("".to_owned());
+
         match command {
-            Command::ContentFollowHint(..) => webbrowser::open(url)?,
-            Command::ContentCopyHint(..) => arboard::Clipboard::new()?.set_text(url.to_string())?,
+            Command::ContentFollowHint(..) => {
+                if let Err(err) = webbrowser::open(url.as_ref()) {
+                    tooltip(
+                        &self.message_sender,
+                        &*format!("unable to open webbrowser: {err}"),
+                        TooltipFlavor::Error,
+                    )?;
+                }
+            }
+            Command::ContentShareHint(target_str, ..) => {
+                self.share_url(target_str, &title, &url)?;
+            }
             _ => {}
         }
 
@@ -279,7 +313,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.open_enclosure(enclosure_type).await?;
                 }
 
-                hint_command @ (C::ContentFollowHint(hint) | C::ContentCopyHint(hint)) => {
+                hint_command @ (C::ContentFollowHint(hint) | C::ContentShareHint(_, hint)) => {
                     self.open_hint(hint, &hint_command)?;
                 }
 

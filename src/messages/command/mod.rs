@@ -617,11 +617,11 @@ pub enum Command {
     ContentFollowHint(u16),
 
     #[strum(
-        serialize = "hintcopy",
-        message = "hintcopy <url hint>",
-        detailed_message = "copies the URL of the given hint (article content)"
+        serialize = "hintshare",
+        message = "hintshare <share> <url hint>",
+        detailed_message = "shares the URL of the given hint (article content)"
     )]
-    ContentCopyHint(u16),
+    ContentShareHint(String, u16),
 
     #[strum(
         serialize = "sortfeeds",
@@ -846,7 +846,7 @@ impl Display for Command {
             ArticleListSortReverse => write!(f, "reverse current sort order"),
             ArticleListSortClear => write!(f, "clear current sort order"),
             ContentFollowHint(hint) => write!(f, "open URL behind {hint}"),
-            ContentCopyHint(hint) => write!(f, "copiy URL behind {hint}"),
+            ContentShareHint(target, hint) => write!(f, "share URL behind {hint} to {target}"),
 
             FeedListSync => write!(f, "sync all"),
             ActionSetRead(action_scope) => {

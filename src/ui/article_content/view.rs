@@ -490,7 +490,7 @@ impl ArticleContentViewData {
                 let counter = inner_link_counter.fetch_add(1, Ordering::Relaxed) + 1;
                 url_for_hint.entry(counter).or_insert(url.to_owned());
                 let mut spans = vec![
-                    Span::styled(format!("{url_icon}{counter}:"), url_hint_style),
+                    Span::styled(format!("{url_icon}{counter}"), url_hint_style),
                     Span::styled(alt.to_owned(), alt_url_text_style),
                 ];
                 if show_url {
@@ -504,7 +504,7 @@ impl ArticleContentViewData {
                 let counter = inner_image_counter.fetch_add(1, Ordering::Relaxed) + 1;
                 url_for_hint.entry(counter).or_insert(url.to_owned());
                 let mut spans = vec![
-                    Span::styled(format!("{image_icon}{counter}:"), image_hint_style),
+                    Span::styled(format!("{image_icon}{counter}"), image_hint_style),
                     Span::styled(alt.to_owned(), alt_text_image_style),
                 ];
 
