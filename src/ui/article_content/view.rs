@@ -4,10 +4,7 @@ use crate::prelude::*;
 use std::{
     collections::HashMap,
     io::Cursor,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicU16, Ordering},
-    },
+    sync::{Arc, Mutex},
 };
 
 use getset::{Getters, MutGetters};
@@ -44,7 +41,7 @@ pub struct ArticleContentViewData {
     thumbnail_fetching_throbber: ThrobberState,
 
     #[getset(get = "pub(super)")]
-    url_for_hint: HashMap<u16, String>,
+    url_for_hint: HashMap<String, String>,
 }
 
 impl Default for ArticleContentViewData {
@@ -459,63 +456,72 @@ impl ArticleContentViewData {
     }
 
     fn markdown_to_text(&mut self, markdown: &str, config: &Config) -> Text<'static> {
-        let url_for_hint = Arc::new(Mutex::new(HashMap::<u16, String>::new()));
-        let counter = Arc::new(AtomicU16::new(0));
-        let show_url = config.content_show_url;
+        let url_for_hint = Arc::new(Mutex::new(HashMap::<String, String>::new()));
+        // unwrap is safe here: at least one symbol passed save here
+        let iterator = config.hint_type.iter();
+        let hint_iterator = Arc::new(Mutex::new(iterator));
+        let show_url = config.content_show_urls;
 
         let inner_link_url_for_hint = url_for_hint.clone();
-        let inner_link_counter = counter.clone();
-        let alt_url_text_style = Style::new()
+        let inner_link_hint_iterator = hint_iterator.clone();
+        let link_alt_text_style = Style::new()
             .fg(*config.theme.color_palette().accent_primary())
             .add_modifier(Modifier::UNDERLINED);
-        let url_url_text_style = Style::new().fg(*config.theme.color_palette().foreground());
-        let url_hint_style = Style::new()
+        let link_url_text_style = Style::new().fg(*config.theme.color_palette().foreground());
+        let link_hint_style = Style::new()
             .fg(*config.theme.color_palette().highlight())
             .add_modifier(Modifier::BOLD);
 
         let inner_image_url_for_hint = url_for_hint.clone();
-        let inner_image_counter = counter.clone();
-        let alt_text_image_style = Style::new()
+        let inner_image_hint_iterator = hint_iterator.clone();
+        let image_alt_text_style = Style::new()
             .fg(*config.theme.color_palette().accent_primary())
             .add_modifier(Modifier::UNDERLINED);
-        let url_image_style = Style::new().fg(*config.theme.color_palette().foreground());
-        let image_hint_style = url_hint_style;
+        let image_url_text_style = Style::new().fg(*config.theme.color_palette().foreground());
+        let image_hint_style = link_hint_style;
 
         let image_icon = config.image_icon;
         let url_icon = config.url_icon;
 
-        let renderer = RendererBuilder::new()
-            .with_link(move |alt, url| {
-                let mut url_for_hint = inner_link_url_for_hint.lock().unwrap();
-                let counter = inner_link_counter.fetch_add(1, Ordering::Relaxed) + 1;
-                url_for_hint.entry(counter).or_insert(url.to_owned());
-                let mut spans = vec![
-                    Span::styled(format!("{url_icon}{counter}"), url_hint_style),
-                    Span::styled(alt.to_owned(), alt_url_text_style),
-                ];
-                if show_url {
-                    spans.push(Span::styled(format!("({url})"), url_url_text_style));
-                }
+        let text = {
+            let renderer = RendererBuilder::new()
+                .with_link(move |alt, url| {
+                    let mut url_for_hint = inner_link_url_for_hint.lock().unwrap(); // unwrap is save here: locking with sync calls
+                    let hint = inner_link_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
 
-                spans
-            })
-            .with_image(move |alt, url| {
-                let mut url_for_hint = inner_image_url_for_hint.lock().unwrap();
-                let counter = inner_image_counter.fetch_add(1, Ordering::Relaxed) + 1;
-                url_for_hint.entry(counter).or_insert(url.to_owned());
-                let mut spans = vec![
-                    Span::styled(format!("{image_icon}{counter}"), image_hint_style),
-                    Span::styled(alt.to_owned(), alt_text_image_style),
-                ];
+                    url_for_hint
+                        .entry(hint.to_owned())
+                        .or_insert(url.to_owned());
+                    let mut spans = vec![
+                        Span::styled(format!("{hint}{url_icon}"), link_hint_style),
+                        Span::styled(alt.to_owned(), link_alt_text_style),
+                    ];
+                    if show_url {
+                        spans.push(Span::styled(format!("({url})"), link_url_text_style));
+                    }
 
-                if show_url {
-                    spans.push(Span::styled(format!("({url})"), url_image_style));
-                }
-                spans
-            })
-            .build();
+                    spans
+                })
+                .with_image(move |alt, url| {
+                    let mut url_for_hint = inner_image_url_for_hint.lock().unwrap();
+                    let hint = inner_image_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
+                    url_for_hint
+                        .entry(hint.to_owned())
+                        .or_insert(url.to_owned());
+                    let mut spans = vec![
+                        Span::styled(format!("{hint}{image_icon}"), image_hint_style),
+                        Span::styled(alt.to_owned(), image_alt_text_style),
+                    ];
 
-        let text = the_other_tui_markdown::into_text_with_renderer(markdown, &renderer);
+                    if show_url {
+                        spans.push(Span::styled(format!("({url})"), image_url_text_style));
+                    }
+                    spans
+                })
+                .build();
+
+            the_other_tui_markdown::into_text_with_renderer(markdown, &renderer).to_owned()
+        };
 
         self.url_for_hint = url_for_hint.lock().unwrap().to_owned();
 

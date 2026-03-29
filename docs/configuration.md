@@ -129,6 +129,9 @@ You can change this behaviour by using the [Command Line Options](cli_args.md) `
 | `video_enclosure_command`         | string (optional)     | Command with which video enclosure URLs are opened (see [Opening Enclosures](opening-enclosures))                                                       |
 | `audio_enclosure_command`         | string (optional)     | Command with which audio enclosure URLs are opened (see [Opening Enclosures](opening-enclosures))                                                       |
 | `image_enclosure_command`         | string (optional)     | Command with which image enclosure URLs are opened (see [Opening Enclosures](opening-enclosures))                                                       |
+| `content_show_urls`               | boolean               | If `true`, URLs are shown for links/images when displaying the content of an article                                                                    |
+| `hint_type`                       | string                | If `letters`, letters are used for link hints in the article content display. If `numbers`, numbers are used.                                           |
+
 
 
 **Label Placeholders:**

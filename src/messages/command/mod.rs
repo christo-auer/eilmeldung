@@ -614,14 +614,14 @@ pub enum Command {
         message = "hintfollow <url hint>",
         detailed_message = "opens the URL of the given hint (article content)"
     )]
-    ContentFollowHint(u16),
+    ContentFollowHint(String),
 
     #[strum(
         serialize = "hintshare",
         message = "hintshare <share> <url hint>",
         detailed_message = "shares the URL of the given hint (article content)"
     )]
-    ContentShareHint(String, u16),
+    ContentShareHint(String, String),
 
     #[strum(
         serialize = "sortfeeds",

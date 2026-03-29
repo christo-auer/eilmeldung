@@ -95,6 +95,7 @@ eilmeldung has three main panels:
 ### Reading Articles
 
 - `o`: Open article in browser, mark as read, jump to next unread
+- `; ;`: Open a link hint in an article
 - `x`: Scrape full article content (when preview is truncated)
 - `z`: Toggle zen mode (hide everything except article content)
 
@@ -109,6 +110,7 @@ eilmeldung has three main panels:
 - `/`: Search articles
 - `=`: Filter articles by query
 - See [Article Queries](queries.md) for powerful query syntax
+
 
 ---
 

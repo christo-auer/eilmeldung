@@ -22,14 +22,21 @@ after_sync_commands = []
 # Icons
 offline_icon = ""
 read_icon = ""
+all_icon = ""
 unread_icon = ""
 marked_icon = ""
 unmarked_icon = " "
+flagged_icon = ""
 tag_icon = "󰓹"
 command_line_prompt_icon = ""
-info_icon = ''
-warning_icon = ''
-error_icon = ''
+info_icon = ""
+warning_icon = ""
+error_icon = ""
+enclosure_video_icon = ""
+enclosure_audio_icon = ""
+enclosure_image_icon = ""
+image_icon = ""
+url_icon = ""
 
 # Scrollbar symbols
 scrollbar_begin_symbol = "│"
@@ -39,6 +46,7 @@ scrollbar_thumb_symbol = "│"
 
 # Labels
 all_label = "󱀂 All {unread_count}"
+last_synced_label = " Last Synced"
 feed_label = " {label} {unread_count}"
 category_label = "󰉋 {label} {unread_count}"
 categories_label = "󰉓 Categories {unread_count}"
@@ -47,11 +55,13 @@ tag_label = "󰓹 {label} {unread_count}"
 query_label = " {label}"
 
 # Article Display
-article_table = "{read},{marked},{tag_icons},{age},{title}"
+article_table = "{flagged},{read},{marked},{tag_icons},{age},{title}"
 date_format = "%m/%d %H:%M"
 articles_after_selection = 3
 hide_default_sort_order = true
 zen_mode_show_header = false
+hint_type = "letters"
+content_show_urls = false
 
 # Content
 auto_scrape = true
@@ -150,10 +160,11 @@ timeout_millis = 5000
 "h"         = ["prev"]
 "tab"       = ["nextc"]
 "backtab"   = ["prevc"]
+"y"         = ["share clipboard"]
 "o"         = ["open", "in articles read", "in articles nextunread"]
 "O"         = ["open unread", "confirm in articles read articles %"]
 "s"         = ["sync"]
-"r"         = ["read", "in articles nextunread"]
+"r"         = ["read", "nextunread"]
 "t"         = ["cmd tag"]
 "R"         = ["confirm in articles read %"]
 "0 r"       = ["confirm in articles read above"]
@@ -173,6 +184,25 @@ timeout_millis = 5000
 "V"         = ["confirm in articles unmark %"]
 "0 v"       = ["confirm in articles unmark above"]
 "$ v"       = ["confirm in articles unmark below"]
+"M-v"       = ["cmd unmark"]
+"f"         = ["flag", "in articles down"]
+"0 f"       = ["flag above"]
+"$ f"       = ["flag below"]
+"F"         = ["flag all"]
+"M-f"       = ["cmd flag"]
+"d"         = ["unflag", "in articles down"]
+"0 d"       = ["unflag above"]
+"$ d"       = ["unflag below"]
+"D"         = ["unflag all"]
+"M-d"       = ["cmd unflag"]
+"i"         = ["flaginvert", "in articles down"]
+"0 i"       = ["flaginvert above"]
+"$ i"       = ["flaginvert below"]
+"I"         = ["flaginvert all"]
+"M-i"       = ["cmd flaginvert"]
+"; ;"       = ["cmd hintfollow"]
+"; y"       = ["cmd hintshare clipboard"]
+"; s"       = ["cmd hintshare"]
 "1"         = ["show all"]
 "2"         = ["show unread"]
 "3"         = ["show marked"]
@@ -183,7 +213,7 @@ timeout_millis = 5000
 "="         = ["cmd filter "]
 "+ r"       = ["filterclear"]
 "+ +"       = ["filterapply"]
-"\\"        = ["cmd sort "]
+"\\"        = ["cmd sort"]
 "| |"       = ["sortreverse"]
 "| r"       = ["sortclear"]
 "c w"       = ["cmd rename"]
@@ -193,10 +223,13 @@ timeout_millis = 5000
 "c e"       = ["confirm feedadd https://github.com/christo-auer/eilmeldung/releases.atom eilmeldung releases"]
 "c a"       = ["cmd categoryadd"]
 "c u"       = ["cmd feedchangeurl"]
+"c s"       = ["confirm sortfeeds"]
 "c y"       = ["yank"]
 "c p"       = ["paste after"]
 "c P"       = ["paste before"]
 "c c"       = ["cmd tagchangecolor"]
+"e"         = ["openenclosure"]
+"E"         = ["cmd openenclosure"]
 "S"         = ["cmd share"]
 "?"         = ["helpinput"]
 
@@ -207,6 +240,7 @@ background = "black"
 foreground = "white"
 muted = "dark_gray"
 highlight = "yellow"
+flagged = "red"
 accent_primary = "magenta"
 accent_secondary = "blue"
 accent_tertiary = "cyan"
@@ -219,7 +253,6 @@ error = "red"
 header = { fg = "accent_primary" }
 paragraph = { fg = "foreground" }
 article = { fg = "foreground" }
-article_highlighted = { fg = "highlight", mods = ["bold"] }
 feed = { fg = "accent_primary" }
 category = { fg = "accent_secondary" }
 tag = { fg = "accent_tertiary" }
@@ -236,8 +269,7 @@ tooltip_error = { fg = "error", mods = ["reversed"] }
 unread = { mods = ["bold"] }
 read = { mods = ["dim"] }
 selected = { mods = ["reversed"] }
-highlighted = { fg = "highlight" }
+highlighted = { fg = "highlight", mods = ["italic"] }
+flagged = { fg = "flagged" }
 unread_count = { mods = ["italic"] }
 marked_count = { mods = ["italic"] }
-
-

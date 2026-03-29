@@ -2,7 +2,6 @@ use ratatui::{
     style::{Modifier, Style},
     text::{Line, Span, Text},
 };
-
 #[cfg(unix)]
 use std::os::unix::io::{AsRawFd, RawFd};
 
@@ -10,6 +9,7 @@ pub mod prelude {
     #[cfg(unix)]
     pub use super::StderrRedirect;
     pub use super::html_sanitize;
+    pub use super::lex_ordering;
     pub use super::patch_text_style;
     pub use super::to_bubble;
 }
@@ -85,4 +85,86 @@ pub fn patch_text_style(text: &mut Text, style: Style) {
     text.iter_mut()
         .flat_map(Line::iter_mut)
         .for_each(|span| span.style = span.style.patch(style));
+}
+
+struct LexOrdering {
+    symbols: Vec<char>,
+    current: Vec<usize>,
+}
+
+impl LexOrdering {
+    pub fn new(symbols: Vec<char>) -> Self {
+        LexOrdering {
+            symbols,
+            current: Default::default(),
+        }
+    }
+}
+
+impl Iterator for LexOrdering {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut index = 0;
+
+        let max_symb = self.symbols.len().saturating_sub(1);
+
+        while let Some(symbol_index) = self.current.get_mut(index)
+            && *symbol_index == max_symb
+        {
+            *symbol_index = 0;
+            index += 1;
+        }
+
+        match self.current.get_mut(index) {
+            Some(entry) => *entry += 1,
+            None => self.current.push(0),
+        }
+
+        Some(
+            self.current
+                .iter()
+                .rev()
+                .filter_map(|index| self.symbols.get(*index))
+                .collect::<String>(),
+        )
+    }
+}
+
+pub fn lex_ordering(symbols: Vec<char>) -> Result<impl Iterator<Item = String>, &'static str> {
+    if symbols.is_empty() {
+        return Err("there must be at least one symbol");
+    }
+
+    Ok(LexOrdering::new(symbols))
+}
+
+#[cfg(test)]
+mod test {
+    use claims::assert_some_eq;
+
+    use super::*;
+    #[test]
+    fn test_lex_ordering() {
+        let symbols = vec!['a', 'b', 'c'];
+        let mut lex_ordering = lex_ordering(symbols).unwrap();
+
+        vec![
+            "a", "b", "c", "aa", "ab", "ac", "ba", "bb", "bc", "ca", "cb", "cc", "aaa", "aab",
+            "aac", "aba", "abb", "abc", "aca", "acb", "acc", "baa", "bab", "bac", "bba", "bbb",
+            "bbc", "bca", "bcb", "bcc", "caa", "cab", "cac", "cba", "cbb", "cbc", "cca", "ccb",
+            "ccc", "aaaa",
+        ]
+        .iter()
+        .for_each(|expected| {
+            assert_some_eq!(lex_ordering.next(), expected.to_owned());
+        });
+    }
+
+    #[test]
+    fn test_lex_ordering_no_symbols() {
+        if lex_ordering(Default::default()).is_ok() {
+            panic!("must return Err if no symboled are passed");
+        }
+    }
 }

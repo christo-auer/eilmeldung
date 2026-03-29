@@ -203,8 +203,14 @@ impl ArticleContent {
         Ok(())
     }
 
-    fn open_hint(&self, hint: u16, command: &Command) -> color_eyre::Result<()> {
-        let Some(url) = self.view_data.url_for_hint().get(&hint) else {
+    fn open_hint(&self, command: &Command) -> color_eyre::Result<()> {
+        let hint = match command {
+            Command::ContentFollowHint(hint) => &hint.to_owned(),
+            Command::ContentShareHint(_, hint) => &hint.to_owned(),
+            _ => unreachable!(),
+        };
+
+        let Some(url) = self.view_data.url_for_hint().get(&hint.to_uppercase()) else {
             tooltip(
                 &self.message_sender,
                 "unknown hint number",
@@ -313,8 +319,8 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.open_enclosure(enclosure_type).await?;
                 }
 
-                hint_command @ (C::ContentFollowHint(hint) | C::ContentShareHint(_, hint)) => {
-                    self.open_hint(hint, &hint_command)?;
+                hint_command @ (C::ContentFollowHint(..) | C::ContentShareHint(..)) => {
+                    self.open_hint(&hint_command)?;
                 }
 
                 set_read_command @ C::ActionSetRead(_) if handle_command => {

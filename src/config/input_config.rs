@@ -8,7 +8,6 @@ pub struct InputConfig {
     pub scroll_amount: usize,
     pub timeout_millis: u64,
     pub mappings: IndexMap<KeySequence, CommandSequence>,
-    pub remove_unnecessary_mappings: bool,
 }
 
 // a macro for pleasure
@@ -54,6 +53,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "h"         => "prev",
         "tab"       => "nextc",
         "backtab"   => "prevc",
+        "y"         => "share clipboard",
         "o"         => "open" "in articles read" "in articles nextunread",
         "O"         => "open unread" "confirm in articles read %",
         "s"         => "sync",
@@ -78,9 +78,9 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "0 v"       => "confirm in articles unmark above",
         "$ v"       => "confirm in articles unmark below",
         "M-v"       => "cmd unmark",
-        "i o"       => "cmd hintfollow",
-        "i y"       => "cmd hintshare clipboard",
-        "i s"       => "cmd hintshare",
+        "; ;"       => "cmd hintfollow",
+        "; y"       => "cmd hintshare clipboard",
+        "; s"       => "cmd hintshare",
 
         // flagging
         "f"         => "flag" "in articles down",
@@ -138,7 +138,6 @@ impl Default for InputConfig {
             scroll_amount: 10,
             timeout_millis: 5000,
             mappings: generate_default_input_commands(),
-            remove_unnecessary_mappings: true,
         }
     }
 }

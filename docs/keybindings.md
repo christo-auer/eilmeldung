@@ -17,6 +17,7 @@ This document provides a comprehensive reference of all default key bindings in 
 - [Tags](#tags)
 - [Flagging Articles](#flagging-articles)
 - [Zen Mode](#zen-mode)
+- [Opening Links in Articles with Hints](#opening-links-in-articles-with-hints)
 - [Article Views](#article-views)
 - [Searching & Filtering](#searching--filtering)
 - [Sorting Articles](#sorting-articles)
@@ -70,12 +71,13 @@ This document provides a comprehensive reference of all default key bindings in 
 
 | Key | Action |
 |-----|--------|
-| `o` | Open article in browser, mark as read, and jump to next unread |
-| `O` | Open all unread articles in browser and mark all as read |
+| `o` | Open article in browser, mark as read, and jump to next unread    |
+| `O` | Open all unread articles in browser and mark all as read          |
+| `y` | Copy article URL to clipboard                                     |
 | `x` | Scrape full article content from the web (for truncated articles) |
-| `S` | Share article (opens command line with share targets) |
-| `e` | Open (default) enclosure |
-| `E` | Open enclosure (opens command line with enclosure type) |
+| `S` | Share article (opens command line with share targets)             |
+| `e` | Open (default) enclosure                                          |
+| `E` | Open enclosure (opens command line with enclosure type)           |
 
 ---
 
@@ -145,6 +147,21 @@ After flagging article, you can bulk-execute any of the above commands on them (
 | `z` | Toggle distraction-free mode (hides all panels except article content) |
 
 ---
+
+# Opening Links in Articles with Hints
+
+Eilmeldung shows *hints* for links/images in the article:
+
+![Image showing several link/image hints in the article content display of eilmeldung](images/hints.png)
+
+The "codes" (letters in this case, see setting `hint_type`) before the icons are called *(link) hints*. The following default keybindings are defined for hints:
+
+
+| Key | Action |
+|-----|--------|
+| `; ;` | Open a hint in the webbrowser, by entering the hint (see also command `hintopen`)        |
+| `; s` | Share URL of hint: enter a share target and then the hint (see also command `hintshare`) |
+| `; y` | Copy URL of hint to clipboard (see also command `hintshare`)                             |
 
 ## Article Views
 
