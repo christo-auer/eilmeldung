@@ -807,7 +807,7 @@ impl MessageReceiver for App {
                         ConnectionLostReason::NotReachable => {
                             tooltip(
                                 &self.message_sender,
-                                "Service is not reachable any more, going offline",
+                                "Service is not reachable anymore, going offline",
                                 TooltipFlavor::Warning,
                             )?;
                         }

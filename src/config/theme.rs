@@ -1,9 +1,11 @@
 use std::str::FromStr;
 
+use getset::Getters;
 use ratatui::style::{Color, Modifier, Style};
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize, Getters)]
 #[serde(default)]
+#[getset(get = "pub")]
 pub struct ColorPalette {
     background: Color,
     foreground: Color,
@@ -238,8 +240,9 @@ impl Default for StyleSet {
     }
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize)]
+#[derive(Debug, Clone, Default, serde::Deserialize, Getters)]
 #[serde(default)]
+#[getset(get = "pub")]
 pub struct Theme {
     color_palette: ColorPalette,
     style_set: StyleSet,

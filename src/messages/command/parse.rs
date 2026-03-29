@@ -56,6 +56,9 @@ pub enum CommandParseError {
     #[error("search term expected (quoted string, regex or single word)")]
     SearchTermExpected,
 
+    #[error("URL hint expected")]
+    UrlHintExpected,
+
     #[error("expecting a word")]
     WordExpected(String),
 
@@ -338,6 +341,16 @@ impl Command {
                     })?
                     .as_str(),
             )?),
+
+            C::ContentFollowHint(..) => C::ContentFollowHint(expect_word(&mut args, "URL hint")?),
+
+            C::ContentShareHint(..) => {
+                let share_target = expect_word(&mut args, "expecting share target")
+                    .map_err(|_| E::ShareTargetExpected)?;
+                let hint = expect_word(&mut args, "URL hint").map_err(|_| E::UrlHintExpected)?;
+
+                C::ContentShareHint(share_target, hint)
+            }
 
             C::ArticleShare(..) => C::ArticleShare(
                 expect_word(&mut args, "expecting share target")

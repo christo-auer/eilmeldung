@@ -1,7 +1,11 @@
 use super::model::ArticleContentModelData;
 use crate::prelude::*;
 
-use std::{io::Cursor, sync::Arc};
+use std::{
+    collections::HashMap,
+    io::Cursor,
+    sync::{Arc, Mutex},
+};
 
 use getset::{Getters, MutGetters};
 use image::ImageReader;
@@ -11,6 +15,7 @@ use ratatui::layout::Flex;
 use ratatui_image::{
     FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
 };
+use the_other_tui_markdown::RendererBuilder;
 use throbber_widgets_tui::{Throbber, ThrobberState, WhichUse};
 
 const NO_THUMB_PLACEHOLDER: &[u8] =
@@ -34,6 +39,9 @@ pub struct ArticleContentViewData {
 
     // Throbber state for loading animations
     thumbnail_fetching_throbber: ThrobberState,
+
+    #[getset(get = "pub(super)")]
+    url_for_hint: HashMap<String, String>,
 }
 
 impl Default for ArticleContentViewData {
@@ -56,6 +64,7 @@ impl Default for ArticleContentViewData {
             picker, // TODO gracefully handle errors
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
+            url_for_hint: Default::default(),
         }
     }
 }
@@ -365,6 +374,8 @@ impl ArticleContentViewData {
     ) {
         let show_header = !distraction_free || config.zen_mode_show_header;
 
+        let vertical_scroll = self.vertical_scroll;
+
         let [summary_area, content_area] = Layout::default()
             .direction(Direction::Vertical)
             .flex(Flex::Start)
@@ -408,7 +419,9 @@ impl ArticleContentViewData {
             // Use the cached markdown content from model
             if let Some(markdown) = model_data.markdown_content() {
                 info!("markdown available");
-                tui_markdown::from_str(markdown)
+                self.markdown_to_text(markdown, config)
+
+                // tui_markdown::from_str(markdown)
             } else {
                 info!("no markdown available, falling back to html2text");
                 // Fallback - convert to plain text instead of markdown to avoid lifetime issues
@@ -424,22 +437,98 @@ impl ArticleContentViewData {
         };
 
         // Calculate the total number of lines the content would take when wrapped
-        let content_lines = self.calculate_wrapped_lines(&text, paragraph_area.width);
+        let content_lines = Self::calculate_wrapped_lines(&text, paragraph_area.width);
 
         // Calculate maximum scroll (ensure it doesn't go negative)
-        self.max_scroll = content_lines.saturating_sub(paragraph_area.height);
+        let max_scroll = content_lines.saturating_sub(paragraph_area.height);
 
         // Ensure current scroll doesn't exceed maximum
-        self.vertical_scroll = self.vertical_scroll.min(self.max_scroll);
+        let vertical_scroll = vertical_scroll.min(max_scroll);
 
         let content = Paragraph::new(text)
             .wrap(Wrap { trim: true })
-            .scroll((self.vertical_scroll, 0));
+            .scroll((vertical_scroll, 0));
 
         content.render(paragraph_area, buf);
+
+        self.max_scroll = max_scroll;
+        self.vertical_scroll = vertical_scroll;
     }
 
-    fn calculate_wrapped_lines(&self, text: &ratatui::text::Text, width: u16) -> u16 {
+    fn markdown_to_text(&mut self, markdown: &str, config: &Config) -> Text<'static> {
+        let url_for_hint = Arc::new(Mutex::new(HashMap::<String, String>::new()));
+        // unwrap is safe here: at least one symbol passed save here
+        let iterator = config.hint_type.iter();
+        let hint_iterator = Arc::new(Mutex::new(iterator));
+        let show_url = config.content_show_urls;
+
+        let inner_link_url_for_hint = url_for_hint.clone();
+        let inner_link_hint_iterator = hint_iterator.clone();
+        let link_alt_text_style = Style::new()
+            .fg(*config.theme.color_palette().accent_primary())
+            .add_modifier(Modifier::UNDERLINED);
+        let link_url_text_style = Style::new().fg(*config.theme.color_palette().foreground());
+        let link_hint_style = Style::new()
+            .fg(*config.theme.color_palette().highlight())
+            .add_modifier(Modifier::BOLD);
+
+        let inner_image_url_for_hint = url_for_hint.clone();
+        let inner_image_hint_iterator = hint_iterator.clone();
+        let image_alt_text_style = Style::new()
+            .fg(*config.theme.color_palette().accent_primary())
+            .add_modifier(Modifier::UNDERLINED);
+        let image_url_text_style = Style::new().fg(*config.theme.color_palette().foreground());
+        let image_hint_style = link_hint_style;
+
+        let image_icon = config.image_icon;
+        let url_icon = config.url_icon;
+
+        let text = {
+            let renderer = RendererBuilder::new()
+                .with_link(move |alt, url| {
+                    let mut url_for_hint = inner_link_url_for_hint.lock().unwrap(); // unwrap is save here: locking with sync calls
+                    let hint = inner_link_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
+
+                    url_for_hint
+                        .entry(hint.to_owned())
+                        .or_insert(url.to_owned());
+                    let mut spans = vec![
+                        Span::styled(format!("{hint}{url_icon}"), link_hint_style),
+                        Span::styled(alt.to_owned(), link_alt_text_style),
+                    ];
+                    if show_url {
+                        spans.push(Span::styled(format!("({url})"), link_url_text_style));
+                    }
+
+                    spans
+                })
+                .with_image(move |alt, url| {
+                    let mut url_for_hint = inner_image_url_for_hint.lock().unwrap();
+                    let hint = inner_image_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
+                    url_for_hint
+                        .entry(hint.to_owned())
+                        .or_insert(url.to_owned());
+                    let mut spans = vec![
+                        Span::styled(format!("{hint}{image_icon}"), image_hint_style),
+                        Span::styled(alt.to_owned(), image_alt_text_style),
+                    ];
+
+                    if show_url {
+                        spans.push(Span::styled(format!("({url})"), image_url_text_style));
+                    }
+                    spans
+                })
+                .build();
+
+            the_other_tui_markdown::into_text_with_renderer(markdown, &renderer).to_owned()
+        };
+
+        self.url_for_hint = url_for_hint.lock().unwrap().to_owned();
+
+        text
+    }
+
+    fn calculate_wrapped_lines(text: &ratatui::text::Text, width: u16) -> u16 {
         let mut total_lines = 0u16;
 
         for line in text.lines.iter() {

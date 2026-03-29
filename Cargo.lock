@@ -1832,6 +1832,7 @@ dependencies = [
  "strum 0.27.2",
  "termimad",
  "text-splitter",
+ "the-other-tui-markdown",
  "thiserror 2.0.18",
  "throbber-widgets-tui",
  "tokio",
@@ -6634,6 +6635,17 @@ dependencies = [
  "pulldown-cmark",
  "strum 0.27.2",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "the-other-tui-markdown"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d1e918c0bbc64d92da8a0016a03711ac2ab76042ae5f671523ff5ab45fa16c2"
+dependencies = [
+ "pulldown-cmark",
+ "ratatui-core",
+ "unicode-width 0.2.0",
 ]
 
 [[package]]

@@ -31,7 +31,12 @@ pub mod prelude {
 
 use config::FileFormat;
 use log::{info, warn};
+use once_cell::sync::Lazy;
 use ratatui::symbols::scrollbar;
+
+static HINT_CHARS: Lazy<Vec<char>> = Lazy::new(|| vec!['F', 'J', 'G', 'H', 'D', 'K']);
+static HINT_NUMBERS: Lazy<Vec<char>> =
+    Lazy::new(|| vec!['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConfigError {
@@ -62,6 +67,22 @@ pub enum ConfigError {
 pub enum ArticleContentType {
     PlainText,
     Markdown,
+}
+
+#[derive(Debug, Copy, Clone, serde::Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum HintType {
+    Letters,
+    Numbers,
+}
+
+impl HintType {
+    pub fn iter(self) -> impl Iterator<Item = String> {
+        match self {
+            HintType::Letters => lex_ordering(HINT_CHARS.to_owned()).unwrap(),
+            HintType::Numbers => lex_ordering(HINT_NUMBERS.to_owned()).unwrap(),
+        }
+    }
 }
 
 #[derive(
@@ -161,6 +182,8 @@ pub struct Config {
     pub scrollbar_end_symbol: char,
     pub scrollbar_track_symbol: char,
     pub scrollbar_thumb_symbol: char,
+    pub image_icon: char,
+    pub url_icon: char,
 
     pub articles_after_selection: usize,
     pub auto_scrape: bool,
@@ -174,6 +197,8 @@ pub struct Config {
     pub hide_default_sort_order: bool,
     pub default_sort_order: SortOrder,
     pub zen_mode_show_header: bool,
+    pub content_show_urls: bool,
+    pub hint_type: HintType,
 
     pub feed_list_focused_width: Dimension,
     pub article_list_focused_width: Dimension,
@@ -292,6 +317,8 @@ impl Default for Config {
             scrollbar_end_symbol: '│',
             scrollbar_track_symbol: ' ',
             scrollbar_thumb_symbol: '│',
+            image_icon: '',
+            url_icon: '',
 
             articles_after_selection: 3,
             auto_scrape: true,
@@ -303,6 +330,8 @@ impl Default for Config {
             text_max_width: 66,
             content_preferred_type: ArticleContentType::Markdown,
             zen_mode_show_header: false,
+            content_show_urls: false,
+            hint_type: HintType::Letters,
 
             feed_list_focused_width: Dimension::Percentage(25),
             article_list_focused_width: Dimension::Percentage(75),

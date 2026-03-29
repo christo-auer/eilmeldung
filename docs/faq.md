@@ -151,7 +151,7 @@ Yes! The commands `read`, `unread`, `mark` and `unmark` accept `above` or `below
 
 ### Can I select more articles and then execute an operation on them?
 
-Yes! In `eilmeldung` this is called `flag`ing: Press `f` to flag one or more articles and then any command is executed on all flagged articles (e.g. `r` for marking them as read). Of course, `m` (mark), `t` (tag), `o` (open in browser) all work as expected.
+Yes! In `eilmeldung` this is called `flag`ging: Press `f` to flag one or more articles and then any command is executed on all flagged articles (e.g. `r` for marking them as read). Of course, `m` (mark), `t` (tag), `o` (open in browser) all work as expected.
 To *unflag* press `d` (*delete* flag) and to *invert the flag state*  press `i`. The upper-case variants flag/unflag *all articles* in the article list. And you can even flag all articles *above*/*below* by prepending `0` or `$`.
 
 For experts: `flag`/`unflag`/`invertflag` are commands just like `read`, `tag`, etc. You can `flag` by a *query* e.g. `flag unread` flags all unread articles. And: `flagged` is a query key which matches flagged articles.
@@ -161,6 +161,16 @@ Customize your workflow!
 If you want to learn more, checkout [Key Bindings](keybindings.md#flagging-articles) and [Commands](commands.md#article-actions)
 
 ---
+
+### Can I open links/images in articles? Can eilmeldung display images in articles?
+
+Yes, `eilmeldung` supports *hints*:
+
+![Image showing several link/image hints in the article content display of eilmeldung](images/hints.png)
+
+Press `; ;` (command `hintopen`) and enter the letter before the icons to open the link/image in your webbrowser. You can also share links/images with `; s`  or copy it to the clipboard with `; y` (command `hintshare`). 
+
+
 
 ## Configuration & Customization
 
@@ -236,6 +246,21 @@ These two are dimensions (see [configuration](configuration.md)) and define the 
 thumbnail_width = "30%" # consumes 30% of the available horizontal space
 thumbnail_height = "50%" # consumes 50% of the available vertical space
 ```
+## How can I view/open images in articles?
+
+Install an image viewer which can open links/URLs, like [feh](https://feh.finalrewind.org/). Then define a new share target for opening URL with `feh` in your `config.toml`
+```toml
+share_targets = [
+  "feh feh \"{url}\"", 
+  # your other share targets like clipboard etc.
+]
+```
+Now you can open image links by sharing them with `feh`, e.g., by defining the following key binding:
+```toml
+[input_config.mappings]
+"; i" = ["cmd hintshare feh"]
+```
+Then pressing `; i` and entering the hint pointing to the image opens `feh` with the URL.
 
 ---
 
