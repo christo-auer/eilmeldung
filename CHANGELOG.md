@@ -1,10 +1,13 @@
 # Unreleased
 
 - you can now **open links/images in articles** using the new **hints** feature
+  ![eilmeldung hints are prepended before links](https://github.com/user-attachments/assets/1e4ddb3a-0dfc-4fbc-b5f5-377661bfecae)
   - in the article view links and images have *hint letters* prepended
   - press `; ;` and enter the hint to open the link/image in your webbrowser
   - press `; y` to copy the link  to the clipboard and `; s` to share it
-  - combining hints with, e.g., the [feh](https://feh.finalrewind.org/) image viewer as a *share target*, can even be used to *open images from articles*; read more about how to achieve this in `docs/faq.md`
+  - combining hints with, e.g., the [feh](https://feh.finalrewind.org/) image viewer as a *share target*, can even be used to *open images from articles*; read more about how to achieve this in `docs/faq.md`  
+  ![opening image links in feh](https://github.com/user-attachments/assets/b427eed1-ae1f-473f-88df-836fe4251367)
+
 - **FULL DISCLOSURE**: with this release, eilmeldung uses a *different crate for rendering markdown* (derived from HTML). Before eilmeldung used [tui_markdown](https://docs.rs/tui-markdown/latest/tui_markdown/) whose development has stalled for the last few months. In particular, it is currently not yet possible to implement hints using `tui_markdown`. Since hints are a feature needed and requested in eilmeldung, I decided to implement my own *makeshift* ratatui markdown renderer crate [the_other_tui_markdown](https://crates.io/crates/the-other-tui-markdown). This crate is *vibe-coded* using *Claude LLM*. As soon as `tui_markdown` supports implementing hints, I will switch back. For the time being, I use my vibe-coded version. That said, the codebase of eilmeldung is still *hand-crafted* as before.
 
 
