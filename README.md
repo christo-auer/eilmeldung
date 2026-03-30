@@ -1,5 +1,7 @@
 📢 Stay up-to-date! Subscribe to the [eilmeldung release atom feed](https://github.com/christo-auer/eilmeldung/releases.atom)! Press `c e` in eilmeldung to automatically add the feed!
 
+🪲 **A bug not reported, is a bug nonexistent!** Report bugs via [GitHub Issues](https://github.com/christo-auer/eilmeldung/issues)! 🪲
+
 ![Logo of eilmeldung](docs/images/logo.png) 
   
 

@@ -1,5 +1,7 @@
 # Unreleased
 
+🪲 **A bug not reported, is a bug nonexistent!** Report any bugs via [GitHub Issues](https://github.com/christo-auer/eilmeldung/issues)! 🪲
+
 - you can now **open links/images in articles** using the new **hints** feature
   ![eilmeldung hints are prepended before links](https://github.com/user-attachments/assets/1e4ddb3a-0dfc-4fbc-b5f5-377661bfecae)
   - in the article view links and images have *hint letters* prepended
