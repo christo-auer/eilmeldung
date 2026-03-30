@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.4.0 - 2026-03-30
+
 🪲 **A bug not reported, is a bug nonexistent!** Report any bugs via [GitHub Issues](https://github.com/christo-auer/eilmeldung/issues)! 🪲
 
 - you can now **open links/images in articles** using the new **hints** feature
