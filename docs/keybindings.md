@@ -185,7 +185,7 @@ The "codes" (letters in this case, see setting `hint_type`) before the icons are
 
 See [Article Queries](queries.md) for how to craft powerful queries.
 
-**Note**: `=` executes `filter` which is *non-sticky*, i.e., when you change the any in the feed tree, it is not applied automatically. If you want to apply a *stick* filter, you have to use `filtersticky`, i.e., re-map `=` to `cmd filtersticky`.
+**Note**: `=` executes `filter` which is *non-sticky*, i.e., when you change the selected entry in the feed tree, it is not applied automatically. If you want to apply a *sticky* filter, you have to use `filtersticky`, i.e., re-map `=` to `cmd filtersticky`.
 
 ---
 
