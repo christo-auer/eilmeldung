@@ -44,6 +44,7 @@ This video demonstrates
 
 ---
 
+
 # Installation 
 
 **Quick install:**
@@ -177,6 +178,14 @@ Yes, there is rudimentary mouse support with the option `mouse_support = true` (
 ---
 
 # Credits
+## Mentions
+
+- [Orhun's Blog: 800 rust projects in 3 years](https://blog.orhun.dev/800-rust-projects/) (placed 21 based on a Mastodon analysis; very hondered to be on the same list as other such great and impressive rust projects!)
+- Pick on [Linux Unplugged Episode 647 (2025-12-28)](https://linuxunplugged.com/647) (1:28:35) had some very kind things to say about *eilmeldung* shortly after the initial release:
+> "[eilmeldung] is [...] beautiful. It's strange to say about a TUI [...] but it is actually very beautiful."
+
+
+---
 
 ## Standing on the Shoulders of Giants
 
