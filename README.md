@@ -119,6 +119,7 @@ Complete documentation is available in the `docs/` directory:
 Of course, there are many awesome alternatives to *eilmeldung*. Check them out!
 
 - [newsboat](https://newsboat.org/) is the battle-proven classic
+- [bulletty](https://github.com/CrociDB/bulletty) lets you decide where to store your articles as markdown files and has many more features.
 - [feedr](https://github.com/bahdotsh/feedr) is a feature-rich terminal-based RSS feed reader written in Rust
 - [russ](https://github.com/ckampfe/russ)  is a TUI RSS/Atom reader with vim-like controls and a local-first, offline-first focus.
 - [elfeed](https://github.com/skeeto/elfeed) provides RSS in emacs
