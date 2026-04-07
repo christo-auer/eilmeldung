@@ -8,7 +8,7 @@
 
   outputs = { self, nixpkgs, flake-utils, ... }:
     let
-      version = "1.4.1";
+      version = "1.4.0";
 
       releaseSrc = pkgs: pkgs.fetchFromGitHub {
         owner = "christo-auer";
@@ -20,7 +20,7 @@
       mkEilmeldung = pkgs: src: ver:
         (pkgs.callPackage ./nix/package.nix {
           inherit (pkgs) llvmPackages_19;
-        }) { inherit src; version = "1.4.1";
+        }) { inherit src; version = ver; };
     in
     {
       overlays.default = final: prev: {

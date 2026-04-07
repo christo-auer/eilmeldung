@@ -1,11 +1,11 @@
 class Eilmeldung < Formula
   desc "a feature-rich TUI RSS reader based on the newsflash library"
   homepage "https://github.com/christo-auer/eilmeldung"
-  url "https://github.com/christo-auer/eilmeldung/archive/refs/tags/1.4.1.tar.gz"
-  sha256 "replaced by CI on release of 1.4.1"
+  url "https://github.com/christo-auer/eilmeldung/archive/refs/tags/1.4.0.tar.gz"
+  sha256 "a8c495e659c98cf9e6398c950a8a4fd31bc994a92704252d5bf09959a0755079"
   license "GPL-3.0"
   head "https://github.com/christo-auer/eilmeldung.git", branch: "main"
-  version "1.4.1"
+  version "1.4.0"
 
   depends_on "pkg-config" => :build
   depends_on "rust" => :build
