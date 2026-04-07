@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.4.1 - 2026-04-07
+
 - there are now two nix packages
   - `eilmeldung` tracks the latest release
   - `eilmelung-git` is the latest git version
