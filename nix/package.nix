@@ -11,31 +11,31 @@
 , llvmPackages_19
 }:
 
+{ src, version }:
+
 rustPlatform.buildRustPackage {
   pname = "eilmeldung";
-  version = "1.4.0";
-  
-  src = ../.;
-  
+  inherit version src;
+
   cargoLock = {
-    lockFile = ../Cargo.lock;
+    lockFile = "${src}/Cargo.lock";
   };
-  
+
   nativeBuildInputs = [
     pkg-config
     cmake
-    perl  
+    perl
   ];
-  
+
   buildInputs = [
     openssl
     libxml2
     sqlite
   ];
-  
+
   LIBCLANG_PATH = lib.makeLibraryPath [ llvmPackages_19.libclang.lib ];
   BINDGEN_EXTRA_CLANG_ARGS = lib.concatStringsSep " " (
-    (builtins.map (a: ''-I"${a}/include"'') [
+    (map (a: ''-I"${a}/include"'') [
       glibc.dev
     ])
     ++ [
@@ -45,7 +45,7 @@ rustPlatform.buildRustPackage {
       ''-I"${glibc.dev}/include/"''
     ]
   );
-  
+
   meta = with lib; {
     description = "A feature-rich TUI RSS Reader based on the news-flash library";
     homepage = "https://github.com/christo-auer/eilmeldung";

@@ -338,6 +338,47 @@ jobs:
             git commit -m "chore: update SHA256 in homebrew formula"
             git push origin main
 
+  nix-bump:
+    name: Update Nix package hash
+    runs-on: ubuntu-latest
+    needs: release-github
+    permissions:
+      contents: write
+    steps:
+      - name: Extract tag name
+        id: tag
+        run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: true
+          ref: "main"
+          ssh-key: ${{ secrets.GIT_DEPLOY_KEY }}
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+
+      - name: Compute source hash
+        id: hash
+        run: |
+          URL="https://github.com/christo-auer/eilmeldung/archive/refs/tags/${{ steps.tag.outputs.TAG_NAME }}.tar.gz"
+          RAW=$(nix-prefetch-url --type sha256 --unpack "$URL")
+          HASH=$(nix hash convert --hash-algo sha256 --to sri "$RAW")
+          echo "HASH=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Update hash in flake.nix
+        run: |
+          sed -i 's|hash = "sha256-.*";|hash = "${{ steps.hash.outputs.HASH }}";|' flake.nix
+
+      - name: Commit and push
+        run: |
+          git config user.email "${{ vars.GIT_USER_EMAIL }}"
+          git config user.name "${{ vars.GIT_USER_NAME }}"
+          git add flake.nix
+          git commit -m "chore: update Nix hash for ${{ steps.tag.outputs.TAG_NAME }}"
+          git push origin main
+
   aur-publish:
     name: Publish ${{ matrix.package }} to AUR
     runs-on: ubuntu-latest

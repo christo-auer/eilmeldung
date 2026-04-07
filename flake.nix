@@ -7,13 +7,26 @@
   };
 
   outputs = { self, nixpkgs, flake-utils, ... }:
+    let
+      version = "1.4.0";
+
+      releaseSrc = pkgs: pkgs.fetchFromGitHub {
+        owner = "christo-auer";
+        repo = "eilmeldung";
+        rev = version;
+        hash = "sha256-M7WwUfWhdQaZXvp1O2OEBhu2LNqsXXJvew3Bv5Pfnwk=";
+      };
+
+      mkEilmeldung = pkgs: src: ver:
+        (pkgs.callPackage ./nix/package.nix {
+          inherit (pkgs) llvmPackages_19;
+        }) { inherit src; version = ver; };
+    in
     {
       overlays.default = final: prev: {
-        eilmeldung = final.callPackage ./nix/package.nix {
-          inherit (final) llvmPackages_19;
-        };
+        eilmeldung = mkEilmeldung final (releaseSrc final) version;
       };
-      
+
       homeManager.default = import ./nix/home-manager-module.nix;
       homeManager.eilmeldung = self.outputs.homeManager.default;
     }
@@ -25,9 +38,8 @@
       in
       {
         packages = {
-          eilmeldung = pkgs.callPackage ./nix/package.nix {
-            inherit (pkgs) llvmPackages_19;
-          };
+          eilmeldung = mkEilmeldung pkgs (releaseSrc pkgs) version;
+          eilmeldung-git = mkEilmeldung pkgs self (self.shortRev or "dirty");
           default = self.outputs.packages.${system}.eilmeldung;
         };
 
