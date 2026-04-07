@@ -311,7 +311,7 @@ jobs:
             ./artifacts/**/eilmeldung-*.tar.gz
 
   hashes-bump:
-      name: Update Homebrew formula sha256
+      name: Updating Hashes (nix and homebrew)
       runs-on: ubuntu-latest
       needs: release-github
       permissions:
