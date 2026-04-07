@@ -655,6 +655,7 @@ impl FeedList {
 
             self.view_data.tree_state_mut().select(found_path.to_vec());
             self.generate_articles_selected_command()?;
+
             // tell article list to select the next unread article (which must be there!)
             self.message_sender.send(Message::Command(Command::In(
                 Panel::ArticleList,
@@ -749,7 +750,6 @@ impl MessageReceiver for FeedList {
                     selection_changed = true;
                 }
                 C::SelectNextUnread if handle_command => {
-                    self.model_data.update().await?; // update first to get most recent data
                     self.select_next_unread()?;
                     selection_changed = true;
                 }
