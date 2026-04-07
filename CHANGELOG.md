@@ -1,5 +1,8 @@
 # Unreleased
 
+- there are now two nix packages
+  - `eilmeldung` tracks the latest release
+  - `eilmelung-git` is the latest git version
 - bugfix: `nextunread` now should reliably select the next unread feed list item after setting all articles in category or feed to read
 
 # 1.4.0 - 2026-03-30
