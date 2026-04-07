@@ -11,6 +11,7 @@ Follow any of the installation methods below, then run *eilmeldung*. It will gui
 - [Via AUR (Arch)](#via-aur-arch)
 - [Via Cargo](#via-cargo)
 - [Nix Flake and Home Manager](#nix-flake-and-home-manager)
+- [Void LInux](#void-linux)
 
 ---
 
@@ -65,12 +66,14 @@ cargo install --locked --git https://github.com/christo-auer/eilmeldung
 
 ## Nix Flake and Home Manager
 
-Add *eilmeldung* to your inputs, apply `eilmeldung.overlays.default` overlay to `pkgs`. If you want Home Manager integration, add Home Manager module `eilmeldung.homeManager.default`. Here is an example:
+There are two packages, `eilmeldung` (latest release) and `eilmeldung-git` (`HEAD` of `main`).
+Add *eilmeldung* to your inputs, apply `eilmeldung.overlays.default` overlay to `pkgs`. If you want Home Manager integration, add Home Manager module `eilmeldung.homeManager.default`. 
+
+Here is an example:
 
 ```nix
 {
   inputs = {
-    // ...
     eilmeldung.url = "github:christo-auer/eilmeldung";
   };
 
@@ -82,7 +85,7 @@ Add *eilmeldung* to your inputs, apply `eilmeldung.overlays.default` overlay to 
       };
       
       modules = [
-        // ...
+        # ...
         eilmeldung.homeManager.default
       ];
     };
@@ -90,11 +93,21 @@ Add *eilmeldung* to your inputs, apply `eilmeldung.overlays.default` overlay to 
 }
 ```
 
+There are two packages: `eilmeldung` (latest release) and `eilmeldung-git` for `HEAD` of `main`:
+
+```nix
+home.packages = [ eilmeldung.packages.x86_64-linux.eilmeldung ];
+# or for HEAD of main
+home.packages = [ eilmeldung.packages.x86_64-linux.eilmeldung-git ];
+```
+
 Home Manager configuration works by defining the settings from the configuration file:
 
 ```nix
 programs.eilmeldung = {
   enable = true;
+  # for HEAD of main
+  #package = eilmeldung.packages.x86_64-linux.eilmeldung-git;
 
   settings = {
     refresh_fps = 60;
@@ -104,7 +117,7 @@ programs.eilmeldung = {
     theme = {
       color_palette = {
         background = "#1e1e2e";
-        // ...
+        # ...
       };
     };
 
@@ -126,6 +139,13 @@ programs.eilmeldung = {
     ];
   };
 };
+```
+## Void Linux
+
+Via an unoffical repository:
+
+```bash 
+echo "repository=https://raw.githubusercontent.com/Event-Horizon-VL/blackhole-vl/repository-x86_64" | sudo tee /etc/xbps.d/20-repository-extra.conf && sudo xbps-install -S eilmeldung
 ```
 
 ---
