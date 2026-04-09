@@ -36,8 +36,8 @@ brew install eilmeldung
 
 There are three AUR packages
 
-- `eilmeldung` compiles the latest release 
-- `eilmeldung-git` the `HEAD` of `main`. 
+- `eilmeldung` compiles the latest release
+- `eilmeldung-git` the `HEAD` of `main`.
 - `eilmeldung-bin` installs the statically linked binaries
 
 Use `paru` or `yay` to install.
@@ -51,7 +51,19 @@ In order to compile `eilmeldung` from source, you need `cargo` with a `rust` com
 | Distribution | Dependencies (Build and Runtime)                                                           |
 | ---          | ---                                                                                        |
 | Ubuntu       | `# apt install rustup build-essential perl libssl-dev pkg-config libxml2-dev clang libsqlite3-dev`<br>install stable rust toolchain as your user: `rustup default stable` |
-| Fedora       | `# dnf install cargo rust perl libxml2-devel openssl-devel clang sqlite-devel`                           |
+| Fedora       | `# dnf install \
+    cargo \
+    rust \
+    perl \
+    libxml2-devel \
+    clang \
+    sqlite-devel \
+    openssl-devel \
+    perl-FindBin \
+    perl-IPC-Cmd \
+    perl-File-Compare \
+    perl-Time-Piece` |
+
 | Arch         | `# pacman -S cargo base-devel clang perl libxml2 openssl libsixel sqlite3`                             |
 
 ```bash
@@ -67,7 +79,7 @@ cargo install --locked --git https://github.com/christo-auer/eilmeldung
 ## Nix Flake and Home Manager
 
 There are two packages, `eilmeldung` (latest release) and `eilmeldung-git` (`HEAD` of `main`).
-Add *eilmeldung* to your inputs, apply `eilmeldung.overlays.default` overlay to `pkgs`. If you want Home Manager integration, add Home Manager module `eilmeldung.homeManager.default`. 
+Add *eilmeldung* to your inputs, apply `eilmeldung.overlays.default` overlay to `pkgs`. If you want Home Manager integration, add Home Manager module `eilmeldung.homeManager.default`.
 
 Here is an example:
 
@@ -83,7 +95,7 @@ Here is an example:
         system = "x86_64-linux";
         overlays = [ eilmeldung.overlays.default ];
       };
-      
+
       modules = [
         # ...
         eilmeldung.homeManager.default
@@ -144,7 +156,7 @@ programs.eilmeldung = {
 
 Via an unoffical repository:
 
-```bash 
+```bash
 echo "repository=https://raw.githubusercontent.com/Event-Horizon-VL/blackhole-vl/repository-x86_64" | sudo tee /etc/xbps.d/20-repository-extra.conf && sudo xbps-install -S eilmeldung
 ```
 
