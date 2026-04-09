@@ -51,19 +51,7 @@ In order to compile `eilmeldung` from source, you need `cargo` with a `rust` com
 | Distribution | Dependencies (Build and Runtime)                                                           |
 | ---          | ---                                                                                        |
 | Ubuntu       | `# apt install rustup build-essential perl libssl-dev pkg-config libxml2-dev clang libsqlite3-dev`<br>install stable rust toolchain as your user: `rustup default stable` |
-| Fedora       | ```# dnf install \
-    cargo \
-    rust \
-    perl \
-    libxml2-devel \
-    clang \
-    sqlite-devel \
-    openssl-devel \
-    perl-FindBin \
-    perl-IPC-Cmd \
-    perl-File-Compare \
-    perl-Time-Piece``` |
-
+| Fedora       | `# dnf install cargo rust perl libxml2-devel clang sqlite-devel openssl-devel perl-FindBin perl-IPC-Cmd perl-File-Compare perl-Time-Piece` |
 | Arch         | `# pacman -S cargo base-devel clang perl libxml2 openssl libsixel sqlite3`                             |
 
 ```bash
