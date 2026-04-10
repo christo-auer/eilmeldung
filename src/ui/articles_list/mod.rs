@@ -105,12 +105,12 @@ impl ArticlesList {
         Ok(())
     }
 
-    pub(super) fn select_next_unread(&mut self) -> color_eyre::Result<()> {
+    pub(super) fn select_next_unread(&mut self, handle_here: bool) -> color_eyre::Result<()> {
         let select = self.first_unread();
 
         match select {
             Some(_) => self.select_index_and_send_message(select)?,
-            None => {
+            None if !handle_here => {
                 // ask feed list to select the next unread item
                 trace!("no next unread item");
                 self.message_sender.send(Message::Command(Command::In(
@@ -118,6 +118,7 @@ impl ArticlesList {
                     Box::new(Command::SelectNextUnread),
                 )))?;
             }
+            _ => {}
         }
 
         Ok(())
@@ -517,6 +518,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
         let mut current_article = self.get_current_article().map(|article| article.article_id);
         let mut model_needs_update = false;
         let mut view_needs_update = false;
+        let mut handle_here = false;
 
         if let Message::Command(command) = message {
             use Command as C;
@@ -525,6 +527,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
             let Some(command) = (match command {
                 C::In(Panel::ArticleList, command) => {
                     handle_command = true;
+                    handle_here = true;
                     Some(*command.to_owned())
                 }
                 C::In(..) => None,
@@ -636,7 +639,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 }
 
                 C::SelectNextUnread if handle_command => {
-                    self.select_next_unread()?;
+                    self.select_next_unread(handle_here)?;
                 }
 
                 C::ArticleListSearch(query) => {
