@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: *eilmeldung* sometimes freezed when trying to select the next unread item
+
 # 1.4.1 - 2026-04-07
 
 - there are now two nix packages

@@ -623,7 +623,7 @@ impl FeedList {
         }
     }
 
-    fn select_next_unread(&mut self) -> color_eyre::Result<()> {
+    fn select_next_unread(&mut self, handle_here: bool) -> color_eyre::Result<()> {
         let selected = self.view_data.tree_state().selected();
         let paths = self.view_data.paths().to_vec();
 
@@ -656,11 +656,13 @@ impl FeedList {
             self.view_data.tree_state_mut().select(found_path.to_vec());
             self.generate_articles_selected_command()?;
 
-            // tell article list to select the next unread article (which must be there!)
-            self.message_sender.send(Message::Command(Command::In(
-                Panel::ArticleList,
-                Box::new(Command::SelectNextUnread),
-            )))?;
+            if !handle_here {
+                // tell article list to select the next unread article (which must be there!)
+                self.message_sender.send(Message::Command(Command::In(
+                    Panel::ArticleList,
+                    Box::new(Command::SelectNextUnread),
+                )))?;
+            }
         } else {
             tooltip(
                 &self.message_sender,
@@ -703,6 +705,7 @@ impl MessageReceiver for FeedList {
         let mut model_needs_update = false;
         let mut view_needs_update = false;
         let mut selection_changed = false;
+        let mut handle_here = false;
         let mut enforce_articles_selected = false;
 
         // commands
@@ -713,6 +716,7 @@ impl MessageReceiver for FeedList {
             let Some(command) = (match command {
                 C::In(Panel::FeedList, command) => {
                     handle_command = true;
+                    handle_here = true;
                     Some(*command.to_owned())
                 }
                 C::In(..) => None,
@@ -750,7 +754,7 @@ impl MessageReceiver for FeedList {
                     selection_changed = true;
                 }
                 C::SelectNextUnread if handle_command => {
-                    self.select_next_unread()?;
+                    self.select_next_unread(handle_here)?;
                     selection_changed = true;
                 }
                 C::FeedListToggleExpand => {
