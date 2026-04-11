@@ -157,7 +157,7 @@ You can change this behaviour by using the [Command Line Options](cli_args.md) `
 `startup_commands` is a list of [Commands](commands.md) which are executed when `eilmeldung` starts. For instance, on startup the feeds should be synced automatically, the article list should be selected showing all articles, set `startup_commands` to:
 
 ```toml
-startup_commands = ["sync", "focus articles", "show articles all"]
+startup_commands = ["sync", "focus articles", "in articles show all"]
 ```
 
 You can use any command in `startup_commands`, even asynchronous ones. A popup will appear to show you the progress of operations.
