@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.4.2 - 2026-04-11
+
 - bugfix: *eilmeldung* sometimes freezed when trying to select the next unread item
 
 # 1.4.1 - 2026-04-07
