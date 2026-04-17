@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.4.3 - 2026-04-17
+
 - chore: updated dependencies
 
 # 1.4.2 - 2026-04-11
