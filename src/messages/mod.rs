@@ -22,5 +22,5 @@ pub trait MessageReceiver {
     fn process_command(
         &mut self,
         message: &Message,
-    ) -> impl std::future::Future<Output = color_eyre::Result<()>> + Send;
+    ) -> impl std::future::Future<Output = color_eyre::Result<()>>;
 }
