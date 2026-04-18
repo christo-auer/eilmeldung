@@ -1,11 +1,10 @@
 # Using an LLM as a tutor to learn rust for developing my TUI RSS reader eilmeldung (and what I tell my students) 
 
-This document explains why and how LLMs were used in the development of eilmeldung, and shares lessons learned from this experiment in learning Rust through LLM assistance.
+This document explains why and how LLMs were used in the development of [eilmeldung](https://github.com/christo-auer/eilmeldung), and shares lessons learned from this experiment in learning Rust through LLM assistance. Here is the end result:
 
-## Background
+![Screenshot of eilmeldung](images/hero-shot.png) 
 
-This project was built as an experiment in learning Rust through LLM use.
-
+eilmeldung was built as an experiment in learning Rust through LLM use.
 
 ## Some Context from My work as a Teacher
 
