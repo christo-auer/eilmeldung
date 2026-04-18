@@ -196,7 +196,7 @@ impl InputCommandGenerator {
             .iter()
             .filter(|(other_key_sequence, _)| self.key_sequence.is_prefix_of(other_key_sequence))
             .collect::<Vec<_>>();
-        prefix_matches.sort_by(|(ks_1, _), (ks_2, _)| ks_1.keys.len().cmp(&ks_2.keys.len()));
+        prefix_matches.sort_by_key(|(ks, _)| ks.keys.len());
 
         if key.is_none() && !timeout && !self.key_sequence.keys.is_empty() {
             self.generate_input_help(Some(&self.key_sequence), &prefix_matches, timeout_ratio)?;
