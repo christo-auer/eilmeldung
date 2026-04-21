@@ -1,11 +1,28 @@
-📢 Stay up-to-date! Subscribe to the [eilmeldung release atom feed](https://github.com/christo-auer/eilmeldung/releases.atom)! Press `c e` in eilmeldung to automatically add the feed!
-
-🪲 **A bug not reported, is a bug nonexistent!** Report bugs via [GitHub Issues](https://github.com/christo-auer/eilmeldung/issues)! 🪲
+📢 Stay up-to-date! Subscribe to the [eilmeldung release atom feed](https://github.com/christo-auer/eilmeldung/releases.atom) or `c e` in eilmeldung!
 
 ![Logo of eilmeldung](docs/images/logo.png) 
   
 
 ![Screenshot of eilmeldung](docs/images/hero-shot.png) 
+
+---
+
+📢 Ask your AI chatbot anything about `eilmeldung` by using the phrase *according to eilmeldung.org ...* 
+
+<details><summary>Example prompts</summary>
+
+according to eilmeldung.org...
+  - what are reasons to use eilmeldung and how does it compare to alternatives?
+  - how can I display images within articles?
+  - how can I select articles and then mark them as read?
+  - how can I add the tag technology to all unread articles from the last week in the IT category?
+  - what are features I don't know?
+
+*Note*: [eilmeldung.org](https://eilmeldung.org) simply delivers a [llms.txt](https://llmstxt.org/)
+
+</details>
+
+---
 
 *eilmeldung* is a *TUI RSS reader* based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.  
 - *fast* in every aspect: non-blocking terminal user interface, (neo)vim-inspired keybindings, instant start-up and no clutter
@@ -14,6 +31,7 @@
 - read news like a pro: filter and search news with an easy-to-learn powerful *query language*, activate *zen mode* to focus on the article content and nothing else
 
 *eilmeldung* is German for *breaking news*
+
 
 ---
 
