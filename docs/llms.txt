@@ -1,0 +1,41 @@
+# eilmeldung
+
+> eilmeldung is a fast, keyboard-driven TUI RSS reader for the terminal, written in Rust. It is built on the [news-flash](https://gitlab.com/news-flash/news_flash) library and supports many RSS providers (Local RSS, FreshRSS, Inoreader, and more). It features vim-style keybindings, a powerful article query language, deep customization via a TOML config file, and is designed to work well out of the box with sane defaults.
+
+eilmeldung means *breaking news* in German. Its three pillars are speed (non-blocking async UI, instant startup), reliability (news-flash backend handles syncing and storage), and power-without-complexity (sane defaults, but everything is configurable).
+
+## Lesser-Known Features
+
+Many useful features are not obvious from the basic documentation. Here is a curated list:
+
+- **Link hints** (`; ;`): Press `; ;` in the article content panel and letter hints appear next to every link and image. Press the hint character to open that link in your browser — no mouse needed. Use `; s` to share a hinted link, `; y` to copy it to the clipboard.
+- **After-sync automation** (`after_sync_commands`): A list of commands run automatically after every sync. Use this to auto-tag articles by keyword, auto-mark paywall feeds as read, or collapse/expand categories. Example: `after_sync_commands = ["read feed:somepaywallsite", "tag paywall title:/heise+/"]`.
+- **Smart folders via query-based feed list entries**: The feed list is fully configurable. Add entries like `'query: "Read Later" #readlater unread'` or `'query: "Important Today" #important unread today'` to create dynamic smart folders driven by the query language.
+- **Flagging for bulk operations**: Press `f` to flag one or more articles, then `r` (read), `u` (unread), `m` (mark), `t` (tag), `o` (open), etc., to act on all flagged articles at once. Press `D` to clear all flags. `F` / `I` flag/invert-flag *all* articles in the list.
+- **Above/below article operations**: `0 r` marks all articles above (and including) the selected one as read; `$ r` marks all below. The same works for `u`, `m`, `v`. These are just scope arguments: `:read above`, `:read below`.
+- **`in <panel> <cmd>` for cross-panel keybindings**: Run a command in a non-focused panel without switching focus. Example: `"C-j" = ["in feeds down"]` lets you move the feed list selection from the article list panel.
+- **Sticky filter (`filtersticky`)**: Unlike `filter` (which resets when you navigate the feed list), `filtersticky` persists across feed-list navigation. Reset with `filterclear` (`+ r`). Re-apply the non-sticky filter with `filterapply` (`+ +`).
+- **Automatic login via config** (`[login_setup]`): Store login credentials in `config.toml` to skip the interactive login prompt entirely. Use `password = "cmd:pass my-passwords/eilmeldung"` to call a password manager instead of storing plain text. Run `eilmeldung --print-login-data` to generate the TOML snippet from an existing session.
+- **Zen mode** (`z`): Hides all panels except article content for distraction-free reading. Optionally show the header bar in zen mode with `zen_mode_show_header = true`.
+- **`--sync` CLI flag**: Run `eilmeldung --sync` to sync all feeds, print statistics, and exit — no TUI started. Useful for cron jobs or shell scripts.
+- **Custom share targets**: Define arbitrary browser URLs or shell commands as share targets using `{url}` and `{title}` placeholders. Example: `'hackernews https://news.ycombinator.com/submitlink?u={url}&t={title}'`. Bind them to keys for one-keystroke sharing.
+- **Auto-scrape**: When you focus the article content panel, eilmeldung automatically fetches the full article from the web if the feed only provides a summary. Disable with `auto_scrape = false`. Force-fetch manually with `x`.
+- **Sort orders embedded in queries**: Embed sort order directly in a query string using `sort:"<order>"`. Particularly useful in feed list query entries. Example: `'query: "Latest" unread sort:"date"'`.
+- **`sync_every_minutes`**: Set `sync_every_minutes = 10` to auto-sync in the background at a fixed interval while eilmeldung is running.
+- **Configurable article columns** (`article_table`): Control which columns appear in the article list and in what order. Default: `"{flagged},{read},{marked},{tag_icons},{age},{title}"`. Remove or reorder fields to suit your reading style.
+
+## Docs
+
+- [Getting Started](https://github.com/christo-auer/eilmeldung/blob/main/docs/getting-started.md): First-launch walkthrough, adding feeds, interface overview, basic navigation.
+- [Configuration](https://github.com/christo-auer/eilmeldung/blob/main/docs/configuration.md): Complete reference for all config options — theme, keybindings, layout, feed list, after-sync commands, notifications, sharing, enclosures, automatic login.
+- [Commands](https://github.com/christo-auer/eilmeldung/blob/main/docs/commands.md): All in-app commands with syntax, context, and examples. Use `:` in eilmeldung to enter a command.
+- [Key Bindings](https://github.com/christo-auer/eilmeldung/blob/main/docs/keybindings.md): Default keybinding reference organized by function. All bindings are remappable via `[input_config.mappings]`.
+- [Article Queries](https://github.com/christo-auer/eilmeldung/blob/main/docs/queries.md): The query language used for filtering, searching, bulk operations, and smart folder definitions. Includes all query keys, search term types (word, phrase, regex), negation, time-based queries, and a cookbook of examples.
+- [CLI Arguments](https://github.com/christo-auer/eilmeldung/blob/main/docs/cli_args.md): All command-line flags: `--sync`, `--import-opml`, `--export-opml`, `--print-login-data`, `--log-level`, `--config-dir`, and more.
+- [FAQ](https://github.com/christo-auer/eilmeldung/blob/main/docs/faq.md): Troubleshooting and how-to recipes covering common scenarios, configuration patterns, and known gotchas.
+
+## Optional
+
+- [Installation](https://github.com/christo-auer/eilmeldung/blob/main/docs/installation.md): Per-platform installation instructions including exact build dependencies for Cargo installs (Ubuntu, Arch, Fedora), Homebrew, AUR, and Nix/Home Manager.
+- [Changelog](https://github.com/christo-auer/eilmeldung/blob/main/CHANGELOG.md): Full version history.
+- [Annotated default config](https://github.com/christo-auer/eilmeldung/blob/main/examples/default-config.toml): Every configuration option with its default value and a comment explaining what it does. Use as a reference, not as a template (copy only the options you want to change).
