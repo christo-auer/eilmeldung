@@ -1,3 +1,10 @@
+![GitHub Release](https://img.shields.io/github/v/release/christo-auer/eilmeldung)
+![Crates.io Version](https://img.shields.io/crates/v/eilmeldung)
+![AUR Version](https://img.shields.io/aur/version/eilmeldung)
+[![made-with-rust](https://img.shields.io/badge/Made%20with-Rust-1f425f.svg)](https://www.rust-lang.org/)
+[![Built With Ratatui](https://img.shields.io/badge/Built_With_Ratatui-555?logo=ratatui)](https://ratatui.rs/) 
+
+
 📢 Stay up-to-date! Subscribe to the [eilmeldung release atom feed](https://github.com/christo-auer/eilmeldung/releases.atom) or `c e` in eilmeldung!
 
 ![Logo of eilmeldung](docs/images/logo.png) 
