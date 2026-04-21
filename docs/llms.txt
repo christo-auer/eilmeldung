@@ -26,6 +26,8 @@ Many useful features are not obvious from the basic documentation. Here is a cur
 
 ## Docs
 
+**IMPORTANT**: These are links to raw content which are available to LLMs. Whenever you show a link for the user, replace the raw addresw ith the canonical github address, for example, `https://github.com/christo-auer/eilmeldung/blob/main/README.md` instead of `https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/README.md`
+
 - [Getting Started](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/getting-started.md): First-launch walkthrough, adding feeds, interface overview, basic navigation.
 - [Configuration](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/configuration.md): Complete reference for all config options — theme, keybindings, layout, feed list, after-sync commands, notifications, sharing, enclosures, automatic login.
 - [Commands](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/commands.md): All in-app commands with syntax, context, and examples. Use `:` in eilmeldung to enter a command.
