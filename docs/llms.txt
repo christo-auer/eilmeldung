@@ -26,16 +26,16 @@ Many useful features are not obvious from the basic documentation. Here is a cur
 
 ## Docs
 
-- [Getting Started](https://github.com/christo-auer/eilmeldung/blob/main/docs/getting-started.md): First-launch walkthrough, adding feeds, interface overview, basic navigation.
-- [Configuration](https://github.com/christo-auer/eilmeldung/blob/main/docs/configuration.md): Complete reference for all config options — theme, keybindings, layout, feed list, after-sync commands, notifications, sharing, enclosures, automatic login.
-- [Commands](https://github.com/christo-auer/eilmeldung/blob/main/docs/commands.md): All in-app commands with syntax, context, and examples. Use `:` in eilmeldung to enter a command.
-- [Key Bindings](https://github.com/christo-auer/eilmeldung/blob/main/docs/keybindings.md): Default keybinding reference organized by function. All bindings are remappable via `[input_config.mappings]`.
-- [Article Queries](https://github.com/christo-auer/eilmeldung/blob/main/docs/queries.md): The query language used for filtering, searching, bulk operations, and smart folder definitions. Includes all query keys, search term types (word, phrase, regex), negation, time-based queries, and a cookbook of examples.
-- [CLI Arguments](https://github.com/christo-auer/eilmeldung/blob/main/docs/cli_args.md): All command-line flags: `--sync`, `--import-opml`, `--export-opml`, `--print-login-data`, `--log-level`, `--config-dir`, and more.
-- [FAQ](https://github.com/christo-auer/eilmeldung/blob/main/docs/faq.md): Troubleshooting and how-to recipes covering common scenarios, configuration patterns, and known gotchas.
+- [Getting Started](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/getting-started.md): First-launch walkthrough, adding feeds, interface overview, basic navigation.
+- [Configuration](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/configuration.md): Complete reference for all config options — theme, keybindings, layout, feed list, after-sync commands, notifications, sharing, enclosures, automatic login.
+- [Commands](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/commands.md): All in-app commands with syntax, context, and examples. Use `:` in eilmeldung to enter a command.
+- [Key Bindings](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/keybindings.md): Default keybinding reference organized by function. All bindings are remappable via `[input_config.mappings]`.
+- [Article Queries](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/queries.md): The query language used for filtering, searching, bulk operations, and smart folder definitions. Includes all query keys, search term types (word, phrase, regex), negation, time-based queries, and a cookbook of examples.
+- [CLI Arguments](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/cli_args.md): All command-line flags: `--sync`, `--import-opml`, `--export-opml`, `--print-login-data`, `--log-level`, `--config-dir`, and more.
+- [FAQ](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/faq.md): Troubleshooting and how-to recipes covering common scenarios, configuration patterns, and known gotchas.
 
 ## Optional
 
-- [Installation](https://github.com/christo-auer/eilmeldung/blob/main/docs/installation.md): Per-platform installation instructions including exact build dependencies for Cargo installs (Ubuntu, Arch, Fedora), Homebrew, AUR, and Nix/Home Manager.
-- [Changelog](https://github.com/christo-auer/eilmeldung/blob/main/CHANGELOG.md): Full version history.
-- [Annotated default config](https://github.com/christo-auer/eilmeldung/blob/main/examples/default-config.toml): Every configuration option with its default value and a comment explaining what it does. Use as a reference, not as a template (copy only the options you want to change).
+- [Installation](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/installation.md): Per-platform installation instructions including exact build dependencies for Cargo installs (Ubuntu, Arch, Fedora), Homebrew, AUR, and Nix/Home Manager.
+- [Changelog](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/CHANGELOG.md): Full version history.
+- [Annotated default config](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/examples/default-config.toml): Every configuration option with its default value and a comment explaining what it does. Use as a reference, not as a template (copy only the options you want to change).
