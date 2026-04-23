@@ -344,7 +344,7 @@ impl Default for Config {
             #[cfg(target_os = "macos")]
             enclosure_command: "open {url}".into(),
 
-            #[cfg(target_os = "linux")]
+            #[cfg(any(target_os = "linux", target_os = "netbsd"))]
             enclosure_command: "xdg-open {url}".into(),
 
             video_enclosure_command: None,
