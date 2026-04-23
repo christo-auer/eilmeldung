@@ -103,7 +103,7 @@ It pointed out a "subtle error" on the first element my iterator produces. I pus
 
 In this particular case I was actually right and the LLM dead-wrong (*take that!*). 
 
-However, an LLM saying that you are *absolutely right* doesn't mean that you are actually right. This is the typical double-catch you encounter due to its sycophantic behavior. So how can I tell when I am right or when the LLM is right? The answer is: you can't! For an inexperienced learner this is bad news, right? No, I don't think so. Students should *embrace this behavior*: go with the instinct or a your first gut feeling and when, later on, things fall apart and you *see* why you (or the LLM) was wrong then, well, then you have actually *learned* something.
+However, an LLM saying that you are *absolutely right* doesn't mean that you are actually right. This is the typical double-catch you encounter due to its sycophantic behavior. So how can I tell when I am right or when the LLM is right? The answer is: you can't! For an inexperienced learner this is bad news, right? No, I don't think so. Students should *embrace this behavior*: go with your instinct or with your gut feeling and when, later on, things fall apart and you *see* why you (or the LLM) was wrong then, well, then you have actually *learned* something.
 
 On this topic, I had a "discussion" about using macros in a certain situation: I defined a macro for implementing several methods and the LLM told me its overkill. I pushed back and said I want to keep it and see if this approach scales. The LLM actually put it well:
 
