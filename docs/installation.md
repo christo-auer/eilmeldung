@@ -150,6 +150,14 @@ echo "repository=https://raw.githubusercontent.com/Event-Horizon-VL/blackhole-vl
 
 ---
 
+## NetBSD
+
+Thanks @0323pin
+
+```bash
+pkgin install eilmeldung
+```
+
 ## Next Steps
 
 After installation, see the [Getting Started Guide](getting-started.md) to set up and configure eilmeldung.
