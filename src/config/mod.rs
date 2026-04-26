@@ -347,6 +347,9 @@ impl Default for Config {
             #[cfg(any(target_os = "linux", target_os = "netbsd"))]
             enclosure_command: "xdg-open {url}".into(),
 
+            #[cfg(target_os = "windows")]
+            enclosure_command: "cmd /c start {url}".into(),
+
             video_enclosure_command: None,
             audio_enclosure_command: None,
             image_enclosure_command: None,

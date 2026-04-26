@@ -1,5 +1,10 @@
 # Unreleased
 
+- NetBSD support thanks to @0323pin 
+  - compilation option for `xdg-open`
+  - installation instructions
+- preparation for Windows support (just `enclosure_command` for now) thanks to @azinsharaf
+
 # 1.4.3 - 2026-04-17
 
 - chore: updated dependencies
