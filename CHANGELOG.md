@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.4.4 - 2026-04-26
+
 - NetBSD support thanks to @0323pin 
   - compilation option for `xdg-open`
   - installation instructions
