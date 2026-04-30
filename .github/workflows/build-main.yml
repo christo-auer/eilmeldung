@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -235,4 +236,67 @@ jobs:
         with:
           name: eilmeldung-${{ matrix.target }}-latest
           path: package/eilmeldung-${{ matrix.target }}-latest.tar.gz
+          retention-days: 30
+
+
+  build_windows:
+    name: Build x86_64-pc-windows-msvc
+    runs-on: windows-latest
+    needs: [lint, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.2
+
+      - name: Install vcpkg dependencies
+        run: vcpkg install libxml2:x64-windows-static sqlite3:x64-windows-static
+        shell: pwsh
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache cargo registry
+        uses: actions/cache@v5.0.3
+        with:
+          path: ~\.cargo\registry
+          key: windows-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: windows-cargo-registry-
+
+      - name: Cache cargo index
+        uses: actions/cache@v5.0.3
+        with:
+          path: ~\.cargo\git
+          key: windows-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: windows-cargo-git-
+
+      - name: Build release binary
+        run: cargo build --release --target x86_64-pc-windows-msvc
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+          VCPKG_ROOT: C:\vcpkg
+          VCPKGRS_DYNAMIC: "0"
+          PKG_CONFIG_PATH: C:\vcpkg\installed\x64-windows-static\lib\pkgconfig
+          CMAKE_TOOLCHAIN_FILE: C:\vcpkg\scripts\buildsystems\vcpkg.cmake
+          VCPKG_TARGET_TRIPLET: x64-windows-static
+          OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
+
+      - name: Create package directory
+        run: |
+          mkdir -p package/eilmeldung
+          cp target/x86_64-pc-windows-msvc/release/eilmeldung.exe package/eilmeldung/
+          cp -r examples package/eilmeldung/
+        shell: bash
+
+      - name: Create archive
+        run: |
+          cd package
+          tar -czf eilmeldung-x86_64-pc-windows-msvc-latest.tar.gz eilmeldung/
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: eilmeldung-x86_64-pc-windows-msvc-latest
+          path: package/eilmeldung-x86_64-pc-windows-msvc-latest.tar.gz
           retention-days: 30
