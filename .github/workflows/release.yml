@@ -380,7 +380,7 @@ jobs:
             ./artifacts/**/eilmeldung-*.tar.gz
 
   hashes-bump:
-      name: Updating Hashes (nix and homebrew)
+      name: Updating Hashes (nix, homebrew and scoop)
       runs-on: ubuntu-latest
       needs: release-github
       permissions:
@@ -415,11 +415,12 @@ jobs:
       - name: Update hashes, commit and push
         run: |
           ./HomebrewFormula/update-sha.sh ${{ steps.tag.outputs.TAG_NAME }}
+          ./ScoopBucket/update-sha.sh ${{ steps.tag.outputs.TAG_NAME }}
           sed -i 's|hash = "sha256-.*";|hash = "${{ steps.hash.outputs.HASH }}";|' flake.nix
           git config user.email "${{ vars.GIT_USER_EMAIL }}"
           git config user.name "${{ vars.GIT_USER_NAME }}"
-          git add ./HomebrewFormula/eilmeldung.rb flake.nix
-          git commit -m "chore: update SHA256 in homebrew formula"
+          git add ./HomebrewFormula/eilmeldung.rb ./ScoopBucket/eilmeldung.json flake.nix
+          git commit -m "chore: update SHA256 values"
           git push origin main
 
   aur-publish:

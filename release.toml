@@ -9,5 +9,7 @@ pre-release-replacements = [
   {file="HomebrewFormula/eilmeldung.rb", search="version .*", replace="version \"{{version}}\""},
   {file="HomebrewFormula/eilmeldung.rb", search="sha256 .*", replace="sha256 \"replaced by CI on release of {{version}}\""},
   {file="HomebrewFormula/eilmeldung.rb", search="tags/[0-9.]+", replace="tags/{{version}}."},
+  {file="ScoopBucket/eilmeldung.json", search="download/[0-9.]+/", replace="download/{{version}}/"},
+  {file="ScoopBucket/eilmeldung.json", search="msvc-[0-9.]+", replace="msvc-{{version}}."},
 ]
 

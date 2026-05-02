@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ -z "$1"]; then
+if [ -z "$1" ]; then
   echo "missing argument: tag expected"
   exit 1
 fi
