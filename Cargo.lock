@@ -3922,7 +3922,7 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 [[package]]
 name = "news-flash"
 version = "3.0.1"
-source = "git+https://gitlab.com/christo-auer/news_flash#761a5e28d6b2cfad7a2c3294281f2cf528987acc"
+source = "git+https://gitlab.com/christo-auer/news_flash#89436bd7ee4256b348990f7087547db6a85a6ec7"
 dependencies = [
  "ammonia",
  "article_scraper",
