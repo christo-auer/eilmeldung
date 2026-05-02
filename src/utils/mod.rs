@@ -2,11 +2,8 @@ use ratatui::{
     style::{Modifier, Style},
     text::{Line, Span, Text},
 };
-#[cfg(unix)]
-use std::os::unix::io::{AsRawFd, RawFd};
 
 pub mod prelude {
-    #[cfg(unix)]
     pub use super::StderrRedirect;
     pub use super::html_sanitize;
     pub use super::lex_ordering;
@@ -29,21 +26,17 @@ pub fn to_bubble<'a>(span: Span<'a>) -> Line<'a> {
     ])
 }
 
-/// A RAII guard that redirects stderr to /dev/null for the duration of its lifetime.
-/// On Unix systems, this temporarily suppresses stderr output from C libraries.
-/// Stderr is automatically restored when the guard is dropped.
-#[cfg(unix)]
+/// A RAII guard that redirects stderr to /dev/null or NUL for the duration of its lifetime. this
+/// temporarily suppresses stderr output from C libraries. Stderr is automatically restored when the
+/// guard is dropped.
 pub struct StderrRedirect {
-    saved_stderr: RawFd,
+    saved_stderr: libc::c_int,
 }
 
-#[cfg(unix)]
 impl StderrRedirect {
     /// Create a new stderr redirect, saving the current stderr and redirecting it to /dev/null.
     /// Returns None if the redirection fails.
     pub fn new() -> Option<Self> {
-        use std::fs::OpenOptions;
-
         unsafe {
             // Save the current stderr file descriptor
             let saved_stderr = libc::dup(2);
@@ -52,12 +45,24 @@ impl StderrRedirect {
                 return None;
             }
 
-            // Open /dev/null for writing
-            let devnull = OpenOptions::new().write(true).open("/dev/null").ok()?;
+            // Open the null device — /dev/null on Unix, NUL on Windows — using
+            // libc::open on both platforms to get a CRT-level fd directly.
+            let null_path = if cfg!(windows) { c"NUL" } else { c"/dev/null" };
+            let devnull_fd = libc::open(null_path.as_ptr(), libc::O_WRONLY);
 
-            // Redirect stderr to /dev/null
-            if libc::dup2(devnull.as_raw_fd(), 2) == -1 {
-                log::warn!("Failed to redirect stderr to /dev/null");
+            if devnull_fd == -1 {
+                log::warn!("Failed to open null device");
+                libc::close(saved_stderr);
+                return None;
+            }
+
+            // Redirect stderr to the null device
+            let result = libc::dup2(devnull_fd, 2);
+            // Close our copy — fd 2 now independently refers to the null device
+            libc::close(devnull_fd);
+
+            if result == -1 {
+                log::warn!("Failed to redirect stderr to null device");
                 libc::close(saved_stderr);
                 return None;
             }
@@ -67,7 +72,6 @@ impl StderrRedirect {
     }
 }
 
-#[cfg(unix)]
 impl Drop for StderrRedirect {
     fn drop(&mut self) {
         unsafe {

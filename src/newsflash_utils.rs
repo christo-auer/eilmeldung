@@ -181,7 +181,6 @@ impl NewsFlashUtils {
         start_event: Event::AsyncArticleFatFetch,
         operation: let fat_article = {
             // Temporarily redirect stderr to suppress libxml xpath errors that would mess up the TUI
-            #[cfg(unix)]
             let _stderr_redirect = crate::utils::prelude::StderrRedirect::new();
             
             news_flash
