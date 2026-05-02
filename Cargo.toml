@@ -37,6 +37,7 @@ indexmap = { version = "2.14.0", features = ["serde"] }
 inquire = "0.9.4"
 itertools = "0.14.0"
 libc = "0.2"
+libsqlite3-sys = { version = "0.37", features = ["bundled-full"] }
 log = "0.4.29"
 logos = "0.16.1"
 news-flash = { git="https://gitlab.com/christo-auer/news_flash", features = ["image-downloader"] }

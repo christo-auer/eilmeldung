@@ -249,7 +249,7 @@ jobs:
         uses: actions/checkout@v6.0.2
 
       - name: Install vcpkg dependencies
-        run: vcpkg install libxml2:x64-windows-static sqlite3:x64-windows-static
+        run: vcpkg install libxml2:x64-windows-static
         shell: pwsh
 
       - name: Setup Rust toolchain
