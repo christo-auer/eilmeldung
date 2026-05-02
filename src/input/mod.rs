@@ -57,7 +57,7 @@ impl MessageReceiver for InputCommandGenerator {
     async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
         match message {
             Message::Command(Command::HelpInput) => self.show_help_input(),
-            Message::Event(Event::Key(key_event)) => {
+            Message::Event(Event::Key(key_event)) if key_event.is_press() => {
                 self.process_key_event(Some((*key_event).into()))
             }
             Message::Event(Event::Tick) => self.process_key_event(None),
