@@ -159,6 +159,8 @@ echo "repository=https://raw.githubusercontent.com/Event-Horizon-VL/blackhole-vl
 
 ---
 
+## Windows via Scoop
+
 Install [scoop](https://scoop.sh/) and then
 
 ```
