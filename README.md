@@ -79,7 +79,11 @@ This video demonstrates
 - **Arch (AUR)**: `paru -S eilmeldung` or `yay -S eilmeldung`
 - **Scoop** (Windows): 
 ```
+<<<<<<< windows-build
+  scoop bucket add eilmeldung https://github.com/christo-auer/eilmeldung
+=======
   scoop bucket add eilmeldung https://github.com/christo-auer/scoop-eilmeldung
+>>>>>>> main
   scoop install eilmeldung
   ```
 - **Cargo**: `cargo install eilmeldung` (you need to install [build dependencies](docs/installation.md) first!)
