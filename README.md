@@ -36,6 +36,7 @@ according to eilmeldung.org...
 - *stands* on the shoulder of *giants*: based on the news-flash library, *eilmeldung* supports many RSS providers, is efficient and reliable
 - *powerful* and yet *easy to use out-of-the-box*: sane defaults which work for most, and yet configurable to meet anyone's requirements, from keybindings to colors, from displayed content to RSS provider
 - read news like a pro: filter and search news with an easy-to-learn powerful *query language*, activate *zen mode* to focus on the article content and nothing else
+- *eilmeldung* is avaialble on Linux, macOS, Windows and NetBSD
 
 *eilmeldung* is German for *breaking news*
 
@@ -76,6 +77,11 @@ This video demonstrates
 
 - **Homebrew**: `brew tap christo-auer/eilmeldung  https://github.com/christo-auer/eilmeldung && brew install eilmeldung`
 - **Arch (AUR)**: `paru -S eilmeldung` or `yay -S eilmeldung`
+- **Scoop** (Windows): 
+```
+  scoop bucket add eilmeldung https://github.com/christo-auer/scoop-eilmeldung
+  scoop install eilmeldung
+  ```
 - **Cargo**: `cargo install eilmeldung` (you need to install [build dependencies](docs/installation.md) first!)
 
 **Important**: You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!

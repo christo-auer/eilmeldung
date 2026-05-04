@@ -23,9 +23,13 @@ See [news_flash_gtk for all supported providers](https://gitlab.com/news-flash/n
 
 *eilmeldung* is German for *breaking news*.
 
-### Do I need a Nerd Font?
+### Some symbols look weird (question marks)?
 
-Yes, you need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly. Without it, some icons may appear as boxes or question marks.
+You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly. Without it, some icons may appear as boxes or question marks.
+
+### What terminal emulator should I use for Windows?
+
+Use [Windows Terminal](https://github.com/microsoft/terminal) with a NerdFont-patched font.
 
 ---
 

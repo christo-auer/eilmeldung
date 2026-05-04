@@ -7,17 +7,26 @@ Follow any of the installation methods below, then run *eilmeldung*. It will gui
 ## Table of Contents
 
 - [Important: Nerd Fonts](#important-nerd-fonts)
+- [Manual Installation](#manual-installation)
 - [Via Homebrew](#via-homebrew)
 - [Via AUR (Arch)](#via-aur-arch)
 - [Via Cargo](#via-cargo)
 - [Nix Flake and Home Manager](#nix-flake-and-home-manager)
-- [Void LInux](#void-linux)
+- [Void Linux](#void-linux)
+- [Windows via Scoop](#windows-via-scoop)
+- [NetBSD](#netbsd)
 
 ---
 
 ## Important: Nerd Fonts
 
 You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!
+
+---
+
+## Manual Installation
+
+Go to [Latest Releases](https://github.com/christo-auer/eilmeldung/releases/latest), pick the according archive, extract and execute the `eilmeldung` binary.
 
 ---
 
@@ -147,6 +156,17 @@ Via an unoffical repository:
 ```bash
 echo "repository=https://raw.githubusercontent.com/Event-Horizon-VL/blackhole-vl/repository-x86_64" | sudo tee /etc/xbps.d/20-repository-extra.conf && sudo xbps-install -S eilmeldung
 ```
+
+---
+
+Install [scoop](https://scoop.sh/) and then
+
+```
+  scoop bucket add eilmeldung https://github.com/christo-auer/scoop-eilmeldung
+  scoop install eilmeldung
+```
+
+Recommended terminal is [Windows Terminal](https://github.com/microsoft/terminal) with a NerdFont-patched font.
 
 ---
 

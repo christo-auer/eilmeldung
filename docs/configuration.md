@@ -42,11 +42,12 @@
 ### eilmeldung Configuration File
 **eilmeldung** tries the following locations for `config.toml` in order:
 
-- `$XDG_CONFIG_HOME/eilmeldung/config.toml` on Linux **and** macos
-- if this doesn't exist: `$HOME/.config/eilmeldung/config.toml` 
-- if this doesn't exist
+- if environment variable `XDG_CONFIG_HOME` is defined `$XDG_CONFIG_HOME/eilmeldung/config.toml` (this variable is usually defined for Linux/Unix and macOS)
+- else: `$HOME/.config/eilmeldung/config.toml` on all OSes
+- else:
   - Linux: default config is used
   - macos: `~/Library/Application Support/org.christo-auer.eilmeldung/config.toml`
+  - Windows: `{FOLDERID_RoamingAppData}/christo-auer/eilmeldung/config` which is usually `%HOME%/AppData/Roaming/christo-auer/eilmeldung/config/config.toml`
 - if none of the above exists, the default configuration is used
 
 You can overwrite this behavior by using the `--config-dir <PATH>` [Command Line Option](cli_args.md) which takes precedence over all.
@@ -55,13 +56,15 @@ You can overwrite this behavior by using the `--config-dir <PATH>` [Command Line
 
 news-flash configuration files (`newsflash.json` and authentication files) are stored in:
 
-- Linux: `$XDG_CONFIG_HOME/eilmeldung` (which is usually `~/.config/eilmeldung`)
+- Linux/Unix: `$XDG_CONFIG_HOME/eilmeldung` (which is usually `~/.config/eilmeldung`)
 - macos: `~/Library/Application Support/org.christo-auer.eilmeldung`
+- Windows: `{FOLDERID_RoamingAppData}/christo-auer/eilmeldung/config` which is usually `%HOME%/AppData/Roaming/christo-auer/eilmeldung/config`
 
 news-flash local database and caches are stored in:
 
-- Linux: `$XDG_DATA_HOME/eilmeldung` which is usually (`~/.local/state/eilmeldung`)
+- Linux/Unix: `$XDG_DATA_HOME/eilmeldung` which is usually (`~/.local/state/eilmeldung`)
 - macos: `~/Library/Application Support/org.christo-auer.eilmeldung`
+- Windows: `{FOLDERID_RoamingAppData}/christo-auer/eilmeldung/data` which is usually `%HOME%/AppData/Roaming/christo-auer/eilmeldung/data`
 
 You can change this behaviour by using the [Command Line Options](cli_args.md) `--news-flash-config-dir` and `--news-flash-state-dir`
 
