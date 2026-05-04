@@ -3328,9 +3328,9 @@ dependencies = [
 
 [[package]]
 name = "kuchikikiki"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5da435798cb61709158341550630ffee2b5e0714670e3627a46a7192cfe9dd9"
+checksum = "3cb6fe49f2d2600e2ddcbaca08fe52fda29d46a7c21b3e9ed6b210f6b4d6067d"
 dependencies = [
  "bitflags 2.11.1",
  "crc",
@@ -3921,8 +3921,9 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "news-flash"
-version = "3.0.1"
-source = "git+https://gitlab.com/christo-auer/news_flash#89436bd7ee4256b348990f7087547db6a85a6ec7"
+version = "3.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06d2718322d9782d9d8319ea5817aea3471840a428f0dbe5c7120386c93adbb5"
 dependencies = [
  "ammonia",
  "article_scraper",
@@ -5816,9 +5817,9 @@ dependencies = [
 
 [[package]]
 name = "selectors"
-version = "0.36.1"
+version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5d9c0c92a92d33f08817311cf3f2c29a3538a8240e94a6a3c622ce652d7e00c"
+checksum = "2cfaaa6035167f0e604e42723c7650d59ee269ef220d7bbe0565602c8a0173b9"
 dependencies = [
  "bitflags 2.11.1",
  "cssparser 0.36.0",
