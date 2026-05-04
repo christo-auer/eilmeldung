@@ -1,5 +1,15 @@
 # Unreleased
 
+🪟 Windows is now supported! 
+- Download the release Windows binary or use [scoop](https://scoop.sh) to install
+```
+scoop bucket add eilmeldung https://github.com/christo-auer/eilmeldung
+scoop install eilmeldung
+```
+- `eilmeldung` should run well using [Windows Terminal](https://github.com/microsoft/terminal) with a NerdFont-patched font
+- Thanks to @azinsharaf for the initial research, support and testing and to @jangernert for the quick release of a new news-flash version!
+- Naturally the Windows port is not yet tested as well as the Linux or macOS versions. So please report any bugs you may encounter!
+
 # 1.4.4 - 2026-04-26
 
 - NetBSD support thanks to @0323pin 
