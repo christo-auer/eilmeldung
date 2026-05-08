@@ -5,7 +5,7 @@
 [![Built With Ratatui](https://img.shields.io/badge/Built_With_Ratatui-555?logo=ratatui)](https://ratatui.rs/) 
 
 
-📢 Stay up-to-date! Subscribe to the [eilmeldung release atom feed](https://github.com/christo-auer/eilmeldung/releases.atom) or `c e` in eilmeldung!
+📢 Stay up-to-date! Subscribe to the [eilmeldung release atom feed](https://github.com/christo-auer/eilmeldung/releases.atom) or press `c e` in eilmeldung!
   
 
 ![Screenshot of eilmeldung](docs/images/hero-shot.png) 
@@ -34,7 +34,7 @@ according to eilmeldung.org...
 - *stands* on the shoulder of *giants*: based on the news-flash library, *eilmeldung* supports many RSS providers, is efficient and reliable
 - *powerful* and yet *easy to use out-of-the-box*: sane defaults which work for most, and yet configurable to meet anyone's requirements, from keybindings to colors, from displayed content to RSS provider
 - read news like a pro: filter and search news with an easy-to-learn powerful *query language*, activate *zen mode* to focus on the article content and nothing else
-- *eilmeldung* is avaialble on Linux, macOS, Windows and NetBSD
+- *eilmeldung* is available on Linux, macOS, Windows and NetBSD
 
 *eilmeldung* is German for *breaking news*
 
