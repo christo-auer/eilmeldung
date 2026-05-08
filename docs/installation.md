@@ -64,7 +64,7 @@ In order to compile `eilmeldung` from source, you need `cargo` with a `rust` com
 | Arch         | `# pacman -S cargo base-devel clang perl libxml2 openssl libsixel sqlite3`                             |
 
 ```bash
-cargo install eilmeldung
+cargo install eilmeldung --locked
 ```
 To compile the latest unreleased version (`HEAD` in `main`):
 ```bash
