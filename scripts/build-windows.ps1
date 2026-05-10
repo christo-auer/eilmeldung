@@ -91,7 +91,7 @@ if (-not (Test-Path $vcpkgExe)) {
 # ---------------------------------------------------------------------------
 # Install libxml2 static if not present
 # ---------------------------------------------------------------------------
-$libxmlLib = Join-Path $VcpkgRoot "installed\x64-windows-static\lib\xml2.lib"
+$libxmlLib = Join-Path $VcpkgRoot "installed\x64-windows-static\lib\libxml2.lib"
 
 if (-not (Test-Path $libxmlLib)) {
     Write-Host "libxml2 static not found -- installing via vcpkg (this may take several minutes)..."
