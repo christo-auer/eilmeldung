@@ -1,4 +1,5 @@
 use std::{
+    env,
     process::{Command, Stdio},
     str::FromStr,
 };
@@ -50,6 +51,50 @@ pub enum Secret {
     Command(Vec<String>),
 }
 
+/// Expands `%VAR%` style environment variables on Windows.
+/// On non-Windows platforms the string is returned unchanged.
+fn expand_env_vars(s: &str) -> String {
+    #[cfg(target_os = "windows")]
+    {
+        let mut result = String::with_capacity(s.len());
+        let mut chars = s.chars().peekable();
+        while let Some(c) = chars.next() {
+            if c == '%' {
+                let mut var_name = String::new();
+                let mut closed = false;
+                for inner in chars.by_ref() {
+                    if inner == '%' {
+                        closed = true;
+                        break;
+                    }
+                    var_name.push(inner);
+                }
+                if closed && !var_name.is_empty() {
+                    if let Ok(val) = env::var(&var_name) {
+                        result.push_str(&val);
+                    } else {
+                        // Leave unexpanded if the variable isn't set
+                        result.push('%');
+                        result.push_str(&var_name);
+                        result.push('%');
+                    }
+                } else {
+                    // Unmatched '%' — pass through literally
+                    result.push('%');
+                    result.push_str(&var_name);
+                }
+            } else {
+                result.push(c);
+            }
+        }
+        result
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        s.to_owned()
+    }
+}
+
 impl FromStr for Secret {
     type Err = ConfigError;
 
@@ -59,7 +104,10 @@ impl FromStr for Secret {
                 .trim()
                 .split_once(":")
                 .ok_or(ConfigError::SecretParseError)?;
-            Secret::Command(shell_words::split(command).map_err(|_| ConfigError::SecretParseError)?)
+            let command = expand_env_vars(command);
+            Secret::Command(
+                shell_words::split(&command).map_err(|_| ConfigError::SecretParseError)?,
+            )
         } else {
             Secret::Verbatim(s.to_owned())
         })
