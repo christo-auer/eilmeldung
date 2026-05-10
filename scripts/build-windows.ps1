@@ -1,27 +1,33 @@
 # Build eilmeldung on Windows
 #
-# This script is self-contained: it will automatically install vcpkg and
-# libxml2 if they are not already present.
-#
-# The only manual prerequisite is Perl, which is required to compile OpenSSL
-# from source. Install it via scoop or Strawberry Perl:
-#   scoop install perl
-#   https://strawberryperl.com
+# This script is self-contained: it will automatically install all required
+# dependencies (Perl, LLVM, vcpkg, libxml2) if they are not already present.
 #
 # Usage:
 #   .\scripts\build-windows.ps1
 #   .\scripts\build-windows.ps1 -PerlPath "C:\custom\perl\bin\perl.exe"
+#   .\scripts\build-windows.ps1 -LlvmBinPath "C:\custom\llvm\bin"
 #   .\scripts\build-windows.ps1 -VcpkgRoot "D:\my-vcpkg"
 #   .\scripts\build-windows.ps1 -Debug
 
 param(
-    [string]$VcpkgRoot = "$env:LOCALAPPDATA\vcpkg",
-    [string]$PerlPath  = "",
+    [string]$VcpkgRoot   = "$env:LOCALAPPDATA\vcpkg",
+    [string]$PerlPath    = "",
+    [string]$LlvmBinPath = "",
     [switch]$Debug
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+function Install-ViaScoop($pkg) {
+    if (Get-Command scoop -ErrorAction SilentlyContinue) {
+        Write-Host "$pkg not found -- installing via scoop..."
+        scoop install $pkg
+        return $true
+    }
+    return $false
+}
 
 # ---------------------------------------------------------------------------
 # Resolve Perl
@@ -38,16 +44,9 @@ if (-not $PerlPath) {
 }
 
 if (-not $PerlPath -or -not (Test-Path $PerlPath)) {
-    # Try to install via scoop if available
-    if (Get-Command scoop -ErrorAction SilentlyContinue) {
-        Write-Host "Perl not found -- installing via scoop..."
-        scoop install perl
-        # Re-detect via PATH after install
+    if (Install-ViaScoop "perl") {
         $found = Get-Command perl -ErrorAction SilentlyContinue
-        if ($found) {
-            $PerlPath = $found.Source
-            Write-Host "  Perl ready at $PerlPath"
-        }
+        if ($found) { $PerlPath = $found.Source }
     }
 }
 
@@ -61,6 +60,39 @@ Then re-run this script or pass -PerlPath 'C:\path\to\perl.exe'.
 "@
     exit 1
 }
+Write-Host "  perl  : $PerlPath"
+
+# ---------------------------------------------------------------------------
+# Resolve LLVM (required by bindgen to generate libxml2 bindings)
+# ---------------------------------------------------------------------------
+if (-not $LlvmBinPath) {
+    $candidates = @(
+        "$env:USERPROFILE\scoop\apps\llvm\current\bin",
+        "C:\Program Files\LLVM\bin",
+        (Split-Path (Get-Command clang -ErrorAction SilentlyContinue)?.Source)
+    )
+    foreach ($c in $candidates) {
+        if ($c -and (Test-Path "$c\clang.exe")) { $LlvmBinPath = $c; break }
+    }
+}
+
+if (-not $LlvmBinPath -or -not (Test-Path "$LlvmBinPath\clang.exe")) {
+    if (Install-ViaScoop "llvm") {
+        $found = Get-Command clang -ErrorAction SilentlyContinue
+        if ($found) { $LlvmBinPath = Split-Path $found.Source }
+    }
+}
+
+if (-not $LlvmBinPath -or -not (Test-Path "$LlvmBinPath\clang.exe")) {
+    Write-Error @"
+LLVM/clang not found and could not be installed automatically.
+Install it manually via:
+  scoop install llvm
+Then re-run this script or pass -LlvmBinPath 'C:\path\to\llvm\bin'.
+"@
+    exit 1
+}
+Write-Host "  llvm  : $LlvmBinPath"
 
 # ---------------------------------------------------------------------------
 # Bootstrap vcpkg if not present
@@ -71,7 +103,6 @@ if (-not (Test-Path $vcpkgExe)) {
     Write-Host "vcpkg not found at '$VcpkgRoot' -- installing..."
 
     if (Test-Path $VcpkgRoot) {
-        # Directory exists but no vcpkg.exe -- bootstrap only
         Write-Host "  Bootstrapping vcpkg..."
         & "$VcpkgRoot\bootstrap-vcpkg.bat" -disableMetrics
     } else {
@@ -114,6 +145,7 @@ $env:CMAKE_TOOLCHAIN_FILE = "$VcpkgRoot\scripts\buildsystems\vcpkg.cmake"
 $env:VCPKG_TARGET_TRIPLET = "x64-windows-static"
 $env:RUSTFLAGS            = "-C target-feature=+crt-static"
 $env:OPENSSL_SRC_PERL     = $PerlPath
+$env:LIBCLANG_PATH        = $LlvmBinPath
 
 $buildProfile = if ($Debug) { "debug" } else { "release" }
 $cargoArgs = @("build", "--target", "x86_64-pc-windows-msvc")
@@ -122,7 +154,6 @@ if (-not $Debug) { $cargoArgs += "--release" }
 Write-Host ""
 Write-Host "Building eilmeldung ($buildProfile)..."
 Write-Host "  vcpkg : $VcpkgRoot"
-Write-Host "  perl  : $PerlPath"
 Write-Host ""
 
 cargo @cargoArgs

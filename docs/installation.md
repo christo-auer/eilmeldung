@@ -84,26 +84,18 @@ rustup default stable
 rustup target add x86_64-pc-windows-msvc
 ```
 
-**Step 2 — Install Perl**
+**Step 2 — Build**
 
-Perl is required to compile OpenSSL from source. Install via scoop or [Strawberry Perl](https://strawberryperl.com):
-
-```pwsh
-scoop install perl
-```
-
-**Step 3 — Build**
-
-The helper script handles everything else automatically (cloning vcpkg, installing libxml2, setting all required environment variables):
+The helper script is fully self-contained — it automatically installs all remaining dependencies (Perl, LLVM, vcpkg, libxml2) via scoop if they are not already present:
 
 ```pwsh
 .\scripts\build-windows.ps1
 ```
 
-vcpkg is installed to `$env:LOCALAPPDATA\vcpkg` by default. If Perl or vcpkg are in non-default locations, pass them explicitly:
+vcpkg is installed to `$env:LOCALAPPDATA\vcpkg` by default. Override any paths if needed:
 
 ```pwsh
-.\scripts\build-windows.ps1 -PerlPath "C:\Users\you\scoop\apps\perl\current\perl\bin\perl.exe" -VcpkgRoot "D:\my-vcpkg"
+.\scripts\build-windows.ps1 -VcpkgRoot "D:\my-vcpkg" -PerlPath "C:\Strawberry\perl\bin\perl.exe" -LlvmBinPath "C:\Program Files\LLVM\bin"
 ```
 
 The binary will be at `target\x86_64-pc-windows-msvc\release\eilmeldung.exe`.
