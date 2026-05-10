@@ -11,6 +11,7 @@ Follow any of the installation methods below, then run *eilmeldung*. It will gui
 - [Via Homebrew](#via-homebrew)
 - [Via AUR (Arch)](#via-aur-arch)
 - [Via Cargo](#via-cargo)
+  - [Building on Windows](#building-on-windows)
 - [Nix Flake and Home Manager](#nix-flake-and-home-manager)
 - [Void Linux](#void-linux)
 - [Windows via Scoop](#windows-via-scoop)
@@ -70,6 +71,47 @@ To compile the latest unreleased version (`HEAD` in `main`):
 ```bash
 cargo install --locked --git https://github.com/christo-auer/eilmeldung
 ```
+
+### Building on Windows
+
+Windows requires a few extra steps because `libxml2` must be provided as a static library via [vcpkg](https://github.com/microsoft/vcpkg), and OpenSSL is compiled from source (requiring Perl).
+
+**Step 1 — Prerequisites (one-time setup)**
+
+Install the Rust toolchain:
+```pwsh
+winget install Rustlang.Rustup
+rustup default stable
+rustup target add x86_64-pc-windows-msvc
+```
+
+Install Perl (needed to compile OpenSSL). Either [Strawberry Perl](https://strawberryperl.com) or via scoop:
+```pwsh
+scoop install perl
+```
+
+Install vcpkg and the static libxml2:
+```pwsh
+git clone https://github.com/microsoft/vcpkg C:\vcpkg
+C:\vcpkg\bootstrap-vcpkg.bat
+C:\vcpkg\vcpkg install libxml2:x64-windows-static
+```
+
+**Step 2 — Build**
+
+Use the provided helper script, which sets all required environment variables automatically:
+```pwsh
+.\scripts\build-windows.ps1
+```
+
+If Perl or vcpkg are installed in non-default locations, pass them explicitly:
+```pwsh
+.\scripts\build-windows.ps1 -PerlPath "C:\Users\you\scoop\apps\perl\current\perl\bin\perl.exe" -VcpkgRoot "D:\vcpkg"
+```
+
+The binary will be at `target\x86_64-pc-windows-msvc\release\eilmeldung.exe`.
+
+> **Note:** The first build compiles OpenSSL from source and takes 20–30 minutes. Subsequent builds are much faster.
 
 ---
 
