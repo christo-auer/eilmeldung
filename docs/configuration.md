@@ -631,6 +631,10 @@ Configuration options with type *secret* are strings which
 - either contain the secret itself (e.g, `password = "abcd1234" `); storing password in *clear text* is **NOT RECOMMENDED**
 - or contain a command with prefix `cmd:` which outputs the secret to stdout (e.g., `password = "cmd:pass my-passwords/eilmeldung"`); **THIS IS THE WAY**
 
+For step-by-step examples of setting up secrets for FreshRSS, see:
+- [FreshRSS automatic login with pass (Linux and macOS)](examples/freshrss_secrets_linux_macos.md)
+- [FreshRSS automatic login with GPG (Windows / PowerShell)](examples/freshrss_secrets_windows.md)
+
 ### Finding the Right Settings
 
 `eilmeldung` outputs all needed values via the command line switch `--print-login-data`. If you are already logged in, it simply outputs the login data. If you are not logged in, you will be led through the interactive login process and the login data is output afterwards:
