@@ -1,6 +1,7 @@
 # Unreleased
 
 - fixed double inputs in command input and help popup under Windows
+- `show_top_bar` is **deprecated** now and the top bar is removed entirely
 
 # 1.5.0 - 2026-05-04
 

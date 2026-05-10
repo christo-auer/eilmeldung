@@ -30,14 +30,9 @@ impl App {
                 TooltipFlavor::Warning | TooltipFlavor::Error
             );
 
-        // render top bar only if option is set to true and not in zen mode
-        let render_top_bar = self.config.show_top_bar
-            && !matches!(self.state, AppState::ArticleContentDistractionFree);
-
-        let [top, middle, bottom] = Layout::default()
+        let [middle, bottom] = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(if render_top_bar { 1 } else { 0 }), // Top bar
                 Constraint::Min(0), // Middle: takes remaining space
                 Constraint::Length(if render_bottom_bar { 1 } else { 0 }), // Bottom: fixed 1 line
             ])
@@ -64,48 +59,19 @@ impl App {
                 .to_symbol_span(&self.async_operation_throbber)
         };
 
-        if render_top_bar {
-            let eilmeldung_span =
-                Span::styled("  eilmeldung  ", self.config.theme.statusbar());
-
-            // fill top line with status bar color
-            Block::default()
-                .style(self.config.theme.statusbar())
-                .render(top, buf);
-
-            let [top_left, top_main, top_right] = Layout::default()
-                .direction(Direction::Horizontal)
-                .flex(Flex::Center)
-                .constraints([
-                    Constraint::Length(1),
-                    Constraint::Min(top.width.saturating_sub(2)),
-                    Constraint::Length(1),
-                ])
-                .areas::<3>(top);
-
-            Span::styled("", self.config.theme.statusbar().not_reversed()).render(top_left, buf);
-            Span::styled("", self.config.theme.statusbar().not_reversed()).render(top_right, buf);
-
-            let title = Line::from(vec![eilmeldung_span, status_span.clone()]);
-
-            title.render(top_main, buf);
-        }
-
         if render_bottom_bar {
             // fill top line with status bar color
             Block::default()
                 .style(self.config.theme.statusbar())
                 .render(bottom, buf);
 
-            let status_icon_length = if !render_top_bar { 1 } else { 0 };
-
             let [bottom_left, bottom_main, status, bottom_right] = Layout::default()
                 .direction(Direction::Horizontal)
                 .flex(Flex::Center)
                 .constraints([
                     Constraint::Length(1),
-                    Constraint::Min(top.width.saturating_sub(2 + status_icon_length)),
-                    Constraint::Length(status_icon_length),
+                    Constraint::Min(bottom.width.saturating_sub(3)),
+                    Constraint::Length(1),
                     Constraint::Length(1),
                 ])
                 .areas::<4>(bottom);

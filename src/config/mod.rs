@@ -150,7 +150,7 @@ pub struct Config {
 
     pub mouse_support: bool,
 
-    pub show_top_bar: bool,
+    pub show_top_bar: Option<bool>,
     pub offline_icon: char,
     pub all_label: String,
     pub last_synced_label: String,
@@ -231,6 +231,12 @@ impl Config {
             ));
         }
 
+        if self.show_top_bar.is_some() {
+            warn!(
+                "configuration setting show_top_bar is deprecated and will be removed in future versions"
+            )
+        }
+
         Ok(())
     }
 
@@ -283,7 +289,7 @@ impl Default for Config {
             notify_after_sync_stats_format: SyncStatsOutputFormat::notify_default(),
             cli_sync_stats_format: SyncStatsOutputFormat::cli_default(),
 
-            show_top_bar: true,
+            show_top_bar: Some(false),
             all_label: "󱀂 All {unread_count}".into(),
             last_synced_label: " Last Synced".into(),
             feed_label: " {label} {unread_count}".into(),
