@@ -4,17 +4,19 @@
 # dependencies (Perl, LLVM, vcpkg, libxml2) if they are not already present.
 #
 # Usage:
-#   .\scripts\build-windows.ps1
+#   .\scripts\build-windows.ps1                  # build local source
+#   .\scripts\build-windows.ps1 -Install         # install latest main from GitHub
+#   .\scripts\build-windows.ps1 -Debug           # build debug binary
 #   .\scripts\build-windows.ps1 -PerlPath "C:\custom\perl\bin\perl.exe"
 #   .\scripts\build-windows.ps1 -LlvmBinPath "C:\custom\llvm\bin"
 #   .\scripts\build-windows.ps1 -VcpkgRoot "D:\my-vcpkg"
-#   .\scripts\build-windows.ps1 -Debug
 
 param(
     [string]$VcpkgRoot   = "$env:LOCALAPPDATA\vcpkg",
     [string]$PerlPath    = "",
     [string]$LlvmBinPath = "",
-    [switch]$Debug
+    [switch]$Debug,
+    [switch]$Install
 )
 
 Set-StrictMode -Version Latest
@@ -187,19 +189,25 @@ $env:OPENSSL_SRC_PERL        = $PerlPath
 $env:LIBCLANG_PATH           = $LlvmBinPath
 $env:BINDGEN_EXTRA_CLANG_ARGS = ($bindgenIncludes | ForEach-Object { "-I`"$_`"" }) -join " "
 
-$buildProfile = if ($Debug) { "debug" } else { "release" }
-$cargoArgs = @("build", "--target", "x86_64-pc-windows-msvc")
-if (-not $Debug) { $cargoArgs += "--release" }
-
-Write-Host ""
-Write-Host "Building eilmeldung ($buildProfile)..."
 Write-Host "  vcpkg : $VcpkgRoot"
 Write-Host ""
 
-cargo @cargoArgs
+if ($Install) {
+    Write-Host "Installing eilmeldung from main branch..."
+    cargo install --locked --git https://github.com/christo-auer/eilmeldung --target x86_64-pc-windows-msvc
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Write-Host ""
+    Write-Host "Installed successfully. Run 'eilmeldung' to start."
+} else {
+    $buildProfile = if ($Debug) { "debug" } else { "release" }
+    $cargoArgs = @("build", "--target", "x86_64-pc-windows-msvc")
+    if (-not $Debug) { $cargoArgs += "--release" }
 
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Write-Host "Building eilmeldung ($buildProfile)..."
+    cargo @cargoArgs
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-$binaryPath = "target\x86_64-pc-windows-msvc\$buildProfile\eilmeldung.exe"
-Write-Host ""
-Write-Host "Build successful: $binaryPath"
+    $binaryPath = "target\x86_64-pc-windows-msvc\$buildProfile\eilmeldung.exe"
+    Write-Host ""
+    Write-Host "Build successful: $binaryPath"
+}

@@ -190,6 +190,18 @@ echo "repository=https://raw.githubusercontent.com/Event-Horizon-VL/blackhole-vl
 
 ---
 
+### Installing latest main from GitHub on Windows
+
+Power users who want the latest unreleased code from `main` can use the same helper script with the `-Install` flag — it sets up all dependencies and runs `cargo install` under the hood:
+
+```pwsh
+.\scripts\build-windows.ps1 -Install
+```
+
+> **Note:** You need to clone the repo first to get the script, then run it from the repo root.
+
+---
+
 ## Windows via Scoop
 
 Install [scoop](https://scoop.sh/) and then
