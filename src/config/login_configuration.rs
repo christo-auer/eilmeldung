@@ -1,5 +1,4 @@
 use std::{
-    env,
     process::{Command, Stdio},
     str::FromStr,
 };
@@ -70,7 +69,7 @@ fn expand_env_vars(s: &str) -> String {
                     var_name.push(inner);
                 }
                 if closed && !var_name.is_empty() {
-                    if let Ok(val) = env::var(&var_name) {
+                    if let Ok(val) = std::env::var(&var_name) {
                         // Normalize backslashes to forward slashes so that
                         // shell_words::split (a POSIX parser) does not treat
                         // them as escape characters.
