@@ -15,9 +15,9 @@ pub struct LoginConfiguration {
     pub login_type: LoginType,
     pub provider: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub user: Option<String>,
+    pub user: Option<Secret>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url: Option<String>,
+    pub url: Option<Secret>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<Secret>,
@@ -222,12 +222,16 @@ impl LoginConfiguration {
             Secret::get_secret_option(self.password.as_ref())?.as_ref(),
             "password needed",
         )?;
+        let user = unwrap_or_config_error(
+            Secret::get_secret_option(self.user.as_ref())?.as_ref(),
+            "user name needed",
+        )?;
 
         Ok(LoginData::Direct(DirectLogin::Password(
             news_flash::models::PasswordLogin {
                 id: PluginID::new(&self.provider),
-                url: self.url.to_owned(),
-                user: unwrap_or_config_error(self.user.as_ref(), "user name needed")?,
+                url: Secret::get_secret_option(self.url.as_ref())?,
+                user,
                 password,
                 basic_auth: self.to_basic_auth()?,
             },
@@ -243,7 +247,7 @@ impl LoginConfiguration {
         Ok(LoginData::Direct(DirectLogin::Token(
             news_flash::models::TokenLogin {
                 id: PluginID::new(&self.provider),
-                url: self.url.to_owned(),
+                url: Secret::get_secret_option(self.url.as_ref())?,
                 token,
                 basic_auth: self.to_basic_auth()?,
             },
@@ -269,9 +273,14 @@ impl LoginConfiguration {
             }
         };
 
+        let url = unwrap_or_config_error(
+            Secret::get_secret_option(self.url.as_ref())?.as_ref(),
+            "url needed",
+        )?;
+
         Ok(LoginData::OAuth(OAuthData {
             id: PluginID::new(&self.provider),
-            url: unwrap_or_config_error(self.url.as_ref(), "url needed")?,
+            url,
             custom_api_secret: api_secret,
         }))
     }
@@ -297,8 +306,11 @@ impl LoginConfiguration {
         Self {
             login_type: LoginType::DirectPassword,
             provider: direct_login.id.as_str().to_owned(),
-            url: direct_login.url.to_owned(),
-            user: Some(direct_login.user.to_owned()),
+            url: direct_login
+                .url
+                .as_deref()
+                .map(|u| Secret::Verbatim(u.to_owned())),
+            user: Some(Secret::Verbatim(direct_login.user.to_owned())),
             password: Some(Secret::Verbatim(direct_login.password.to_owned())),
             ..Default::default()
         }
@@ -321,7 +333,10 @@ impl LoginConfiguration {
         Self {
             login_type: LoginType::DirectToken,
             provider: token_login.id.as_str().to_owned(),
-            url: token_login.url.to_owned(),
+            url: token_login
+                .url
+                .as_deref()
+                .map(|u| Secret::Verbatim(u.to_owned())),
             token: Some(Secret::Verbatim(token_login.token.to_owned())),
             ..Self::default()
         }
@@ -332,7 +347,7 @@ impl LoginConfiguration {
         Self {
             login_type: LoginType::OAuth,
             provider: oauth_data.id.as_str().to_owned(),
-            url: Some(oauth_data.url.to_owned()),
+            url: Some(Secret::Verbatim(oauth_data.url.to_owned())),
             oauth_client_id: oauth_data
                 .custom_api_secret
                 .as_ref()
@@ -352,6 +367,8 @@ impl LoginConfiguration {
 
     fn redact_secrets(self) -> Self {
         Self {
+            url: Self::redact(self.url),
+            user: Self::redact(self.user),
             password: Self::redact(self.password),
             oauth_client_secret: Self::redact(self.oauth_client_secret),
             basic_auth_password: Self::redact(self.basic_auth_password),
@@ -559,8 +576,8 @@ mod test {
         let login_configuration = LoginConfiguration {
             login_type: LoginType::DirectPassword,
             provider: "abc".to_owned(),
-            user: Some("username".to_owned()),
-            url: Some("http://www.rssprovider.com/".to_owned()),
+            user: Some(Secret::Verbatim("username".to_owned())),
+            url: Some(Secret::Verbatim("http://www.rssprovider.com/".to_owned())),
             password: Some(Secret::from_str("cmd:echo \"secret\"").unwrap()),
             token: None,
 
@@ -597,7 +614,7 @@ mod test {
             login_type: LoginType::OAuth,
             provider: "abc".to_owned(),
             user: None,
-            url: Some("http://www.rssprovider.com/".to_owned()),
+            url: Some(Secret::Verbatim("http://www.rssprovider.com/".to_owned())),
             password: None,
             token: None,
 
@@ -647,10 +664,12 @@ mod test {
         let login_configuration = LoginConfiguration {
             login_type,
             provider: "abc".to_owned(),
-            user: user.unwrap_or(Some("username")).map(str::to_owned),
+            user: user
+                .unwrap_or(Some("username"))
+                .map(|s| Secret::Verbatim(s.to_owned())),
             url: url
                 .unwrap_or(Some("http://www.rssprovider.com/"))
-                .map(str::to_owned),
+                .map(|s| Secret::Verbatim(s.to_owned())),
             password: password
                 .unwrap_or(Some("cmd:echo \"secret1\""))
                 .map(|cmd| Secret::from_str(cmd).unwrap()),
