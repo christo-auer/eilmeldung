@@ -91,7 +91,7 @@ You can change this behaviour by using the [Command Line Options](cli_args.md) `
 | `notify_after_sync`               | boolean               | If true, notifies the user about newly synced articles (see [Notify After Sync](#notify-after-sync))                                                    |
 | `notify_after_sync_cmd`           | string or none        | If defined, (shell) command which is executed after a sync, e.g., `"notify-send \"{summary}\" \"{body}\"` (see [Notify After Sync](#notify-after-sync)) |
 | `notify_after_sync_stats_format`  | sync stats definition | Format of sync stats (see [Notify After Sync](#notify-after-sync))                                                                                      |
-| `show_top_bar`                    | boolean               | Show top bar, if set to `false` the status icon is displayed at the bottom right                                                                        |
+| ~`show_top_bar`~                   | boolean               | **deprecated**, will be removed in future versions  |
 | `offline_icon`                    | char                  | Icon displayed when offline                                                                                                                             |
 | `read_icon`                       | char                  | Icon for read articles                                                                                                                                  |
 | `unread_icon`                     | char                  | Icon for unread articles                                                                                                                                |
