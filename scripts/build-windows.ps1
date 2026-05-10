@@ -42,11 +42,11 @@ if (-not $PerlPath -or -not (Test-Path $PerlPath)) {
     if (Get-Command scoop -ErrorAction SilentlyContinue) {
         Write-Host "Perl not found -- installing via scoop..."
         scoop install perl
-        # Re-detect after install
-        $scoopPerl = "$env:USERPROFILE\scoop\apps\perl\current\perl\bin\perl.exe"
-        if (Test-Path $scoopPerl) {
-            $PerlPath = $scoopPerl
-            Write-Host "  Perl ready."
+        # Re-detect via PATH after install
+        $found = Get-Command perl -ErrorAction SilentlyContinue
+        if ($found) {
+            $PerlPath = $found.Source
+            Write-Host "  Perl ready at $PerlPath"
         }
     }
 }
