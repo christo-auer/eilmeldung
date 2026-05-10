@@ -33,10 +33,11 @@ function Install-ViaScoop($pkg) {
 # Resolve Perl
 # ---------------------------------------------------------------------------
 if (-not $PerlPath) {
+    $perlSource = (Get-Command perl -ErrorAction SilentlyContinue)?.Source
     $candidates = @(
         "C:\Strawberry\perl\bin\perl.exe",
         "$env:USERPROFILE\scoop\apps\perl\current\perl\bin\perl.exe",
-        (Get-Command perl -ErrorAction SilentlyContinue)?.Source
+        $(if ($perlSource) { $perlSource } else { $null })
     )
     foreach ($c in $candidates) {
         if ($c -and (Test-Path $c)) { $PerlPath = $c; break }
@@ -66,10 +67,11 @@ Write-Host "  perl  : $PerlPath"
 # Resolve LLVM (required by bindgen to generate libxml2 bindings)
 # ---------------------------------------------------------------------------
 if (-not $LlvmBinPath) {
+    $clangSource = (Get-Command clang -ErrorAction SilentlyContinue)?.Source
     $candidates = @(
         "$env:USERPROFILE\scoop\apps\llvm\current\bin",
         "C:\Program Files\LLVM\bin",
-        (Split-Path (Get-Command clang -ErrorAction SilentlyContinue)?.Source)
+        $(if ($clangSource) { Split-Path $clangSource } else { $null })
     )
     foreach ($c in $candidates) {
         if ($c -and (Test-Path "$c\clang.exe")) { $LlvmBinPath = $c; break }
