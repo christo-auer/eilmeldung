@@ -776,11 +776,12 @@ impl crate::messages::MessageReceiver for CommandInput {
 
                 match (
                     key,
+                    key_event.is_press(),
                     self.config
                         .input_config
                         .match_single_key_to_single_command(&key),
                 ) {
-                    (_, Some(Command::InputAbort)) => {
+                    (_, true, Some(Command::InputAbort)) => {
                         if self.help_dialog_open {
                             self.hide_help_dialog()?;
                         } else {
@@ -788,22 +789,22 @@ impl crate::messages::MessageReceiver for CommandInput {
                             self.is_active = false;
                         }
                     }
-                    (_, Some(Command::InputSubmit)) => {
+                    (_, true, Some(Command::InputSubmit)) => {
                         if self.help_dialog_open {
                             self.hide_help_dialog()?;
                         }
                         self.on_submit()?;
                     }
 
-                    (_, Some(Command::InputClear)) => self.clear(""),
+                    (_, true, Some(Command::InputClear)) => self.clear(""),
 
-                    (Key::Just(KeyCode::Down), _) => self.on_history_next(),
-                    (Key::Just(KeyCode::Up), _) => self.on_history_previous(),
-                    (Key::Just(KeyCode::Tab), _) => {
+                    (Key::Just(KeyCode::Down), true, _) => self.on_history_next(),
+                    (Key::Just(KeyCode::Up), true, _) => self.on_history_previous(),
+                    (Key::Just(KeyCode::Tab), true, _) => {
                         self.update_command_help().await?;
                         self.on_complete(true);
                     }
-                    (Key::Just(KeyCode::BackTab), _) => {
+                    (Key::Just(KeyCode::BackTab), true, _) => {
                         self.update_command_help().await?;
                         self.on_complete(false);
                     }

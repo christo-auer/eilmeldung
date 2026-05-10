@@ -1,5 +1,7 @@
 # Unreleased
 
+- fixed double inputs in command input and help popup under Windows
+
 # 1.5.0 - 2026-05-04
 
 🪟 Windows is now supported! 

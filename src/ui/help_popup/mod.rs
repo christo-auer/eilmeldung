@@ -59,11 +59,12 @@ impl<'a> HelpPopup<'a> {
 
         match state.search_input_active {
             true => self.on_key_event_search_input(key_event, command)?,
-            false => {
+            false if key_event.is_press() => {
                 if let Some(command) = command {
                     self.on_key_event_modal(&command)?;
                 }
             }
+            _ => {}
         }
 
         Ok(())
@@ -136,13 +137,13 @@ impl<'a> HelpPopup<'a> {
         };
 
         match command {
-            Some(Command::InputSubmit) => state.search_input_active = false,
-            Some(Command::InputAbort) => {
+            Some(Command::InputSubmit) if key_event.is_press() => state.search_input_active = false,
+            Some(Command::InputAbort) if key_event.is_press() => {
                 state.search_input_active = false;
                 state.search_input = None;
             }
 
-            Some(Command::InputClear) => {
+            Some(Command::InputClear) if key_event.is_press() => {
                 text_area.select_all();
                 text_area.delete_char();
             }
