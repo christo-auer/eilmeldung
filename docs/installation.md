@@ -190,15 +190,16 @@ echo "repository=https://raw.githubusercontent.com/Event-Horizon-VL/blackhole-vl
 
 ---
 
-### Installing latest main from GitHub on Windows
+### Installing latest main from GitHub on Windows (without cloning)
 
-Power users who want the latest unreleased code from `main` can use the same helper script with the `-Install` flag — it sets up all dependencies and runs `cargo install` under the hood:
+Power users who want the latest unreleased code from `main` without cloning the repo can download and run `install-windows.ps1` directly:
 
 ```pwsh
-.\scripts\build-windows.ps1 -Install
+irm https://raw.githubusercontent.com/christo-auer/eilmeldung/main/scripts/install-windows.ps1 -OutFile install-eilmeldung.ps1
+.\install-eilmeldung.ps1
 ```
 
-> **Note:** You need to clone the repo first to get the script, then run it from the repo root.
+This script is fully self-contained — it installs all dependencies automatically and runs `cargo install` from the GitHub repository.
 
 ---
 

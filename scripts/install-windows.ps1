@@ -1,24 +1,24 @@
-# Build eilmeldung on Windows from a local clone.
+# Install eilmeldung on Windows from the latest main branch on GitHub.
 #
-# For contributors and developers who want to build local changes.
-# For installing the latest code from GitHub without cloning, use
-# scripts/install-windows.ps1 instead.
+# For end users and power users who want the latest unreleased code.
+# Does not require cloning the repository. Run directly:
+#
+#   irm https://raw.githubusercontent.com/christo-auer/eilmeldung/main/scripts/install-windows.ps1 -OutFile install-eilmeldung.ps1
+#   .\install-eilmeldung.ps1
 #
 # All required dependencies (Perl, LLVM, vcpkg, libxml2) are installed
 # automatically if not already present.
 #
 # Usage:
-#   .\scripts\build-windows.ps1
-#   .\scripts\build-windows.ps1 -Debug
-#   .\scripts\build-windows.ps1 -PerlPath "C:\custom\perl\bin\perl.exe"
-#   .\scripts\build-windows.ps1 -LlvmBinPath "C:\custom\llvm\bin"
-#   .\scripts\build-windows.ps1 -VcpkgRoot "D:\my-vcpkg"
+#   .\install-windows.ps1
+#   .\install-windows.ps1 -PerlPath "C:\custom\perl\bin\perl.exe"
+#   .\install-windows.ps1 -LlvmBinPath "C:\custom\llvm\bin"
+#   .\install-windows.ps1 -VcpkgRoot "D:\my-vcpkg"
 
 param(
     [string]$VcpkgRoot   = "$env:LOCALAPPDATA\vcpkg",
     [string]$PerlPath    = "",
-    [string]$LlvmBinPath = "",
-    [switch]$Debug
+    [string]$LlvmBinPath = ""
 )
 
 Set-StrictMode -Version Latest
@@ -174,7 +174,7 @@ Make sure Visual Studio Build Tools are installed:
 }
 
 # ---------------------------------------------------------------------------
-# Set build environment and build
+# Set build environment and install
 # ---------------------------------------------------------------------------
 $env:VCPKG_ROOT               = $VcpkgRoot
 $env:VCPKGRS_DYNAMIC          = "0"
@@ -186,16 +186,13 @@ $env:OPENSSL_SRC_PERL         = $PerlPath
 $env:LIBCLANG_PATH            = $LlvmBinPath
 $env:BINDGEN_EXTRA_CLANG_ARGS = ($bindgenIncludes | ForEach-Object { "-I`"$_`"" }) -join " "
 
-$buildProfile = if ($Debug) { "debug" } else { "release" }
-$cargoArgs = @("build", "--target", "x86_64-pc-windows-msvc")
-if (-not $Debug) { $cargoArgs += "--release" }
-
 Write-Host "  vcpkg : $VcpkgRoot"
 Write-Host ""
-Write-Host "Building eilmeldung ($buildProfile)..."
-cargo @cargoArgs
+Write-Host "Installing eilmeldung from latest main..."
+
+cargo install --locked --git https://github.com/christo-auer/eilmeldung --target x86_64-pc-windows-msvc
+
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-$binaryPath = "target\x86_64-pc-windows-msvc\$buildProfile\eilmeldung.exe"
 Write-Host ""
-Write-Host "Build successful: $binaryPath"
+Write-Host "Installed successfully. Run 'eilmeldung' to start."
