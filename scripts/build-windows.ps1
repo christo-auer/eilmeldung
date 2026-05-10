@@ -138,16 +138,54 @@ if (-not (Test-Path $libxmlLib)) {
 }
 
 # ---------------------------------------------------------------------------
+# Resolve MSVC + Windows SDK include paths for bindgen
+# ---------------------------------------------------------------------------
+$bindgenIncludes = @()
+
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+if (Test-Path $vswhere) {
+    $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null
+    if ($vsPath) {
+        $msvcVersionDir = Get-ChildItem "$vsPath\VC\Tools\MSVC" -ErrorAction SilentlyContinue |
+            Sort-Object Name | Select-Object -Last 1
+        if ($msvcVersionDir) {
+            $bindgenIncludes += "$($msvcVersionDir.FullName)\include"
+        }
+    }
+}
+
+$sdkRoot = "${env:ProgramFiles(x86)}\Windows Kits\10\Include"
+if (Test-Path $sdkRoot) {
+    $sdkVersion = Get-ChildItem $sdkRoot -ErrorAction SilentlyContinue |
+        Sort-Object Name | Select-Object -Last 1
+    if ($sdkVersion) {
+        $bindgenIncludes += "$($sdkVersion.FullName)\ucrt"
+        $bindgenIncludes += "$($sdkVersion.FullName)\um"
+        $bindgenIncludes += "$($sdkVersion.FullName)\shared"
+    }
+}
+
+if ($bindgenIncludes.Count -eq 0) {
+    Write-Error @"
+Could not find MSVC or Windows SDK include paths.
+Make sure Visual Studio Build Tools are installed:
+  winget install Microsoft.VisualStudio.2022.BuildTools
+"@
+    exit 1
+}
+
+# ---------------------------------------------------------------------------
 # Set build environment
 # ---------------------------------------------------------------------------
-$env:VCPKG_ROOT           = $VcpkgRoot
-$env:VCPKGRS_DYNAMIC      = "0"
-$env:PKG_CONFIG_PATH      = "$VcpkgRoot\installed\x64-windows-static\lib\pkgconfig"
-$env:CMAKE_TOOLCHAIN_FILE = "$VcpkgRoot\scripts\buildsystems\vcpkg.cmake"
-$env:VCPKG_TARGET_TRIPLET = "x64-windows-static"
-$env:RUSTFLAGS            = "-C target-feature=+crt-static"
-$env:OPENSSL_SRC_PERL     = $PerlPath
-$env:LIBCLANG_PATH        = $LlvmBinPath
+$env:VCPKG_ROOT              = $VcpkgRoot
+$env:VCPKGRS_DYNAMIC         = "0"
+$env:PKG_CONFIG_PATH         = "$VcpkgRoot\installed\x64-windows-static\lib\pkgconfig"
+$env:CMAKE_TOOLCHAIN_FILE    = "$VcpkgRoot\scripts\buildsystems\vcpkg.cmake"
+$env:VCPKG_TARGET_TRIPLET    = "x64-windows-static"
+$env:RUSTFLAGS               = "-C target-feature=+crt-static"
+$env:OPENSSL_SRC_PERL        = $PerlPath
+$env:LIBCLANG_PATH           = $LlvmBinPath
+$env:BINDGEN_EXTRA_CLANG_ARGS = ($bindgenIncludes | ForEach-Object { "-I`"$_`"" }) -join " "
 
 $buildProfile = if ($Debug) { "debug" } else { "release" }
 $cargoArgs = @("build", "--target", "x86_64-pc-windows-msvc")
