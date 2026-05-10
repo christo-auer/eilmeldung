@@ -38,8 +38,23 @@ if (-not $PerlPath) {
 }
 
 if (-not $PerlPath -or -not (Test-Path $PerlPath)) {
+    # Try to install via scoop if available
+    if (Get-Command scoop -ErrorAction SilentlyContinue) {
+        Write-Host "Perl not found -- installing via scoop..."
+        scoop install perl
+        # Re-detect after install
+        $scoopPerl = "$env:USERPROFILE\scoop\apps\perl\current\perl\bin\perl.exe"
+        if (Test-Path $scoopPerl) {
+            $PerlPath = $scoopPerl
+            Write-Host "  Perl ready."
+        }
+    }
+}
+
+if (-not $PerlPath -or -not (Test-Path $PerlPath)) {
     Write-Error @"
-Perl not found. Install it via:
+Perl not found and could not be installed automatically.
+Install it manually via:
   scoop install perl
 or download Strawberry Perl from https://strawberryperl.com
 Then re-run this script or pass -PerlPath 'C:\path\to\perl.exe'.
