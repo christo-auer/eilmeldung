@@ -71,7 +71,10 @@ fn expand_env_vars(s: &str) -> String {
                 }
                 if closed && !var_name.is_empty() {
                     if let Ok(val) = env::var(&var_name) {
-                        result.push_str(&val);
+                        // Normalize backslashes to forward slashes so that
+                        // shell_words::split (a POSIX parser) does not treat
+                        // them as escape characters.
+                        result.push_str(&val.replace('\\', "/"));
                     } else {
                         // Leave unexpanded if the variable isn't set
                         result.push('%');
@@ -443,6 +446,62 @@ mod test {
     #[case("cmd:/home/user/pass.sh\'")]
     fn test_secret_parsing_command_fail(#[case] s: &str) {
         assert_matches!(Secret::from_str(s), Err(ConfigError::SecretParseError));
+    }
+
+    #[cfg(target_os = "windows")]
+    mod expand_env_vars_tests {
+        use super::super::expand_env_vars;
+
+        #[test]
+        fn expands_known_variable() {
+            std::env::set_var("EILMELDUNG_TEST_VAR", r"C:\Users\test");
+            let result = expand_env_vars("prefix/%EILMELDUNG_TEST_VAR%/suffix");
+            // backslashes in expanded value must be normalized to forward slashes
+            assert_eq!(result, "prefix/C:/Users/test/suffix");
+            std::env::remove_var("EILMELDUNG_TEST_VAR");
+        }
+
+        #[test]
+        fn leaves_unknown_variable_intact() {
+            std::env::remove_var("EILMELDUNG_UNDEFINED_VAR");
+            let result = expand_env_vars("%EILMELDUNG_UNDEFINED_VAR%");
+            assert_eq!(result, "%EILMELDUNG_UNDEFINED_VAR%");
+        }
+
+        #[test]
+        fn unmatched_percent_passed_through() {
+            let result = expand_env_vars("100% done");
+            assert_eq!(result, "100% done");
+        }
+
+        #[test]
+        fn no_variables_unchanged() {
+            let result = expand_env_vars("pwsh -NoProfile -File /some/script.ps1");
+            assert_eq!(result, "pwsh -NoProfile -File /some/script.ps1");
+        }
+
+        #[test]
+        fn cmd_secret_expands_and_splits_correctly() {
+            use super::super::Secret;
+            use std::str::FromStr;
+            std::env::set_var("EILMELDUNG_TEST_HOME", r"C:\Users\test");
+            let Secret::Command(args) = Secret::from_str(
+                r"cmd:pwsh -NoProfile -File %EILMELDUNG_TEST_HOME%/.config/get-pass.ps1",
+            )
+            .expect("should parse") else {
+                panic!("expected Command variant");
+            };
+            assert_eq!(
+                args,
+                vec![
+                    "pwsh",
+                    "-NoProfile",
+                    "-File",
+                    "C:/Users/test/.config/get-pass.ps1"
+                ]
+            );
+            std::env::remove_var("EILMELDUNG_TEST_HOME");
+        }
     }
 
     #[test]
