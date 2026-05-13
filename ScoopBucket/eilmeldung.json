@@ -4,7 +4,7 @@
   "homepage": "https://github.com/christo-auer/eilmeldung",
   "version": "1.5.1"
   "url": "https://github.com/christo-auer/eilmeldung/releases/download/1.5.1/eilmeldung-x86_64-pc-windows-msvc-1.5.1.tar.gz",
-  "hash": "replaced by CI on release of 1.5.1"
+  "hash": "21265cf1efb85b6d2ed1d0f941bf17ce97b8a604f0a9a93d73faba0e4be0fcad",
   "extract_dir": "eilmeldung",
   "bin": "eilmeldung.exe"
 }
