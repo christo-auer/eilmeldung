@@ -135,7 +135,8 @@ impl ArticleContentViewData {
     ) -> Rect {
         let block = Block::default()
             .borders(Borders::all())
-            .border_type(ratatui::widgets::BorderType::Rounded)
+            .border_type(config.border_theme.eff_type(is_focused))
+            .merge_borders(config.border_theme.framing.eff_merge_strategy())
             .border_style(if is_focused {
                 config.theme.border_focused()
             } else {
@@ -144,7 +145,7 @@ impl ArticleContentViewData {
 
         // let scroll_thumb_icon = config.scroll_thumb_icon.to_string();
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-            .symbols(config.scrollbar_set())
+            .symbols(config.border_theme.scrollbar_set(is_focused))
             .style(config.theme.eff_border(is_focused));
 
         self.scrollbar_state = self

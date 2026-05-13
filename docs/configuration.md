@@ -21,7 +21,7 @@
   - [Color Palette](#color-palette)
   - [Component Styles](#component-styles)
   - [Component Style Modifiers](#component-style-modifiers)
-- [Feed List Configuration](#feed-list-configuration)
+- [Border Theme](#border-theme)
 - [After-Sync Commands](#after-sync-commands)
 - [Notify After Sync](#notification-after-sync)
 - [Share Target Configuration](#share-target-configuration)
@@ -102,10 +102,10 @@ You can change this behaviour by using the [Command Line Options](cli_args.md) `
 | `warning_icon`                    | char                  | Icon for warning messages                                                                                                                               |
 | `error_icon`                      | char                  | Icon for error messages                                                                                                                                 |
 | `command_line_prompt_icon`        | char                  | Icon for command line prompt                                                                                                                            |
-| `scrollbar_begin_symbol`          | char                  | Symbol at top of scrollbars                                                                                                                             |
-| `scrollbar_end_symbol`            | char                  | Symbol at bottom of scrollbars                                                                                                                          |
-| `scrollbar_thumb_symbol`          | char                  | Symbol placed at current position of scrollbars                                                                                                         |
-| `scrollbar_track_symbol`          | char                  | Symbol placed between top and bottom of scrollbars                                                                                                      |
+| ~`scrollbar_begin_symbol`~          | char                  | **deprecated**, will be removed in future version                                                                                                       |
+| ~`scrollbar_end_symbol`~            | char                  | **deprecated**, will be removed in future version                                                                                                       |
+| ~`scrollbar_thumb_symbol`~          | char                  | **deprecated**, will be removed in future version                                                                                                       |
+| ~`scrollbar_track_symbol`~          | char                  | **deprecated**, will be removed in future version                                                                                                       |
 | `all_label`                       | string                | Label format for "All" in feed list                                                                                                                     |
 | `feed_label`                      | string                | Label format for feeds                                                                                                                                  |
 | `category_label`                  | string                | Label format for categories                                                                                                                             |
@@ -344,6 +344,64 @@ unread = { fg = "highlight", mods = ["italic"] }
 highlighted = { bg = "#FF0000" }
 unread_count = { fg = "highlight" }
 ```
+
+---
+
+## Border Theme
+
+The section `border_theme` defines how the border looks like
+
+| Setting     | Type | Default       | Description                                                                          |
+| ----------- | --- | -----------   | ------------                                                                         |
+| `framing`   | framing type | `"connected"` | how each panel is framed |
+| `focused`   | border type | `"rounded"`   | border style of a focused panel                                                      |
+| `unfocused` | border type | `"rounded"`   | border style of an unfocused panel                                                   |
+
+
+- framing type can be 
+  - `"open"` to one side (classic)
+  - `"closed"` to all sides
+  - `"connected"` at the corners of the panels
+- border type can be
+  - `"plain"`
+     ```plain
+    ┌───────┐
+    │       │
+    └───────┘
+     ```
+  - `"rounded"`
+    ```plain
+    ╭───────╮
+    │       │
+    ╰───────╯
+    ```
+  - `"double"`
+    ```plain
+    ╔═══════╗
+    ║       ║
+    ╚═══════╝
+    ```
+  - `"thick"`
+    ```plain
+    ┏━━━━━━━┓
+    ┃       ┃
+    ┗━━━━━━━┛
+    ```
+  - `"quadrant_inside"`
+    ```plain
+    ▗▄▄▄▄▄▄▄▖
+    ▐       ▌
+    ▐       ▌
+    ▝▀▀▀▀▀▀▀▘
+    ```
+  - `"quadrant_outside"`
+    ```plain
+    ▛▀▀▀▀▀▀▀▜
+    ▌       ▐
+    ▌       ▐
+    ▙▄▄▄▄▄▄▄▟
+    ```
+
 
 ---
 

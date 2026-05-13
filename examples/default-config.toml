@@ -38,11 +38,6 @@ enclosure_image_icon = ""
 image_icon = ""
 url_icon = ""
 
-# Scrollbar symbols
-scrollbar_begin_symbol = "│"
-scrollbar_end_symbol = "│"
-scrollbar_track_symbol = " "
-scrollbar_thumb_symbol = "│"
 
 # Labels
 all_label = "󱀂 All {unread_count}"
@@ -109,6 +104,11 @@ share_targets = [
 # notify after sync
 notify_after_sync = true
 # notify_after_sync_cmd is not set (dbus is used instead)
+
+[border_theme]
+focused = "rounded"
+unfocused = "rounded"
+framing = "connected"
 
 [notify_after_sync_stats_format]
 sync_output_format = "{label}: {count}"

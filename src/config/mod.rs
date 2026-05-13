@@ -1,3 +1,4 @@
+mod border_theme;
 mod dimension;
 mod feed_list_content_identfier;
 mod input_config;
@@ -15,6 +16,7 @@ use std::{
 use crate::prelude::*;
 
 pub mod prelude {
+    pub use super::border_theme::BorderTheme;
     pub use super::dimension::Dimension;
     pub use super::feed_list_content_identfier::{
         FeedListContentIdentifier, FeedListItemType, LabeledQuery,
@@ -32,7 +34,6 @@ pub mod prelude {
 use config::FileFormat;
 use log::{info, warn};
 use once_cell::sync::Lazy;
-use ratatui::symbols::scrollbar;
 
 static HINT_CHARS: Lazy<Vec<char>> = Lazy::new(|| vec!['F', 'J', 'G', 'H', 'D', 'K']);
 static HINT_NUMBERS: Lazy<Vec<char>> =
@@ -134,6 +135,7 @@ impl ArticleScope {
 pub struct Config {
     pub input_config: InputConfig,
     pub theme: Theme,
+    pub border_theme: BorderTheme,
     pub refresh_fps: u64,
     pub network_timeout_seconds: u64,
     pub keep_articles_days: u16,
@@ -150,7 +152,6 @@ pub struct Config {
 
     pub mouse_support: bool,
 
-    pub show_top_bar: Option<bool>,
     pub offline_icon: char,
     pub all_label: String,
     pub last_synced_label: String,
@@ -178,10 +179,7 @@ pub struct Config {
     pub command_line_prompt_icon: char,
     pub article_scope: ArticleScope,
     pub feed_list_scope: ArticleScope,
-    pub scrollbar_begin_symbol: char,
-    pub scrollbar_end_symbol: char,
-    pub scrollbar_track_symbol: char,
-    pub scrollbar_thumb_symbol: char,
+
     pub image_icon: char,
     pub url_icon: char,
 
@@ -217,6 +215,24 @@ pub struct Config {
     pub login_setup: Option<LoginConfiguration>,
 
     pub cli_sync_stats_format: SyncStatsOutputFormat,
+
+    // DEPRECATED
+    pub show_top_bar: Option<bool>,
+    pub scrollbar_begin_symbol: Option<char>,
+    pub scrollbar_end_symbol: Option<char>,
+    pub scrollbar_track_symbol: Option<char>,
+    pub scrollbar_thumb_symbol: Option<char>,
+}
+
+macro_rules! deprecated {
+    ($name:expr) => {
+        if $name.is_some() {
+            warn!(
+                "configuration setting {} is deprecated and will be removed in future versions",
+                stringify!($name).strip_prefix("self.").unwrap() // for this I should burn in hell
+            )
+        }
+    };
 }
 
 impl Config {
@@ -231,11 +247,11 @@ impl Config {
             ));
         }
 
-        if self.show_top_bar.is_some() {
-            warn!(
-                "configuration setting show_top_bar is deprecated and will be removed in future versions"
-            )
-        }
+        deprecated!(self.show_top_bar);
+        deprecated!(self.scrollbar_begin_symbol);
+        deprecated!(self.scrollbar_end_symbol);
+        deprecated!(self.scrollbar_track_symbol);
+        deprecated!(self.scrollbar_thumb_symbol);
 
         Ok(())
     }
@@ -262,15 +278,6 @@ impl Config {
 
         Ok(())
     }
-
-    pub fn scrollbar_set(&self) -> scrollbar::Set<'_> {
-        scrollbar::Set {
-            track: Box::new(self.scrollbar_track_symbol.to_string()).leak(),
-            thumb: Box::new(self.scrollbar_thumb_symbol.to_string()).leak(),
-            begin: Box::new(self.scrollbar_begin_symbol.to_string()).leak(),
-            end: Box::new(self.scrollbar_end_symbol.to_string()).leak(),
-        }
-    }
 }
 
 impl Default for Config {
@@ -289,7 +296,6 @@ impl Default for Config {
             notify_after_sync_stats_format: SyncStatsOutputFormat::notify_default(),
             cli_sync_stats_format: SyncStatsOutputFormat::cli_default(),
 
-            show_top_bar: Some(false),
             all_label: "󱀂 All {unread_count}".into(),
             last_synced_label: " Last Synced".into(),
             feed_label: " {label} {unread_count}".into(),
@@ -301,6 +307,7 @@ impl Default for Config {
             article_table: "{flagged},{read},{marked},{tag_icons},{age},{title}".into(),
             date_format: "%m/%d %H:%M".into(),
             theme: Default::default(),
+            border_theme: Default::default(),
             input_config: Default::default(),
             offline_icon: '',
             read_icon: '',
@@ -319,10 +326,6 @@ impl Default for Config {
             flagged_icon: '',
             article_scope: ArticleScope::Unread,
             feed_list_scope: ArticleScope::All,
-            scrollbar_begin_symbol: '│',
-            scrollbar_end_symbol: '│',
-            scrollbar_track_symbol: ' ',
-            scrollbar_thumb_symbol: '│',
             image_icon: '',
             url_icon: '',
 
@@ -383,6 +386,13 @@ impl Default for Config {
             ],
             login_setup: None,
             mouse_support: false,
+
+            // DEPRECATED
+            show_top_bar: None,
+            scrollbar_begin_symbol: None,
+            scrollbar_end_symbol: None,
+            scrollbar_track_symbol: None,
+            scrollbar_thumb_symbol: None,
         }
     }
 }

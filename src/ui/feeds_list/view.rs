@@ -61,18 +61,31 @@ impl Widget for &mut FeedList {
 
         let tree_items = self.view_data.tree_items().clone();
 
+        let borders = self
+            .config
+            .border_theme
+            .framing
+            .eff_borders_open(Borders::RIGHT);
+
+        let area = self
+            .config
+            .border_theme
+            .framing
+            .eff_area(Borders::RIGHT, area);
+
         let tree = Tree::new(&tree_items)
             .unwrap() // TODO error handling
             .block(
                 Block::default()
-                    .borders(Borders::TOP | Borders::LEFT | Borders::BOTTOM)
-                    .border_type(ratatui::widgets::BorderType::Rounded)
+                    .borders(borders)
+                    .border_type(self.config.border_theme.eff_type(self.is_focused))
+                    .merge_borders(self.config.border_theme.framing.eff_merge_strategy())
                     .border_style(self.config.theme.eff_border(self.is_focused))
                     .title_top(self.view_data.build_title(&self.config)),
             )
             .experimental_scrollbar(Some(
                 Scrollbar::new(ratatui::widgets::ScrollbarOrientation::VerticalLeft)
-                    .symbols(self.config.scrollbar_set())
+                    .symbols(self.config.border_theme.scrollbar_set(self.is_focused))
                     .style(self.config.theme.eff_border(self.is_focused)),
             ))
             .highlight_style(highlight_style);

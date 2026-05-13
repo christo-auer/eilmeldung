@@ -195,6 +195,20 @@ The default color palette is dark. For a light palette using ANSI 16 colors, see
 
 You can also customize all colors individually. See [Theme Configuration](configuration.md#theme-configuration).
 
+### Its hard to distinguish which panel is selected? Can I cusotmize the borders of the panels?
+
+Yes, you can! For a starter, to make the focused panel more distinguishable, the following settings can be used:
+
+```toml
+[border_theme]
+focused = "double"
+unfocused = "plain"
+framing = "closed"
+```
+
+This uses a simple plain border for unfocused panels, double borders for focused panels and each panel is enclosed by its own border.
+For more settings, checkout [Border Theme](configuration.md#border-theme).
+
 ### Can I change how read/unread articles/items look like?
 
 Yes, use [Component Style Modifiers](configuration.md#component-style-modifiers). For instance:

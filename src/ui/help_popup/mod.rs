@@ -7,7 +7,7 @@ use ratatui::{
     crossterm::event::{KeyCode, KeyEvent},
     layout::{Constraint, Direction, Flex, Layout},
     text::{Line, Span, Text},
-    widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph, Widget},
+    widgets::{Block, Borders, Clear, Padding, Paragraph, Widget},
 };
 use ratatui_textarea::TextArea;
 use tokio::sync::mpsc::UnboundedSender;
@@ -198,7 +198,7 @@ impl<'a> Widget for &HelpPopup<'a> {
 
             let block = Block::default()
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
+                .border_type(self.config.border_theme.focused)
                 .border_style(self.config.theme.border_focused())
                 .title_top(Line::styled(
                     format!(" {title} "),

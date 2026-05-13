@@ -1,7 +1,19 @@
 # Unreleased
 
+- **open borders for everyone**! 
+  - you can now freely customize the border style of the panels!
+  - want to highlight the focused panel by a double border and use a plain border for inactive panels? just append this to your `config.toml`:
+  ```toml
+  [border_theme]
+  focused = "double"
+  unfocused = "plain"
+  framing = "connected"
+  ```
+  - these settings also feature to new `"connected"` style which elegantly connected the borders of each panel; you can still go back to the *classic* style by using `framing = "open"` or even use completely closed border with `framing = "closed"`
+  - read more in `docs/configuration.md` in the section *Border Theme*
 - fixed double inputs in command input and help popup under Windows
 - `show_top_bar` is **deprecated** now and the top bar is removed entirely
+- the settings `scrollbar_begin_symbol``, `scrollbar_end_symbol`, `scrollbar_track_symbol`, `scrollbar_thumb_symbol` are **deprecated** now; the scrollbar characters are determined by the chosen border type
 
 # 1.5.0 - 2026-05-04
 

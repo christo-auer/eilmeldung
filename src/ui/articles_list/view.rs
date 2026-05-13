@@ -138,12 +138,10 @@ impl FilterState {
 
 impl Widget for &mut ArticlesList {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        let block = self
-            .view_data
-            .gen_block(&self.config, &self.filter_state, self.is_focused);
+        let (block, area) =
+            self.view_data
+                .gen_block(&self.config, &self.filter_state, self.is_focused, area);
         let inner = block.inner(area);
-
-        block.render(area, buf);
 
         *self.view_data.article_lines_mut() = Some(area.height.saturating_sub(1));
 
@@ -154,17 +152,19 @@ impl Widget for &mut ArticlesList {
             &mut self.view_data.table_state,
         );
 
-        // let scroll_thumb_icon = self.config.scroll_thumb_icon.to_string();
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-            .symbols(self.config.scrollbar_set())
+            .symbols(self.config.border_theme.scrollbar_set(self.is_focused))
             .style(self.config.theme.eff_border(self.is_focused));
 
         let scrollbar_area = Rect {
             x: area.x,
             y: area.y + 1,
             width: area.width,
-            height: area.height.saturating_sub(1),
+            height: block.inner(area).height,
         };
+
+        block.render(area, buf);
+
         StatefulWidget::render(
             scrollbar,
             scrollbar_area,
@@ -433,17 +433,25 @@ impl<'a> ArticleListViewData<'a> {
         config: &Config,
         filter_state: &FilterState,
         is_focused: bool,
-    ) -> Block<'static> {
-        Block::default()
-            .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
-            .title_top(self.build_title(filter_state, config))
-            .title_alignment(ratatui::layout::Alignment::Left)
-            .border_type(ratatui::widgets::BorderType::Rounded)
-            .border_style(if is_focused {
-                config.theme.border_focused()
-            } else {
-                config.theme.border()
-            })
+        area: Rect,
+    ) -> (Block<'static>, Rect) {
+        let borders = config
+            .border_theme
+            .framing
+            .eff_borders_open(Borders::BOTTOM);
+
+        let enlarged_area = config.border_theme.framing.eff_area(Borders::BOTTOM, area);
+
+        (
+            Block::default()
+                .borders(borders)
+                .title_top(self.build_title(filter_state, config))
+                .title_alignment(ratatui::layout::Alignment::Left)
+                .border_type(config.border_theme.eff_type(is_focused))
+                .merge_borders(config.border_theme.framing.eff_merge_strategy())
+                .border_style(config.theme.eff_border(is_focused)),
+            enlarged_area,
+        )
     }
 
     pub(super) fn get_table_state_mut(&mut self) -> &mut TableState {
