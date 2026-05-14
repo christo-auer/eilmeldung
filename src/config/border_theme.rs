@@ -64,9 +64,9 @@ pub enum Framing {
 impl Default for BorderTheme {
     fn default() -> Self {
         Self {
-            framing: Framing::Closed,
-            focused: BorderType::Thick,
-            unfocused: BorderType::Plain,
+            framing: Default::default(),
+            focused: BorderType::Rounded,
+            unfocused: BorderType::Rounded,
         }
     }
 }
