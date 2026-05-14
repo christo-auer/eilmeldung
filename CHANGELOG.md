@@ -1,5 +1,7 @@
 # Unreleased
 
+- fixed bug which resulted in rapid swapping of article content 
+
 # 1.5.1 - 2026-05-13
 
 - **open borders for everyone**! 

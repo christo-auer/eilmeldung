@@ -24,7 +24,6 @@ pub enum AsyncOperationError {
 pub enum Event {
     ArticlesSelected(AugmentedArticleFilter),
     ArticleSelected(ArticleID),
-    FatArticleSelected(ArticleID),
 
     AsyncSync,
     AsyncSyncFinished(HashMap<FeedID, i64>),
