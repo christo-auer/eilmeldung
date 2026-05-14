@@ -186,6 +186,8 @@ pub struct ArticleListViewData<'a> {
 
     #[getset(get_mut = "pub(super)", get = "pub(super)")]
     article_lines: Option<u16>,
+
+    article_count: usize,
 }
 
 impl<'a> ArticleListViewData<'a> {
@@ -226,9 +228,18 @@ impl<'a> ArticleListViewData<'a> {
             );
             spans.push(Span::styled(filter_text.to_owned(), config.theme.header()));
         }
-        // spans.push(Span::styled("├", config.theme.header()));
 
         title
+    }
+
+    fn build_position(&self, config: &Config) -> Line<'static> {
+        if self.article_count > 0 && config.article_list_show_position {
+            let selected = self.table_state.selected().unwrap_or(0).saturating_add(1);
+            let all = self.article_count;
+            Line::styled(format!(" {selected}{all} ",), config.theme.header())
+        } else {
+            "".into()
+        }
     }
 
     pub fn update(
@@ -418,6 +429,8 @@ impl<'a> ArticleListViewData<'a> {
             .content_length(entries.len())
             .position(0);
 
+        self.article_count = entries.len();
+
         self.table = Table::new(
             entries,
             placeholders
@@ -445,7 +458,14 @@ impl<'a> ArticleListViewData<'a> {
         (
             Block::default()
                 .borders(borders)
-                .title_top(self.build_title(filter_state, config))
+                .title_top(
+                    self.build_title(filter_state, config)
+                        .alignment(HorizontalAlignment::Left),
+                )
+                .title_top(
+                    self.build_position(config)
+                        .alignment(HorizontalAlignment::Right),
+                )
                 .title_alignment(ratatui::layout::Alignment::Left)
                 .border_type(config.border_theme.eff_type(is_focused))
                 .merge_borders(config.border_theme.framing.eff_merge_strategy())

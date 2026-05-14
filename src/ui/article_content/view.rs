@@ -141,7 +141,18 @@ impl ArticleContentViewData {
                 config.theme.border_focused()
             } else {
                 config.theme.border()
-            });
+            })
+            .title_bottom(
+                if self.max_scroll > 0 && config.content_show_position {
+                    Line::styled(
+                        format!(" {} ", (self.vertical_scroll * 100) / self.max_scroll),
+                        config.theme.header(),
+                    )
+                } else {
+                    "".into()
+                }
+                .alignment(HorizontalAlignment::Right),
+            );
 
         // let scroll_thumb_icon = config.scroll_thumb_icon.to_string();
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
