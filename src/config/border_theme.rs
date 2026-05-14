@@ -56,9 +56,9 @@ mod deserialize_border_type_snake_case {
 #[serde(rename_all = "snake_case")]
 pub enum Framing {
     #[default]
+    Connected,
     Open,
     Closed,
-    Connected,
 }
 
 impl Default for BorderTheme {

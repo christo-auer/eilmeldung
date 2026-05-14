@@ -1,5 +1,7 @@
 # Unreleased
 
+- `"connected"` is now the new default framing of panels
+
 # 1.5.2 - 2026-05-14
 
 - restored default border theme (connected and rounded)
