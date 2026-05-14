@@ -180,6 +180,9 @@ pub struct Config {
     pub article_scope: ArticleScope,
     pub feed_list_scope: ArticleScope,
 
+    pub article_list_show_position: bool,
+    pub content_show_position: bool,
+
     pub image_icon: char,
     pub url_icon: char,
 
@@ -329,6 +332,8 @@ impl Default for Config {
             image_icon: '',
             url_icon: '',
 
+            article_list_show_position: true,
+            content_show_position: true,
             articles_after_selection: 3,
             auto_scrape: true,
             thumbnail_show: true,

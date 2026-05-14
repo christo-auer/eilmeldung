@@ -57,6 +57,8 @@ hide_default_sort_order = true
 zen_mode_show_header = false
 hint_type = "letters"
 content_show_urls = false
+article_list_show_position = true
+content_show_position = true
 
 # Content
 auto_scrape = true

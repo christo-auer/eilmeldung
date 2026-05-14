@@ -1,5 +1,15 @@
 # Unreleased
 
+- two new options for showing the current position
+  - `article_list_show_position = true` to show an indicator of current position in article list (top right)
+  - `content_show_position = true` to show indicator of current position in article content (bottom right)
+  - the to options are set to `true` by default; just add the following two lines at the root level of your `config.toml` to deactivate the indicators
+  ```toml
+  article_list_show_position = false
+  content_show_position = false
+  ```
+- `"connected"` is now the new default framing of panels
+
 # 1.5.2 - 2026-05-14
 
 - restored default border theme (connected and rounded)
