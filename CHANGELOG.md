@@ -10,6 +10,7 @@
   ```
 - `"connected"` is now the new default framing of panels
 - with `"connected"` framing, the currently active panel's border is drawn above the other panels
+- chore: bumped versions of deps
 
 # 1.5.2 - 2026-05-14
 
