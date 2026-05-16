@@ -15,6 +15,7 @@ use std::sync::Arc;
 use news_flash::models::{ArticleID, Enclosure, Thumbnail};
 use tokio::sync::mpsc::UnboundedSender;
 
+#[derive(getset::CopyGetters)]
 pub struct ArticleContent {
     config: Arc<Config>,
 
@@ -23,6 +24,7 @@ pub struct ArticleContent {
 
     message_sender: UnboundedSender<Message>,
 
+    #[getset(get_copy = "pub")]
     is_focused: bool,
     is_distraction_free: bool,
 }

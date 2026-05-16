@@ -26,6 +26,7 @@ use std::{sync::Arc, time::Duration};
 
 use tokio::{sync::mpsc::UnboundedSender, time::Instant};
 
+#[derive(getset::CopyGetters)]
 pub struct FeedList {
     config: Arc<Config>,
     message_sender: UnboundedSender<Message>,
@@ -33,6 +34,7 @@ pub struct FeedList {
     view_data: FeedListViewData,
     model_data: FeedListModelData,
 
+    #[getset(get_copy = "pub")]
     is_focused: bool,
     last_sync: Instant,
 
