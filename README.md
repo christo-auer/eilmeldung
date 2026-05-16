@@ -81,7 +81,7 @@ This video demonstrates
   scoop bucket add eilmeldung https://github.com/christo-auer/eilmeldung
   scoop install eilmeldung
   ```
-- **Cargo**: `cargo install eilmeldung` (you need to install [build dependencies](docs/installation.md) first!)
+- **Cargo**: `cargo install eilmeldung --locked` (you need to install [build dependencies](docs/installation.md) first!)
 
 **Important**: You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!
 
