@@ -8,6 +8,12 @@
   article_list_show_position = false
   content_show_position = false
   ```
+- **Breaking Change**: icon customization heavily refactored
+  - you can now customize *all* icons appearing in eilmeldung
+  - there are two preset, `nerd` (default) and `ascii`
+  - there is a new configuration section `[icon_set]` in which you can overwrite all icons to your likings 
+  - if you have defined customized icons, move the settings into `[icon_set]`, add `preset="nerd"` and remove the `_icon` suffix from your settings.
+  - you can consult the documentation in `docs/configuration.md`, section *Icon Set*
 - `"connected"` is now the new default framing of panels
 - with `"connected"` framing, the currently active panel's border is drawn above the other panels
 - chore: bumped versions of deps
