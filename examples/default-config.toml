@@ -19,35 +19,16 @@ keep_articles_days = 30
 # sync_every_minutes = 10  # disabled by default
 after_sync_commands = []
 
-# Icons
-offline_icon = ""
-read_icon = ""
-all_icon = ""
-unread_icon = ""
-marked_icon = ""
-unmarked_icon = " "
-flagged_icon = ""
-tag_icon = "󰓹"
-command_line_prompt_icon = ""
-info_icon = ""
-warning_icon = ""
-error_icon = ""
-enclosure_video_icon = ""
-enclosure_audio_icon = ""
-enclosure_image_icon = ""
-image_icon = ""
-url_icon = ""
-
 
 # Labels
-all_label = "󱀂 All {unread_count}"
-last_synced_label = " Last Synced"
+all_label = "{icon} All {unread_count}"
+last_synced_label = "{icon} Last Synced"
 feed_label = " {label} {unread_count}"
-category_label = "󰉋 {label} {unread_count}"
-categories_label = "󰉓 Categories {unread_count}"
-tags_label = "󰓻 Tags {unread_count}"
-tag_label = "󰓹 {label} {unread_count}"
-query_label = " {label}"
+category_label = "{icon} {label} {unread_count}"
+categories_label = "{icon} Categories {unread_count}"
+tags_label = "{icon} Tags {unread_count}"
+tag_label = "{icon} {label} {unread_count}"
+query_label = "{icon} {label}"
 
 # Article Display
 article_table = "{flagged},{read},{marked},{tag_icons},{age},{title}"
@@ -111,6 +92,53 @@ notify_after_sync = true
 focused = "rounded"
 unfocused = "rounded"
 framing = "connected"
+
+[icon_set]
+preset = "nerd"
+
+# Core UI Icons
+# offline is not set; nerd: "", ascii: "?"
+# read is not set; nerd: "", ascii: " "
+# unread is not set; nerd: "", ascii: "•"
+# all is not set; nerd: "", ascii: "≡"
+# marked is not set; nerd: "", ascii: "♥"
+# unmarked is not set; nerd: " ", ascii: " "
+# tag is not set; nerd: "󰓹", ascii: "¶"
+# command_line_prompt is not set; nerd: "", ascii: ">"
+# info is not set; nerd: "", ascii: "I"
+# warning is not set; nerd: "", ascii: "W"
+# error is not set; nerd: "", ascii: "E"
+# enclosure_video is not set; nerd: "", ascii: "V"
+# enclosure_audio is not set; nerd: "", ascii: "A"
+# enclosure_image is not set; nerd: "", ascii: "I"
+# flagged is not set; nerd: "", ascii: "*"
+# image is not set; nerd: "", ascii: "I"
+# url is not set; nerd: "", ascii: "L"
+# big_icon_left is not set; nerd: "", ascii: " "
+# big_icon_right is not set; nerd: "", ascii: " "
+# Feed and List Labels
+# feeds is not set; nerd: "󱀂", ascii: "A"
+# last_synced is not set; nerd: "", ascii: "S"
+# feed is not set; nerd: "", ascii: "F"
+# category is not set; nerd: "󰉋", ascii: "C"
+# categories is not set; nerd: "󰉓", ascii: "C"
+# tags is not set; nerd: "󰓻", ascii: "T"
+# query is not set; nerd: "", ascii: "Q"
+
+# Sorting and Filtering
+# sort_ascending is not set; nerd: "󰒼", ascii: "^"
+# sort_descending is not set; nerd: "󰒽", ascii: "v"
+# filter_reverse is not set; nerd: "󰒿", ascii: "<"
+# sort_normal is not set; nerd: "󰌼", ascii: ">"
+
+# Batch Operations
+# batch is not set; nerd: "", ascii: "="
+# check_progress is not set; nerd: "", ascii: "+"
+# check_complete is not set; nerd: "", ascii: "*"
+
+# Status Bar
+# status_bar_left is not set; nerd: "", ascii: " "
+# status_bar_right is not set; nerd: "", ascii: " "
 
 [notify_after_sync_stats_format]
 sync_output_format = "{label}: {count}"
