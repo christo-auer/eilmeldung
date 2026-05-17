@@ -83,7 +83,9 @@ This video demonstrates
   ```
 - **Cargo**: `cargo install eilmeldung --locked` (you need to install [build dependencies](docs/installation.md) first!)
 
-**Important**: You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!
+**Important**: You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts)
+compatible font/terminal for icons to display correctly! There is a
+ASCII-compatible icon preset, however (see [Icon Set](docs/configuration.md#icon-set)).
 
 For detailed installation instructions including Nix/Home Manager setup, see **[Installation Guide](docs/installation.md)**.
 

@@ -20,7 +20,7 @@ Follow any of the installation methods below, then run *eilmeldung*. It will gui
 
 ## Important: Nerd Fonts
 
-You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!
+**Important**: You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly! There is a ASCII-compatible icon preset, however (see [Icon Set](docs/configuration.md#icon-set)).
 
 ---
 
