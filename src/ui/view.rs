@@ -43,7 +43,7 @@ impl App {
         let status_span = if self.is_offline {
             // when offline display offline icon
             Span::styled(
-                format!("{} ", self.config.offline_icon),
+                format!("{} ", self.config.icon_set.offline_icon()),
                 self.config.theme.statusbar(),
             )
         } else {
@@ -79,10 +79,29 @@ impl App {
                 .areas::<4>(bottom);
 
             let tooltip_line = self.tooltip.to_line(&self.config);
+            let left_icon = self.config.icon_set.status_bar_left_icon();
+            let right_icon = self.config.icon_set.status_bar_right_icon();
 
             Span::styled(status_span.content, tooltip_line.style).render(status, buf);
-            Span::styled("", tooltip_line.style.not_reversed()).render(bottom_left, buf);
-            Span::styled("", tooltip_line.style.not_reversed()).render(bottom_right, buf);
+
+            Span::styled(
+                left_icon.to_string(),
+                if left_icon != ' ' {
+                    tooltip_line.style.not_reversed()
+                } else {
+                    tooltip_line.style.reversed()
+                },
+            )
+            .render(bottom_left, buf);
+            Span::styled(
+                right_icon.to_string(),
+                if right_icon != ' ' {
+                    tooltip_line.style.not_reversed()
+                } else {
+                    tooltip_line.style.reversed()
+                },
+            )
+            .render(bottom_right, buf);
             tooltip_line.render(bottom_main, buf);
         }
 

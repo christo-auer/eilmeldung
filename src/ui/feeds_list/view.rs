@@ -334,8 +334,8 @@ impl FeedListViewData {
         match item_type {
             FeedListItemType::List => self.tree_items.append(&mut children),
             FeedListItemType::Tree => self.tree_items.push(TreeItem::new(
-                FeedListItem::All,
-                FeedListItem::All.to_text(config, Some(*model_data.unread_count_all()), None),
+                FeedListItem::Feeds,
+                FeedListItem::Feeds.to_text(config, Some(*model_data.unread_count_all()), None),
                 children,
             )?),
         }

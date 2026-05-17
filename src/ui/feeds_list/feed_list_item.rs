@@ -11,7 +11,7 @@ use ratatui::text::{Span, Text};
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub enum FeedListItem {
-    All,
+    Feeds,
     Feed(Box<Feed>),
     Categories,
     Category(Box<Category>),
@@ -24,7 +24,7 @@ impl Debug for FeedListItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use FeedListItem as I;
         match self {
-            I::All => write!(f, "All"),
+            I::Feeds => write!(f, "All"),
             I::Feed(feed) => write!(f, "Feed({})", feed.feed_id),
             I::Categories => write!(f, "Categories"),
             I::Category(category) => write!(f, "Category({})", category.category_id),
@@ -42,6 +42,9 @@ enum LabelToken {
 
     #[token("{marked_count}", priority = 100)]
     MarkedCount,
+
+    #[token("{icon}", priority = 100)]
+    Icon,
 
     #[token("{label}", priority = 100)]
     Label,
@@ -67,24 +70,37 @@ impl FeedListItem {
             .map(|c| if c > 0 { c.to_string() } else { "".to_owned() })
             .unwrap_or_default();
 
-        let (label, label_template, mut style): (&str, String, Style) = match self {
-            All => ("", config.all_label.to_owned(), config.theme.feed()),
+        let (label, icon, label_template, mut style): (&str, char, String, Style) = match self {
+            Feeds => (
+                "",
+                config.icon_set.feeds_icon(),
+                config.feeds_label.to_owned(),
+                config.theme.feed(),
+            ),
             Feed(feed) => (
                 feed.label.as_str(),
+                config.icon_set.feed_icon(),
                 config.feed_label.to_owned(),
                 config.theme.feed(),
             ),
             Categories => (
                 "",
+                config.icon_set.categories_icon(),
                 config.categories_label.to_owned(),
                 config.theme.category(),
             ),
             Category(category) => (
                 category.label.as_str(),
+                config.icon_set.category_icon(),
                 config.category_label.to_owned(),
                 config.theme.category(),
             ),
-            Tags => ("", config.tags_label.to_owned(), config.theme.tag()),
+            Tags => (
+                "",
+                config.icon_set.tags_icon(),
+                config.tags_label.to_owned(),
+                config.theme.tag(),
+            ),
             Tag(tag) => {
                 let mut style = config.theme.tag();
 
@@ -92,11 +108,17 @@ impl FeedListItem {
                     style = style.fg(color);
                 }
 
-                (tag.label.as_str(), config.tag_label.to_owned(), style)
+                (
+                    tag.label.as_str(),
+                    config.icon_set.tag_icon(),
+                    config.tag_label.to_owned(),
+                    style,
+                )
             }
 
             Query(query) => (
                 query.label.as_str(),
+                config.icon_set.query_icon(),
                 config.query_label.to_owned(),
                 config.theme.query(),
             ),
@@ -118,6 +140,7 @@ impl FeedListItem {
             use LabelToken as T;
             match token {
                 Ok(T::Fill) => text.push_span(Span::styled(lexer.slice().to_owned(), style)),
+                Ok(T::Icon) => text.push_span(Span::styled(icon.to_string(), style)),
                 Ok(T::UnreadCount) => text.push_span(Span::styled(
                     unread_count_str.to_owned(),
                     style.patch(config.theme.unread_count()),
@@ -140,7 +163,7 @@ impl FeedListItem {
     pub(super) fn to_tooltip(&self, _config: &Config) -> String {
         use FeedListItem::*;
         match self {
-            All => "all feeds".to_owned(),
+            Feeds => "all feeds".to_owned(),
             Categories => "all categories".to_owned(),
             Category(category) => format!("Category: {}", category.label).to_owned(),
             Feed(feed) => {
@@ -166,7 +189,7 @@ impl TryFrom<FeedListItem> for AugmentedArticleFilter {
     fn try_from(value: FeedListItem) -> Result<Self, Self::Error> {
         use FeedListItem::*;
         Ok(match value {
-            All => ArticleFilter::default().into(),
+            Feeds => ArticleFilter::default().into(),
             Feed(feed) => ArticleFilter {
                 feeds: vec![feed.feed_id].into(),
                 ..Default::default()
@@ -193,7 +216,7 @@ impl Display for FeedListItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use FeedListItem::*;
         match self {
-            All => write!(f, "all"),
+            Feeds => write!(f, "all"),
             Feed(feed) => write!(f, "feed {}", feed.label),
             Categories => write!(f, "categories"),
             Category(category) => write!(f, "category {}", category.label),
