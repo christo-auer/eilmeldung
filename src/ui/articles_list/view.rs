@@ -236,7 +236,7 @@ impl<'a> ArticleListViewData<'a> {
         if self.article_count > 0 && config.article_list_show_position {
             let selected = self.table_state.selected().unwrap_or(0).saturating_add(1);
             let all = self.article_count;
-            Line::styled(format!(" {selected}{all} ",), config.theme.header())
+            Line::styled(format!(" {selected}/{all} ",), config.theme.header())
         } else {
             "".into()
         }
@@ -251,10 +251,10 @@ impl<'a> ArticleListViewData<'a> {
     ) {
         let selected_style = config.theme.selected(&Default::default());
 
-        let read_icon = config.read_icon.to_string();
-        let unread_icon = config.unread_icon.to_string();
-        let marked_icon = config.marked_icon.to_string();
-        let unmarked_icon = config.unmarked_icon.to_string();
+        let read_icon = config.icon_set.read_icon().to_string();
+        let unread_icon = config.icon_set.unread_icon().to_string();
+        let marked_icon = config.icon_set.marked_icon().to_string();
+        let unmarked_icon = config.icon_set.unmarked_icon().to_string();
 
         let placeholders: Vec<&str> = config
             .article_table
@@ -295,7 +295,10 @@ impl<'a> ArticleListViewData<'a> {
                                                 Some(color) => config.theme.tag().fg(color),
                                                 None => config.theme.tag(),
                                             };
-                                            Span::styled(config.tag_icon.to_string(), style)
+                                            Span::styled(
+                                                config.icon_set.tag_icon().to_string(),
+                                                style,
+                                            )
                                         })
                                         .collect::<Vec<Span>>()
                                 }
@@ -363,7 +366,7 @@ impl<'a> ArticleListViewData<'a> {
                         "{flagged}" => if model_data.flagged_articles().is_empty() {
                             "".to_string()
                         } else if model_data.flagged_articles().contains(&article.article_id) {
-                            format!(" {}", config.flagged_icon)
+                            format!(" {}", config.icon_set.flagged_icon())
                         } else {
                             "  ".to_string()
                         }

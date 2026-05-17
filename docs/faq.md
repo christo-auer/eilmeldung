@@ -25,11 +25,13 @@ See [news_flash_gtk for all supported providers](https://gitlab.com/news-flash/n
 
 ### Some symbols look weird (question marks)?
 
-You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly. Without it, some icons may appear as boxes or question marks.
+**Recommended**: Use a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly! 
+
+There is also ASCII-compatible icon preset (see [Icon Set](docs/configuration.md#icon-set)).
 
 ### What terminal emulator should I use for Windows?
 
-Use [Windows Terminal](https://github.com/microsoft/terminal) with a NerdFont-patched font.
+Use [Windows Terminal](https://github.com/microsoft/terminal) with a NerdFont-patched font (or use the ASCII-compatible preset; see [Icon Set](docs/configuration.md#icon-set)).
 
 ---
 
@@ -286,7 +288,7 @@ Then pressing `; i` and entering the hint pointing to the image opens `feh` with
 
 ### Icons don't display correctly
 
-Make sure you're using a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font in your terminal. See [Installation](installation.md#important-nerd-fonts).
+There is also ASCII-compatible icon preset (see [Icon Set](docs/configuration.md#icon-set)).
 
 ### How do I enable debug logging?
 
@@ -297,6 +299,17 @@ eilmeldung --log-level DEBUG --log-file ~/eilmeldung-debug.log
 ```
 
 See [Command Line Arguments](cli_args.md) for more options.
+
+### The left and right side of the status bar does not display correctly with my color theme!
+
+Set the left and right delimiter icons of the status bar to `' '`:
+
+```toml
+[icon_set]
+preset = "nerd"
+status_bar_left = " "
+status_bar_right = " "
+```
 
 ---
 

@@ -1751,6 +1751,7 @@ dependencies = [
  "once_cell",
  "openssl",
  "parse_datetime",
+ "paste",
  "percent-encoding",
  "ratatui",
  "ratatui-image",

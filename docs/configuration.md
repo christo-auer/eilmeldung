@@ -22,6 +22,7 @@
   - [Component Styles](#component-styles)
   - [Component Style Modifiers](#component-style-modifiers)
 - [Border Theme](#border-theme)
+- [Icon Set](#icon-set)
 - [After-Sync Commands](#after-sync-commands)
 - [Notify After Sync](#notification-after-sync)
 - [Share Target Configuration](#share-target-configuration)
@@ -92,16 +93,6 @@ You can change this behaviour by using the [Command Line Options](cli_args.md) `
 | `notify_after_sync_cmd`           | string or none        | If defined, (shell) command which is executed after a sync, e.g., `"notify-send \"{summary}\" \"{body}\"` (see [Notify After Sync](#notify-after-sync)) |
 | `notify_after_sync_stats_format`  | sync stats definition | Format of sync stats (see [Notify After Sync](#notify-after-sync))                                                                                      |
 | ~`show_top_bar`~                   | boolean               | **deprecated**, will be removed in future versions  |
-| `offline_icon`                    | char                  | Icon displayed when offline                                                                                                                             |
-| `read_icon`                       | char                  | Icon for read articles                                                                                                                                  |
-| `unread_icon`                     | char                  | Icon for unread articles                                                                                                                                |
-| `marked_icon`                     | char                  | Icon for marked articles                                                                                                                                |
-| `unmarked_icon`                   | char                  | Icon for unmarked articles                                                                                                                              |
-| `tag_icon`                        | char                  | Icon for tags                                                                                                                                           |
-| `info_icon`                       | char                  | Icon for information messages                                                                                                                           |
-| `warning_icon`                    | char                  | Icon for warning messages                                                                                                                               |
-| `error_icon`                      | char                  | Icon for error messages                                                                                                                                 |
-| `command_line_prompt_icon`        | char                  | Icon for command line prompt                                                                                                                            |
 | ~`scrollbar_begin_symbol`~          | char                  | **deprecated**, will be removed in future version                                                                                                       |
 | ~`scrollbar_end_symbol`~            | char                  | **deprecated**, will be removed in future version                                                                                                       |
 | ~`scrollbar_thumb_symbol`~          | char                  | **deprecated**, will be removed in future version                                                                                                       |
@@ -140,6 +131,7 @@ You can change this behaviour by using the [Command Line Options](cli_args.md) `
 
 
 **Label Placeholders:**
+- `{icon}`: Icon (see [Icon Set](#icon-set))
 - `{label}`: Item name
 - `{unread_count}`: Number of unread articles
 
@@ -353,11 +345,11 @@ unread_count = { fg = "highlight" }
 
 The section `border_theme` defines how the border looks like
 
-| Setting     | Type | Default       | Description                                                                          |
-| ----------- | --- | -----------   | ------------                                                                         |
-| `framing`   | framing type | `"connected"` | how each panel is framed |
-| `focused`   | border type | `"rounded"`   | border style of a focused panel                                                      |
-| `unfocused` | border type | `"rounded"`   | border style of an unfocused panel                                                   |
+| Setting     | Type         | Default       | Description                        |
+| ----------- | ---          | -----------   | ------------                       |
+| `framing`   | framing type | `"connected"` | how each panel is framed           |
+| `focused`   | border type  | `"rounded"`   | border style of a focused panel    |
+| `unfocused` | border type  | `"rounded"`   | border style of an unfocused panel |
 
 
 - framing type can be 
@@ -403,6 +395,89 @@ The section `border_theme` defines how the border looks like
     ▌       ▐
     ▙▄▄▄▄▄▄▄▟
     ```
+
+---
+# Icon Set
+ 
+`eilmeldung` uses a lot of icons in its interface which you can customize in the config section `icon_set`.
+The setting `preset` defines the base icon set you want to use:
+
+- `nerd` (default) are icons taken from [Nerd Font](https://www.nerdfonts.com/) so your font has to be nerd font patched
+- `ascii` are icons taken from the ASCII code table; use this for compatibility (e.g., on a TTY)
+
+Optionally you can customize each of the icons as described in the following sections. A simple example for making the left and right delimiters of the status bar invisible is:
+
+```toml
+[icon_set]
+preset = "nerd"
+status_bar_left = " "
+status_bar_right = " "
+```
+
+All default values can be found in `examples/default-config.toml`
+
+## Core UI Icons
+
+
+| Name                  | Description                                                                            |
+| ---                   | ---                                                                                    |
+| `offline`             | Status bar: offline indicator                                                          |
+| `read`                | Article list: read article                                                             |
+| `unread`              | Article list: unread article                                                           |
+| `all`                 | Feed/Article list: all feeds/articles                                                  |
+| `marked`              | Article list: marked article                                                           |
+| `unmarked`            | Article list: unmarked article                                                         |
+| `tag`                 | Feed/Article list, Content: shown left of tag names                                    |
+| `command_line_prompt` | Command line prompt: shown at the left of the prompt                                   |
+| `info`                | Status bar: information tooltip/message                                                |
+| `warning`             | Status bar: information tooltip/message                                                |
+| `error`               | Status bar: error tooltip/message                                                      |
+| `enclosure_video`     | Content: article contains video enclosure                                              |
+| `enclosure_audio`     | Content: article contains audio enclosure                                              |
+| `enclosure_image`     | Content: article contains image enclosure                                              |
+| `flagged`             | Article list: flagged article                                                          |
+| `image`               | Content: link to image                                                                 |
+| `url`                 | Content: link to site                                                                  |
+| `big_icon_left`       | left delimiter for big icons (e.g., tags, enclosures); set to `' '` to make invisible  |
+| `big_icon_right`      | right delimiter for big icons (e.g., tags, enclosures); set to `' '` to make invisible |
+
+  ## Feed and List Labels
+
+| Name          | Description                    |
+| ---           | ---                            |
+| `last_synced` | icon for last synced articles  |
+| `feeds`       | icon for feeds folder          |
+| `feed`        | icon for a single feed         |
+| `category`    | icon for a category            |
+| `categories`  | icon for all categories folder |
+| `tags`        | icon for tags folder           |
+| `query`       | icon for a query               |
+
+
+
+## Sorting and Filtering
+| Name          | Description                    |
+| ---           | ---                            |
+| `sort_ascending` | ascending sort order |
+| `sort_descending` | descending sort order |
+| `sort_normal` | normal sort order |
+| `filter_reverse` | reversed filter sort order |
+## Batch Operations
+
+| Name             | Description                 |
+| ---              | ---                         |
+| `batch`          | batched operation           |
+| `check_progress` | currently running operation |
+| `check_complete` | completed running operation |
+
+## Status Bar
+
+| Name               | Description                                                   |
+| ---                | ---                                                           |
+| `status_bar_left`  | left delimiter of status bar; set to `' '` to make invisible  |
+| `status_bar_right` | right delimiter of status bar; set to `' '` to make invisible |
+
+
 
 
 ---

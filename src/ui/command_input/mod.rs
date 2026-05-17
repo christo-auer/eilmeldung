@@ -758,7 +758,7 @@ impl Widget for &mut CommandInput {
         self.text_input.set_style(self.config.theme.command_input());
 
         block.render(area, buf);
-        Text::from(self.config.command_line_prompt_icon.to_string())
+        Text::from(self.config.icon_set.command_line_prompt_icon().to_string())
             .style(self.config.theme.header())
             .render(preset_command_chunk, buf);
         self.text_input.render(text_input_chunk, buf);

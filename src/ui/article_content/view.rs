@@ -145,7 +145,7 @@ impl ArticleContentViewData {
             .title_bottom(
                 if self.max_scroll > 0 && config.content_show_position {
                     Line::styled(
-                        format!(" {} ", (self.vertical_scroll * 100) / self.max_scroll),
+                        format!(" {}% ", (self.vertical_scroll * 100) / self.max_scroll),
                         config.theme.header(),
                     )
                 } else {
@@ -154,7 +154,6 @@ impl ArticleContentViewData {
                 .alignment(HorizontalAlignment::Right),
             );
 
-        // let scroll_thumb_icon = config.scroll_thumb_icon.to_string();
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .symbols(config.border_theme.scrollbar_set(is_focused))
             .style(config.theme.eff_border(is_focused));
@@ -210,21 +209,21 @@ impl ArticleContentViewData {
             config,
             &enclosures,
             |enclosure| enclosure.is_video(),
-            config.enclosure_video_icon,
+            config.icon_set.enclosure_video_icon(),
         ));
 
         tags_and_enclosures.append(&mut to_enclosure_bubble(
             config,
             &enclosures,
             |enclosure| enclosure.is_image(),
-            config.enclosure_image_icon,
+            config.icon_set.enclosure_image_icon(),
         ));
 
         tags_and_enclosures.append(&mut to_enclosure_bubble(
             config,
             &enclosures,
             |enclosure| enclosure.is_audio(),
-            config.enclosure_audio_icon,
+            config.icon_set.enclosure_audio_icon(),
         ));
 
         let author = html_sanitize(
@@ -492,8 +491,8 @@ impl ArticleContentViewData {
         let image_url_text_style = Style::new().fg(*config.theme.color_palette().foreground());
         let image_hint_style = link_hint_style;
 
-        let image_icon = config.image_icon;
-        let url_icon = config.url_icon;
+        let image_icon = config.icon_set.image_icon();
+        let url_icon = config.icon_set.url_icon();
 
         let text = {
             let renderer = RendererBuilder::new()
@@ -580,7 +579,11 @@ where
 {
     let any_enclosures = enclosures.iter().any(predicate);
     if any_enclosures {
-        to_bubble(Span::styled(format!("{}", icon), config.theme.paragraph())).spans
+        to_bubble(
+            Span::styled(format!("{}", icon), config.theme.paragraph()),
+            config,
+        )
+        .spans
     } else {
         Default::default()
     }

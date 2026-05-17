@@ -472,7 +472,7 @@ impl NewsFlashUtils {
             .or(config.theme.tag().fg)
             .unwrap_or_default();
         let style = config.theme.tag().fg(color);
-        to_bubble(Span::styled(tag.label.to_owned(), style))
+        to_bubble(Span::styled(tag.label.to_owned(), style), config)
     }
 
     fn get_root_cause_message(error: &dyn Error) -> String {
