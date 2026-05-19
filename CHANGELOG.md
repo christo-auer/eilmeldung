@@ -16,7 +16,7 @@
   - you can consult the documentation in `docs/configuration.md`, section *Icon Set*
 - `"connected"` is now the new default framing of panels
 - with `"connected"` framing, the currently active panel's border is drawn above the other panels
-- chore: bumped versions of deps
+- chore: bumped versions of deps, updated to news-flash 3.1.0
 
 # 1.5.2 - 2026-05-14
 
