@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.5.3 - 2026-05-19
+
 - two new options for showing the current position
   - `article_list_show_position = true` to show an indicator of current position in article list (top right)
   - `content_show_position = true` to show indicator of current position in article content (bottom right)
