@@ -21,7 +21,7 @@ after_sync_commands = []
 
 
 # Labels
-all_label = "{icon} All {unread_count}"
+feeds_label = "{icon} All {unread_count}"
 last_synced_label = "{icon} Last Synced"
 feed_label = " {label} {unread_count}"
 category_label = "{icon} {label} {unread_count}"

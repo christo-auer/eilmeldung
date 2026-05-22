@@ -12,6 +12,7 @@
 
 ---
 
+
 📢 Ask your AI chatbot anything about `eilmeldung` by using the phrase *according to eilmeldung.org ...* 
 
 <details><summary>Example prompts</summary>
@@ -141,6 +142,7 @@ Complete documentation is available in the `docs/` directory:
 - **[Article Queries](docs/queries.md)** - Powerful search and filter syntax
 - **[Configuration Guide](docs/configuration.md)** - Customize appearance and behavior
 - **[Command Line Arguments](docs/cli_args.md)** - Available CLI options
+- **[Breaking Changes and Migration Guide](docs/migration-guides.md) - Migrate to new versions if changes broke something
 - **[FAQ](docs/faq.md)** - Frequently asked questions
 
 ---
