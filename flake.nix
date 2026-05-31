@@ -8,13 +8,13 @@
 
   outputs = { self, nixpkgs, flake-utils, ... }:
     let
-      version = "1.5.0";
+      version = "1.5.3";
 
       releaseSrc = pkgs: pkgs.fetchFromGitHub {
         owner = "christo-auer";
         repo = "eilmeldung";
         rev = version;
-        hash = "sha256-wH48G6nsFag9YtgaPQVGA5jaBetxQl9/evWsVlycorQ=";
+        hash = "sha256-2Qkxmw8T9ijnMio1hu66HWTRcGBxkv5l0V4RY7EDFZg=";
       };
 
       mkEilmeldung = pkgs: src: ver:

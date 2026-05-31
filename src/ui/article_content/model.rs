@@ -12,16 +12,12 @@ use htmd::HtmlToMarkdown;
 use image::ImageReader;
 use news_flash::models::{Article, ArticleID, Enclosure, FatArticle, Feed, Tag, Thumbnail};
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
-use tokio::sync::mpsc::UnboundedSender;
 
 #[derive(Getters)]
 #[getset(get = "pub(super)")]
 pub struct ArticleContentModelData {
     #[getset(skip)]
     news_flash_utils: Arc<NewsFlashUtils>,
-
-    #[getset(skip)]
-    message_sender: UnboundedSender<Message>,
 
     // Core article data
     article: Option<Article>,
@@ -43,13 +39,9 @@ pub struct ArticleContentModelData {
 }
 
 impl ArticleContentModelData {
-    pub(super) fn new(
-        news_flash_utils: Arc<NewsFlashUtils>,
-        message_sender: UnboundedSender<Message>,
-    ) -> Self {
+    pub(super) fn new(news_flash_utils: Arc<NewsFlashUtils>) -> Self {
         Self {
             news_flash_utils,
-            message_sender,
 
             article: None,
             feed: None,
@@ -67,12 +59,10 @@ impl ArticleContentModelData {
     pub(super) async fn on_article_selected(
         &mut self,
         article_id: &ArticleID,
-        is_focused: bool,
-    ) -> color_eyre::Result<()> {
-        if let Some(current_article) = self.article.as_ref()
-            && current_article.article_id == *article_id
-        {
-            return Ok(());
+    ) -> color_eyre::Result<bool> {
+        if self.article.as_ref().map(|article| &article.article_id) == Some(article_id) {
+            log::trace!("CONTENT no change in article id");
+            return Ok(false);
         }
 
         let current_instant = Instant::now();
@@ -111,14 +101,7 @@ impl ArticleContentModelData {
 
         self.article = Some(article);
 
-        if is_focused {
-            self.message_sender
-                .send(Message::Event(Event::FatArticleSelected(
-                    article_id.clone(),
-                )))?;
-        }
-
-        Ok(())
+        Ok(true)
     }
 
     pub(super) fn prepare_thumbnail(

@@ -1,7 +1,46 @@
 # Unreleased
 
+# 1.5.3 - 2026-05-19
+
+- two new options for showing the current position
+  - `article_list_show_position = true` to show an indicator of current position in article list (top right)
+  - `content_show_position = true` to show indicator of current position in article content (bottom right)
+  - the to options are set to `true` by default; just add the following two lines at the root level of your `config.toml` to deactivate the indicators
+  ```toml
+  article_list_show_position = false
+  content_show_position = false
+  ```
+- **Breaking Change**: icon customization heavily refactored
+  - you can now customize *all* icons appearing in eilmeldung
+  - there are two preset, `nerd` (default) and `ascii`
+  - there is a new configuration section `[icon_set]` in which you can overwrite all icons to your likings 
+  - if you have defined customized icons, move the settings into `[icon_set]`, add `preset="nerd"` and remove the `_icon` suffix from your settings.
+  - you can consult the documentation in `docs/configuration.md`, section *Icon Set*
+- `"connected"` is now the new default framing of panels
+- with `"connected"` framing, the currently active panel's border is drawn above the other panels
+- chore: bumped versions of deps, updated to news-flash 3.1.0
+
+# 1.5.2 - 2026-05-14
+
+- restored default border theme (connected and rounded)
+- fixed bug which resulted in rapid swapping of article content 
+
+# 1.5.1 - 2026-05-13
+
+- **open borders for everyone**! 
+  - you can now freely customize the border style of the panels!
+  - want to highlight the focused panel by a double border and use a plain border for inactive panels? just append this to your `config.toml`:
+  ```toml
+  [border_theme]
+  focused = "double"
+  unfocused = "plain"
+  framing = "connected"
+  ```
+  - these settings also feature to new `"connected"` style which elegantly connected the borders of each panel; you can still go back to the *classic* style by using `framing = "open"` or even use completely closed border with `framing = "closed"`
+  - read more in `docs/configuration.md` in the section *Border Theme*
 - fixed double inputs in command input and help popup under Windows
 - `show_top_bar` is **deprecated** now and the top bar is removed entirely
+- the settings `scrollbar_begin_symbol``, `scrollbar_end_symbol`, `scrollbar_track_symbol`, `scrollbar_thumb_symbol` are **deprecated** now; the scrollbar characters are determined by the chosen border type
 
 # 1.5.0 - 2026-05-04
 

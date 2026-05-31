@@ -36,9 +36,9 @@ impl<'a> Tooltip<'a> {
         };
 
         let icon = match self.flavor {
-            TooltipFlavor::Info => config.info_icon,
-            TooltipFlavor::Warning => config.warning_icon,
-            TooltipFlavor::Error => config.error_icon,
+            TooltipFlavor::Info => config.icon_set.info_icon(),
+            TooltipFlavor::Warning => config.icon_set.warning_icon(),
+            TooltipFlavor::Error => config.icon_set.error_icon(),
         };
 
         let mut contents = self.contents.clone();

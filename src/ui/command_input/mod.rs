@@ -726,13 +726,21 @@ impl Widget for &mut CommandInput {
         Self: Sized,
     {
         let block = Block::default()
-            .borders(Borders::LEFT | Borders::RIGHT | Borders::BOTTOM)
-            .border_style(if self.is_active {
-                self.config.theme.border_focused()
-            } else {
-                self.config.theme.border()
-            })
-            .border_type(BorderType::Rounded);
+            .borders(
+                self.config
+                    .border_theme
+                    .framing
+                    .eff_borders_open(Borders::TOP),
+            )
+            .merge_borders(self.config.border_theme.framing.eff_merge_strategy())
+            .border_style(self.config.theme.eff_border(true))
+            .border_type(self.config.border_theme.eff_type(true));
+
+        let area = self
+            .config
+            .border_theme
+            .framing
+            .eff_area(Borders::TOP, area);
 
         let inner_area = block.inner(area);
 
@@ -750,7 +758,7 @@ impl Widget for &mut CommandInput {
         self.text_input.set_style(self.config.theme.command_input());
 
         block.render(area, buf);
-        Text::from(self.config.command_line_prompt_icon.to_string())
+        Text::from(self.config.icon_set.command_line_prompt_icon().to_string())
             .style(self.config.theme.header())
             .render(preset_command_chunk, buf);
         self.text_input.render(text_input_chunk, buf);

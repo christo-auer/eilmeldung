@@ -26,6 +26,7 @@ use std::{sync::Arc, time::Duration};
 
 use tokio::{sync::mpsc::UnboundedSender, time::Instant};
 
+#[derive(getset::CopyGetters)]
 pub struct FeedList {
     config: Arc<Config>,
     message_sender: UnboundedSender<Message>,
@@ -33,6 +34,7 @@ pub struct FeedList {
     view_data: FeedListViewData,
     model_data: FeedListModelData,
 
+    #[getset(get_copy = "pub")]
     is_focused: bool,
     last_sync: Instant,
 
@@ -95,7 +97,7 @@ impl FeedList {
         use FeedListItem::*;
         if let Some(selected) = self.selected().as_ref() {
             match selected {
-                All => self.model_data.set_all_read()?,
+                Feeds => self.model_data.set_all_read()?,
                 Feed(feed) => self.model_data.set_feed_read(feed.feed_id.clone())?,
                 Category(category) => self
                     .model_data
@@ -125,7 +127,7 @@ impl FeedList {
         use FeedListItem::*;
         if let Some(selected) = self.selected().as_ref() {
             match selected {
-                not_supported @ (All | Tags | Query(_) | Categories) => {
+                not_supported @ (Feeds | Tags | Query(_) | Categories) => {
                     return tooltip(
                         &self.message_sender,
                         format!("renaming not supported for {not_supported}").as_str(),
@@ -180,7 +182,7 @@ impl FeedList {
         use FeedListItem::*;
         if let Some(selected) = self.selected().as_ref() {
             match selected {
-                not_supported @ (All | Tags | Query(_) | Categories) => {
+                not_supported @ (Feeds | Tags | Query(_) | Categories) => {
                     tooltip(
                         &self.message_sender,
                         format!("removing not supported for {not_supported}").as_str(),
@@ -616,7 +618,7 @@ impl FeedList {
             // update-to-date numbers and also, we assume, that the user wants to navigate only to
             // feeds and categories
             FeedListItem::Tag(_)
-            | FeedListItem::All
+            | FeedListItem::Feeds
             | FeedListItem::Categories
             | FeedListItem::Tags
             | FeedListItem::Query(_) => false,

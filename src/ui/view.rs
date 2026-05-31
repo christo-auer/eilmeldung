@@ -6,13 +6,15 @@ use throbber_widgets_tui::Throbber;
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         // render status bar
-        let mut area = self.render_status_bar(area, buf);
+        let area = self.render_status_bar(area, buf);
 
         // render command line (if visible)
-        area = self.render_command_line(area.to_owned(), buf);
+        let (panels_chunk, command_line_chunk) = self.compute_command_line_chunk(area.to_owned());
 
         // render the main panels
-        self.render_panels(area, buf);
+        self.render_panels(panels_chunk, buf);
+
+        self.render_command_line(buf, command_line_chunk);
 
         // and finally the pop if visible
         if self.help_popup.is_visible() {
@@ -41,7 +43,7 @@ impl App {
         let status_span = if self.is_offline {
             // when offline display offline icon
             Span::styled(
-                format!("{} ", self.config.offline_icon),
+                format!("{} ", self.config.icon_set.offline_icon()),
                 self.config.theme.statusbar(),
             )
         } else {
@@ -77,30 +79,51 @@ impl App {
                 .areas::<4>(bottom);
 
             let tooltip_line = self.tooltip.to_line(&self.config);
+            let left_icon = self.config.icon_set.status_bar_left_icon();
+            let right_icon = self.config.icon_set.status_bar_right_icon();
 
             Span::styled(status_span.content, tooltip_line.style).render(status, buf);
-            Span::styled("", tooltip_line.style.not_reversed()).render(bottom_left, buf);
-            Span::styled("", tooltip_line.style.not_reversed()).render(bottom_right, buf);
+
+            Span::styled(
+                left_icon.to_string(),
+                if left_icon != ' ' {
+                    tooltip_line.style.not_reversed()
+                } else {
+                    tooltip_line.style.reversed()
+                },
+            )
+            .render(bottom_left, buf);
+            Span::styled(
+                right_icon.to_string(),
+                if right_icon != ' ' {
+                    tooltip_line.style.not_reversed()
+                } else {
+                    tooltip_line.style.reversed()
+                },
+            )
+            .render(bottom_right, buf);
             tooltip_line.render(bottom_main, buf);
         }
 
         middle
     }
 
-    fn render_command_line(&mut self, area: Rect, buf: &mut Buffer) -> Rect {
+    fn render_command_line(&mut self, buf: &mut Buffer, command_line_chunk: Rect) {
+        if self.command_input.is_active() {
+            self.command_input.render(command_line_chunk, buf);
+        } else if self.command_confirm.is_active() {
+            self.command_confirm.render(command_line_chunk, buf);
+        }
+    }
+
+    fn compute_command_line_chunk(&mut self, area: Rect) -> (Rect, Rect) {
         if self.command_input.is_active() || self.command_confirm.is_active() {
             let [panels_chunk, command_line_chunk] =
                 Layout::vertical(vec![Constraint::Min(0), Constraint::Length(3)]).areas::<2>(area);
 
-            if self.command_input.is_active() {
-                self.command_input.render(command_line_chunk, buf);
-            } else if self.command_confirm.is_active() {
-                self.command_confirm.render(command_line_chunk, buf);
-            }
-
-            panels_chunk
+            (panels_chunk, command_line_chunk)
         } else {
-            area
+            (area, Default::default())
         }
     }
 
@@ -164,9 +187,23 @@ impl App {
         *self.panel_areas.articles_list_mut() = articles_list_chunk;
         *self.panel_areas.article_content_mut() = article_content_chunk;
 
-        // render stuff
-        self.feed_list.render(feeds_list_chunk, buf);
-        self.articles_list.render(articles_list_chunk, buf);
-        self.article_content.render(article_content_chunk, buf);
+        if !self.feed_list.is_focused() {
+            self.feed_list.render(feeds_list_chunk, buf);
+        }
+        if !self.articles_list.is_focused() {
+            self.articles_list.render(articles_list_chunk, buf);
+        }
+        if !self.article_content.is_focused() {
+            self.article_content.render(article_content_chunk, buf);
+        }
+
+        // render the focused panel last so that its border drawn over the other borders
+        if self.feed_list.is_focused() {
+            self.feed_list.render(feeds_list_chunk, buf);
+        } else if self.articles_list.is_focused() {
+            self.articles_list.render(articles_list_chunk, buf);
+        } else if self.article_content.is_focused() {
+            self.article_content.render(article_content_chunk, buf);
+        }
     }
 }

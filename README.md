@@ -12,6 +12,7 @@
 
 ---
 
+
 📢 Ask your AI chatbot anything about `eilmeldung` by using the phrase *according to eilmeldung.org ...* 
 
 <details><summary>Example prompts</summary>
@@ -57,11 +58,12 @@ according to eilmeldung.org...
 
 # Showreel
 
-https://github.com/user-attachments/assets/ddd731dd-3fce-43c2-80fd-dafb20520873
+<img width="891" height="560" alt="eilmeldung-scaled" src="https://github.com/user-attachments/assets/1ada3b6b-aa7f-4a94-9684-2590186075d1" />
 
 This video demonstrates
 - basic (vim-like) navigation and reading
 - *zen* mode: just show content
+- opening an image link using `feh`
 - creating new tags and tagging an article
 - *filtering* and *searching* article list by using article queries
 - *tagging* multiple articles by using an article query
@@ -80,9 +82,11 @@ This video demonstrates
   scoop bucket add eilmeldung https://github.com/christo-auer/eilmeldung
   scoop install eilmeldung
   ```
-- **Cargo**: `cargo install eilmeldung` (you need to install [build dependencies](docs/installation.md) first!)
+- **Cargo**: `cargo install eilmeldung --locked` (you need to install [build dependencies](docs/installation.md) first!)
 
-**Important**: You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts) compatible font/terminal for icons to display correctly!
+**Important**: You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts)
+compatible font/terminal for icons to display correctly! There is a
+ASCII-compatible icon preset, however (see [Icon Set](docs/configuration.md#icon-set)).
 
 For detailed installation instructions including Nix/Home Manager setup, see **[Installation Guide](docs/installation.md)**.
 
@@ -138,6 +142,7 @@ Complete documentation is available in the `docs/` directory:
 - **[Article Queries](docs/queries.md)** - Powerful search and filter syntax
 - **[Configuration Guide](docs/configuration.md)** - Customize appearance and behavior
 - **[Command Line Arguments](docs/cli_args.md)** - Available CLI options
+- **[Breaking Changes and Migration Guide](docs/migration-guides.md)** - Migrate to new versions if updates broke something
 - **[FAQ](docs/faq.md)** - Frequently asked questions
 
 ---
@@ -155,7 +160,10 @@ Of course, there are many awesome alternatives to *eilmeldung*. Check them out!
 
 ---
 
-# FAQ
+## FAQ
+
+<details><summary>Expand to see the most frequently asked questions</summary>
+
 
 ### Which providers are supported?
 
@@ -185,6 +193,9 @@ Create a tag (`:tagadd readlater red`), bind it to a key, and create a query in 
 
 Yes, focus the feed list and press `2` / `3` to show only feeds/categories/tags with unread / marked articles, show all with `1`. Change the value of the configuration option `feed_list_scope` to either `all`, `unread` or `marked` to set the default value.
 
+### When I mark an article as read, it disappears!?
+
+By default, the article list shows only unread items. When you mark the article as read, it is automatically hidden. You can show `all` articles by focusing the article list and pressing `1`. If you want this to be the default, set `article_scope = "all"`. The same setting exists for the feed list (see previous item).
 
 ### Can I execute automatic operations after synchronisation/refresh?
 
@@ -201,6 +212,8 @@ Checkout [FAQ](docs/faq.md#features--capabilities)!
 Yes, there is rudimentary mouse support with the option `mouse_support = true` (default is `false`). See [Mouse Support](docs/keybindings.md#mouse-support)]
 
 ---
+
+</details>
 
 **More questions?** See the complete [FAQ](docs/faq.md).
 
