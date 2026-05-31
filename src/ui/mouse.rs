@@ -44,6 +44,6 @@ impl PanelAreas {
         let border_row = self.articles_list.y + self.articles_list.height;
         let in_column_range =
             col >= self.articles_list.x && col < self.articles_list.x + self.articles_list.width;
-        row == border_row && in_column_range
+        (row == border_row || row == border_row.saturating_sub(1)) && in_column_range
     }
 }

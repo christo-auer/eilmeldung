@@ -1,7 +1,9 @@
 use ratatui::{
-    style::{Modifier, Style},
+    style::Style,
     text::{Line, Span, Text},
 };
+
+use crate::prelude::*;
 
 pub mod prelude {
     pub use super::StderrRedirect;
@@ -16,13 +18,29 @@ pub fn html_sanitize(html_escaped_string: &str) -> String {
         .unwrap_or(html_escaped_string.to_owned())
 }
 
-pub fn to_bubble<'a>(span: Span<'a>) -> Line<'a> {
+pub fn to_bubble<'a>(span: Span<'a>, config: &Config) -> Line<'a> {
     let style = span.style;
+    let left_icon = config.icon_set.big_icon_left_icon();
+    let right_icon = config.icon_set.big_icon_right_icon();
 
     Line::from(vec![
-        Span::styled("", style),
-        span.style(style.add_modifier(Modifier::REVERSED)),
-        Span::styled("", style),
+        Span::styled(
+            left_icon.to_string(),
+            if left_icon != ' ' {
+                style
+            } else {
+                style.reversed()
+            },
+        ),
+        span.style(style.reversed()),
+        Span::styled(
+            right_icon.to_string(),
+            if right_icon != ' ' {
+                style
+            } else {
+                style.reversed()
+            },
+        ),
     ])
 }
 

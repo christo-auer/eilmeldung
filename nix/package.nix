@@ -8,6 +8,7 @@
 , sqlite
 , glib
 , glibc
+, stdenv
 , llvmPackages_19
 }:
 
@@ -35,14 +36,14 @@ rustPlatform.buildRustPackage {
 
   LIBCLANG_PATH = lib.makeLibraryPath [ llvmPackages_19.libclang.lib ];
   BINDGEN_EXTRA_CLANG_ARGS = lib.concatStringsSep " " (
-    (map (a: ''-I"${a}/include"'') [
-      glibc.dev
-    ])
+    lib.optionals stdenv.isLinux [
+      ''-I"${glibc.dev}/include"''
+      ''-I"${glibc.dev}/include/"''
+    ]
     ++ [
       ''-I"${llvmPackages_19.libclang.lib}/lib/clang/19/include"''
       ''-I"${glib.dev}/include/glib-2.0"''
       ''-I${glib.out}/lib/glib-2.0/include/''
-      ''-I"${glibc.dev}/include/"''
     ]
   );
 

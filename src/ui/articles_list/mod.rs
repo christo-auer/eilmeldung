@@ -15,6 +15,7 @@ use std::{collections::HashSet, mem::take, sync::Arc};
 
 use tokio::sync::mpsc::UnboundedSender;
 
+#[derive(getset::CopyGetters)]
 pub struct ArticlesList {
     config: Arc<Config>,
 
@@ -24,6 +25,7 @@ pub struct ArticlesList {
     filter_state: FilterState,
     model_data: ArticleListModelData,
 
+    #[getset(get_copy = "pub")]
     is_focused: bool,
 }
 

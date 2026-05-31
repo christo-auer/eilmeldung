@@ -138,12 +138,10 @@ impl FilterState {
 
 impl Widget for &mut ArticlesList {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        let block = self
-            .view_data
-            .gen_block(&self.config, &self.filter_state, self.is_focused);
+        let (block, area) =
+            self.view_data
+                .gen_block(&self.config, &self.filter_state, self.is_focused, area);
         let inner = block.inner(area);
-
-        block.render(area, buf);
 
         *self.view_data.article_lines_mut() = Some(area.height.saturating_sub(1));
 
@@ -154,17 +152,19 @@ impl Widget for &mut ArticlesList {
             &mut self.view_data.table_state,
         );
 
-        // let scroll_thumb_icon = self.config.scroll_thumb_icon.to_string();
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-            .symbols(self.config.scrollbar_set())
+            .symbols(self.config.border_theme.scrollbar_set(self.is_focused))
             .style(self.config.theme.eff_border(self.is_focused));
 
         let scrollbar_area = Rect {
             x: area.x,
             y: area.y + 1,
             width: area.width,
-            height: area.height.saturating_sub(1),
+            height: block.inner(area).height,
         };
+
+        block.render(area, buf);
+
         StatefulWidget::render(
             scrollbar,
             scrollbar_area,
@@ -186,6 +186,8 @@ pub struct ArticleListViewData<'a> {
 
     #[getset(get_mut = "pub(super)", get = "pub(super)")]
     article_lines: Option<u16>,
+
+    article_count: usize,
 }
 
 impl<'a> ArticleListViewData<'a> {
@@ -226,9 +228,18 @@ impl<'a> ArticleListViewData<'a> {
             );
             spans.push(Span::styled(filter_text.to_owned(), config.theme.header()));
         }
-        // spans.push(Span::styled("├", config.theme.header()));
 
         title
+    }
+
+    fn build_position(&self, config: &Config) -> Line<'static> {
+        if self.article_count > 0 && config.article_list_show_position {
+            let selected = self.table_state.selected().unwrap_or(0).saturating_add(1);
+            let all = self.article_count;
+            Line::styled(format!(" {selected}/{all} ",), config.theme.header())
+        } else {
+            "".into()
+        }
     }
 
     pub fn update(
@@ -240,10 +251,10 @@ impl<'a> ArticleListViewData<'a> {
     ) {
         let selected_style = config.theme.selected(&Default::default());
 
-        let read_icon = config.read_icon.to_string();
-        let unread_icon = config.unread_icon.to_string();
-        let marked_icon = config.marked_icon.to_string();
-        let unmarked_icon = config.unmarked_icon.to_string();
+        let read_icon = config.icon_set.read_icon().to_string();
+        let unread_icon = config.icon_set.unread_icon().to_string();
+        let marked_icon = config.icon_set.marked_icon().to_string();
+        let unmarked_icon = config.icon_set.unmarked_icon().to_string();
 
         let placeholders: Vec<&str> = config
             .article_table
@@ -284,7 +295,10 @@ impl<'a> ArticleListViewData<'a> {
                                                 Some(color) => config.theme.tag().fg(color),
                                                 None => config.theme.tag(),
                                             };
-                                            Span::styled(config.tag_icon.to_string(), style)
+                                            Span::styled(
+                                                config.icon_set.tag_icon().to_string(),
+                                                style,
+                                            )
                                         })
                                         .collect::<Vec<Span>>()
                                 }
@@ -352,7 +366,7 @@ impl<'a> ArticleListViewData<'a> {
                         "{flagged}" => if model_data.flagged_articles().is_empty() {
                             "".to_string()
                         } else if model_data.flagged_articles().contains(&article.article_id) {
-                            format!(" {}", config.flagged_icon)
+                            format!(" {}", config.icon_set.flagged_icon())
                         } else {
                             "  ".to_string()
                         }
@@ -418,6 +432,8 @@ impl<'a> ArticleListViewData<'a> {
             .content_length(entries.len())
             .position(0);
 
+        self.article_count = entries.len();
+
         self.table = Table::new(
             entries,
             placeholders
@@ -433,17 +449,32 @@ impl<'a> ArticleListViewData<'a> {
         config: &Config,
         filter_state: &FilterState,
         is_focused: bool,
-    ) -> Block<'static> {
-        Block::default()
-            .borders(Borders::TOP | Borders::LEFT | Borders::RIGHT)
-            .title_top(self.build_title(filter_state, config))
-            .title_alignment(ratatui::layout::Alignment::Left)
-            .border_type(ratatui::widgets::BorderType::Rounded)
-            .border_style(if is_focused {
-                config.theme.border_focused()
-            } else {
-                config.theme.border()
-            })
+        area: Rect,
+    ) -> (Block<'static>, Rect) {
+        let borders = config
+            .border_theme
+            .framing
+            .eff_borders_open(Borders::BOTTOM);
+
+        let enlarged_area = config.border_theme.framing.eff_area(Borders::BOTTOM, area);
+
+        (
+            Block::default()
+                .borders(borders)
+                .title_top(
+                    self.build_title(filter_state, config)
+                        .alignment(HorizontalAlignment::Left),
+                )
+                .title_top(
+                    self.build_position(config)
+                        .alignment(HorizontalAlignment::Right),
+                )
+                .title_alignment(ratatui::layout::Alignment::Left)
+                .border_type(config.border_theme.eff_type(is_focused))
+                .merge_borders(config.border_theme.framing.eff_merge_strategy())
+                .border_style(config.theme.eff_border(is_focused)),
+            enlarged_area,
+        )
     }
 
     pub(super) fn get_table_state_mut(&mut self) -> &mut TableState {

@@ -15,6 +15,7 @@ use std::sync::Arc;
 use news_flash::models::{ArticleID, Enclosure, Thumbnail};
 use tokio::sync::mpsc::UnboundedSender;
 
+#[derive(getset::CopyGetters)]
 pub struct ArticleContent {
     config: Arc<Config>,
 
@@ -23,6 +24,7 @@ pub struct ArticleContent {
 
     message_sender: UnboundedSender<Message>,
 
+    #[getset(get_copy = "pub")]
     is_focused: bool,
     is_distraction_free: bool,
 }
@@ -36,22 +38,20 @@ impl ArticleContent {
         Self {
             config,
             view_data: ArticleContentViewData::default(),
-            model_data: ArticleContentModelData::new(news_flash_utils, message_sender.clone()),
+            model_data: ArticleContentModelData::new(news_flash_utils),
             message_sender,
             is_focused: false,
             is_distraction_free: false,
         }
     }
 
-    async fn on_article_selected(&mut self, article_id: &ArticleID) -> color_eyre::Result<()> {
-        self.model_data
-            .on_article_selected(article_id, self.is_focused)
-            .await?;
+    async fn on_article_selected(&mut self, article_id: &ArticleID) -> color_eyre::Result<bool> {
+        let article_changed = self.model_data.on_article_selected(article_id).await?;
         self.view_data.clear_image();
         self.view_data.scroll_to_top();
         self.view_data.update(&self.model_data, self.config.clone());
         self.update_thumbnail_fetching_state()?;
-        Ok(())
+        Ok(article_changed)
     }
 
     fn prepare_thumbnail(&mut self, thumbnail: &Thumbnail) -> color_eyre::Result<()> {
@@ -64,10 +64,6 @@ impl ArticleContent {
 
     fn scrape_article(&mut self) -> color_eyre::Result<()> {
         self.model_data.scrape_article()?;
-        // Reset scroll when new content is loaded
-        // if self.model_data.fat_article().is_some() {
-        //     *self.view_data.vertical_scroll_mut() = 0;
-        // }
         Ok(())
     }
 
@@ -337,23 +333,17 @@ impl crate::messages::MessageReceiver for ArticleContent {
             }
         }
 
+        log::trace!("CONTENT received: {message:?}");
+
         if let Message::Event(event) = message {
             use Event::*;
             match event {
                 ArticleSelected(article_id) => {
-                    self.on_article_selected(article_id).await?;
-                    view_needs_update = true;
-                }
-
-                FatArticleSelected(article) => {
-                    self.model_data
-                        .on_article_selected(article, self.is_focused)
-                        .await?;
-
-                    if self.is_focused && self.config.auto_scrape {
+                    let article_changed = self.on_article_selected(article_id).await?;
+                    if article_changed && self.is_focused && self.config.auto_scrape {
                         self.scrape_article()?;
                     }
-                    view_needs_update = true;
+                    view_needs_update = article_changed;
                 }
 
                 AsyncArticleThumbnailFetchFinished(thumbnail) => {

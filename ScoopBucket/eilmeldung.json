@@ -2,9 +2,9 @@
   "description": "a feature-rich TUI RSS reader based on the newsflash library",
   "license": "GPL-3.0",
   "homepage": "https://github.com/christo-auer/eilmeldung",
-  "version": "1.5.0",
-  "url": "https://github.com/christo-auer/eilmeldung/releases/download/1.5.0/eilmeldung-x86_64-pc-windows-msvc-1.5.0.tar.gz",
-  "hash": "0a59e03313af447f21ff77f475f440014a6b4045262e13736a76f1a5a90fe412",
+  "version": "1.5.3"
+  "url": "https://github.com/christo-auer/eilmeldung/releases/download/1.5.3/eilmeldung-x86_64-pc-windows-msvc-1.5.3.tar.gz",
+  "hash": "ea72680a03e1947e03235c6e1220679bbe424ee02903f75c5ec37043e9b11112",
   "extract_dir": "eilmeldung",
   "bin": "eilmeldung.exe"
 }

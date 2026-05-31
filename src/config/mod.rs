@@ -1,5 +1,7 @@
+mod border_theme;
 mod dimension;
 mod feed_list_content_identfier;
+mod icon_set;
 mod input_config;
 mod login_configuration;
 mod paths;
@@ -15,10 +17,12 @@ use std::{
 use crate::prelude::*;
 
 pub mod prelude {
+    pub use super::border_theme::BorderTheme;
     pub use super::dimension::Dimension;
     pub use super::feed_list_content_identfier::{
         FeedListContentIdentifier, FeedListItemType, LabeledQuery,
     };
+    pub use super::icon_set::IconSet;
     pub use super::input_config::InputConfig;
     pub use super::login_configuration::LoginConfiguration;
     pub use super::paths::{CONFIG_FILE, PROJECT_DIRS};
@@ -32,7 +36,6 @@ pub mod prelude {
 use config::FileFormat;
 use log::{info, warn};
 use once_cell::sync::Lazy;
-use ratatui::symbols::scrollbar;
 
 static HINT_CHARS: Lazy<Vec<char>> = Lazy::new(|| vec!['F', 'J', 'G', 'H', 'D', 'K']);
 static HINT_NUMBERS: Lazy<Vec<char>> =
@@ -122,9 +125,9 @@ impl ArticleScope {
     pub fn to_icon(self, config: &Config) -> char {
         use ArticleScope as A;
         match self {
-            A::All => config.all_icon,
-            A::Unread => config.unread_icon,
-            A::Marked => config.marked_icon,
+            A::All => config.icon_set.all_icon(),
+            A::Unread => config.icon_set.unread_icon(),
+            A::Marked => config.icon_set.marked_icon(),
         }
     }
 }
@@ -134,6 +137,8 @@ impl ArticleScope {
 pub struct Config {
     pub input_config: InputConfig,
     pub theme: Theme,
+    pub icon_set: IconSet,
+    pub border_theme: BorderTheme,
     pub refresh_fps: u64,
     pub network_timeout_seconds: u64,
     pub keep_articles_days: u16,
@@ -150,9 +155,7 @@ pub struct Config {
 
     pub mouse_support: bool,
 
-    pub show_top_bar: Option<bool>,
-    pub offline_icon: char,
-    pub all_label: String,
+    pub feeds_label: String,
     pub last_synced_label: String,
     pub feed_label: String,
     pub category_label: String,
@@ -160,30 +163,13 @@ pub struct Config {
     pub tags_label: String,
     pub tag_label: String,
     pub query_label: String,
-    pub all_icon: char,
-    pub tag_icon: char,
-    pub info_icon: char,
-    pub warning_icon: char,
-    pub error_icon: char,
     pub article_table: String,
     pub date_format: String,
-    pub read_icon: char,
-    pub unread_icon: char,
-    pub marked_icon: char,
-    pub unmarked_icon: char,
-    pub enclosure_video_icon: char,
-    pub enclosure_audio_icon: char,
-    pub enclosure_image_icon: char,
-    pub flagged_icon: char,
-    pub command_line_prompt_icon: char,
     pub article_scope: ArticleScope,
     pub feed_list_scope: ArticleScope,
-    pub scrollbar_begin_symbol: char,
-    pub scrollbar_end_symbol: char,
-    pub scrollbar_track_symbol: char,
-    pub scrollbar_thumb_symbol: char,
-    pub image_icon: char,
-    pub url_icon: char,
+
+    pub article_list_show_position: bool,
+    pub content_show_position: bool,
 
     pub articles_after_selection: usize,
     pub auto_scrape: bool,
@@ -217,6 +203,24 @@ pub struct Config {
     pub login_setup: Option<LoginConfiguration>,
 
     pub cli_sync_stats_format: SyncStatsOutputFormat,
+
+    // DEPRECATED
+    pub show_top_bar: Option<bool>,
+    pub scrollbar_begin_symbol: Option<char>,
+    pub scrollbar_end_symbol: Option<char>,
+    pub scrollbar_track_symbol: Option<char>,
+    pub scrollbar_thumb_symbol: Option<char>,
+}
+
+macro_rules! deprecated {
+    ($name:expr) => {
+        if $name.is_some() {
+            warn!(
+                "configuration setting {} is deprecated and will be removed in future versions",
+                stringify!($name).strip_prefix("self.").unwrap() // for this I should burn in hell
+            )
+        }
+    };
 }
 
 impl Config {
@@ -231,11 +235,11 @@ impl Config {
             ));
         }
 
-        if self.show_top_bar.is_some() {
-            warn!(
-                "configuration setting show_top_bar is deprecated and will be removed in future versions"
-            )
-        }
+        deprecated!(self.show_top_bar);
+        deprecated!(self.scrollbar_begin_symbol);
+        deprecated!(self.scrollbar_end_symbol);
+        deprecated!(self.scrollbar_track_symbol);
+        deprecated!(self.scrollbar_thumb_symbol);
 
         Ok(())
     }
@@ -262,15 +266,6 @@ impl Config {
 
         Ok(())
     }
-
-    pub fn scrollbar_set(&self) -> scrollbar::Set<'_> {
-        scrollbar::Set {
-            track: Box::new(self.scrollbar_track_symbol.to_string()).leak(),
-            thumb: Box::new(self.scrollbar_thumb_symbol.to_string()).leak(),
-            begin: Box::new(self.scrollbar_begin_symbol.to_string()).leak(),
-            end: Box::new(self.scrollbar_end_symbol.to_string()).leak(),
-        }
-    }
 }
 
 impl Default for Config {
@@ -289,43 +284,25 @@ impl Default for Config {
             notify_after_sync_stats_format: SyncStatsOutputFormat::notify_default(),
             cli_sync_stats_format: SyncStatsOutputFormat::cli_default(),
 
-            show_top_bar: Some(false),
-            all_label: "󱀂 All {unread_count}".into(),
-            last_synced_label: " Last Synced".into(),
-            feed_label: " {label} {unread_count}".into(),
-            category_label: "󰉋 {label} {unread_count}".into(),
-            categories_label: "󰉓 Categories {unread_count}".into(),
-            tags_label: "󰓻 Tags {unread_count}".into(),
-            tag_label: "󰓹 {label} {unread_count}".into(),
-            query_label: " {label}".into(),
+            feeds_label: "{icon} All {unread_count}".into(),
+            feed_label: "{icon} {label} {unread_count}".into(),
+            last_synced_label: "{icon} Last Synced".into(),
+            category_label: "{icon} {label} {unread_count}".into(),
+            categories_label: "{icon} Categories {unread_count}".into(),
+            tags_label: "{icon} Tags {unread_count}".into(),
+            tag_label: "{icon} {label} {unread_count}".into(),
+            query_label: "{icon} {label}".into(),
             article_table: "{flagged},{read},{marked},{tag_icons},{age},{title}".into(),
             date_format: "%m/%d %H:%M".into(),
             theme: Default::default(),
+            icon_set: Default::default(),
+            border_theme: Default::default(),
             input_config: Default::default(),
-            offline_icon: '',
-            read_icon: '',
-            all_icon: '',
-            unread_icon: '',
-            marked_icon: '',
-            unmarked_icon: ' ',
-            tag_icon: '󰓹',
-            command_line_prompt_icon: '',
-            info_icon: '',
-            warning_icon: '',
-            error_icon: '',
-            enclosure_video_icon: '',
-            enclosure_audio_icon: '',
-            enclosure_image_icon: '',
-            flagged_icon: '',
             article_scope: ArticleScope::Unread,
             feed_list_scope: ArticleScope::All,
-            scrollbar_begin_symbol: '│',
-            scrollbar_end_symbol: '│',
-            scrollbar_track_symbol: ' ',
-            scrollbar_thumb_symbol: '│',
-            image_icon: '',
-            url_icon: '',
 
+            article_list_show_position: true,
+            content_show_position: true,
             articles_after_selection: 3,
             auto_scrape: true,
             thumbnail_show: true,
@@ -383,6 +360,13 @@ impl Default for Config {
             ],
             login_setup: None,
             mouse_support: false,
+
+            // DEPRECATED
+            show_top_bar: None,
+            scrollbar_begin_symbol: None,
+            scrollbar_end_symbol: None,
+            scrollbar_track_symbol: None,
+            scrollbar_thumb_symbol: None,
         }
     }
 }
