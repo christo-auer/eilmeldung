@@ -747,8 +747,8 @@ Upon first starting `eilmeldung`, the user is asked to enter login information a
 | ---                   | ---    | ---                                        | ---                                                                           |
 | `login_type`          | string |                                            | Type of login: `"no_login"`, `"direct_password"`, `"direct_token"`, `"oauth"` |
 | `provider`            | string | all                                        | Provider: `"local_rss"`, `"freshrss"`, etc.                                   |
-| `url`                 | string | `oauth` (required); `direct_password`, `direct_token` (optional) | URL for connection |
-| `user`                | string | `direct_password`                          | Username for direct login                                                     |
+| `url`                 | secret | `oauth` (required); `direct_password`, `direct_token` (optional) | URL for connection |
+| `user`                | secret | `direct_password`                          | Username for direct login                                                     |
 | `password`            | secret | `direct_password`                          | Password or command which produces password  (see below!)                     |
 | `token`               | secret | `direct_token`                             | Token for login by token                                                      |
 | `oauth_client_id`     | string | `oauth`                                    | *Optional*: client ID for oauth login (see note below)                        |
@@ -766,6 +766,20 @@ Configuration options with type *secret* are strings which
 
 - either contain the secret itself (e.g, `password = "abcd1234" `); storing password in *clear text* is **NOT RECOMMENDED**
 - or contain a command with prefix `cmd:` which outputs the secret to stdout (e.g., `password = "cmd:pass my-passwords/eilmeldung"`); **THIS IS THE WAY**
+
+Note that `url` and `user` also support the `cmd:` prefix, so you can retrieve all credentials from a password manager — not just the password.
+
+#### Windows: Environment Variable Expansion in `cmd:` Secrets
+
+On Windows, `%VAR%` style environment variables are expanded before the command is executed. This lets you reference your home directory portably:
+
+```toml
+password = "cmd:pwsh -NoProfile -File %USERPROFILE%/.config/eilmeldung/get-pass.ps1"
+url      = "cmd:pwsh -NoProfile -File %USERPROFILE%/.config/eilmeldung/get-url.ps1"
+user     = "cmd:pwsh -NoProfile -File %USERPROFILE%/.config/eilmeldung/get-user.ps1"
+```
+
+Note that `.ps1` scripts cannot be run directly on Windows — they must be invoked via `pwsh -NoProfile -File`.
 
 For step-by-step examples of setting up secrets for FreshRSS, see:
 - [FreshRSS automatic login with pass (Linux and macOS)](examples/freshrss_secrets_linux_macos.md)
