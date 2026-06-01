@@ -14,9 +14,9 @@ pub struct LoginConfiguration {
     pub login_type: LoginType,
     pub provider: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub user: Option<String>,
+    pub user: Option<Secret>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub url: Option<String>,
+    pub url: Option<Secret>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password: Option<Secret>,
@@ -50,6 +50,53 @@ pub enum Secret {
     Command(Vec<String>),
 }
 
+/// Expands `%VAR%` style environment variables on Windows.
+/// On non-Windows platforms the string is returned unchanged.
+fn expand_env_vars(s: &str) -> String {
+    #[cfg(target_os = "windows")]
+    {
+        let mut result = String::with_capacity(s.len());
+        let mut chars = s.chars().peekable();
+        while let Some(c) = chars.next() {
+            if c == '%' {
+                let mut var_name = String::new();
+                let mut closed = false;
+                for inner in chars.by_ref() {
+                    if inner == '%' {
+                        closed = true;
+                        break;
+                    }
+                    var_name.push(inner);
+                }
+                if closed && !var_name.is_empty() {
+                    if let Ok(val) = std::env::var(&var_name) {
+                        // Normalize backslashes to forward slashes so that
+                        // shell_words::split (a POSIX parser) does not treat
+                        // them as escape characters.
+                        result.push_str(&val.replace('\\', "/"));
+                    } else {
+                        // Leave unexpanded if the variable isn't set
+                        result.push('%');
+                        result.push_str(&var_name);
+                        result.push('%');
+                    }
+                } else {
+                    // Unmatched '%' — pass through literally
+                    result.push('%');
+                    result.push_str(&var_name);
+                }
+            } else {
+                result.push(c);
+            }
+        }
+        result
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        s.to_owned()
+    }
+}
+
 impl FromStr for Secret {
     type Err = ConfigError;
 
@@ -59,7 +106,10 @@ impl FromStr for Secret {
                 .trim()
                 .split_once(":")
                 .ok_or(ConfigError::SecretParseError)?;
-            Secret::Command(shell_words::split(command).map_err(|_| ConfigError::SecretParseError)?)
+            let command = expand_env_vars(command);
+            Secret::Command(
+                shell_words::split(&command).map_err(|_| ConfigError::SecretParseError)?,
+            )
         } else {
             Secret::Verbatim(s.to_owned())
         })
@@ -171,12 +221,16 @@ impl LoginConfiguration {
             Secret::get_secret_option(self.password.as_ref())?.as_ref(),
             "password needed",
         )?;
+        let user = unwrap_or_config_error(
+            Secret::get_secret_option(self.user.as_ref())?.as_ref(),
+            "user name needed",
+        )?;
 
         Ok(LoginData::Direct(DirectLogin::Password(
             news_flash::models::PasswordLogin {
                 id: PluginID::new(&self.provider),
-                url: self.url.to_owned(),
-                user: unwrap_or_config_error(self.user.as_ref(), "user name needed")?,
+                url: Secret::get_secret_option(self.url.as_ref())?,
+                user,
                 password,
                 basic_auth: self.to_basic_auth()?,
             },
@@ -192,7 +246,7 @@ impl LoginConfiguration {
         Ok(LoginData::Direct(DirectLogin::Token(
             news_flash::models::TokenLogin {
                 id: PluginID::new(&self.provider),
-                url: self.url.to_owned(),
+                url: Secret::get_secret_option(self.url.as_ref())?,
                 token,
                 basic_auth: self.to_basic_auth()?,
             },
@@ -218,9 +272,14 @@ impl LoginConfiguration {
             }
         };
 
+        let url = unwrap_or_config_error(
+            Secret::get_secret_option(self.url.as_ref())?.as_ref(),
+            "url needed",
+        )?;
+
         Ok(LoginData::OAuth(OAuthData {
             id: PluginID::new(&self.provider),
-            url: unwrap_or_config_error(self.url.as_ref(), "url needed")?,
+            url,
             custom_api_secret: api_secret,
         }))
     }
@@ -246,8 +305,11 @@ impl LoginConfiguration {
         Self {
             login_type: LoginType::DirectPassword,
             provider: direct_login.id.as_str().to_owned(),
-            url: direct_login.url.to_owned(),
-            user: Some(direct_login.user.to_owned()),
+            url: direct_login
+                .url
+                .as_deref()
+                .map(|u| Secret::Verbatim(u.to_owned())),
+            user: Some(Secret::Verbatim(direct_login.user.to_owned())),
             password: Some(Secret::Verbatim(direct_login.password.to_owned())),
             ..Default::default()
         }
@@ -270,7 +332,10 @@ impl LoginConfiguration {
         Self {
             login_type: LoginType::DirectToken,
             provider: token_login.id.as_str().to_owned(),
-            url: token_login.url.to_owned(),
+            url: token_login
+                .url
+                .as_deref()
+                .map(|u| Secret::Verbatim(u.to_owned())),
             token: Some(Secret::Verbatim(token_login.token.to_owned())),
             ..Self::default()
         }
@@ -281,7 +346,7 @@ impl LoginConfiguration {
         Self {
             login_type: LoginType::OAuth,
             provider: oauth_data.id.as_str().to_owned(),
-            url: Some(oauth_data.url.to_owned()),
+            url: Some(Secret::Verbatim(oauth_data.url.to_owned())),
             oauth_client_id: oauth_data
                 .custom_api_secret
                 .as_ref()
@@ -301,6 +366,8 @@ impl LoginConfiguration {
 
     fn redact_secrets(self) -> Self {
         Self {
+            url: Self::redact(self.url),
+            user: Self::redact(self.user),
             password: Self::redact(self.password),
             oauth_client_secret: Self::redact(self.oauth_client_secret),
             basic_auth_password: Self::redact(self.basic_auth_password),
@@ -397,6 +464,62 @@ mod test {
         assert_matches!(Secret::from_str(s), Err(ConfigError::SecretParseError));
     }
 
+    #[cfg(target_os = "windows")]
+    mod expand_env_vars_tests {
+        use super::super::expand_env_vars;
+
+        #[test]
+        fn expands_known_variable() {
+            std::env::set_var("EILMELDUNG_TEST_VAR", r"C:\Users\test");
+            let result = expand_env_vars("prefix/%EILMELDUNG_TEST_VAR%/suffix");
+            // backslashes in expanded value must be normalized to forward slashes
+            assert_eq!(result, "prefix/C:/Users/test/suffix");
+            std::env::remove_var("EILMELDUNG_TEST_VAR");
+        }
+
+        #[test]
+        fn leaves_unknown_variable_intact() {
+            std::env::remove_var("EILMELDUNG_UNDEFINED_VAR");
+            let result = expand_env_vars("%EILMELDUNG_UNDEFINED_VAR%");
+            assert_eq!(result, "%EILMELDUNG_UNDEFINED_VAR%");
+        }
+
+        #[test]
+        fn unmatched_percent_passed_through() {
+            let result = expand_env_vars("100% done");
+            assert_eq!(result, "100% done");
+        }
+
+        #[test]
+        fn no_variables_unchanged() {
+            let result = expand_env_vars("pwsh -NoProfile -File /some/script.ps1");
+            assert_eq!(result, "pwsh -NoProfile -File /some/script.ps1");
+        }
+
+        #[test]
+        fn cmd_secret_expands_and_splits_correctly() {
+            use super::super::Secret;
+            use std::str::FromStr;
+            std::env::set_var("EILMELDUNG_TEST_HOME", r"C:\Users\test");
+            let Secret::Command(args) = Secret::from_str(
+                r"cmd:pwsh -NoProfile -File %EILMELDUNG_TEST_HOME%/.config/get-pass.ps1",
+            )
+            .expect("should parse") else {
+                panic!("expected Command variant");
+            };
+            assert_eq!(
+                args,
+                vec![
+                    "pwsh",
+                    "-NoProfile",
+                    "-File",
+                    "C:/Users/test/.config/get-pass.ps1"
+                ]
+            );
+            std::env::remove_var("EILMELDUNG_TEST_HOME");
+        }
+    }
+
     #[test]
     fn test_no_login() {
         let login_config = LoginConfiguration {
@@ -452,8 +575,8 @@ mod test {
         let login_configuration = LoginConfiguration {
             login_type: LoginType::DirectPassword,
             provider: "abc".to_owned(),
-            user: Some("username".to_owned()),
-            url: Some("http://www.rssprovider.com/".to_owned()),
+            user: Some(Secret::Verbatim("username".to_owned())),
+            url: Some(Secret::Verbatim("http://www.rssprovider.com/".to_owned())),
             password: Some(Secret::from_str("cmd:echo \"secret\"").unwrap()),
             token: None,
 
@@ -490,7 +613,7 @@ mod test {
             login_type: LoginType::OAuth,
             provider: "abc".to_owned(),
             user: None,
-            url: Some("http://www.rssprovider.com/".to_owned()),
+            url: Some(Secret::Verbatim("http://www.rssprovider.com/".to_owned())),
             password: None,
             token: None,
 
@@ -540,10 +663,12 @@ mod test {
         let login_configuration = LoginConfiguration {
             login_type,
             provider: "abc".to_owned(),
-            user: user.unwrap_or(Some("username")).map(str::to_owned),
+            user: user
+                .unwrap_or(Some("username"))
+                .map(|s| Secret::Verbatim(s.to_owned())),
             url: url
                 .unwrap_or(Some("http://www.rssprovider.com/"))
-                .map(str::to_owned),
+                .map(|s| Secret::Verbatim(s.to_owned())),
             password: password
                 .unwrap_or(Some("cmd:echo \"secret1\""))
                 .map(|cmd| Secret::from_str(cmd).unwrap()),
