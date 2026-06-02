@@ -209,7 +209,6 @@ mod lex_ordering_test {
 }
 
 #[cfg(test)]
-
 mod prepare_command_test {
 
     use claims::assert_matches;
