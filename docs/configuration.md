@@ -34,6 +34,8 @@
 - [Automatic Login](#automatic-login)
   - [Secrets](#secrets)
   - [Finding the Right Settings](#finding-the-right-settings)
+- [CLI Options](#cli-options)
+- [Variable Expansion](#variable-expansion)
 
 ---
 
@@ -638,6 +640,7 @@ The `share_targets` array defines available sharing targets. Each entry can be a
   - **Sharing via Webbrowser**: if the template starts with `http://...` or `https://...` the template is interpreted as a web URL and upon sharing the webbrowser is opened with the given URL
   - **Sharing to a Shell Command**: otherwise the template is interpreted as a shell command with arguments. **Note**: 
     - A new process is spawned in the background with `stdin`, `stdout`, and `stderr` redirected to `null`. In particular, you won't see any terminal output.
+    - [Environment variable expansion](#variable-expansion) is supported.
     - This does not support any shell features like input output redirection (`>`, etc.), pipes (`|`) or other advanced shell features. Also no shell variables are replaced (`~`, `$HOME`). If you want more sophisticated behaviour, create a shell script and call the shell script.
 
 **Default:**
@@ -685,6 +688,7 @@ audio_enclosure_command = "vlc {url}"
 video_enclosure_command = "mpv {url}"
 ```
 
+Note: These commands support [environment variable expansion](#variable-expansion).
 
 
 ## Layout Configuration
@@ -767,19 +771,23 @@ Configuration options with type *secret* are strings which
 - either contain the secret itself (e.g, `password = "abcd1234" `); storing password in *clear text* is **NOT RECOMMENDED**
 - or contain a command with prefix `cmd:` which outputs the secret to stdout (e.g., `password = "cmd:pass my-passwords/eilmeldung"`); **THIS IS THE WAY**
 
-Note that `url` and `user` also support the `cmd:` prefix, so you can retrieve all credentials from a password manager — not just the password.
+Note 
 
-#### Windows: Environment Variable Expansion in `cmd:` Secrets
+- `url` and `user` also support the `cmd:` prefix, so you can retrieve all credentials from a password manager, not just the password.
+- `cmd:` support [variable expansion](#variable-expansion)
 
-On Windows, `%VAR%` style environment variables are expanded before the command is executed. This lets you reference your home directory portably:
+
+####  Notes on secrets under Windows
+
+By using environment variables, configuration can be made portable under Windows:
 
 ```toml
-password = "cmd:pwsh -NoProfile -File %USERPROFILE%/.config/eilmeldung/get-pass.ps1"
-url      = "cmd:pwsh -NoProfile -File %USERPROFILE%/.config/eilmeldung/get-url.ps1"
-user     = "cmd:pwsh -NoProfile -File %USERPROFILE%/.config/eilmeldung/get-user.ps1"
+password = "cmd:pwsh -NoProfile -File ${USERPROFILE}/.config/eilmeldung/get-pass.ps1"
+url      = "cmd:pwsh -NoProfile -File ${USERPROFILE}/.config/eilmeldung/get-url.ps1"
+user     = "cmd:pwsh -NoProfile -File ${USERPROFILE}/.config/eilmeldung/get-user.ps1"
 ```
 
-Note that `.ps1` scripts cannot be run directly on Windows — they must be invoked via `pwsh -NoProfile -File`.
+Note that `.ps1` scripts cannot be run directly on Windows, they must be invoked via `pwsh -NoProfile -File`.
 
 For step-by-step examples of setting up secrets for FreshRSS, see:
 - [FreshRSS automatic login with pass (Linux and macOS)](examples/freshrss_secrets_linux_macos.md)
@@ -818,6 +826,20 @@ url = "http://x.y.z.w/api/greader.php/"
 password = "cmd:pass my-passwords/eilmeldung"
 ```
 
-### CLI Options
+
+## CLI Options
 
 For options to customize the output of the `--sync` option see [here](cli_args.md).
+
+## Variable Expansion
+
+Shell commands in
+
+- [Share Targets](#share-target-configuration)
+- [Secrets](#secrets)
+- [Enclosure Commands](#opening-enclosures)
+
+support environment variable expansion via `$VAR` and `${VAR}`. A `~` at the beginning of a command is expanded to the home directory. Example:
+```toml
+share_targets = [ 'saveurl ~/.local/bin/save-url.sh "{url}" "${HOME}/Documents/news/urls.txt" ]
+```

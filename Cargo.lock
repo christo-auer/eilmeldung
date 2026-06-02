@@ -1783,6 +1783,7 @@ dependencies = [
  "serde_json",
  "serde_toml",
  "shell-words",
+ "shellexpand",
  "strfmt",
  "string_manipulation_utf8",
  "strum 0.28.0",
