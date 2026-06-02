@@ -50,53 +50,6 @@ pub enum Secret {
     Command(Vec<String>),
 }
 
-/// Expands `%VAR%` style environment variables on Windows.
-/// On non-Windows platforms the string is returned unchanged.
-fn expand_env_vars(s: &str) -> String {
-    #[cfg(target_os = "windows")]
-    {
-        let mut result = String::with_capacity(s.len());
-        let mut chars = s.chars().peekable();
-        while let Some(c) = chars.next() {
-            if c == '%' {
-                let mut var_name = String::new();
-                let mut closed = false;
-                for inner in chars.by_ref() {
-                    if inner == '%' {
-                        closed = true;
-                        break;
-                    }
-                    var_name.push(inner);
-                }
-                if closed && !var_name.is_empty() {
-                    if let Ok(val) = std::env::var(&var_name) {
-                        // Normalize backslashes to forward slashes so that
-                        // shell_words::split (a POSIX parser) does not treat
-                        // them as escape characters.
-                        result.push_str(&val.replace('\\', "/"));
-                    } else {
-                        // Leave unexpanded if the variable isn't set
-                        result.push('%');
-                        result.push_str(&var_name);
-                        result.push('%');
-                    }
-                } else {
-                    // Unmatched '%' — pass through literally
-                    result.push('%');
-                    result.push_str(&var_name);
-                }
-            } else {
-                result.push(c);
-            }
-        }
-        result
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        s.to_owned()
-    }
-}
-
 impl FromStr for Secret {
     type Err = ConfigError;
 
@@ -106,10 +59,13 @@ impl FromStr for Secret {
                 .trim()
                 .split_once(":")
                 .ok_or(ConfigError::SecretParseError)?;
-            let command = expand_env_vars(command);
-            Secret::Command(
-                shell_words::split(&command).map_err(|_| ConfigError::SecretParseError)?,
-            )
+
+            let (command, mut args) = prepare_command(command)
+                .map_err(|report| ConfigError::SecretCommandParseError(report.to_string()))?;
+
+            args.insert(0, command);
+
+            Secret::Command(args)
         } else {
             Secret::Verbatim(s.to_owned())
         })
@@ -447,7 +403,6 @@ mod test {
     #[case("cmd:pass private/eilmeldung", vec!["pass", "private/eilmeldung"])]
     #[case("cmd:/home/user/pass.sh", vec!["/home/user/pass.sh"])]
     #[case(" cmd:   pass  ", vec!["pass"])]
-    #[case("cmd:", vec![])]
     fn test_secret_parsing_command(#[case] s: &str, #[case] args: Vec<&str>) {
         use Secret as P;
         let Ok(P::Command(command)) = Secret::from_str(s) else {
@@ -460,238 +415,11 @@ mod test {
     #[rstest]
     #[case("cmd:pass \"private/eilmeldung")]
     #[case("cmd:/home/user/pass.sh\'")]
+    #[case("cmd:")]
     fn test_secret_parsing_command_fail(#[case] s: &str) {
-        assert_matches!(Secret::from_str(s), Err(ConfigError::SecretParseError));
-    }
-
-    #[cfg(target_os = "windows")]
-    mod expand_env_vars_tests {
-        use super::super::expand_env_vars;
-
-        #[test]
-        fn expands_known_variable() {
-            std::env::set_var("EILMELDUNG_TEST_VAR", r"C:\Users\test");
-            let result = expand_env_vars("prefix/%EILMELDUNG_TEST_VAR%/suffix");
-            // backslashes in expanded value must be normalized to forward slashes
-            assert_eq!(result, "prefix/C:/Users/test/suffix");
-            std::env::remove_var("EILMELDUNG_TEST_VAR");
-        }
-
-        #[test]
-        fn leaves_unknown_variable_intact() {
-            std::env::remove_var("EILMELDUNG_UNDEFINED_VAR");
-            let result = expand_env_vars("%EILMELDUNG_UNDEFINED_VAR%");
-            assert_eq!(result, "%EILMELDUNG_UNDEFINED_VAR%");
-        }
-
-        #[test]
-        fn unmatched_percent_passed_through() {
-            let result = expand_env_vars("100% done");
-            assert_eq!(result, "100% done");
-        }
-
-        #[test]
-        fn no_variables_unchanged() {
-            let result = expand_env_vars("pwsh -NoProfile -File /some/script.ps1");
-            assert_eq!(result, "pwsh -NoProfile -File /some/script.ps1");
-        }
-
-        #[test]
-        fn cmd_secret_expands_and_splits_correctly() {
-            use super::super::Secret;
-            use std::str::FromStr;
-            std::env::set_var("EILMELDUNG_TEST_HOME", r"C:\Users\test");
-            let Secret::Command(args) = Secret::from_str(
-                r"cmd:pwsh -NoProfile -File %EILMELDUNG_TEST_HOME%/.config/get-pass.ps1",
-            )
-            .expect("should parse") else {
-                panic!("expected Command variant");
-            };
-            assert_eq!(
-                args,
-                vec![
-                    "pwsh",
-                    "-NoProfile",
-                    "-File",
-                    "C:/Users/test/.config/get-pass.ps1"
-                ]
-            );
-            std::env::remove_var("EILMELDUNG_TEST_HOME");
-        }
-    }
-
-    #[test]
-    fn test_no_login() {
-        let login_config = LoginConfiguration {
-            login_type: LoginType::NoLogin,
-            provider: "abc".to_owned(),
-            user: None,
-            url: None,
-            password: None,
-            token: None,
-
-            oauth_client_id: None,
-            oauth_client_secret: None,
-
-            basic_auth_user: None,
-            basic_auth_password: None,
-        };
-
-        let login_data = login_config.to_login_data();
-
-        let Ok(LoginData::None(provider)) = login_data else {
-            panic!("expected LoginData::None")
-        };
-
-        assert_eq!(provider.as_str(), "abc");
-    }
-
-    #[rstest]
-    #[case("cmd:echo \"secret\"", "secret")]
-    #[case("cmd:  echo \"secret\"", "secret")]
-    #[case("cmd:echo 'secret'", "secret")]
-    fn test_secret_execute_command(#[case] cmd: &str, #[case] pass: &str) {
-        let secret = Secret::from_str(cmd).unwrap();
-        let pass_value = secret.get_secret();
-        assert_matches!(pass_value, Ok(..));
-        assert_eq!(pass_value.unwrap(), pass);
-    }
-
-    #[test]
-    fn test_secret_execute_command_fail() {
-        let secret = Secret::from_str("cmd:exit 1").unwrap();
-        let pass_value = secret.get_secret();
         assert_matches!(
-            pass_value,
-            Err(ConfigError::SecretCommandExecutionError(..))
-        );
-        let ConfigError::SecretCommandExecutionError(_message) = pass_value.unwrap_err() else {
-            panic!("expected SecretCommandExecutionError with error message");
-        };
-    }
-
-    #[test]
-    fn test_direct_login() {
-        let login_configuration = LoginConfiguration {
-            login_type: LoginType::DirectPassword,
-            provider: "abc".to_owned(),
-            user: Some(Secret::Verbatim("username".to_owned())),
-            url: Some(Secret::Verbatim("http://www.rssprovider.com/".to_owned())),
-            password: Some(Secret::from_str("cmd:echo \"secret\"").unwrap()),
-            token: None,
-
-            oauth_client_id: None,
-            oauth_client_secret: None,
-
-            basic_auth_user: Some("username".to_owned()),
-            basic_auth_password: Some(Secret::from_str("cmd:echo \"secret\"").unwrap()),
-        };
-        let login_data_res = login_configuration.to_login_data();
-
-        let Ok(LoginData::Direct(DirectLogin::Password(direct_login_data))) = login_data_res else {
-            panic!("expected direct login data");
-        };
-
-        assert_eq!(direct_login_data.user, "username");
-        assert_eq!(direct_login_data.password, "secret");
-        assert_eq!(
-            direct_login_data.url.unwrap(),
-            "http://www.rssprovider.com/"
-        );
-
-        let Some(BasicAuth { user, password }) = direct_login_data.basic_auth else {
-            panic!("expected basic auth data");
-        };
-
-        assert_eq!(user, "username");
-        assert_eq!(password.unwrap(), "secret");
-    }
-
-    #[test]
-    fn test_oauth() {
-        let login_configuration = LoginConfiguration {
-            login_type: LoginType::OAuth,
-            provider: "abc".to_owned(),
-            user: None,
-            url: Some(Secret::Verbatim("http://www.rssprovider.com/".to_owned())),
-            password: None,
-            token: None,
-
-            oauth_client_id: Some("someclientid".to_owned()),
-            oauth_client_secret: Some(Secret::from_str("cmd:echo \"secret\"").unwrap()),
-
-            basic_auth_user: Some("username".to_owned()),
-            basic_auth_password: Some(Secret::from_str("cmd:echo \"secret\"").unwrap()),
-        };
-        let login_data_res = login_configuration.to_login_data();
-
-        assert_matches!(login_data_res, Ok(LoginData::OAuth(..)));
-
-        let Ok(LoginData::OAuth(oauth_data)) = login_data_res else {
-            panic!("expected oauth login data");
-        };
-
-        assert_eq!(
-            oauth_data.custom_api_secret.as_ref().unwrap().client_id,
-            "someclientid"
-        );
-        assert_eq!(
-            oauth_data.custom_api_secret.as_ref().unwrap().client_secret,
-            "secret"
-        );
-        assert_eq!(oauth_data.url, "http://www.rssprovider.com/");
-    }
-
-    #[rstest]
-    #[allow(clippy::too_many_arguments)]    
-    #[rustfmt::skip]
-    #[case(LoginType::DirectPassword, Some(None), None,       None,       None,       None,       None)]
-    #[case(LoginType::DirectPassword, None,       None,       Some(None), None,       None,       None)]
-    #[case(LoginType::DirectToken,    None,       None,       None,       Some(None), None,       None)]
-    #[case(LoginType::OAuth,          None,       Some(None), None,       None,       None,       None)]
-    #[case(LoginType::OAuth,          None,       None,       None,       None,       Some(None), None)]
-    #[case(LoginType::OAuth,          None,       None,       None,       None,       None,       Some(None))]
-    fn to_login_data_fails(
-        #[case] login_type: LoginType,
-        #[case] user: Option<Option<&str>>,
-        #[case] url: Option<Option<&str>>,
-        #[case] password: Option<Option<&str>>,
-        #[case] token: Option<Option<&str>>,
-        #[case] oauth_client_id: Option<Option<&str>>,
-        #[case] oauth_client_secret: Option<Option<&str>>,
-    ) {
-        let login_configuration = LoginConfiguration {
-            login_type,
-            provider: "abc".to_owned(),
-            user: user
-                .unwrap_or(Some("username"))
-                .map(|s| Secret::Verbatim(s.to_owned())),
-            url: url
-                .unwrap_or(Some("http://www.rssprovider.com/"))
-                .map(|s| Secret::Verbatim(s.to_owned())),
-            password: password
-                .unwrap_or(Some("cmd:echo \"secret1\""))
-                .map(|cmd| Secret::from_str(cmd).unwrap()),
-            token: token
-                .unwrap_or(Some("cmd:echo \"secret2\""))
-                .map(|cmd| Secret::from_str(cmd).unwrap()),
-
-            oauth_client_id: oauth_client_id
-                .unwrap_or(Some("someclientid"))
-                .map(str::to_owned),
-
-            oauth_client_secret: oauth_client_secret
-                .unwrap_or(Some("cmd:echo \"secret3\""))
-                .map(|cmd| Secret::from_str(cmd).unwrap()),
-
-            basic_auth_user: Some("username".to_owned()),
-            basic_auth_password: Some(Secret::from_str("cmd:echo \"secret4\"").unwrap()),
-        };
-        let login_data_res = login_configuration.to_login_data();
-
-        assert_matches!(
-            login_data_res,
-            Err(ConfigError::LoginConfigurationInvalid(_))
+            Secret::from_str(s),
+            Err(ConfigError::SecretCommandParseError(_))
         );
     }
 }

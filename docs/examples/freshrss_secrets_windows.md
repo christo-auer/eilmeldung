@@ -82,14 +82,14 @@ Each script should print the decrypted value.
 ## eilmeldung Config for FreshRSS
 
 The `url`, `user`, and `password` fields all support the `cmd:` prefix on Windows.
-Use `pwsh -NoProfile -File` to invoke your `.ps1` scripts, and `%USERPROFILE%` to
+Use `pwsh -NoProfile -File` to invoke your `.ps1` scripts, and `${USERPROFILE}` to
 reference your home directory (expanded automatically by eilmeldung):
 
 ```toml
 [login_setup]
 login_type = "direct_password"
 provider = "freshrss"
-url      = "cmd:pwsh -NoProfile -File %USERPROFILE%/.config/eilmeldung/get-url.ps1"
-user     = "cmd:pwsh -NoProfile -File %USERPROFILE%/.config/eilmeldung/get-user.ps1"
-password = "cmd:pwsh -NoProfile -File %USERPROFILE%/.config/eilmeldung/get-pass.ps1"
+url      = "cmd:pwsh -NoProfile -File ${USERPROFILE}/.config/eilmeldung/get-url.ps1"
+user     = "cmd:pwsh -NoProfile -File ${USERPROFILE}/.config/eilmeldung/get-user.ps1"
+password = "cmd:pwsh -NoProfile -File ${USERPROFILE}/.config/eilmeldung/get-pass.ps1"
 ```

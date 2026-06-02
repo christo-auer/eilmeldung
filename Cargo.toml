@@ -72,6 +72,7 @@ tui-prompts = "0.6.3"
 tui-tree-widget = "0.24.0"
 url = "2.5.8"
 webbrowser = "1.2.1"
+shellexpand = "3.1.2"
 
 [dev-dependencies]
 claims = "0.8.0"
