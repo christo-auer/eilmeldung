@@ -187,22 +187,22 @@ impl App {
         *self.panel_areas.articles_list_mut() = articles_list_chunk;
         *self.panel_areas.article_content_mut() = article_content_chunk;
 
-        if !self.feed_list.is_focused() {
+        if !self.feed_list.is_focused() && feeds_list_chunk.area() > 0 {
             self.feed_list.render(feeds_list_chunk, buf);
         }
-        if !self.articles_list.is_focused() {
+        if !self.articles_list.is_focused() && articles_list_chunk.area() > 0 {
             self.articles_list.render(articles_list_chunk, buf);
         }
-        if !self.article_content.is_focused() {
+        if !self.article_content.is_focused() && article_content_chunk.area() > 0 {
             self.article_content.render(article_content_chunk, buf);
         }
 
         // render the focused panel last so that its border drawn over the other borders
-        if self.feed_list.is_focused() {
+        if self.feed_list.is_focused() && feeds_list_chunk.area() > 0 {
             self.feed_list.render(feeds_list_chunk, buf);
-        } else if self.articles_list.is_focused() {
+        } else if self.articles_list.is_focused() && articles_list_chunk.area() > 0 {
             self.articles_list.render(articles_list_chunk, buf);
-        } else if self.article_content.is_focused() {
+        } else if self.article_content.is_focused() && article_content_chunk.area() > 0 {
             self.article_content.render(article_content_chunk, buf);
         }
     }
