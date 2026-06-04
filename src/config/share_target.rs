@@ -293,12 +293,12 @@ mod tests {
 
         assert_matches!(
             ShareTarget::from_str(r#"fancyprog "a"#),
-            Err(ConfigError::ShareTargetInvalidCommand(..))
+            Err(ConfigError::ShareTargetParseError(..))
         );
 
         assert_matches!(
             ShareTarget::from_str(r#"fancyprog 'a"#),
-            Err(ConfigError::ShareTargetInvalidCommand(..))
+            Err(ConfigError::ShareTargetParseError(..))
         );
     }
 

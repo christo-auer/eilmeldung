@@ -92,15 +92,15 @@ impl StderrRedirect {
 }
 
 pub fn prepare_command(command_line: &str) -> color_eyre::Result<(String, Vec<String>)> {
-    // first expand env vars and a ~ at the beginning
-    let expanded_line = shellexpand::full(command_line)?;
-
     // split at quotes
-    let split_line = shell_words::split(&expanded_line)?;
+    let split_line = shell_words::split(command_line)?
+        .into_iter()
+        .map(|arg| shellexpand::full(&arg).map(|cow| cow.to_string()))
+        .collect::<Result<Vec<String>, _>>()?;
 
     let Some((first, args)) = split_line.split_first() else {
         return Err(color_eyre::Report::msg(format!(
-            "Invalid command: {command_line} (expanded: {expanded_line})"
+            "Invalid command: {command_line} (expanded: {split_line:?})"
         )));
     };
 
