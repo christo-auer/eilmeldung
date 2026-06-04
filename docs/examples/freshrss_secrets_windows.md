@@ -7,6 +7,8 @@ This guide shows how to securely store your FreshRSS credentials using GPG on Wi
 Install gpg4win via scoop:
 
 ```powershell
+# Install gpg but don't run it yet (we need to create the env var first)
+scoop bucket add extras
 scoop install gpg4win
 ```
 
@@ -72,9 +74,9 @@ Set-Content "$env:USERPROFILE\.config\eilmeldung\get-pass.ps1" 'gpg --quiet --de
 ### Test the Scripts
 
 ```powershell
-pwsh -NoProfile -File "$env:USERPROFILE\.config\eilmeldung\get-url.ps1"
-pwsh -NoProfile -File "$env:USERPROFILE\.config\eilmeldung\get-user.ps1"
-pwsh -NoProfile -File "$env:USERPROFILE\.config\eilmeldung\get-pass.ps1"
+Add-Content "$env:USERPROFILE\.config\eilmeldung\get-url.ps1" '(gpg --quiet --decrypt "$env:USERPROFILE\.passwords\eilmeldung-url.gpg").Trim()'
+Add-Content "$env:USERPROFILE\.config\eilmeldung\get-user.ps1" '(gpg --quiet --decrypt "$env:USERPROFILE\.passwords\eilmeldung-user.gpg").Trim()'
+Add-Content "$env:USERPROFILE\.config\eilmeldung\get-pass.ps1" '(gpg --quiet --decrypt "$env:USERPROFILE\.passwords\eilmeldung-pass.gpg").Trim()'
 ```
 
 Each script should print the decrypted value.
