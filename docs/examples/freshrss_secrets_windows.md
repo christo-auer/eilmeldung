@@ -6,6 +6,7 @@ This guide shows how to securely store your FreshRSS credentials using GPG on Wi
 
 ```powershell
 # Install gpg but don't run it yet (we need to create the env var first)
+scoop bucket add extras
 scoop install gpg4win
 
 # Create the GnuPG config directory
