@@ -37,7 +37,8 @@ function Install-ViaScoop($pkg) {
 # Resolve Perl
 # ---------------------------------------------------------------------------
 if (-not $PerlPath) {
-    $perlSource = (Get-Command perl -ErrorAction SilentlyContinue)?.Source
+    $perlCmd = Get-Command perl -ErrorAction SilentlyContinue
+    $perlSource = if ($perlCmd) { $perlCmd.Source } else { $null }
     $candidates = @(
         "C:\Strawberry\perl\bin\perl.exe",
         "$env:USERPROFILE\scoop\apps\perl\current\perl\bin\perl.exe",
@@ -71,7 +72,8 @@ Write-Host "  perl  : $PerlPath"
 # Resolve LLVM (required by bindgen to generate libxml2 bindings)
 # ---------------------------------------------------------------------------
 if (-not $LlvmBinPath) {
-    $clangSource = (Get-Command clang -ErrorAction SilentlyContinue)?.Source
+    $clangCmd = Get-Command clang -ErrorAction SilentlyContinue
+    $clangSource = if ($clangCmd) { $clangCmd.Source } else { $null }
     $candidates = @(
         "$env:USERPROFILE\scoop\apps\llvm\current\bin",
         "C:\Program Files\LLVM\bin",
@@ -107,7 +109,7 @@ $vcpkgExe = Join-Path $VcpkgRoot "vcpkg.exe"
 
 if (-not (Test-Path $vcpkgExe)) {
     Write-Host "vcpkg not found at '$VcpkgRoot' -- installing..."
-    if (Test-Path $VcpkgRoot) {
+    if (Test-Path "$VcpkgRoot\bootstrap-vcpkg.bat") {
         Write-Host "  Bootstrapping vcpkg..."
         & "$VcpkgRoot\bootstrap-vcpkg.bat" -disableMetrics
     } else {
