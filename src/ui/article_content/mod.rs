@@ -333,8 +333,6 @@ impl crate::messages::MessageReceiver for ArticleContent {
             }
         }
 
-        log::trace!("CONTENT received: {message:?}");
-
         if let Message::Event(event) = message {
             use Event::*;
             match event {

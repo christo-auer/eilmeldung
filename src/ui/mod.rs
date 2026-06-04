@@ -572,24 +572,11 @@ impl App {
         summary: &str,
         body: &str,
     ) -> color_eyre::Result<()> {
-        let split = shell_words::split(
-            &command
-                .replace("{summary}", summary)
-                .replace("{body}", body),
-        );
-        let Ok(args) = split else {
-            tooltip(
-                &self.message_sender,
-                &*format!(
-                    "invalid notify after sync cmd: {command}: {}",
-                    split.unwrap_err()
-                ),
-                TooltipFlavor::Error,
-            )?;
-            return Ok(());
-        };
+        let command = command
+            .replace("{summary}", summary)
+            .replace("{body}", body);
 
-        let Some((command, args)) = args.split_first() else {
+        let Ok((command, args)) = prepare_command(&command) else {
             tooltip(
                 &self.message_sender,
                 &*format!("invalid notify after sync cmd: {command}",),
@@ -598,7 +585,7 @@ impl App {
             return Ok(());
         };
 
-        let spawn = std::process::Command::new(command)
+        let spawn = std::process::Command::new(&command)
             .args(args)
             .stdin(Stdio::null())
             .stdout(Stdio::null())

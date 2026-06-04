@@ -96,7 +96,13 @@ impl FromStr for ShareTarget {
                     if rest.starts_with("http://") || rest.starts_with("https://") {
                         T::Custom(name.to_owned(), rest.to_owned())
                     } else {
-                        T::Command(name.to_owned(), shell_words::split(rest)?)
+                        let (command, mut args) = prepare_command(rest).map_err(|report| {
+                            ConfigError::ShareTargetParseError(format!(
+                                "invalid command for share target {s}: {report}"
+                            ))
+                        })?;
+                        args.insert(0, command);
+                        T::Command(name.to_owned(), args)
                     }
                 }
                 None => {
@@ -287,12 +293,12 @@ mod tests {
 
         assert_matches!(
             ShareTarget::from_str(r#"fancyprog "a"#),
-            Err(ConfigError::ShareTargetInvalidCommand(..))
+            Err(ConfigError::ShareTargetParseError(..))
         );
 
         assert_matches!(
             ShareTarget::from_str(r#"fancyprog 'a"#),
-            Err(ConfigError::ShareTargetInvalidCommand(..))
+            Err(ConfigError::ShareTargetParseError(..))
         );
     }
 

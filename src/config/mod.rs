@@ -43,25 +43,27 @@ static HINT_NUMBERS: Lazy<Vec<char>> =
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConfigError {
-    #[error("configuration could not be validated")]
+    #[error("configuration could not be validated: {0}")]
     ValidationError(String),
-    #[error("feed list content identifier could not be parsed")]
+    #[error("feed list content identifier could not be parsed: {0}")]
     FeedListContentIdentifierParseError(String),
-    #[error("share target could not be parsed")]
+    #[error("share target could not be parsed: {0}")]
     ShareTargetParseError(String),
-    #[error("dimension could not be parsed")]
+    #[error("dimension could not be parsed: {0}")]
     DimensionParseError(String),
-    #[error("invalid URL template for share target")]
+    #[error("invalid URL template for share target: {0}")]
     ShareTargetInvalidUrlError(#[from] url::ParseError),
     #[error("invalid target")]
     ShareTargetInvalid,
-    #[error("invalid share command")]
+    #[error("invalid share command: {0}")]
     ShareTargetInvalidCommand(#[from] shell_words::ParseError),
     #[error("invalid secret or secret command")]
     SecretParseError,
-    #[error("invalid secret or secret command")]
+    #[error("invalid secret command: {0}")]
+    SecretCommandParseError(String),
+    #[error("unable to execute secret command: {0}")]
     SecretCommandExecutionError(String),
-    #[error("invalid login configuration")]
+    #[error("invalid login configuration: {0}")]
     LoginConfigurationInvalid(String),
 }
 

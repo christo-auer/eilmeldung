@@ -61,7 +61,6 @@ impl ArticleContentModelData {
         article_id: &ArticleID,
     ) -> color_eyre::Result<bool> {
         if self.article.as_ref().map(|article| &article.article_id) == Some(article_id) {
-            log::trace!("CONTENT no change in article id");
             return Ok(false);
         }
 
@@ -247,15 +246,9 @@ impl ArticleContentModelData {
         .replace("{type}", <EnclosureType>::from(enclosure).as_ref())
         .replace("{mime}", enclosure.mime_type.as_deref().unwrap_or("*/*"));
 
-        let args = shell_words::split(&command)?;
+        let (cmd, args) = prepare_command(&command)?;
 
-        let Some((cmd, args)) = args.split_first() else {
-            return Err(color_eyre::eyre::eyre!(
-                "invalid enclosure command: no command found"
-            ));
-        };
-
-        let mut command = std::process::Command::new(cmd);
+        let mut command = std::process::Command::new(&cmd);
 
         command
             .stdin(Stdio::null())

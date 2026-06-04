@@ -10,6 +10,7 @@ pub mod prelude {
     pub use super::html_sanitize;
     pub use super::lex_ordering;
     pub use super::patch_text_style;
+    pub use super::prepare_command;
     pub use super::to_bubble;
 }
 
@@ -90,6 +91,22 @@ impl StderrRedirect {
     }
 }
 
+pub fn prepare_command(command_line: &str) -> color_eyre::Result<(String, Vec<String>)> {
+    // split at quotes
+    let split_line = shell_words::split(command_line)?
+        .into_iter()
+        .map(|arg| shellexpand::full(&arg).map(|cow| cow.to_string()))
+        .collect::<Result<Vec<String>, _>>()?;
+
+    let Some((first, args)) = split_line.split_first() else {
+        return Err(color_eyre::Report::msg(format!(
+            "Invalid command: {command_line} (expanded: {split_line:?})"
+        )));
+    };
+
+    Ok((first.to_string(), args.to_vec()))
+}
+
 impl Drop for StderrRedirect {
     fn drop(&mut self) {
         unsafe {
@@ -162,7 +179,7 @@ pub fn lex_ordering(symbols: Vec<char>) -> Result<impl Iterator<Item = String>, 
 }
 
 #[cfg(test)]
-mod test {
+mod lex_ordering_test {
     use claims::assert_some_eq;
 
     use super::*;
@@ -187,6 +204,68 @@ mod test {
     fn test_lex_ordering_no_symbols() {
         if lex_ordering(Default::default()).is_ok() {
             panic!("must return Err if no symboled are passed");
+        }
+    }
+}
+
+#[cfg(test)]
+mod prepare_command_test {
+
+    use claims::assert_matches;
+
+    use super::prepare_command;
+
+    #[test]
+    fn expands_known_variable() {
+        unsafe {
+            std::env::set_var("EILMELDUNG_TEST_VAR", r"C:/Users/test");
+            let (command, rest) = prepare_command("prefix/$EILMELDUNG_TEST_VAR/suffix").unwrap();
+
+            assert_eq!(r"prefix/C:/Users/test/suffix", command);
+            assert_eq!(Vec::<String>::new(), rest);
+
+            std::env::remove_var("EILMELDUNG_TEST_VAR");
+        }
+    }
+
+    #[test]
+    fn leaves_unknown_variable_intact() {
+        unsafe {
+            std::env::remove_var("EILMELDUNG_UNDEFINED_VAR");
+            let result = prepare_command("$EILMELDUNG_UNDEFINED_VAR");
+            assert_matches!(result, Err(_));
+        }
+    }
+
+    #[test]
+    fn no_variables_unchanged() {
+        let (cmd, args) = prepare_command("pwsh -NoProfile -File /some/script.ps1").unwrap();
+        assert_eq!(cmd, "pwsh");
+        assert_eq!(vec!["-NoProfile", "-File", "/some/script.ps1"], args);
+    }
+
+    #[test]
+    fn no_variables_unchanged_quotes() {
+        let (cmd, args) = prepare_command("pwsh \"-NoProfile -File\" /some/script.ps1").unwrap();
+        assert_eq!(cmd, "pwsh");
+        assert_eq!(vec!["-NoProfile -File", "/some/script.ps1"], args);
+    }
+
+    #[test]
+    fn cmd_secret_expands_and_splits_correctly() {
+        unsafe {
+            std::env::set_var("EILMELDUNG_TEST_HOME", r"C:/Users/test");
+            let (cmd, args) = prepare_command(
+                r"pwsh -NoProfile -File $EILMELDUNG_TEST_HOME/.config/get-pass.ps1",
+            )
+            .unwrap();
+
+            assert_eq!(cmd, "pwsh");
+            assert_eq!(
+                args,
+                vec!["-NoProfile", "-File", "C:/Users/test/.config/get-pass.ps1"]
+            );
+            std::env::remove_var("EILMELDUNG_TEST_HOME");
         }
     }
 }
