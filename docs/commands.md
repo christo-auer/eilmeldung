@@ -7,10 +7,56 @@
 
 Commands may accept parameters such as scopes, queries, names, URLs, and colors. On the command line, press TAB to see autocomplete suggestions for available values.
 
+### Using Commands in Key Bindings
+
+Commands can be used in two ways:
+
+1. **Via command line** (press `:`): Type the command and press Enter
+   - Example: `:hintfollow f` - opens hint 'f'
+   - Press Tab for autocompletion and tips.
+
+2. **Via key bindings**: Defined in `[input_config.mappings]` in your config file
+
+When creating custom key bindings, understand the difference between:
+
+- **Direct commands**: Execute immediately with all parameters specified
+  ```toml
+  "x" = ["hintfollow a"]  # Opens hint 'a' immediately
+  "s" = ["sync"]          # Syncs immediately
+  ```
+
+- **Command-line commands**: Open the command line for interactive input (use `cmd` prefix). This also automatically opens the autocompletion menu.
+  ```toml
+  "x" = ["cmd hintfollow"]  # Opens command line pre-filled with "hintfollow "
+  "f" = ["cmd filter"]      # Opens command line pre-filled with "filter "
+  ```
+
+**Common mistake:**
+```toml
+# This generates an error as hintfollow expects a hint parameter
+"x" = ["hintfollow"]  
+
+# Use this to open command line for interactive input
+"x" = ["cmd hintfollow"]
+
+# Or this if the parameter is known in advance
+"x" = ["hintfollow a"]
+```
+
+**When to use `cmd`:**
+- Commands expecting user input: `hintfollow`, `hintshare`, `tag`, `filter`, `sort`, `rename`
+- When you want to see/edit the command before executing
+- When you want Tab completion for parameters
+
+**When NOT to use `cmd`:**
+- Commands that work standalone: `sync`, `quit`, `zen`, `read`, `mark`, `open`
+- Multi-command sequences: `["open", "read", "nextunread"]`
+
 ---
 
 ## Table of Contents
 
+- [Using Commands in Key Bindings](#using-commands-in-key-bindings)
 - [Example Commands](#example-commands)
 - [Application Commands](#application-commands)
 - [Panel Management](#panel-management)
@@ -73,6 +119,7 @@ Here are some common command examples to get you started:
 | `in`      | `in <panel> <command>` | All       | Run a command in the given panel (`feeds`, `articles`, `content`) (typically used in key bindings or `read`, `show` and `unread`) |
 | `LOGOUT`  | `LOGOUT NOW`           | All       | Logout and remove ALL local data (requires `NOW` as confirmation)                                  |
 | `nop`     | `nop`                  | All       | No operation (useful for unmapping key bindings)                                                   |
+| `helpinput` | `helpinput`          | All       | Show help on input mappings (displays all keybindings)                                             |
 
 ## Panel Management
 
@@ -108,7 +155,7 @@ Here are some common command examples to get you started:
 | `yank`             | `yank`                     | Feed List | Yank (copy) the selected feed or category for moving                                                                                             |
 | `paste`            | `paste <position>`         | Feed List | Paste the yanked item. Position: `before` or `after`. Examples: `:paste after`, `:paste before`                                                  |
 | `search`           | `search <searchterm>`      | Feed List | Search item in feed list; search term can be single word, quoted string or regular expression (see [Article Queries](queries.md))                | 
-| 'sortfeeds`        | `sortfeeds`                | Feed List | Sort feed list alphabetically (cannot be undone)                                                                                                 |
+| `sortfeeds`        | `sortfeeds`                | Feed List | Sort feed list alphabetically (cannot be undone)                                                                                                 |
 
 ## Article List
 
@@ -146,11 +193,11 @@ These commands support a **scope parameter** to target specific articles:
 | `flaginvert`    | `flaginvert [<scope>]`       | Article List                  | Invert flags (selection for bulk-operation). Examples: `:flaginvert` (current), `:flaginvert %` (all), `:flaginvert newer:"1 hour ago"` (articles newser than one hour)                                             |
 | `unmark`        | `unmark [<scope>]`           | Article List                  | Unmark articles. Examples: `:unmark` (current), `:unmark %` (all)                                                                                                                                                   |
 | `open`          | `open [<scope>]`             | Article List                  | Open articles in the web browser. Examples: `:open` (current), `:open marked` (all marked)                                                                                                                          |
-| `openenclosure` | `open [<type>]`              | Article Content               | Opens an enclosure of the article (if available), if a type (`audio`, `video`, `image`) is given, the enclosure of the given type is opened (see also configuration options `enclosure_command`)                    |
+| `openenclosure` | `openenclosure [<type>]`     | Article Content               | Opens an enclosure of the article (if available), if a type (`audio`, `video`, `image`) is given, the enclosure of the given type is opened (see also configuration options `enclosure_command`)                    |
 | `tag`           | `tag <tag name> [<scope>]`   | Article List                  | Add tag to articles. Examples: `:tag important` (current), `:tag tech unread` (all unread), `:tag news %` (all articles)                                                                                            |
 | `untag`         | `untag <tag name> [<scope>]` | Article List                  | Remove tag from articles. Examples: `:untag important` (current), `:untag tech marked` (all marked)                                                                                                                 |
 | `share`         | `share <target>`             | Article List, Article Content | Share article title and URL. Built-in targets: `clipboard`, `reddit`, `mastodon`, `telegram`, `instapaper`. Custom targets (URL and commands) can be defined in the configuration file. Example: `:share clipboard` |
-| `hintopen`      | `hintopen <hint>`            | Article Content               | Open the hint in the web browser. Example: `hintopen f` opens the URL with hint `f`                                                                                                                                 |
+| `hintfollow`    | `hintfollow <hint>`          | Article Content               | Open the hint in the web browser. Example: `hintfollow f` opens the URL with hint `f`                                                                                                                               |
 | `hintshare`     | `hintshare <target> <hint>`  | Article Content               | Shares the URL to which the hint points with the given target, e.g., `hintshare clipboard h` copies the URL with hint `h` to the clipboard                                                                          |
 
 **Note:** By default, the commands `show`, `read` and `unread` are executed in the currently focused panel (feeds or articles). If you want to execute the command in a specific panel, use the `in` meta command, e.g., `in articles read %`, `in feeds show all`, etc.
