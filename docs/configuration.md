@@ -643,7 +643,7 @@ The `share_targets` array defines available sharing targets. Each entry can be a
   - **Sharing to a Shell Command**: otherwise the template is interpreted as a shell command with arguments. **Note**: 
     - A new process is spawned in the background with `stdin`, `stdout`, and `stderr` redirected to `null`. In particular, you won't see any terminal output.
     - [Environment variable expansion](#variable-expansion) is supported.
-    - This does not support any shell features like input output redirection (`>`, etc.), pipes (`|`) or other advanced shell features. Also no shell variables are replaced (`~`, `$HOME`). If you want more sophisticated behaviour, create a shell script and call the shell script.
+    - This does not support any shell features like input output redirection (`>`, etc.), pipes (`|`) or other advanced shell features. If you want more sophisticated behaviour, create a shell script and call the shell script.
 
 **Default:**
 ```toml
