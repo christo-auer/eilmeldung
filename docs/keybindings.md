@@ -9,6 +9,7 @@ This document provides a comprehensive reference of all default key bindings in 
 ## Table of Contents
 
 - [Getting Help](#getting-help)
+- [Quitting](#quitting)
 - [Syncing & Refreshing](#syncing--refreshing)
 - [Navigation](#navigation)
 - [Reading Articles](#reading-articles)
@@ -34,6 +35,17 @@ This document provides a comprehensive reference of all default key bindings in 
 | `?` | Show all available key bindings |
 
 **Tip:** Press `/` in the help dialog to filter and search for specific commands!
+
+---
+
+## Quitting
+
+| Key | Action |
+|-----|--------|
+| `q` | Quit eilmeldung (asks for confirmation) |
+| `C-c` | Quit immediately |
+
+**Tip:** You can also use `:quit` from the command line.
 
 ---
 
@@ -90,10 +102,11 @@ This document provides a comprehensive reference of all default key bindings in 
 | `u` | Mark current article as unread |
 | `U` | Mark **all** articles as unread (asks for confirmation) |
 | `Alt-r` | Open command line to set read with query (e.g., `:read unread today`) |
+| `Alt-u` | Open command line to set unread status (e.g., `:unread marked`) |
 
 **Note**: These commands are context-dependent! In the article list, they act on the *current article* or *all articles* in the list. On the feed list/tree they act on the *current category/feed* or *all categories/feeds*.
 
-**Note**: To mark all articles *above* (and inlucding) the current article as read, press `0 r`; for all articles after `$ r`. This also works for `u`.
+**Note**: To mark all articles *above* (and including) the current article as read, press `0 r`; for all articles after (and including) `$ r`. This pattern also works for `u` (unread), `m` (mark), and `v` (unmark).
 
 ---
 ## Marking Articles
@@ -104,6 +117,8 @@ This document provides a comprehensive reference of all default key bindings in 
 | `M` | Mark **all** articles (asks for confirmation) |
 | `v` | Unmark current article |
 | `V` | Unmark **all** articles (asks for confirmation) |
+| `Alt-m` | Open command line to mark articles (e.g., `:mark unread today`) |
+| `Alt-v` | Open command line to unmark articles (e.g., `:unmark flagged`) |
 
 ---
 ## Tags
@@ -129,7 +144,7 @@ You can flag (select) articles to execute bulk-operations like read, unread, mar
 | `D` | Unflag **all** articles  |
 | `i` | Invert flag of current article (*d*elete flag) |
 | `I` | Invert flag **all** articles  |
-| `Alt-f`/`Alt-d`/`Alt-d` | Open command line with `flag`/`unflag`/`flaginvert` with query (e.g., `:flag unread today`) |
+| `Alt-f`/`Alt-d`/`Alt-i` | Open command line with `flag`/`unflag`/`flaginvert` with query (e.g., `:flag unread today`) |
 
 
 **Note**: These commands only work for article list!
@@ -159,7 +174,7 @@ The "codes" (letters in this case, see setting `hint_type`) before the icons are
 
 | Key | Action |
 |-----|--------|
-| `; ;` | Open a hint in the webbrowser, by entering the hint (see also command `hintopen`)        |
+| `; ;` | Open a hint in the webbrowser, by entering the hint (see also command `hintfollow`)      |
 | `; s` | Share URL of hint: enter a share target and then the hint (see also command `hintshare`) |
 | `; y` | Copy URL of hint to clipboard (see also command `hintshare`)                             |
 
@@ -269,6 +284,48 @@ All key bindings can be customized in your configuration file. See the [Input Co
 "S-f1" = ["..."] # Shift and F1
 "S-down" = ["..."] # Shift and down arrow key
 ```
+
+### Understanding Direct Commands vs Command-Line Commands
+
+When creating custom keybindings, it's important to understand the difference between:
+
+- **Direct commands**: Execute immediately with all parameters specified
+- **Command-line commands**: Open the command line for interactive input (use `cmd` prefix)
+
+**Example - Opening hints:**
+```toml
+[input_config.mappings]
+# This will NOT work as hintfollow expects an argument
+"; f" = ["hintfollow"]
+
+# This works - opens command line to enter hint
+"; f" = ["cmd hintfollow"]
+
+# This also works if you know the hint in advance
+"; f" = ["hintfollow a"]
+```
+
+**Example - Filtering articles:**
+```toml
+# Opens command line to type filter query
+"=" = ["cmd filter"]
+
+# Applies specific filter immediately
+"=" = ["filter unread today"]
+```
+
+**When to use `cmd`:**
+- Commands expecting user input: `hintfollow`, `hintshare`, `tag`, `filter`, `sort`, `rename`
+- When you want Tab completion for suggestions
+- When you want to see/edit before executing
+
+**When NOT to use `cmd`:**
+- Commands that work standalone: `sync`, `quit`, `zen`, `read`, `mark`
+- Multi-command sequences: `["open", "read", "nextunread"]`
+
+See [Commands Reference](commands.md#using-commands-in-key-bindings) for more details.
+
+---
 
 See the [default configuration](../examples/default-config.toml) for the complete list of default key bindings.
 
