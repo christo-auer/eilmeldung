@@ -10,6 +10,7 @@
     - piping the content through an LLM
   - see `docs/pipe.md` for the full documentation and recipes
   - feel free to contribute your own application scenarios and recipes!
+- bugfix: creation of duplicates when importing an OPML file twice
 
 
 # 1.5.4 - 2026-06-04

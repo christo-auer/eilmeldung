@@ -146,7 +146,7 @@ pub async fn import_opml(
         ));
     }
     let opml = tokio::fs::read_to_string(path).await?;
-    news_flash.import_opml(&opml, true, client).await?;
+    news_flash.import_opml(&opml, false, client).await?;
     if !cli_args.quiet() {
         termimad::print_text("**done**");
     }
