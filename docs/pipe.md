@@ -43,7 +43,8 @@ pipe md null ~/.local/save-article.sh "{title}" # passes the markdown to a custo
 
 If `<out>` is `md` or `html`, the result will be displayed as the new article content with a small icon indicating that the content has been processed:
 
-<image here>
+<img width="300" alt="pipe-icon" src="https://github.com/user-attachments/assets/02bdfb40-e39d-4e02-954f-adbbe047bf60" />
+
 
 The filtered output is *transient*, i.e., if you select a different article and select the formerly processed article again, the normal content will be shown.
 
@@ -51,7 +52,8 @@ The filtered output is *transient*, i.e., if you select a different article and 
 
 An error return code or any content written to `stderr` is shown in the content panel:
 
-<image here>
+<img width="512" alt="error-output" src="https://github.com/user-attachments/assets/f8b47a63-f701-440e-976c-4570c9807dd7" />
+
 
 ## Recipes
 
