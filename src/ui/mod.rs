@@ -379,7 +379,7 @@ impl App {
             }
         };
 
-        self.news_flash_utils.import_opml(opml, true);
+        self.news_flash_utils.import_opml(opml, false);
 
         Ok(())
     }
