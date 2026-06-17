@@ -10,6 +10,7 @@
     - piping the content through an LLM
   - see `docs/pipe.md` for the full documentation and recipes
   - feel free to contribute your own application scenarios and recipes!
+- commands (for share targets, pipe, etc.) now support environment variable substitution via `${VAR}` or `$VAR`. Also a `~` at the beginning is replaced by the path to the home directory.
 - bugfix: creation of duplicates when importing an OPML file twice
 
 
