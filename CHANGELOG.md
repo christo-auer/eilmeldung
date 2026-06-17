@@ -1,5 +1,17 @@
 # Unreleased
 
+- New command `pipe` to pipe article contents through external commands!
+  - for instance `pipe html md ~/my-markdown-filter.sh` sends the scraped HTML content to the given command and afterwards displays the markdown output from the script
+  - possible applications are for example:
+    - storing the article markdowns in a file
+    - using a custom external scraping mechanism
+    - filtering the content, e.g., stripping away unwanted tags/ads/etc.
+    - sending the content of an article via mail to someone else
+    - piping the content through an LLM
+  - see `docs/pipe.md` for the full documentation and recipes
+  - feel free to contribute your own application scenarios and recipes!
+
+
 # 1.5.4 - 2026-06-04
 
 - bugfix: crash when width/height of focused panel was set to `100%` (see `article_list_focused_height`, etc.)
