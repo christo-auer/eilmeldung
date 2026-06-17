@@ -41,6 +41,12 @@ pub enum CommandParseError {
     #[error("expecting share target")]
     ShareTargetExpected,
 
+    #[error("expecting pipe target")]
+    PipeTargetExpected,
+
+    #[error("shell command expected")]
+    ShellCommandExpected,
+
     #[error("expecting file path")]
     FilePathExpected,
 
@@ -356,6 +362,19 @@ impl Command {
                 expect_word(&mut args, "expecting share target")
                     .map_err(|_| E::ShareTargetExpected)?,
             ),
+
+            C::Pipe(..) => {
+                let in_target = expect_from_str(&mut args, "in pipe target expected")
+                    .map_err(|_| E::PipeTargetExpected)?;
+
+                let out_target = expect_from_str(&mut args, "out pipe target expected")
+                    .map_err(|_| E::PipeTargetExpected)?;
+
+                let command = expect_something(args, "expecting shell command")
+                    .map_err(|_| E::ShellCommandExpected)?;
+
+                C::Pipe(in_target, out_target, command)
+            }
 
             cmd @ (C::ExportOpml(..) | C::ImportOpml(..)) => {
                 let path = expect_something(args, "expecting file path")

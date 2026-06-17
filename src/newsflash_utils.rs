@@ -1,8 +1,10 @@
 use crate::{messages::event::AsyncOperationError, prelude::*};
 use std::{
-    collections::HashMap, error::Error, hash::Hash, str::FromStr, sync::Arc, time::Duration,
+    collections::HashMap, error::Error, hash::Hash, process::Stdio, str::FromStr, sync::Arc,
+    time::Duration,
 };
 
+use htmd::HtmlToMarkdown;
 use news_flash::{
     NewsFlash,
     error::NewsFlashError,
@@ -426,6 +428,94 @@ impl NewsFlashUtils {
         operation: news_flash.logout(&client).await?,
         success_event: Event::AsyncLogoutFinished,
     }
+
+    pub fn pipe(&self, article: news_flash::models::Article, fat_article: Option<news_flash::models::FatArticle>, in_target: PipeTarget, out_target: PipeTarget, command: String)  {
+        let news_flash_lock = self.news_flash_lock.clone();
+        let client_lock = self.client_lock.clone();
+        let command_sender = self.command_sender.clone();
+        let async_operation_mutex = self.async_operation_mutex.clone();
+            tokio::spawn(async move {
+                let _lock = async_operation_mutex.lock().await;
+                if let Err(e) = async {
+                     command_sender.send(Message::Event(Event::AsyncPipeArticle)).map_err(|send_error|
+                         color_eyre::eyre::eyre!(send_error))?;
+                
+                     let client = client_lock.read().await;
+
+                     let (command, args) = prepare_command(&command)?;
+
+                     let input = match in_target {
+                         PipeTarget::Null => "".into(),
+                         target @ (PipeTarget::Html | PipeTarget::Markdown) => {
+                             let fat_article = match fat_article {
+                                 Some(fat_article) => fat_article,
+                                 None => {
+                                     let news_flash = news_flash_lock.read().await;
+                                     let _stderr_redirect = crate::utils::prelude::StderrRedirect::new();
+                                     news_flash.scrap_content_article(&article.article_id, &client).await?
+                                 }
+
+                             };
+
+                             let html = fat_article.scraped_content.as_deref().unwrap_or("no scraped content available").to_string();
+
+                             if matches!(target, PipeTarget::Html) {
+                                 html
+                             } else {
+                                 htmd::HtmlToMarkdown::builder().build().convert(&html).map_err(|e| AsyncOperationError::Report(color_eyre::eyre::eyre!("Unable to convert HTML to Markdown: {e}")))?
+                             }
+                         },
+                     };
+
+                     let mut child = tokio::process::Command::new(command)
+                         .args(args)
+                         .stdin(Stdio::piped())
+                         .stdout(Stdio::piped())
+                         .stderr(Stdio::piped())
+                         .spawn().map_err(|e| AsyncOperationError::Report(color_eyre::eyre::eyre!("Could not execute pipe command: {e}")))?;
+
+                     // Write input to stdin
+                     if let Some(mut stdin) = child.stdin.take() {
+                         use tokio::io::AsyncWriteExt;
+                         stdin.write_all(input.as_bytes()).await.map_err(|e| AsyncOperationError::Report(color_eyre::eyre::eyre!("Failed to write to stdin: {e}")))?;
+                         // Drop stdin to signal EOF
+                         drop(stdin);
+                     }
+
+                     // Wait for the command to finish and capture output
+                     let result = child.wait_with_output().await.map_err(|e| AsyncOperationError::Report(color_eyre::eyre::eyre!("Failed to wait for command: {e}")))?;
+
+                     let output = String::from_utf8_lossy(&result.stdout).to_string();
+                     let error = String::from_utf8_lossy(&result.stderr).to_string();
+
+                     let error = if error.is_empty() {
+                         None
+                     } else {
+                         Some(error)
+                     };
+
+                     let markdown = match out_target {
+                         PipeTarget::Null => None,
+                         PipeTarget::Html => Some(HtmlToMarkdown::new().convert(&output).map_err(|conversion_error| color_eyre::eyre::eyre!(conversion_error))?),
+                         PipeTarget::Markdown => Some(output),
+                     };
+                
+                     command_sender.send(Message::Event(Event::AsyncPipeArticleFinished(article.article_id, result.status, markdown, error))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+                     Ok::<(), AsyncOperationError>(())
+                }.await{
+                     error!("Async call pipe failed: {e}");
+                     let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed( e,
+                                 Box::new(Event::AsyncPipeArticle),)));
+                }
+            });
+
+    }
+
+    //
+    //
+    //
+    //     Ok(())
+    // }
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(
         items: &[V],

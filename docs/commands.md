@@ -199,6 +199,8 @@ These commands support a **scope parameter** to target specific articles:
 | `share`         | `share <target>`             | Article List, Article Content | Share article title and URL. Built-in targets: `clipboard`, `reddit`, `mastodon`, `telegram`, `instapaper`. Custom targets (URL and commands) can be defined in the configuration file. Example: `:share clipboard` |
 | `hintfollow`    | `hintfollow <hint>`          | Article Content               | Open the hint in the web browser. Example: `hintfollow f` opens the URL with hint `f`                                                                                                                               |
 | `hintshare`     | `hintshare <target> <hint>`  | Article Content               | Shares the URL to which the hint points with the given target, e.g., `hintshare clipboard h` copies the URL with hint `h` to the clipboard                                                                          |
+| `pipe`          | `pipe <in> <out> <command>`  | Article Content               | Pipes the content of the article (type defined by `in`) through the given shell command and displays the output (type defined by `out`); see also [here](pipe.md) |
+
 
 **Note:** By default, the commands `show`, `read` and `unread` are executed in the currently focused panel (feeds or articles). If you want to execute the command in a specific panel, use the `in` meta command, e.g., `in articles read %`, `in feeds show all`, etc.
 

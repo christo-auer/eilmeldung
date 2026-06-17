@@ -124,6 +124,7 @@ preset = "nerd"
 # categories is not set; nerd: "󰉓", ascii: "C"
 # tags is not set; nerd: "󰓻", ascii: "T"
 # query is not set; nerd: "", ascii: "Q"
+# piped is not set; nerd: "󰟥", ascii: "|"
 
 # Sorting and Filtering
 # sort_ascending is not set; nerd: "󰒼", ascii: "^"

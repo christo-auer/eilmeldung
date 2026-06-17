@@ -138,7 +138,8 @@ Complete documentation is available in the `docs/` directory:
 - **[Getting Started Guide](docs/getting-started.md)** - Setup and first steps
 - **[Installation Guide](docs/installation.md)** - Detailed installation instructions
 - **[Key Bindings Reference](docs/keybindings.md)** - Complete keybinding reference
-- **[Commands Reference](docs/commands.md)** - All available commands
+- **[Commands Reference](docs/commands.md)** - All available commands.
+- **[Pipe Command](docs/pipe.md)** - Piping articles through external commands
 - **[Article Queries](docs/queries.md)** - Powerful search and filter syntax
 - **[Configuration Guide](docs/configuration.md)** - Customize appearance and behavior
 - **[Command Line Arguments](docs/cli_args.md)** - Available CLI options
@@ -210,6 +211,10 @@ Checkout [FAQ](docs/faq.md#features--capabilities)!
 ### Is mouse input supported?
 
 Yes, there is rudimentary mouse support with the option `mouse_support = true` (default is `false`). See [Mouse Support](docs/keybindings.md#mouse-support)]
+
+### Does eilmeldung support AI/LLMs? All the cool RSS readers are doing it!
+
+No, *eilmeldung* does not have AI/LLM support. However, you can use the [Pipe Command](docs/pipe.md) for piping the article content through an LLM via an external command (like opencode).
 
 ---
 

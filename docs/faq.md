@@ -59,6 +59,10 @@ In `eilmeldung`, select an article and share it with `share hackernews` or `shar
 
 See [Share Target Configuration](configuration.md#share-target-configuration) for details and examples.
 
+### Can I save articles? For instance, als Markdown files?
+
+Not directly, however, you can use the `[Pipe Command](pipe.md)` for to achieve this (see *Recipes*).
+
 ### Can I open enclosures? Can I open a video/audio/image enclosure in a custom program?
 
 Yes, you can: the command `openenclosure` call the command given in the option `enclosure_command`, which you can customize. If you want different commands depending on the type, you can further customize, for instance:

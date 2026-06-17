@@ -241,12 +241,28 @@ impl ArticleContentViewData {
             .format(&config.date_format)
             .to_string();
 
+        let mut title_line = Line::from(vec![
+            Span::from(date_string).style(config.theme.header()),
+            Span::from("  ").style(config.theme.header()),
+            Span::from(feed_label).style(config.theme.header()),
+        ]);
+
+        if model_data.filtered_markdown_content().is_some() {
+            title_line.spans.push(" ".into());
+            title_line.spans.append(
+                &mut to_bubble(
+                    Span::styled(
+                        config.icon_set.piped_icon().to_string(),
+                        config.theme.highlighted(&Default::default()),
+                    ),
+                    config,
+                )
+                .spans,
+            );
+        }
+
         let summary_lines = vec![
-            Line::from(vec![
-                Span::from(date_string).style(config.theme.header()),
-                Span::from("  ").style(config.theme.header()),
-                Span::from(feed_label).style(config.theme.header()),
-            ]),
+            title_line,
             Line::styled(title, config.theme.paragraph()),
             Line::styled(author, config.theme.paragraph()),
             Line::from(tags_and_enclosures),
@@ -420,12 +436,16 @@ impl ArticleContentViewData {
             .constraints([text_constraint])
             .areas(content_area);
 
-        let Some(fat_article) = model_data.fat_article() else {
-            return;
-        };
-
-        let text: Text<'_> = if config.content_preferred_type == ArticleContentType::Markdown
-            && let Some(html) = fat_article.scraped_content.as_deref()
+        // prefer filtered content
+        let text: Text<'_> = if let Some(filtered_markdown_content) =
+            model_data.filtered_markdown_content().as_deref()
+        {
+            self.markdown_to_text(filtered_markdown_content, config)
+        } else if config.content_preferred_type == ArticleContentType::Markdown
+            && let Some(html) = model_data
+                .fat_article()
+                .as_ref()
+                .and_then(|fat_article| fat_article.scraped_content.as_deref())
         {
             // Use the cached markdown content from model
             if let Some(markdown) = model_data.markdown_content() {
@@ -439,7 +459,11 @@ impl ArticleContentViewData {
                 let plain_text = news_flash::util::html2text::html2text(html);
                 Text::from(plain_text)
             }
-        } else if let Some(plain_text) = fat_article.plain_text.as_deref() {
+        } else if let Some(plain_text) = model_data
+            .fat_article()
+            .as_ref()
+            .and_then(|fat_article| fat_article.plain_text.as_deref())
+        {
             info!("rendering plain text content");
             Text::from(plain_text)
         } else {
@@ -599,7 +623,9 @@ impl Widget for &mut ArticleContent {
             return;
         }
 
-        if self.model_data.fat_article().is_some() {
+        if self.model_data.fat_article().is_some()
+            || self.model_data.filtered_markdown_content().is_some()
+        {
             self.view_data.render_fat_article(
                 &self.model_data,
                 self.is_distraction_free,

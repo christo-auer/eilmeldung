@@ -163,6 +163,7 @@ impl CommandInput {
             Err(E::EnclosureTypeExpected) => {
                 self.generate_help_content_enclosure_type(&current_part)?
             }
+            Err(E::PipeTargetExpected) => self.generate_help_content_pipe_target(&current_part)?,
 
             Err(E::ShareTargetExpected) => {
                 self.generate_help_content_share_target(&current_part)?
@@ -712,6 +713,21 @@ impl CommandInput {
             |enclosure_type| enclosure_type.get_message().unwrap_or_default().to_owned(),
             |enclosure_type| {
                 enclosure_type
+                    .get_detailed_message()
+                    .unwrap_or_default()
+                    .to_owned()
+            },
+        )
+    }
+
+    fn generate_help_content_pipe_target(&mut self, current_part: &str) -> color_eyre::Result<()> {
+        self.generate_help_content_enum::<PipeTarget>(
+            current_part,
+            "Pipe Target",
+            |pipe_target| Some(pipe_target.as_ref().to_owned()),
+            |pipe_target| pipe_target.get_message().unwrap_or_default().to_owned(),
+            |pipe_target| {
+                pipe_target
                     .get_detailed_message()
                     .unwrap_or_default()
                     .to_owned()

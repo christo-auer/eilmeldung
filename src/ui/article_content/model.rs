@@ -29,6 +29,9 @@ pub struct ArticleContentModelData {
     // Processed content
     markdown_content: Option<String>,
 
+    // Filtered content
+    filtered_markdown_content: Option<String>,
+
     // Thumbnail data and state
     thumbnail_fetch_successful: Option<bool>,
     thumbnail_fetch_running: bool,
@@ -48,6 +51,7 @@ impl ArticleContentModelData {
             tags: None,
             fat_article: None,
             markdown_content: None,
+            filtered_markdown_content: None,
             thumbnail_fetch_successful: None,
             thumbnail_fetch_running: false,
             instant_since_article_selected: None,
@@ -73,6 +77,7 @@ impl ArticleContentModelData {
         self.thumbnail_fetch_successful = None;
         self.fat_article = None;
         self.markdown_content = None;
+        self.filtered_markdown_content = None;
         self.feed = None;
         self.tags = None;
 
@@ -258,5 +263,103 @@ impl ArticleContentModelData {
             .spawn()?;
 
         Ok(cmd.to_owned())
+    }
+
+    pub(crate) fn pipe(
+        &self,
+        config: &Config,
+        in_target: PipeTarget,
+        out_target: PipeTarget,
+        command: &str,
+    ) -> color_eyre::Result<()> {
+        let Some(article) = self.article.as_ref() else {
+            return Err(color_eyre::eyre::eyre!("no article selected"));
+        };
+
+        let command = command
+            .replace(
+                "{date}",
+                &article
+                    .date
+                    .with_timezone(&chrono::Local)
+                    .format(&config.date_format)
+                    .to_string(),
+            )
+            .replace("{title}", article.title.as_deref().unwrap_or_default())
+            .replace(
+                "{url}",
+                article
+                    .url
+                    .as_ref()
+                    .map(|url| url.as_str())
+                    .unwrap_or_default(),
+            )
+            .replace("{author}", article.author.as_deref().unwrap_or_default())
+            .replace(
+                "{feed}",
+                self.feed
+                    .as_ref()
+                    .map(|feed| &*feed.label)
+                    .unwrap_or_default(),
+            );
+
+        self.news_flash_utils.pipe(
+            article.to_owned(),
+            self.fat_article.to_owned(),
+            in_target,
+            out_target,
+            command.to_string(),
+        );
+
+        Ok(())
+    }
+
+    pub(crate) fn on_pipe_finished(
+        &mut self,
+        article_id: &ArticleID,
+        exit_status: std::process::ExitStatus,
+        markdown: &Option<String>,
+        error: &Option<String>,
+    ) {
+        if self.article.as_ref().map(|article| &article.article_id) != Some(article_id) {
+            return;
+        }
+
+        if markdown.is_none()
+            && exit_status.success()
+            && error.as_ref().map(|error| error.is_empty()).unwrap_or(true)
+        {
+            return;
+        }
+
+        let mut markdown_content = markdown.as_deref().unwrap_or("").to_string();
+
+        if !exit_status.success() {
+            markdown_content.push_str(&format!(
+                r#"
+---
+
+Process returned with error ({})
+                "#,
+                exit_status
+                    .code()
+                    .map(|code| code.to_string())
+                    .unwrap_or_else(|| "unknown error code".to_string())
+            ));
+        }
+
+        if let Some(error) = error.as_deref() {
+            markdown_content.push_str(&format!(
+                r#"
+---
+ 
+# stderr output
+
+{error}
+                "#
+            ));
+        }
+
+        self.filtered_markdown_content.replace(markdown_content);
     }
 }

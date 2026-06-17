@@ -23,6 +23,7 @@ Many useful features are not obvious from the basic documentation. Here is a cur
 - **Sort orders embedded in queries**: Embed sort order directly in a query string using `sort:"<order>"`. Particularly useful in feed list query entries. Example: `'query: "Latest" unread sort:"date"'`.
 - **`sync_every_minutes`**: Set `sync_every_minutes = 10` to auto-sync in the background at a fixed interval while eilmeldung is running.
 - **Configurable article columns** (`article_table`): Control which columns appear in the article list and in what order. Default: `"{flagged},{read},{marked},{tag_icons},{age},{title}"`. Remove or reorder fields to suit your reading style.
+- **Pipe Command**: piping the content of the article through an external command, e.g., saving an article, processing through an LLM, sending the content via a mail, etc.
 
 ## Docs
 
@@ -30,6 +31,7 @@ Many useful features are not obvious from the basic documentation. Here is a cur
 
 - [Getting Started](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/getting-started.md): First-launch walkthrough, adding feeds, interface overview, basic navigation.
 - [Configuration](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/configuration.md): Complete reference for all config options — theme, keybindings, layout, feed list, after-sync commands, notifications, sharing, enclosures, automatic login.
+- [Pipe Command](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/pipe.md): Pipe command for processing the article content via an external command, e.g., for saving the markdown content or processing the article via an LLM
 - [Commands](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/commands.md): All in-app commands with syntax, context, and examples. Use `:` in eilmeldung to enter a command.
 - [Key Bindings](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/keybindings.md): Default keybinding reference organized by function. All bindings are remappable via `[input_config.mappings]`.
 - [Article Queries](https://raw.githubusercontent.com/christo-auer/eilmeldung/refs/heads/main/docs/queries.md): The query language used for filtering, searching, bulk operations, and smart folder definitions. Includes all query keys, search term types (word, phrase, regex), negation, time-based queries, and a cookbook of examples.

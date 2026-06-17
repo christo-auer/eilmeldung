@@ -6,6 +6,7 @@ pub mod prelude {
 }
 
 use model::ArticleContentModelData;
+use tokio::sync::mpsc::UnboundedSender;
 use url::Url;
 use view::ArticleContentViewData;
 
@@ -13,7 +14,6 @@ use crate::prelude::*;
 use std::sync::Arc;
 
 use news_flash::models::{ArticleID, Enclosure, Thumbnail};
-use tokio::sync::mpsc::UnboundedSender;
 
 #[derive(getset::CopyGetters)]
 pub struct ArticleContent {
@@ -138,6 +138,45 @@ impl ArticleContent {
 
         self.share_url(target_str, title, url.as_ref())?;
 
+        Ok(())
+    }
+
+    fn pipe(
+        &self,
+        in_target: PipeTarget,
+        out_target: PipeTarget,
+        command: &str,
+    ) -> color_eyre::Result<()> {
+        if let Err(error) = self
+            .model_data
+            .pipe(&self.config, in_target, out_target, command)
+        {
+            tooltip(
+                &self.message_sender,
+                &*error.to_string(),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        tooltip(
+            &self.message_sender,
+            &*Command::Pipe(in_target, out_target, command.into()).to_string(),
+            TooltipFlavor::Info,
+        )?;
+
+        Ok(())
+    }
+
+    fn on_pipe_finished(
+        &mut self,
+        article_id: &ArticleID,
+        exit_status: std::process::ExitStatus,
+        markdown: &Option<String>,
+        error: &Option<String>,
+    ) -> color_eyre::Result<()> {
+        self.model_data
+            .on_pipe_finished(article_id, exit_status, markdown, error);
         Ok(())
     }
 
@@ -307,6 +346,10 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.share_article(&target)?;
                 }
 
+                C::Pipe(in_target, out_target, command) => {
+                    self.pipe(in_target, out_target, &command)?
+                }
+
                 C::Refresh => {
                     view_needs_update = true;
                 }
@@ -367,6 +410,11 @@ impl crate::messages::MessageReceiver for ArticleContent {
                         self.model_data.on_thumbnail_fetch_failed();
                         view_needs_update = true;
                     }
+                }
+
+                AsyncPipeArticleFinished(article_id, exit_status, markdown, error) => {
+                    self.on_pipe_finished(article_id, *exit_status, markdown, error)?;
+                    view_needs_update = true;
                 }
 
                 AsyncArticleFatFetchFinished(fat_article) => {

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, process::ExitStatus};
 
 use news_flash::{
     error::NewsFlashError,
@@ -33,6 +33,9 @@ pub enum Event {
 
     AsyncArticleFatFetch,
     AsyncArticleFatFetchFinished(FatArticle),
+
+    AsyncPipeArticle,
+    AsyncPipeArticleFinished(ArticleID, ExitStatus, Option<String>, Option<String>),
 
     AsyncArticlesMark,
     AsyncArticlesMarkFinished,
@@ -155,6 +158,7 @@ impl Event {
             AsyncSyncFinished(_)
                 | AsyncFeedAddFinished(_)
                 | AsyncFeedFetchFinished(..)
+                | AsyncPipeArticleFinished(..)
                 | AsyncRenameFeedFinished(_)
                 | AsyncCategoryRenameFinished(_)
                 | AsyncArticleFatFetchFinished(_)
