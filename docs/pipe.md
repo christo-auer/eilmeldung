@@ -19,10 +19,10 @@ The pipe command takes three arguments: `pipe <in> <out> <command>`
 - `<command>` is a shell command
   - it supports the placeholders `{title}`, `{feed}`, `{date}`, `{author}`, `{url}` which are replaced before the command is executed; if you need other placeholders, please raise an issue
   - it supports quotes like shells (`""` and `''`)
-  - environment variable substitution (via `${VAR}` or `$VAR`) and `~` at the beginning are supported
+  - environment variable substitution (via `${VAR}` or `$VAR`) and `~` for the home directory at the beginning are supported
   - any other shell features like `stdin`/`stdout` redirection via pipes (`>`, `<`, `|` and friends) etc. are **not supported**
 
-Some content on how the command is executed:
+Some context on how the command is executed:
 
 - The execution of the command is carried out in the background.
 - After writing the content to the command, `stdin` is closed.
