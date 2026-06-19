@@ -40,32 +40,15 @@ impl App {
             ])
             .areas(area);
 
-        let status_span = if self.is_offline {
-            // when offline display offline icon
-            Span::styled(
-                format!("{} ", self.config.icon_set.offline_icon()),
-                self.config.theme.statusbar(),
-            )
-        } else {
-            // when online display throbber
-            let use_type = if self.news_flash_utils.is_async_operation_running() {
-                throbber_widgets_tui::WhichUse::Spin
-            } else {
-                throbber_widgets_tui::WhichUse::Empty
-            };
-            Throbber::default()
-                .throbber_style(self.config.theme.statusbar())
-                .style(self.config.theme.statusbar())
-                .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
-                .use_type(use_type)
-                .to_symbol_span(&self.async_operation_throbber)
-        };
-
         if render_bottom_bar {
             // fill top line with status bar color
             Block::default()
                 .style(self.config.theme.statusbar())
                 .render(bottom, buf);
+
+            let tooltip_line = self.tooltip.to_line(&self.config);
+            let left_icon = self.config.icon_set.status_bar_left_icon();
+            let right_icon = self.config.icon_set.status_bar_right_icon();
 
             let [bottom_left, bottom_main, status, bottom_right] = Layout::default()
                 .direction(Direction::Horizontal)
@@ -78,11 +61,25 @@ impl App {
                 ])
                 .areas::<4>(bottom);
 
-            let tooltip_line = self.tooltip.to_line(&self.config);
-            let left_icon = self.config.icon_set.status_bar_left_icon();
-            let right_icon = self.config.icon_set.status_bar_right_icon();
-
-            Span::styled(status_span.content, tooltip_line.style).render(status, buf);
+            let status_span = if self.is_offline {
+                // when offline display offline icon
+                Span::styled(
+                    format!("{} ", self.config.icon_set.offline_icon()),
+                    tooltip_line.style,
+                )
+            } else {
+                // when online display throbber
+                if self.news_flash_utils.is_async_operation_running() {
+                    Throbber::default()
+                        .style(tooltip_line.style)
+                        .throbber_style(tooltip_line.style)
+                        .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
+                        .use_type(throbber_widgets_tui::WhichUse::Spin)
+                        .to_symbol_span(&self.async_operation_throbber)
+                } else {
+                    Span::styled(" ", tooltip_line.style)
+                }
+            };
 
             Span::styled(
                 left_icon.to_string(),
@@ -103,6 +100,7 @@ impl App {
             )
             .render(bottom_right, buf);
             tooltip_line.render(bottom_main, buf);
+            status_span.render(status, buf);
         }
 
         middle
