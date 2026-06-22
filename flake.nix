@@ -8,7 +8,7 @@
 
   outputs = { self, nixpkgs, flake-utils, ... }:
     let
-      version = "1.5.4";
+      version = "1.6.0";
 
       releaseSrc = pkgs: pkgs.fetchFromGitHub {
         owner = "christo-auer";

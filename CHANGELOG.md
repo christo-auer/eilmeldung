@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.6.0 - 2026-06-22
+
 - New command `pipe` to pipe article contents through external commands!
   - for instance `pipe html md ~/my-markdown-filter.sh` sends the scraped HTML content to the given command and afterwards displays the markdown output from the script
   - possible applications are for example:
