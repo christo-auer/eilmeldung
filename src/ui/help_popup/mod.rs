@@ -196,7 +196,7 @@ impl<'a> Widget for &HelpPopup<'a> {
             .flex(Flex::End)
             .areas::<3>(popup_area);
 
-            let block = Block::default()
+            let mut block = Block::default()
                 .borders(Borders::ALL)
                 .border_type(self.config.border_theme.focused)
                 .border_style(self.config.theme.border_focused())
@@ -205,6 +205,10 @@ impl<'a> Widget for &HelpPopup<'a> {
                     self.config.theme.header(),
                 ))
                 .padding(Padding::horizontal(1));
+
+            if self.config.shadows {
+                block = block.shadow(Shadow::light_shade());
+            }
 
             let inner_area = block.inner(popup_area);
 

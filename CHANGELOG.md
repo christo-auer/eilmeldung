@@ -11,9 +11,9 @@
   - see `docs/pipe.md` for the full documentation and recipes
   - feel free to contribute your own application scenarios and recipes!
 - commands (for share targets, pipe, etc.) now support environment variable substitution via `${VAR}` or `$VAR`. Also a `~` at the beginning is replaced by the path to the home directory.
-- bugfix 
-  - creation of duplicates when importing an OPML file twice
-  - status icon/throbber had a different color from the rest of the status bar with errors and warnings
+- bugfix: status icon/throbber had a different color from the rest of the status bar with errors and warnings
+- new option `shadows` (default `true`): show/hide shadows for popup windows
+- dependencies updated, especially ratatui
 
 
 # 1.5.4 - 2026-06-04

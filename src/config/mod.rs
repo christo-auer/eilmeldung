@@ -173,6 +173,7 @@ pub struct Config {
     pub article_list_show_position: bool,
     pub content_show_position: bool,
 
+    pub shadows: bool,
     pub articles_after_selection: usize,
     pub auto_scrape: bool,
     pub thumbnail_show: bool,
@@ -303,6 +304,7 @@ impl Default for Config {
             article_scope: ArticleScope::Unread,
             feed_list_scope: ArticleScope::All,
 
+            shadows: true,
             article_list_show_position: true,
             content_show_position: true,
             articles_after_selection: 3,
