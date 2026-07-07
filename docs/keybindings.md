@@ -151,7 +151,7 @@ You can flag (select) articles to execute bulk-operations like read, unread, mar
 
 After flagging article, you can bulk-execute any of the above commands on them (`r` for `read`, `m` for `mark`, `t` for `tag`, you get it).
 
-**Note**: To flag flag of all articles *above* and including the current article, press `0 f`; for all articles after `$ f` etc. This also works for `d` and `i`.
+**Note**: To flag all articles *above* and including the current article, press `0 f`; for all articles after `$ f` etc. This also works for `d` and `i`.
 
 ---
 
