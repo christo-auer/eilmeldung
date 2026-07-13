@@ -1,5 +1,7 @@
 # Unreleased
 
+- bump of dependencies
+
 # 1.6.0 - 2026-06-22
 
 - New command `pipe` to pipe article contents through external commands!
