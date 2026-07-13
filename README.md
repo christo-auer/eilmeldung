@@ -1,3 +1,5 @@
+# *eilmeldung* TUI RSS reader
+
 ![GitHub Release](https://img.shields.io/github/v/release/christo-auer/eilmeldung)
 ![Crates.io Version](https://img.shields.io/crates/v/eilmeldung)
 ![AUR Version](https://img.shields.io/aur/version/eilmeldung)
@@ -8,14 +10,14 @@
 
 ---
 
-# *eilmeldung* TUI RSS reader
+*eilmeldung* is
 
 - *fast* in every aspect: non-blocking terminal user interface, (neo)vim-inspired keybindings, instant start-up and no clutter
 - *stands* on the shoulder of *giants*: based on the news-flash library, *eilmeldung* supports many RSS providers, is efficient and reliable
 - *powerful* and yet *easy to use out-of-the-box*: sane defaults which work for most, and yet configurable to meet anyone's requirements, from keybindings to colors, from displayed content to RSS provider
 - read news like a pro: filter and search news with an easy-to-learn powerful *query language*, activate *zen mode* to focus on the article content and nothing else
-- *eilmeldung* is available on Linux, macOS, Windows and NetBSD
-- *eilmeldung* is based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.  
+- is available on Linux, macOS, Windows and NetBSD
+- is based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.  
 
 *eilmeldung* is German for *breaking news*
 
