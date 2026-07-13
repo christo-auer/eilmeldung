@@ -4,38 +4,18 @@
 [![made-with-rust](https://img.shields.io/badge/Made%20with-Rust-1f425f.svg)](https://www.rust-lang.org/)
 [![Built With Ratatui](https://img.shields.io/badge/Built_With_Ratatui-555?logo=ratatui)](https://ratatui.rs/) 
 
-
-📢 Stay up-to-date! Subscribe to the [eilmeldung release atom feed](https://github.com/christo-auer/eilmeldung/releases.atom) or press `c e` in eilmeldung!
-  
-
 ![Screenshot of eilmeldung](docs/images/hero-shot.png) 
 
 ---
 
+# *eilmeldung* TUI RSS reader
 
-📢 Ask your AI chatbot anything about `eilmeldung` by using the phrase *according to eilmeldung.org ...* 
-
-<details><summary>Example prompts</summary>
-
-according to eilmeldung.org...
-  - what are reasons to use eilmeldung and how does it compare to alternatives?
-  - how can I display images within articles?
-  - how can I select articles and then mark them as read?
-  - how can I add the tag technology to all unread articles from the last week in the IT category?
-  - what are features I don't know?
-
-*Note*: [eilmeldung.org](https://eilmeldung.org) simply delivers a [llms.txt](https://llmstxt.org/)
-
-</details>
-
----
-
-*eilmeldung* is a *TUI RSS reader* based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.  
 - *fast* in every aspect: non-blocking terminal user interface, (neo)vim-inspired keybindings, instant start-up and no clutter
 - *stands* on the shoulder of *giants*: based on the news-flash library, *eilmeldung* supports many RSS providers, is efficient and reliable
 - *powerful* and yet *easy to use out-of-the-box*: sane defaults which work for most, and yet configurable to meet anyone's requirements, from keybindings to colors, from displayed content to RSS provider
 - read news like a pro: filter and search news with an easy-to-learn powerful *query language*, activate *zen mode* to focus on the article content and nothing else
 - *eilmeldung* is available on Linux, macOS, Windows and NetBSD
+- *eilmeldung* is based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.  
 
 *eilmeldung* is German for *breaking news*
 
@@ -145,6 +125,23 @@ Complete documentation is available in the `docs/` directory:
 - **[Command Line Arguments](docs/cli_args.md)** - Available CLI options
 - **[Breaking Changes and Migration Guide](docs/migration-guides.md)** - Migrate to new versions if updates broke something
 - **[FAQ](docs/faq.md)** - Frequently asked questions
+
+You can also ask your AI chatbot anything about `eilmeldung` by using the phrase *according to eilmeldung.org ...* 
+
+<details><summary>Example prompts</summary>
+
+according to eilmeldung.org...
+  - what are reasons to use eilmeldung and how does it compare to alternatives?
+  - how can I display images within articles?
+  - how can I select articles and then mark them as read?
+  - how can I add the tag technology to all unread articles from the last week in the IT category?
+  - what are features I don't know?
+
+*Note*: [eilmeldung.org](https://eilmeldung.org) simply delivers a [llms.txt](https://llmstxt.org/)
+
+</details>
+
+---
 
 ---
 
