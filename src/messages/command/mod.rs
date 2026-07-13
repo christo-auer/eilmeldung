@@ -902,10 +902,10 @@ impl Display for Command {
             ActionFlagInvert(action_scope) => write!(f, "invert flags {}", action_scope),
             ActionOpenInBrowser(action_scope) => write!(f, "open {} in browser", action_scope),
             ActionTagArticles(action_scope, tag) => {
-                write!(f, "add #{} to {}", tag, &action_scope)
+                write!(f, "add #{} to {}", tag, action_scope)
             }
             ActionUntagArticles(action_scope, tag) => {
-                write!(f, "remove #{} from {}", tag, &action_scope)
+                write!(f, "remove #{} from {}", tag, action_scope)
             }
             Logout(_) => write!(
                 f,

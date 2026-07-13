@@ -55,7 +55,7 @@ impl LoginSetup {
         let summary_basic_auth = |basic_auth: &Option<BasicAuth>| -> Vec<String> {
             match basic_auth {
                 Some(basic_auth) => {
-                    let user = format!("enabled: user *{}*", &basic_auth.user);
+                    let user = format!("enabled: user *{}*", basic_auth.user);
                     vec!["**Basic Auth**".into(), user]
                 }
                 Option::None => vec!["**Basic Auth**".into(), "disabled".into()],
