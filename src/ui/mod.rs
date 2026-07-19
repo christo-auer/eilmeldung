@@ -321,6 +321,13 @@ impl App {
                 message = rx.recv() =>  {
                     if let Some(message) = message {
 
+                        let mut redraw = matches!(message, Message::Command(Command::Redraw));
+
+                        if matches!(message, Message::Command(Command::Clear)) {
+                            terminal.clear()?;
+                            redraw = true;
+                        }
+
                         // TODO refactor all this
                         if !self.batch_processor.has_commands()
                         && !self.command_input.is_active()
@@ -339,7 +346,7 @@ impl App {
                         self.command_confirm.process_command(&message).await?;
                         self.help_popup.process_command(&message).await?;
 
-                        if matches!(message, Message::Command(Command::Redraw)) {
+                        if redraw {
                             terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
                         }
 

@@ -62,6 +62,12 @@ impl ArticleContent {
         Ok(())
     }
 
+    fn update_thumbnail(&mut self) -> color_eyre::Result<()> {
+        let image = self.model_data.update_thumbnail(self.view_data.picker())?;
+        self.view_data.set_image(image);
+        Ok(())
+    }
+
     fn scrape_article(&mut self) -> color_eyre::Result<()> {
         self.model_data.scrape_article()?;
         Ok(())
@@ -448,6 +454,13 @@ impl crate::messages::MessageReceiver for ArticleContent {
 
                 MouseScrollUp(Panel::ArticleContent) => {
                     self.view_data.scroll_up();
+                }
+
+                ImageProtocolPickerUpdated(picker) => {
+                    self.view_data.picker_updated(picker)?;
+                    self.update_thumbnail()?;
+                    // force redraw of whole terminal
+                    self.message_sender.send(Message::Command(Command::Clear))?;
                 }
 
                 event if event.caused_model_update() => {
