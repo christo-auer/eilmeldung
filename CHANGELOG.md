@@ -1,5 +1,8 @@
 # Unreleased
 
+
+- bump of dependencies
+
 # 1.6.1 - 2026-07-13
 
 - bump of dependencies
