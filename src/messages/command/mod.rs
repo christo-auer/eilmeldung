@@ -766,6 +766,13 @@ pub enum Command {
     Redraw,
 
     #[strum(
+        serialize = "clear",
+        message = "clear",
+        detailed_message = "clears the whole terminal screen (all)"
+    )]
+    Clear,
+
+    #[strum(
         serialize = "refresh",
         message = "refresh",
         detailed_message = "refreshes contents of all panels according to selections (all)"
@@ -856,6 +863,7 @@ impl Display for Command {
 
             ApplicationQuit => write!(f, "quit application"),
             Redraw => write!(f, "redraw UI"),
+            Clear => write!(f, "clear terminal"),
             Refresh => write!(f, "refresh UI"),
             CommandLineOpen(input) => write!(f, ":{}", input.unwrap_or_default()),
             ArticleListSearch(query) => {

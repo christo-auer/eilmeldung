@@ -590,6 +590,20 @@ impl ArticleContentViewData {
 
         total_lines
     }
+
+    pub fn picker_updated(&mut self, picker: &Picker) -> color_eyre::Result<()> {
+        self.picker = picker.to_owned();
+        let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
+        self.placeholder_image = self.picker.new_resize_protocol(
+            ImageReader::new(cursor)
+                .with_guessed_format()
+                .unwrap() // OK as content is checked
+                .decode()
+                .unwrap(), // OK as content is checked
+        );
+
+        Ok(())
+    }
 }
 
 fn to_enclosure_bubble<P>(

@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 use log::{info, trace};
 use ratatui::crossterm::event::{self, MouseEventKind};
 use ratatui::text::{Line, Span, Text};
+use ratatui_image::picker::Picker;
 use throbber_widgets_tui::{Throbber, ThrobberState, VERTICAL_BLOCK};
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -33,6 +34,12 @@ pub fn input_reader(message_sender: UnboundedSender<Message>) -> color_eyre::Res
             event::Event::Resize(width, height) => {
                 trace!("resized to {width} {height}");
                 message_sender.send(Message::Event(Event::Resized(width, height)))?;
+
+                // silently ignore if querying picker fails
+                if let Ok(picker) = Picker::from_query_stdio() {
+                    message_sender
+                        .send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
+                }
             }
             event::Event::Mouse(mouse_event) => {
                 // Filter out Moved events — we only care about clicks, drags, and scrolls

@@ -8,6 +8,7 @@ use ratatui::{
     crossterm::event::{KeyEvent, MouseEvent},
     text::Text,
 };
+use ratatui_image::picker::Picker;
 
 use crate::prelude::*;
 
@@ -143,6 +144,9 @@ pub enum Event {
 
     // terminal resized
     Resized(u16, u16),
+
+    // new image protocol picker
+    ImageProtocolPickerUpdated(Picker),
 
     // connectivity
     ConnectionAvailable,
