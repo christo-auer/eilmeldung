@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: thumbnail now resizes dynamically if the terminal/font has resized (use the new command `clear` to force a complete refresh of the screen)
+
 # 1.6.1 - 2026-07-13
 
 - bump of dependencies

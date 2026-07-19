@@ -35,6 +35,7 @@ pub struct ArticleContentModelData {
     // Thumbnail data and state
     thumbnail_fetch_successful: Option<bool>,
     thumbnail_fetch_running: bool,
+    thumbnail: Option<Thumbnail>,
 
     // Timing for debouncing fetches
     instant_since_article_selected: Option<Instant>,
@@ -54,6 +55,7 @@ impl ArticleContentModelData {
             filtered_markdown_content: None,
             thumbnail_fetch_successful: None,
             thumbnail_fetch_running: false,
+            thumbnail: None,
             instant_since_article_selected: None,
             duration_since_last_article_change: None,
             enclosures: None,
@@ -75,6 +77,7 @@ impl ArticleContentModelData {
         }
         self.instant_since_article_selected = Some(current_instant);
         self.thumbnail_fetch_successful = None;
+        self.thumbnail = None;
         self.fat_article = None;
         self.markdown_content = None;
         self.filtered_markdown_content = None;
@@ -117,12 +120,30 @@ impl ArticleContentModelData {
             && article.article_id == thumbnail.article_id
             && let Some(data) = thumbnail.data.as_ref()
         {
-            let cursor = Cursor::new(data);
-            let image = ImageReader::new(cursor).with_guessed_format()?.decode()?;
-            Ok(Some(picker.new_resize_protocol(image)))
+            self.thumbnail = Some(thumbnail.to_owned());
+            Ok(Some(Self::gen_stateful_protocol(data, picker)?))
         } else {
             Ok(None)
         }
+    }
+
+    pub(super) fn update_thumbnail(
+        &self,
+        picker: &Picker,
+    ) -> color_eyre::Result<Option<StatefulProtocol>> {
+        if let Some(thumbnail) = self.thumbnail.as_ref()
+            && let Some(data) = thumbnail.data.as_ref()
+        {
+            Ok(Some(Self::gen_stateful_protocol(data, picker)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn gen_stateful_protocol(data: &[u8], picker: &Picker) -> color_eyre::Result<StatefulProtocol> {
+        let cursor = Cursor::new(data);
+        let image = ImageReader::new(cursor).with_guessed_format()?.decode()?;
+        Ok(picker.new_resize_protocol(image))
     }
 
     pub(super) fn scrape_article(&mut self) -> color_eyre::Result<()> {
