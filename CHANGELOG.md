@@ -2,7 +2,7 @@
 
 # 1.7.0 - 2026-07-20
 
-🙈 Ever though that it is a shame that life has no undo function? 🙈 At least, *eilmeldung* has one now!
+🙈 Ever thought, it is a shame that life has no undo function? 🙈 At least, *eilmeldung* has one now!
 
 - *eilmeldung* now supports **undoing the last operations**, just press `Ctrl-z` once or multiple times or use the command `undo`
 - the following operations can be undone:
