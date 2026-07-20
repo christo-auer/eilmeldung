@@ -181,7 +181,7 @@ impl ArticleListModelData {
         let article_ids_set: HashSet<ArticleID> = article_ids.iter().cloned().collect();
 
         self.news_flash_utils
-            .set_article_status(article_ids.clone(), read);
+            .set_article_status(article_ids.clone(), read, true); // undoable
 
         self.articles
             .iter_mut()
@@ -202,7 +202,7 @@ impl ArticleListModelData {
 
         let article_ids_set: HashSet<ArticleID> = article_ids.iter().cloned().collect();
         self.news_flash_utils
-            .set_article_marked(article_ids, marked);
+            .set_article_marked(article_ids, marked, true);
 
         self.articles
             .iter_mut()
@@ -221,21 +221,21 @@ impl ArticleListModelData {
             return Ok(0);
         }
 
-        let mut counter = 0;
+        let article_ids = article_ids
+            .into_iter()
+            .filter(|article_id| {
+                self.tags_for_article
+                    .get(article_id)
+                    .map(|tags| tags.contains(&tag_id))
+                    .unwrap_or(true)
+            })
+            .collect::<Vec<ArticleID>>();
+        let count = article_ids.len();
+        info!("tagging {} articles with {}", count, tag_id);
         self.news_flash_utils
-            .tag_articles(article_ids.clone(), tag_id.clone());
+            .tag_articles(article_ids, tag_id.clone(), true);
 
-        info!("tagging {} articles with {}", article_ids.len(), tag_id);
-        for article_id in article_ids {
-            let tags = self.tags_for_article.entry(article_id).or_default();
-
-            if !tags.contains(&tag_id) {
-                tags.push(tag_id.clone());
-                counter += 1;
-            }
-        }
-
-        Ok(counter)
+        Ok(count)
     }
 
     pub(super) fn untag_articles(
@@ -247,20 +247,21 @@ impl ArticleListModelData {
             return Ok(0);
         }
 
-        let mut counter = 0;
+        let article_ids = article_ids
+            .into_iter()
+            .filter(|article_id| {
+                self.tags_for_article
+                    .get(article_id)
+                    .map(|tags| tags.contains(&tag_id))
+                    .unwrap_or(false)
+            })
+            .collect::<Vec<ArticleID>>();
+        let count = article_ids.len();
+        info!("removing tag {} from {} articles", tag_id, count);
+
         self.news_flash_utils
-            .untag_articles(article_ids.clone(), tag_id.clone());
+            .untag_articles(article_ids, tag_id, true);
 
-        info!("tagging {} articles with {}", article_ids.len(), tag_id);
-        for article_id in article_ids {
-            if let Some(tags) = self.tags_for_article.get_mut(&article_id)
-                && let Some(position) = tags.iter().position(|other_tag_id| tag_id == *other_tag_id)
-            {
-                tags.remove(position);
-                counter += 1;
-            }
-        }
-
-        Ok(counter)
+        Ok(count)
     }
 }

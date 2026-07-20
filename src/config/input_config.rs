@@ -59,6 +59,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "s"         => "sync",
         "r"         => "read" "nextunread",
         "t"         => "cmd tag",
+        "T"         => "cmd untag",
         "R"         => "confirm in articles read %",
         "0 r"       => "confirm in articles read above",
         "$ r"       => "confirm in articles read below",
@@ -82,6 +83,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "; y"       => "cmd hintshare clipboard",
         "; s"       => "cmd hintshare",
         "C-r"       => "clear",
+        "C-z"       => "undo",
 
         // flagging
         "f"         => "flag" "in articles down",

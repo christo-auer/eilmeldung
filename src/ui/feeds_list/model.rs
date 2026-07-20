@@ -332,13 +332,13 @@ impl FeedListModelData {
         self.unread_count_for_feed_or_category
             .entry(FeedOrCategory::Feed(feed_id.to_owned()))
             .and_modify(|entry| *entry = 0);
-        self.news_flash_utils.set_feed_read(vec![feed_id]);
+        self.news_flash_utils.set_feed_read(feed_id);
         Ok(())
     }
 
     pub(super) fn set_category_read(&mut self, category_id: CategoryID) -> color_eyre::Result<()> {
         self.set_read_count_zero_recursively(&FeedOrCategory::Category(category_id.to_owned()));
-        self.news_flash_utils.set_category_read(vec![category_id]);
+        self.news_flash_utils.set_category_read(category_id);
         Ok(())
     }
 
@@ -361,7 +361,7 @@ impl FeedListModelData {
             .entry(tag_id.to_owned())
             .and_modify(|entry| *entry = 0);
 
-        self.news_flash_utils.set_tag_read(vec![tag_id]);
+        self.news_flash_utils.set_tag_read(tag_id);
         Ok(())
     }
 
