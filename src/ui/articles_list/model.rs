@@ -231,7 +231,7 @@ impl ArticleListModelData {
             })
             .collect::<Vec<ArticleID>>();
         let count = article_ids.len();
-        info!("tagging {} articles with {}", count, &tag_id);
+        info!("tagging {} articles with {}", count, tag_id);
         self.news_flash_utils
             .tag_articles(article_ids, tag_id.clone(), true);
 
@@ -257,7 +257,7 @@ impl ArticleListModelData {
             })
             .collect::<Vec<ArticleID>>();
         let count = article_ids.len();
-        info!("removing tag {} from {} articles", &tag_id, count);
+        info!("removing tag {} from {} articles", tag_id, count);
 
         self.news_flash_utils
             .untag_articles(article_ids, tag_id, true);
