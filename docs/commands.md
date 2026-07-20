@@ -63,6 +63,7 @@ When creating custom key bindings, understand the difference between:
 - [Feed List Management](#feed-list-management)
 - [Article List](#article-list)
 - [Article Actions](#article-actions)
+- [Undo](#undo)
 - [Import/Export](#importexport)
 - [Navigation Commands](#navigation-commands)
 - [Input-Related Commands](#input-related-commands)
@@ -204,6 +205,14 @@ These commands support a **scope parameter** to target specific articles:
 
 
 **Note:** By default, the commands `show`, `read` and `unread` are executed in the currently focused panel (feeds or articles). If you want to execute the command in a specific panel, use the `in` meta command, e.g., `in articles read %`, `in feeds show all`, etc.
+
+## Undo
+
+The command `undo` can undo the last operation. You can call `undo` multiple times. The following operations support undo: 
+
+- `read`, `unread` - setting the status to read or unread
+- `mark`, `unmark` - marking/unmarking of articles
+- `tag`, `untag` - adding or removing a tag
 
 ## Import/Export
 

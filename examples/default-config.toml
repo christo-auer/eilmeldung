@@ -198,6 +198,7 @@ timeout_millis = 5000
 "s"         = ["sync"]
 "r"         = ["read", "nextunread"]
 "t"         = ["cmd tag"]
+"T"         = ["cmd untag"]
 "R"         = ["confirm in articles read %"]
 "0 r"       = ["confirm in articles read above"]
 "$ r"       = ["confirm in articles read below"]
@@ -264,6 +265,8 @@ timeout_millis = 5000
 "E"         = ["cmd openenclosure"]
 "S"         = ["cmd share"]
 "?"         = ["helpinput"]
+"C-r"       = ["clear"]
+"C-z"       = ["undo"]
 
 
 # Theme Configuration

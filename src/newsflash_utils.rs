@@ -9,8 +9,8 @@ use news_flash::{
     NewsFlash,
     error::NewsFlashError,
     models::{
-        ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping, Marked, Read,
-        Tag, TagID, Url,
+        ArticleFilter, ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping,
+        Marked, Read, Tag, TagID, Url,
     },
 };
 
@@ -26,6 +26,7 @@ use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
 pub struct NewsFlashUtils {
     pub news_flash_lock: Arc<RwLock<NewsFlash>>,
     client_lock: Arc<RwLock<Client>>,
+    undo_stack_lock: Arc<RwLock<Vec<UndoOperation>>>,
     config: Arc<Config>,
     command_sender: UnboundedSender<Message>,
 
@@ -39,6 +40,7 @@ macro_rules! gen_async_call {
         params: ($($param:ident: $param_type:ty),*),
         news_flash_var: $news_flash_var:ident,
         client_var: $client_var:ident,
+        undo_stack_var: $undo_stack_var:ident,
         start_event: $start_event:expr,
         operation: $operation:stmt,
         success_event: $success_event:expr,
@@ -46,6 +48,7 @@ macro_rules! gen_async_call {
         pub fn $method_name(&self, $($param: $param_type),*) {
             let news_flash_lock = self.news_flash_lock.clone();
             let client_lock = self.client_lock.clone();
+            let undo_stack_lock = self.undo_stack_lock.clone();
             let command_sender = self.command_sender.clone();
             let async_operation_mutex = self.async_operation_mutex.clone();
 
@@ -58,6 +61,7 @@ macro_rules! gen_async_call {
 
                     let $news_flash_var = news_flash_lock.read().await;
                     let $client_var = client_lock.read().await;
+                    let mut $undo_stack_var = undo_stack_lock.write().await;
 
                     $operation
 
@@ -106,6 +110,7 @@ impl NewsFlashUtils {
             client_lock: Arc::new(RwLock::new(client)),
             config,
             command_sender,
+            undo_stack_lock: Default::default(),
             async_operation_mutex: Arc::new(Mutex::new(())),
         }
     }
@@ -150,6 +155,7 @@ impl NewsFlashUtils {
         params: (offline: bool),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncSetOffline,
         operation: news_flash.set_offline(offline, &client).await?,
         success_event: Event::AsyncSetOfflineFinished(offline),
@@ -160,6 +166,7 @@ impl NewsFlashUtils {
         params: (),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncSync,
         operation: let new_articles = news_flash.sync(&client, Default::default()).await?,
         success_event: Event::AsyncSyncFinished(new_articles),
@@ -170,6 +177,7 @@ impl NewsFlashUtils {
         params: (article_id: ArticleID),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncArticleThumbnailFetch,
         operation: let thumbnail = news_flash.get_article_thumbnail(&article_id, &client).await?,
         success_event: Event::AsyncArticleThumbnailFetchFinished(thumbnail),
@@ -180,6 +188,7 @@ impl NewsFlashUtils {
         params: (article_id: ArticleID),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncArticleFatFetch,
         operation: let fat_article = {
             // Temporarily redirect stderr to suppress libxml xpath errors that would mess up the TUI
@@ -194,47 +203,84 @@ impl NewsFlashUtils {
 
     gen_async_call! {
         method_name: set_article_status,
-        params: (article_ids: Vec<ArticleID>, read: Read),
+        params: (article_ids: Vec<ArticleID>, read: Read, undoable: bool),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: undo_stack,
         start_event: Event::AsyncArticlesSetRead,
-        operation: news_flash.set_article_read(&article_ids, read, &client).await?,
+        operation: {
+            news_flash.set_article_read(&article_ids, read, &client).await?;
+
+            if undoable {
+                undo_stack.push(UndoOperation::ChangeRead(article_ids, read));
+            }
+        },
+
         success_event: Event::AsyncArticlesSetReadFinished,
     }
 
     gen_async_call! {
         method_name: set_article_marked,
-        params: (article_ids: Vec<ArticleID>, marked: Marked),
+        params: (article_ids: Vec<ArticleID>, marked: Marked, undoable: bool),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: undo_stack,
         start_event: Event::AsyncArticlesSetRead,
-        operation: news_flash.set_article_marked(&article_ids, marked, &client).await?,
+        operation: {
+            news_flash.set_article_marked(&article_ids, marked, &client).await?;
+
+            if undoable {
+                undo_stack.push(
+                    UndoOperation::ChangeMarked(article_ids, marked)
+                    );
+            }
+
+        },
+
         success_event: Event::AsyncArticlesMarkFinished,
     }
 
     gen_async_call! {
         method_name: tag_articles,
-        params: (article_ids: Vec<ArticleID>, tag_id: TagID),
+        params: (article_ids: Vec<ArticleID>, tag_id: TagID, undoable: bool),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: undo_stack,
         start_event: Event::AsyncArticleTag,
-        operation:
+        operation: {
+            let mut tagged_articles: Vec<ArticleID> = Default::default();
             for article_id in article_ids {
                     news_flash.tag_article(&article_id, &tag_id, &client).await?;
-            },
+                    tagged_articles.push(article_id);
+            }
+
+            if undoable {
+                undo_stack.push(UndoOperation::AddTag(tagged_articles, tag_id));
+            }
+
+        },
         success_event: Event::AsyncArticleTagFinished,
     }
 
     gen_async_call! {
         method_name: untag_articles,
-        params: (article_ids: Vec<ArticleID>, tag_id: TagID),
+        params: (article_ids: Vec<ArticleID>, tag_id: TagID, undoable: bool),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: undo_stack,
         start_event: Event::AsyncArticleUntag,
-        operation:
+        operation:{
+            let mut untagged_articles: Vec<ArticleID> = Default::default();
             for article_id in article_ids {
-                news_flash.untag_article(&article_id, &tag_id, &client).await?;
-            },
+                    news_flash.untag_article(&article_id, &tag_id, &client).await?;
+                    untagged_articles.push(article_id);
+            }
+
+            if undoable {
+                undo_stack.push(UndoOperation::RemoveTag(untagged_articles, tag_id));
+            }
+
+        },
         success_event: Event::AsyncArticleUntagFinished,
     }
 
@@ -243,6 +289,7 @@ impl NewsFlashUtils {
         params: (tag_title: String, color: Option<Color>),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncTagAdd,
         operation: let tag = news_flash.add_tag( tag_title.as_str(), color.map(|color| color.to_string()), &client).await?,
         success_event: Event::AsyncTagAddFinished(tag),
@@ -253,6 +300,7 @@ impl NewsFlashUtils {
         params: (tag_id: TagID),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncTagRemove,
         operation: news_flash.remove_tag(&tag_id, &client).await?,
         success_event: Event::AsyncTagRemoveFinished,
@@ -263,6 +311,7 @@ impl NewsFlashUtils {
         params: (tag_id: TagID, new_tag_title: String, color: Option<Color>),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncTagEdit,
         operation:
             let tag = news_flash.edit_tag( &tag_id, new_tag_title.as_str(), &color.map(|color| color.to_string()), &client).await?,
@@ -274,38 +323,75 @@ impl NewsFlashUtils {
         params: (),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: undo_stack,
         start_event: Event::AsyncFeedSetRead,
-        operation: news_flash.set_all_read(&client).await?,
+        operation: {
+            let article_ids = news_flash.get_articles(
+                        ArticleFilter::all_unread())?.into_iter().map(|article| article.article_id).collect();
+            news_flash.set_all_read(&client).await?;
+            undo_stack.push(UndoOperation::ChangeRead(article_ids, Read::Read));
+        },
         success_event: Event::AsyncSetAllReadFinished,
     }
 
     gen_async_call! {
         method_name: set_feed_read,
-        params: (feed_ids: Vec<FeedID>),
+        params: (feed_id: FeedID),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: undo_stack,
         start_event: Event::AsyncFeedSetRead,
-        operation: news_flash.set_feed_read(&feed_ids, &client).await?,
+        operation: {
+            let feed_id = [feed_id];
+            let article_ids = news_flash.get_articles(
+                        ArticleFilter::feed_unread(&feed_id[0]))?
+                .into_iter().map(|article| article.article_id).collect();
+            news_flash.set_feed_read(&feed_id, &client).await?;
+            undo_stack.push(UndoOperation::ChangeRead(
+                    article_ids, Read::Read,));
+        }, 
         success_event: Event::AsyncFeedSetReadFinished,
     }
 
     gen_async_call! {
         method_name: set_category_read,
-        params: (category_ids: Vec<CategoryID>),
+        params: (category_id: CategoryID),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: undo_stack,
         start_event: Event::AsyncCategorySetRead,
-        operation: news_flash.set_category_read(&category_ids, &client).await?,
+        operation: {
+            let category_id = [category_id];
+            let article_ids = news_flash.get_articles(
+                        ArticleFilter::category_unread(&category_id[0]))?.into_iter().map(|article| article.article_id).collect();
+            news_flash.set_category_read(&category_id, &client).await?;
+            undo_stack.push(UndoOperation::ChangeRead(
+                    article_ids, Read::Read,));
+
+        },
         success_event: Event::AsyncCategorySetReadFinished,
     }
 
     gen_async_call! {
         method_name: set_tag_read,
-        params: (tag_ids: Vec<TagID>),
+        params: (tag_id: TagID),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: undo_stack,
         start_event: Event::AsyncTagSetRead,
-        operation: news_flash.set_tag_read(&tag_ids, &client).await?,
+        operation: {
+
+            let tag_id = [tag_id];
+            let article_ids = news_flash.get_articles(
+                        ArticleFilter::tag_unread(&tag_id[0]))?.into_iter().map(|article| article.article_id).collect();
+            news_flash.set_tag_read(&tag_id, &client).await?;
+
+            undo_stack.push(UndoOperation::ChangeRead(
+                    article_ids, Read::Read,));
+
+
+        },
+
         success_event: Event::AsyncTagSetReadFinished,
     }
 
@@ -314,6 +400,7 @@ impl NewsFlashUtils {
         params: (url: Url, title: Option<String>, category_id: Option<CategoryID>),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncFeedAdd,
         operation: let (feed, .. ) = news_flash.add_feed(&url, title, category_id, &client).await?,
         success_event: Event::AsyncFeedAddFinished(feed),
@@ -324,6 +411,7 @@ impl NewsFlashUtils {
         params: (feed_id: FeedID),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncFeedFetch,
         operation: let fetched = news_flash.fetch_feed(&feed_id, &client, Default::default()).await?,
         success_event: Event::AsyncFeedFetchFinished(feed_id, fetched),
@@ -334,6 +422,7 @@ impl NewsFlashUtils {
         params: (title: String, parent : Option<CategoryID>),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncCategoryAdd,
         operation: let (category, .. ) = news_flash.add_category(&title, parent.as_ref(), &client).await?,
         success_event: Event::AsyncCategoryAddFinished(category),
@@ -344,6 +433,7 @@ impl NewsFlashUtils {
         params: (feed_id: FeedID, title: String),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncFeedRename,
         operation: let feed = news_flash.rename_feed(&feed_id, title.as_str(), &client).await?,
         success_event: Event::AsyncRenameFeedFinished(feed),
@@ -354,6 +444,7 @@ impl NewsFlashUtils {
         params: (category_id: CategoryID, title: String),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncCategoryRename,
         operation: let category = news_flash.rename_category(&category_id, title.as_str(), &client).await?,
         success_event: Event::AsyncCategoryRenameFinished(category),
@@ -364,6 +455,7 @@ impl NewsFlashUtils {
         params: (category_id: CategoryID, remove_children: bool),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncCategoryRemove,
         operation: news_flash.remove_category(&category_id, remove_children, &client).await?,
         success_event: Event::AsyncCategoryRemoveFinished,
@@ -374,6 +466,7 @@ impl NewsFlashUtils {
         params: (feed_id: FeedID),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncFeedRemove,
         operation: news_flash.remove_feed(&feed_id, &client).await?,
         success_event: Event::AsyncFeedRemoveFinished,
@@ -384,6 +477,7 @@ impl NewsFlashUtils {
         params: (feed_id: FeedID, new_url: String),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncFeedUrlChange,
         operation: news_flash.edit_feed_url(&feed_id, &new_url, &client).await?,
         success_event: Event::AsyncFeedUrlChangeFinished,
@@ -394,6 +488,7 @@ impl NewsFlashUtils {
         params: (from_feed_mapping: FeedMapping, to_feed_mapping: FeedMapping),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncFeedMove,
         operation: news_flash.move_feed(&from_feed_mapping, &to_feed_mapping, &client).await?,
         success_event: Event::AsyncFeedMoveFinished,
@@ -404,6 +499,7 @@ impl NewsFlashUtils {
         params: (category_mapping: CategoryMapping),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncCategoryMove,
         operation: news_flash.move_category(&category_mapping, &client).await?,
         success_event: Event::AsyncCategoryMoveFinished,
@@ -414,6 +510,7 @@ impl NewsFlashUtils {
         params: (opml: String, parse_all_feeds: bool),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncImportOpml,
         operation: news_flash.import_opml(&opml, parse_all_feeds, &client).await?,
         success_event: Event::AsyncImportOpmlFinished,
@@ -424,6 +521,7 @@ impl NewsFlashUtils {
         params: (),
         news_flash_var: news_flash,
         client_var: client,
+        undo_stack_var: _undo_stack,
         start_event: Event::AsyncLogout,
         operation: news_flash.logout(&client).await?,
         success_event: Event::AsyncLogoutFinished,
@@ -511,11 +609,27 @@ impl NewsFlashUtils {
 
     }
 
-    //
-    //
-    //
-    //     Ok(())
-    // }
+    pub async fn undo_last_operation(&self) -> Option<UndoOperation> {
+
+        let last_operation = {
+            let mut undo_stack = self.undo_stack_lock.write().await;
+            undo_stack.pop()
+        };
+
+        if let Some(last_operation) = last_operation.clone() {
+
+            use UndoOperation as O;
+            match last_operation {
+                O::ChangeRead(article_ids, read) => self.set_article_status(article_ids, read.invert(), false),
+                O::ChangeMarked(article_ids, marked) => self.set_article_marked(article_ids, marked.invert(), false),
+                O::AddTag(article_ids, tag_id) => self.untag_articles(article_ids, tag_id, false),
+                O::RemoveTag(article_ids, tag_id) => self.tag_articles(article_ids, tag_id, false),
+            }
+
+        }
+
+        last_operation
+    }
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(
         items: &[V],

@@ -57,6 +57,13 @@ This document provides a comprehensive reference of all default key bindings in 
 
 ---
 
+## Undoing
+
+| Key      | Action                                                               |
+| -----    | --------                                                             |
+| `Ctrl-z` | Undo the last operation (if supported; see [Undo](commands.md#undo)) |
+
+
 ## Navigation
 
 | Key                   | Action                                                                              |
@@ -123,9 +130,10 @@ This document provides a comprehensive reference of all default key bindings in 
 ---
 ## Tags
 
-| Key | Action |
-|-----|--------|
-| `t` | Open command line to tag article (e.g., `:tag tech`), **TAB** to autocomplete tag names |
+| Key   | Action                                                                                      |
+| ----- | --------                                                                                    |
+| `t`   | Open command line to tag article (e.g., `:tag tech`), **TAB** to autocomplete tag names     |
+| `T`   | Open command line to untag article (e.g., `:untag tech`), **TAB** to autocomplete tag names |
 
 You can create new tags with `:tagadd urgent red` (press **TAB** for autocomplete colors!). Once created, you can bulk-tag articles: `:tag tech unread` tags all unread articles as `tech`.
 

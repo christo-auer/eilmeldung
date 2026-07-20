@@ -638,6 +638,27 @@ impl MessageReceiver for App {
                 self.import_opml(path_str).await?;
             }
 
+            Message::Command(Undo) => {
+                let undo_operation = self.news_flash_utils.undo_last_operation().await;
+
+                match undo_operation {
+                    Some(undo_operation) => tooltip(
+                        &self.message_sender,
+                        &*undo_operation.to_string(),
+                        TooltipFlavor::Info,
+                    )?,
+                    None => {
+                        let message = if self.news_flash_utils.is_async_operation_running() {
+                            "nothing to undo yet (wait for async operation to finish)".to_string()
+                        } else {
+                            "nothing to undo".to_string()
+                        };
+
+                        tooltip(&self.message_sender, &*message, TooltipFlavor::Warning)?;
+                    }
+                }
+            }
+
             Message::Event(Event::AsyncLogoutFinished) => {
                 self.message_sender
                     .send(Message::Command(Command::ApplicationQuit))?;

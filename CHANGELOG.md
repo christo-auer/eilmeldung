@@ -1,7 +1,19 @@
 # Unreleased
 
-- bugfix: thumbnail now resizes dynamically if the terminal/font has resized (use the new command `clear` to force a complete refresh of the screen)
-- bump of dependencies
+🙈 Ever though that it is a shame that life has no undo function? 🙈 At least, *eilmeldung* has one now!
+
+- *eilmeldung* now supports **undoing the last operations**, just press `Ctrl-z` once or multiple times or use the command `undo`
+- the following operations can be undone:
+  - setting status of articles to *read* or *unread*
+  - *marking* and *unmarking* articles
+  - *tagging* or *untagging* articles
+- of course, you can remap the key binding `Ctrl-z` as usual
+- since undo is pretty new and relatively untested, please rease an issue if you encounter any bugs or unexpected behavior!
+- and if you think that other operations should also be undoable, feel free to create an enhancement issue
+
+- other changes
+  - bugfix: thumbnail now resizes dynamically if the terminal/font has resized (use the new command `clear` to force a complete refresh of the screen)
+  - bump of dependencies
 
 # 1.6.1 - 2026-07-13
 

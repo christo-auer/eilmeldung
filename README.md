@@ -103,6 +103,7 @@ Here are some key bindings to get you started.
 | `r` / `u`       | Mark as read / unread                                         |
 | `m` / `v`       | Mark (star) / unmark article                                  |
 | `/`             | Search articles                                               |
+| `Ctrl-z`        | Undo last operation(s), see [docs/commands.md#undo](undo)     |
 | `:`             | Open command line                                             |
 | `q`             | Quit                                                          |
 | `1` / `2` / `3` | Show all/only unread/only marked in feed list or article list |

@@ -555,6 +555,13 @@ pub enum Command {
     )]
     TagAdd(String, Option<Color>),
 
+    #[strum(
+        serialize = "undo",
+        message = "undo",
+        detailed_message = "undos the last read/unread operation (all)"
+    )]
+    Undo,
+
     // article list commands
     #[strum(
         serialize = "show",
@@ -923,6 +930,7 @@ impl Display for Command {
             TagAdd(tag_title, _) => {
                 write!(f, "add tag #{}", tag_title)
             }
+            Undo => write!(f, "undos the last read/unread operation"),
             CommandConfirm(command) => write!(f, "{}?", command),
             In(panel, command) => write!(f, "{command} in {panel}"),
         }
