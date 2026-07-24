@@ -1,5 +1,9 @@
 # Unreleased
 
+- bugfix in article content display
+  - no content is shown if now article is selected
+  - tags are now updated correctly
+
 # 1.7.0 - 2026-07-20
 
 🙈 Ever thought, it is a shame that life has no undo function? 🙈 At least, *eilmeldung* has one now!

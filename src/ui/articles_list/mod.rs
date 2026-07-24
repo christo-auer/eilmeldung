@@ -95,12 +95,19 @@ impl ArticlesList {
         let index = index
             .or(self.view_data.get_table_state().selected())
             .unwrap_or_default();
-        if let Some(article) = self.model_data.articles().get(index) {
-            self.view_data.table_state_mut().select(Some(index));
-            self.message_sender
-                .send(Message::Event(Event::ArticleSelected(
-                    article.article_id.to_owned(),
-                )))?;
+
+        match self.model_data.articles().get(index) {
+            Some(article) => {
+                self.view_data.table_state_mut().select(Some(index));
+                self.message_sender
+                    .send(Message::Event(Event::ArticleSelected(Some(
+                        article.article_id.to_owned(),
+                    ))))?;
+            }
+            None => {
+                self.message_sender
+                    .send(Message::Event(Event::ArticleSelected(None)))?;
+            }
         }
 
         self.adjust_offset();
