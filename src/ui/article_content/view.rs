@@ -71,7 +71,6 @@ impl Default for ArticleContentViewData {
 
 impl ArticleContentViewData {
     pub(super) fn update(&mut self, model_data: &ArticleContentModelData, _config: Arc<Config>) {
-        // Reset scroll when article changes
         if model_data.article().is_some() && self.vertical_scroll > self.max_scroll {
             self.vertical_scroll = 0;
         }

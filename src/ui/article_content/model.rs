@@ -64,9 +64,9 @@ impl ArticleContentModelData {
 
     pub(super) async fn on_article_selected(
         &mut self,
-        article_id: &ArticleID,
+        article_id: Option<&ArticleID>,
     ) -> color_eyre::Result<bool> {
-        if self.article.as_ref().map(|article| &article.article_id) == Some(article_id) {
+        if self.article.as_ref().map(|article| &article.article_id) == article_id {
             return Ok(false);
         }
 
@@ -84,31 +84,47 @@ impl ArticleContentModelData {
         self.feed = None;
         self.tags = None;
 
-        let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+        match article_id {
+            Some(article_id) => {
+                let article = {
+                    let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+                    let article = news_flash.get_article(article_id)?;
+                    self.feed = news_flash
+                        .get_feeds()?
+                        .0
+                        .into_iter()
+                        .find(|feed| feed.feed_id == article.feed_id);
+                    self.enclosures = Some(news_flash.get_enclosures(article_id)?);
+                    article
+                };
 
-        let article = news_flash.get_article(article_id)?;
+                self.update_article_tags().await?;
 
-        self.feed = news_flash
-            .get_feeds()?
-            .0
-            .into_iter()
-            .find(|feed| feed.feed_id == article.feed_id);
-
-        let (tags, taggings) = news_flash.get_tags()?;
-        let mut tag_for_tag_id = NewsFlashUtils::generate_id_map(&tags, |tag| tag.tag_id.clone());
-        self.tags = Some(
-            taggings
-                .into_iter()
-                .filter(|tagging| tagging.article_id == article.article_id)
-                .filter_map(|tagging| tag_for_tag_id.remove(&tagging.tag_id))
-                .collect::<Vec<Tag>>(),
-        );
-
-        self.enclosures = Some(news_flash.get_enclosures(article_id)?);
-
-        self.article = Some(article);
+                self.article = Some(article);
+            }
+            None => {
+                self.article = None;
+            }
+        }
 
         Ok(true)
+    }
+
+    pub(super) async fn update_article_tags(&mut self) -> color_eyre::Result<()> {
+        if let Some(article_id) = self.article.as_ref().map(|article| &article.article_id) {
+            let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+            let (tags, taggings) = news_flash.get_tags()?;
+            let mut tag_for_tag_id =
+                NewsFlashUtils::generate_id_map(&tags, |tag| tag.tag_id.clone());
+            self.tags = Some(
+                taggings
+                    .into_iter()
+                    .filter(|tagging| tagging.article_id == *article_id)
+                    .filter_map(|tagging| tag_for_tag_id.remove(&tagging.tag_id))
+                    .collect::<Vec<Tag>>(),
+            );
+        }
+        Ok(())
     }
 
     pub(super) fn prepare_thumbnail(

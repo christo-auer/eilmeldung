@@ -45,7 +45,10 @@ impl ArticleContent {
         }
     }
 
-    async fn on_article_selected(&mut self, article_id: &ArticleID) -> color_eyre::Result<bool> {
+    async fn on_article_selected(
+        &mut self,
+        article_id: Option<&ArticleID>,
+    ) -> color_eyre::Result<bool> {
         let article_changed = self.model_data.on_article_selected(article_id).await?;
         self.view_data.clear_image();
         self.view_data.scroll_to_top();
@@ -386,7 +389,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
             use Event::*;
             match event {
                 ArticleSelected(article_id) => {
-                    let article_changed = self.on_article_selected(article_id).await?;
+                    let article_changed = self.on_article_selected(article_id.as_ref()).await?;
                     if article_changed && self.is_focused && self.config.auto_scrape {
                         self.scrape_article()?;
                     }
@@ -444,6 +447,11 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     view_needs_update = true;
                 }
 
+                AsyncArticleTagFinished | AsyncArticleUntagFinished => {
+                    self.model_data.update_article_tags().await?;
+                    view_needs_update = true;
+                }
+
                 Tick => {
                     view_needs_update = self.update_thumbnail_fetching_state()?;
                 }
@@ -467,7 +475,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     view_needs_update = true;
                 }
 
-                _ => {}
+                _ => view_needs_update = event.caused_model_update(),
             }
         }
 
