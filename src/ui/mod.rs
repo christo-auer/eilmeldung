@@ -324,7 +324,9 @@ impl App {
                         let mut redraw = matches!(message, Message::Command(Command::Redraw));
 
                         if matches!(message, Message::Command(Command::Clear)) {
-                            terminal.clear()?;
+                            if let Err(error) = terminal.clear() {
+                                tooltip(&self.message_sender, &*error.to_string(), TooltipFlavor::Error)?;
+                            }
                             redraw = true;
                         }
 
