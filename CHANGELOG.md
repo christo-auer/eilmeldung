@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.7.1 - 2026-07-27
+
 This is a minor release with mainly bugfixes. However, there is a *kind of* breaking change:
 
 - *breaking change* for *scoop* users: *eilmeldung* is now in *scoop main*. to switch:
