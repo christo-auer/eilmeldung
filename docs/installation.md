@@ -166,7 +166,6 @@ echo "repository=https://raw.githubusercontent.com/Event-Horizon-VL/blackhole-vl
 Install [scoop](https://scoop.sh/) and then
 
 ```
-  scoop bucket add eilmeldung https://github.com/christo-auer/eilmeldung
   scoop install eilmeldung
 ```
 

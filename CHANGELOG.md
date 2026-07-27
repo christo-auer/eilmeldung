@@ -1,5 +1,13 @@
 # Unreleased
 
+- *breaking change* for *scoop* users: *eilmeldung* is now in *scoop main*. to switch:
+```powershell
+scoop uninstall eilmeldung
+scoop bucket rm eilmeldung
+scoop update
+scoop install eilmeldung
+```
+
 - bugfix in article content display
   - no content is shown if now article is selected
   - tags are now updated correctly

@@ -5,6 +5,17 @@ Here you can find migration guides for breaking changes.
 
 **IMPORTANT**: Don't copy `example/default-config.toml`. Start with an **empty** `config.toml` and just add the settings you want to be **different** from the `default-config.toml`! `default-config.toml` is for **reference purposes** only and is prone to break if used directly.
 
+## With 1.7.1
+### `scoop` installation
+- *eilmeldung* is now in `scoop main`, there is no external bucket for *eilmeldung* any more
+- switch to `main` version with
+```powershell
+scoop uninstall eilmeldung
+scoop bucket rm eilmeldung
+scoop update
+scoop install eilmeldung
+```
+
 ## With 1.5.3
 ### `config.toml`
 
