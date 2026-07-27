@@ -12,6 +12,7 @@ scoop install eilmeldung
   - no content is shown if now article is selected
   - tags are now updated correctly
   - an error on command `clear` now leads to an error message instead of a crash
+  - undo tagging now bevaves correctly if an article already had the tag before
 - bump dependencies
 
 # 1.7.0 - 2026-07-20

@@ -226,7 +226,7 @@ impl ArticleListModelData {
             .filter(|article_id| {
                 self.tags_for_article
                     .get(article_id)
-                    .map(|tags| tags.contains(&tag_id))
+                    .map(|tags| !tags.contains(&tag_id))
                     .unwrap_or(true)
             })
             .collect::<Vec<ArticleID>>();
