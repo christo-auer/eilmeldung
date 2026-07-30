@@ -15,7 +15,8 @@ pub mod prelude {
 }
 
 pub fn html_sanitize(html_escaped_string: &str) -> String {
-    htmlescape::decode_html(&html_escaped_string.replace("＆", "&"))
+    htmlescape::decode_html(html_escaped_string)
+        .map(|decoded_string| decoded_string.replace("＆", "&"))
         .unwrap_or(html_escaped_string.to_owned())
 }
 
