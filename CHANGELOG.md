@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: HTML encoded wide-ampersands (U+FF06) are now correctly replaced by *&*
+
 # 1.7.1 - 2026-07-27
 
 This is a minor release with mainly bugfixes. However, there is a *kind of* breaking change:
