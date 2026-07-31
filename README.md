@@ -15,9 +15,9 @@
 - *fast* in every aspect: non-blocking terminal user interface, (neo)vim-inspired keybindings, instant start-up and no clutter
 - *stands* on the shoulder of *giants*: based on the news-flash library, *eilmeldung* supports many RSS providers, is efficient and reliable
 - *powerful* and yet *easy to use out-of-the-box*: sane defaults which work for most, and yet configurable to meet anyone's requirements, from keybindings to colors, from displayed content to RSS provider
-- read news like a pro: filter and search news with an easy-to-learn powerful *query language*, activate *zen mode* to focus on the article content and nothing else
-- is available on Linux, macOS, Windows and NetBSD
-- is based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.  
+- for reading news like a pro: filter and search news with an easy-to-learn powerful *query language*, activate *zen mode* to focus on the article content and nothing else
+- available on Linux, macOS, Windows and NetBSD
+- based on the awesome [news-flash](https://gitlab.com/news-flash/news_flash) library.  
 
 *eilmeldung* is German for *breaking news*
 
@@ -102,7 +102,7 @@ Here are some key bindings to get you started.
 | `r` / `u`       | Mark as read / unread                                         |
 | `m` / `v`       | Mark (star) / unmark article                                  |
 | `/`             | Search articles                                               |
-| `Ctrl-z`        | Undo last operation(s), see [docs/commands.md#undo](undo)     |
+| `Ctrl-z`        | Undo last operation(s), see [undo](docs/commands.md#undo)     |
 | `:`             | Open command line                                             |
 | `q`             | Quit                                                          |
 | `1` / `2` / `3` | Show all/only unread/only marked in feed list or article list |
