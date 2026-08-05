@@ -20,7 +20,7 @@ strip = true
 [dependencies]
 arboard = { version = "3.6.1", default-features = false, features = ["wayland-data-control" ] }
 chrono = "0.4.45"
-clap = { version = "4.6.4", features = ["derive"] }
+clap = { version = "4.6.5", features = ["derive"] }
 color-eyre = "0.6.5"
 config = "0.15.25"
 derive = "1.0.0"
@@ -65,13 +65,13 @@ the-other-tui-markdown = "0.1.0"
 thiserror = "2.0.19"
 throbber-widgets-tui = "0.11.1"
 tokio = { version = "1.53.1", features = ["macros", "tokio-macros", "time", "process", "io-util" ] }
-toml = "1.1.3"
+toml = "1.1.4"
 tui-logger = { version = "0.18.3", features = ["crossterm"] }
 tui-markdown = "0.3.9"
 tui-prompts = "0.6.7"
 tui-tree-widget = "0.24.0"
 url = "2.5.8"
-webbrowser = "1.2.1"
+webbrowser = "1.2.4"
 shellexpand = "3.1.2"
 
 [dev-dependencies]
