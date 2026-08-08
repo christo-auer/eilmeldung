@@ -1,10 +1,12 @@
 # Unreleased
 
+This release just some minor bugfixes and one minor breaking change:
 
 - `icon_set.filter_reverse` has been renamed to `icon_set.sort_reversed`
 - bugfix 
   - HTML encoded wide-ampersands (U+FF06) are now correctly replaced by *&*
   - sort sort icons are now configurable and correctly replaced with preset ASCII
+- bumped dependencies
 
 # 1.7.1 - 2026-07-27
 
