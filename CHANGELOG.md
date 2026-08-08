@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.7.2 - 2026-08-08
+
 This release just some minor bugfixes and one minor breaking change:
 
 - `icon_set.filter_reverse` has been renamed to `icon_set.sort_reversed`
