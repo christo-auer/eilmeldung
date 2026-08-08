@@ -36,7 +36,7 @@ pub struct IconSet {
     // Sorting and Filtering
     sort_ascending: Option<char>,
     sort_descending: Option<char>,
-    filter_reverse: Option<char>,
+    sort_reversed: Option<char>,
     sort_normal: Option<char>,
     piped: Option<char>,
     // Batch Operations
@@ -102,7 +102,7 @@ impl IconSet {
     // Sorting and Filtering
     icon_property!(sort_ascending, '󰒼', '^');
     icon_property!(sort_descending, '󰒽', 'v');
-    icon_property!(filter_reverse, '󰒿', '<');
+    icon_property!(sort_reversed, '󰒿', '<');
     icon_property!(sort_normal, '󰌼', '>');
     // Batch Operations
     icon_property!(batch, '', '=');

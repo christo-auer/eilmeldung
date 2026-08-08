@@ -462,12 +462,13 @@ All default values can be found in `examples/default-config.toml`
 
 
 ## Sorting and Filtering
-| Name          | Description                    |
-| ---           | ---                            |
-| `sort_ascending` | ascending sort order |
+| Name              | Description           |
+| ---               | ---                   |
+| `sort_ascending`  | ascending sort order  |
 | `sort_descending` | descending sort order |
-| `sort_normal` | normal sort order |
-| `filter_reverse` | reversed filter sort order |
+| `sort_normal`     | normal sort order     |
+| `sort_reversed`   | reversed sort order   |
+
 ## Batch Operations
 
 | Name             | Description                 |

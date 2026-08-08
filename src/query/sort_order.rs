@@ -7,6 +7,8 @@ use logos::Logos;
 use news_flash::models::{Article, Feed, FeedID};
 use serde::Deserialize;
 
+use crate::config::Config;
+
 #[derive(Clone, Debug, logos::Logos)]
 #[logos(skip r"[ \t\n\f]+")]
 enum SortToken {
@@ -38,21 +40,19 @@ pub enum SortDirection {
     Descending,
 }
 
-impl Display for SortDirection {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SortDirection::Ascending => write!(f, "󰒼"),
-            SortDirection::Descending => write!(f, "󰒽"),
-        }
-    }
-}
-
 impl SortDirection {
     pub fn reversed(self) -> Self {
         use SortDirection as S;
         match self {
             S::Ascending => S::Descending,
             S::Descending => S::Ascending,
+        }
+    }
+
+    pub fn to_icon(self, config: &Config) -> char {
+        match self {
+            SortDirection::Ascending => config.icon_set.sort_ascending_icon(),
+            SortDirection::Descending => config.icon_set.sort_descending_icon(),
         }
     }
 
@@ -74,19 +74,6 @@ pub enum SortKey {
     Author(SortDirection),
 }
 
-impl Display for SortKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use SortKey as S;
-        match self {
-            S::Feed(direction) => write!(f, "{direction}feed"),
-            S::Date(direction) => write!(f, "{direction}date"),
-            S::Synced(direction) => write!(f, "{direction}synced"),
-            S::Title(direction) => write!(f, "{direction}title"),
-            S::Author(direction) => write!(f, "{direction}author"),
-        }
-    }
-}
-
 impl SortKey {
     pub fn reversed(self) -> Self {
         use SortKey as K;
@@ -96,6 +83,17 @@ impl SortKey {
             K::Synced(direction) => K::Synced(direction.reversed()),
             K::Title(direction) => K::Title(direction.reversed()),
             K::Author(direction) => K::Author(direction.reversed()),
+        }
+    }
+
+    pub fn as_string(&self, config: &Config) -> String {
+        use SortKey as S;
+        match self {
+            S::Feed(direction) => format!("{}feed", direction.to_icon(config)),
+            S::Date(direction) => format!("{}date", direction.to_icon(config)),
+            S::Synced(direction) => format!("{}synced", direction.to_icon(config)),
+            S::Title(direction) => format!("{}title", direction.to_icon(config)),
+            S::Author(direction) => format!("{}author", direction.to_icon(config)),
         }
     }
 
@@ -152,16 +150,12 @@ pub struct SortOrder {
     order: Vec<SortKey>,
 }
 
-impl Display for SortOrder {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.order
-                .iter()
-                .map(|sort_key| sort_key.to_string())
-                .join(" ")
-        )
+impl SortOrder {
+    pub fn as_string(&self, config: &Config) -> String {
+        self.order
+            .iter()
+            .map(|sort_key| sort_key.as_string(config))
+            .join(" ")
     }
 }
 
@@ -289,6 +283,41 @@ pub fn parse_sort_order(sort_order_str: &str) -> Result<SortOrder, SortOrderPars
     }
 
     Ok(SortOrder { order })
+}
+
+impl Display for SortDirection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SortDirection::Ascending => write!(f, "ascending"),
+            SortDirection::Descending => write!(f, "descending"),
+        }
+    }
+}
+
+impl Display for SortKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use SortKey as S;
+        match self {
+            S::Feed(direction) => write!(f, "feed {direction}"),
+            S::Date(direction) => write!(f, "date {direction}"),
+            S::Synced(direction) => write!(f, "synced {direction}"),
+            S::Title(direction) => write!(f, "title {direction}"),
+            S::Author(direction) => write!(f, "author {direction}"),
+        }
+    }
+}
+
+impl Display for SortOrder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.order
+                .iter()
+                .map(|sort_key| sort_key.to_string())
+                .join(", ")
+        )
+    }
 }
 
 #[cfg(test)]
