@@ -220,11 +220,11 @@ impl<'a> ArticleListViewData<'a> {
             let filter_text = &format!(
                 " {} {} ",
                 if *filter_state.reverse_sort_order() {
-                    "󰒿"
+                    config.icon_set.sort_reversed_icon()
                 } else {
-                    "󰌼"
+                    config.icon_set.sort_normal_icon()
                 },
-                filter_state.get_effective_sort_order()
+                filter_state.get_effective_sort_order().as_string(config)
             );
             spans.push(Span::styled(filter_text.to_owned(), config.theme.header()));
         }

@@ -130,7 +130,7 @@ preset = "nerd"
 # Sorting and Filtering
 # sort_ascending is not set; nerd: "󰒼", ascii: "^"
 # sort_descending is not set; nerd: "󰒽", ascii: "v"
-# filter_reverse is not set; nerd: "󰒿", ascii: "<"
+# sort_reversed is not set; nerd: "󰒿", ascii: "<"
 # sort_normal is not set; nerd: "󰌼", ascii: ">"
 
 # Batch Operations
