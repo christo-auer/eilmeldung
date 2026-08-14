@@ -36,7 +36,7 @@ rustPlatform.buildRustPackage {
 
   LIBCLANG_PATH = lib.makeLibraryPath [ llvmPackages_19.libclang.lib ];
   BINDGEN_EXTRA_CLANG_ARGS = lib.concatStringsSep " " (
-    lib.optionals stdenv.isLinux [
+    lib.optionals stdenv.hostPlatform.isLinux [
       ''-I"${glibc.dev}/include"''
       ''-I"${glibc.dev}/include/"''
     ]
@@ -47,11 +47,11 @@ rustPlatform.buildRustPackage {
     ]
   );
 
-  meta = with lib; {
-    description = "A feature-rich TUI RSS Reader based on the news-flash library";
+  meta = {
+    description = "Feature-rich TUI RSS Reader based on the news-flash library";
     homepage = "https://github.com/christo-auer/eilmeldung";
-    license = licenses.gpl3Plus;
-    maintainers = [ "christo-auer" ];
+    license = lib.licenses.gpl3Plus;
+    #maintainers = with lib.maintainers [ christo-auer ];
     mainProgram = "eilmeldung";
   };
 }
