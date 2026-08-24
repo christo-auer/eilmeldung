@@ -77,7 +77,7 @@ cargo install --locked --git https://github.com/christo-auer/eilmeldung
 
 ## NixOS and Home Manager Module 
 
-*eilmeldung* is available on *unstable* in nixpkgs and home-manager. Either install [`pkgs.eilmeldung`](https://search.nixos.org/packages?channel=unstable&query=eilmeldung) or use the [home-manager module](https://home-manager-options.extranix.com/?query=eilmeldung&release=master). If you quickly want to try out *eilmeldung* run:
+*eilmeldung* is available on *unstable* in nixpkgs and home-manager (thanks to @rachitvrma!). Either install [`pkgs.eilmeldung`](https://search.nixos.org/packages?channel=unstable&query=eilmeldung) or use the [home-manager module](https://home-manager-options.extranix.com/?query=eilmeldung&release=master). If you quickly want to try out *eilmeldung* run:
 
 ```bash
 nix run nixpkgs#eilmeldung
