@@ -35,34 +35,34 @@ pub enum QueryParseError {
     #[error("unknown error")]
     UnknownError,
 
-    #[error("invalid token")]
+    #[error("invalid token: {1}")]
     LexerError(usize, String),
 
-    #[error("expecting key (title:, newer:, ...) or word to search")]
+    #[error("expecting key (title:, newer:, ...) or word to search, got {1} instead")]
     KeyOrWordExpected(usize, String),
 
-    #[error("expecting key after negation (~key:...)")]
+    #[error("expecting key after negation (~key:...), got {1} instead")]
     KeyAfterNegationExpected(usize, String),
 
-    #[error("expecting search term (unquoted word, regex or quoted string)")]
+    #[error("expecting search term (unquoted word, regex or quoted string), got {1} instead")]
     SearchTermExpected(usize, String),
 
-    #[error("expecting tag list (#tag1,#tag2,#tag3,...)")]
+    #[error("expecting tag list (#tag1,#tag2,#tag3,...), got {1} instead")]
     TagListExpected(usize, String),
 
-    #[error("expecting sort order (e.g., \"date <feed\")")]
+    #[error("expecting sort order (e.g., \"date <feed\"), got {1} instead")]
     SortOrderExpected(usize, String),
 
-    #[error("multiple sort orders found, only one sort order allowed")]
+    #[error("multiple sort orders found, only one sort order allowed, got {1} instead")]
     MultipleSortOrdersFound(usize, String),
 
-    #[error("expecting time or relative time")]
+    #[error("expecting time or relative time, got {1} instead")]
     TimeOrRelativeTimeExpected(usize, String),
 
-    #[error("invalid regular expression")]
+    #[error("invalid regular expression: {0}")]
     InvalidRegularExpression(#[from] regex::Error),
 
-    #[error("invalid sort order")]
+    #[error("invalid sort order: {0}")]
     InvalidSortOrder(#[from] SortOrderParseError),
 }
 
@@ -132,7 +132,7 @@ pub enum QueryToken {
     )]
     KeyFlagged,
 
-    #[token("newer:")]
+    #[token("newer:", priority = 2)]
     #[strum(
         serialize = "newer:",
         message = "newer:<time>",
@@ -140,7 +140,7 @@ pub enum QueryToken {
     )]
     KeyNewer,
 
-    #[token("older:")]
+    #[token("older:", priority = 2)]
     #[strum(
         serialize = "older:",
         message = "older:<time>",
@@ -148,7 +148,7 @@ pub enum QueryToken {
     )]
     KeyOlder,
 
-    #[token("today")]
+    #[token("today", priority = 2)]
     #[strum(
         serialize = "today",
         message = "today",
@@ -156,7 +156,7 @@ pub enum QueryToken {
     )]
     KeyToday,
 
-    #[token("lastsync")]
+    #[token("lastsync", priority = 2)]
     #[strum(
         serialize = "lastsync",
         message = "lastsync",
@@ -164,7 +164,7 @@ pub enum QueryToken {
     )]
     KeyLastSync,
 
-    #[token("syncedbefore:")]
+    #[token("syncedbefore:", priority = 2)]
     #[strum(
         serialize = "syncedbefore:",
         message = "syncedbefore:<time>",
@@ -172,7 +172,7 @@ pub enum QueryToken {
     )]
     KeySyncedBefore,
 
-    #[token("syncedafter:")]
+    #[token("syncedafter:", priority = 2)]
     #[strum(
         serialize = "syncedafter:",
         message = "syncedafter:<time>",
@@ -180,7 +180,7 @@ pub enum QueryToken {
     )]
     KeySyncedAfter,
 
-    #[token("feed:")]
+    #[token("feed:", priority = 2)]
     #[strum(
         serialize = "feed:",
         message = "feed:<search term>",
@@ -188,7 +188,7 @@ pub enum QueryToken {
     )]
     KeyFeed,
 
-    #[token("category:")]
+    #[token("category:", priority = 2)]
     #[strum(
         serialize = "category:",
         message = "category:<search term>",
@@ -196,7 +196,7 @@ pub enum QueryToken {
     )]
     KeyCategory,
 
-    #[token("title:")]
+    #[token("title:", priority = 2)]
     #[strum(
         serialize = "title:",
         message = "title:<search term>",
@@ -204,7 +204,7 @@ pub enum QueryToken {
     )]
     KeyTitle,
 
-    #[token("summary:")]
+    #[token("summary:", priority = 2)]
     #[strum(
         serialize = "summary:",
         message = "summary:<search term>",
@@ -212,7 +212,7 @@ pub enum QueryToken {
     )]
     KeySummary,
 
-    #[token("author:")]
+    #[token("author:", priority = 2)]
     #[strum(
         serialize = "author:",
         message = "author:<search term>",
@@ -220,7 +220,7 @@ pub enum QueryToken {
     )]
     KeyAuthor,
 
-    #[token("all:")]
+    #[token("all:", priority = 2)]
     #[strum(
         serialize = "all:",
         message = "all:<search term>",
@@ -228,7 +228,7 @@ pub enum QueryToken {
     )]
     KeyAll,
 
-    #[token("feedurl:")]
+    #[token("feedurl:", priority = 2)]
     #[strum(
         serialize = "feedurl:",
         message = "feedurl:<search term>",
@@ -236,7 +236,7 @@ pub enum QueryToken {
     )]
     KeyFeedUrl,
 
-    #[token("feedweburl:")]
+    #[token("feedweburl:", priority = 2)]
     #[strum(
         serialize = "feedweburl:",
         message = "feedweburl:<search term>",
@@ -244,7 +244,7 @@ pub enum QueryToken {
     )]
     KeyFeedWebUrl,
 
-    #[token("tag:")]
+    #[token("tag:", priority = 2)]
     #[strum(
         serialize = "tag:",
         message = "tag:<tag list>",
@@ -252,7 +252,7 @@ pub enum QueryToken {
     )]
     KeyTag,
 
-    #[token("sort:")]
+    #[token("sort:", priority = 2)]
     #[strum(
         serialize = "sort:",
         message = "tag:\"<sort order>\"",
