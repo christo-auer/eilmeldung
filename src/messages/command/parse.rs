@@ -11,7 +11,7 @@ pub enum CommandParseError {
     #[error("expecting command")]
     CommandExpected,
 
-    #[error("expecting command name")]
+    #[error("expecting command name: {0}")]
     CommandNameExpected(#[from] strum::ParseError),
 
     #[error("expecting tag")]
@@ -20,10 +20,10 @@ pub enum CommandParseError {
     #[error("article scope")]
     ArticleScopeExpected,
 
-    #[error("expecting color")]
+    #[error("expecting color: {0}")]
     ColorExpected(#[from] ParseColorError),
 
-    #[error("expecting URL")]
+    #[error("expecting URL: {0}")]
     URLExpected(#[from] url::ParseError),
 
     #[error("expecting panel")]
@@ -35,7 +35,7 @@ pub enum CommandParseError {
     #[error("action scope expected")]
     ActionScopeExpected,
 
-    #[error("expecting article search query")]
+    #[error("expecting article search query: {0}")]
     ArticleQueryExpected(#[from] QueryParseError),
 
     #[error("expecting share target")]
@@ -50,7 +50,7 @@ pub enum CommandParseError {
     #[error("expecting file path")]
     FilePathExpected,
 
-    #[error("sort order expected")]
+    #[error("sort order expected: {0}")]
     SortOrderExpected(#[from] SortOrderParseError),
 
     #[error("enclosure type expected")]
@@ -68,7 +68,7 @@ pub enum CommandParseError {
     #[error("expecting a word")]
     WordExpected(String),
 
-    #[error("expecting something")]
+    #[error("expecting something: {0}")]
     SomethingExpected(String),
 
     #[error("unexpected")]
@@ -107,7 +107,7 @@ fn expect_something(s: Option<String>, to_expect: &str) -> Result<String, Comman
     s.ok_or(CommandParseError::SomethingExpected(to_expect.to_owned()))
 }
 
-fn expect_from_str<T: FromStr>(
+fn expect_from_next_word<T: FromStr>(
     s: &mut Option<String>,
     to_expect: &str,
 ) -> Result<T, CommandParseError>
@@ -135,7 +135,7 @@ impl Command {
             Some(s.to_owned())
         };
 
-        let command: Command = expect_from_str(&mut args, "expecting command")?;
+        let command: Command = expect_from_next_word(&mut args, "expecting command")?;
 
         use Command as C;
         Ok(match command {
@@ -148,7 +148,7 @@ impl Command {
 
             C::In(..) => {
                 let panel: Panel =
-                    expect_from_str(&mut args, "expecting panel: feeds, articles, content")?;
+                    expect_from_next_word(&mut args, "expecting panel: feeds, articles, content")?;
 
                 let Some(args) = args else {
                     return Err(E::CommandExpected);
@@ -159,7 +159,7 @@ impl Command {
 
             C::PanelFocus(_) => {
                 let panel: Panel =
-                    expect_from_str(&mut args, "expecting panel: feeds, articles, content")?;
+                    expect_from_next_word(&mut args, "expecting panel: feeds, articles, content")?;
                 C::PanelFocus(panel)
             }
 
@@ -172,7 +172,7 @@ impl Command {
                             ActionScope::Current
                         }
                     }
-                    _ => expect_from_str(&mut args, "expecting action scope")?,
+                    _ => ActionScope::from_option_string(args.as_deref())?,
                 };
 
                 C::ActionSetRead(action_scope)
@@ -216,7 +216,7 @@ impl Command {
             }
 
             C::FeedListFeedAdd(..) => {
-                let url = Url::new(expect_from_str::<reqwest::Url>(
+                let url = Url::new(expect_from_next_word::<reqwest::Url>(
                     &mut args,
                     "expecting feed URL",
                 )?);
@@ -225,7 +225,7 @@ impl Command {
             }
 
             C::FeedListFeedChangeUrl(..) => {
-                let url = Url::new(expect_from_str::<reqwest::Url>(
+                let url = Url::new(expect_from_next_word::<reqwest::Url>(
                     &mut args,
                     "expecting feed URL",
                 )?);
@@ -235,7 +235,7 @@ impl Command {
 
             C::FeedListPasteFeedOrCategory(..) => {
                 let position =
-                    expect_from_str::<PastePosition>(&mut args, "expecting paste position")
+                    expect_from_next_word::<PastePosition>(&mut args, "expecting paste position")
                         .map_err(|_| E::PositionExpected)?;
                 expect_nothing(args)?;
                 C::FeedListPasteFeedOrCategory(position)
@@ -250,7 +250,7 @@ impl Command {
             }
 
             C::FeedListTagChangeColor(..) => {
-                let color: Color = expect_from_str(&mut args, "expecting tag color")
+                let color: Color = expect_from_next_word(&mut args, "expecting tag color")
                     .map_err(|_| E::ColorExpected(ParseColorError))?;
                 expect_nothing(args)?;
                 C::FeedListTagChangeColor(color)
@@ -266,19 +266,19 @@ impl Command {
                             None
                         }
                     }
-                    _ => Some(expect_from_str(&mut args, "expecting tag color")?),
+                    _ => Some(expect_from_next_word(&mut args, "expecting tag color")?),
                 };
                 expect_nothing(args)?;
                 C::TagAdd(tag_title, color)
             }
 
             C::FeedListExpandCategories(_) => C::FeedListExpandCategories(
-                expect_from_str(&mut args, "article scope expected")
+                expect_from_next_word(&mut args, "article scope expected")
                     .map_err(|_| E::ArticleScopeExpected)?,
             ),
 
             C::Show(..) => C::Show(
-                expect_from_str::<ArticleScope>(&mut args, "expecting article scope")
+                expect_from_next_word::<ArticleScope>(&mut args, "expecting article scope")
                     .map_err(|_| E::ArticleScopeExpected)?,
             ),
 
@@ -286,7 +286,7 @@ impl Command {
                 None if !eager => C::ArticleOpenEnclosure(None),
                 None => return Err(E::EnclosureTypeExpected),
                 Some(..) => C::ArticleOpenEnclosure(Some(
-                    expect_from_str(&mut args, "enclosure type expected")
+                    expect_from_next_word(&mut args, "enclosure type expected")
                         .map_err(|_| E::EnclosureTypeExpected)?,
                 )),
             },
@@ -303,7 +303,7 @@ impl Command {
             )?),
 
             C::Search(..) => C::Search(Some(
-                expect_from_str::<SearchTerm>(&mut args, "expecting search term")
+                expect_from_next_word::<SearchTerm>(&mut args, "expecting search term")
                     .map_err(|_| E::SearchTermExpected)?,
             )),
 
@@ -364,10 +364,10 @@ impl Command {
             ),
 
             C::Pipe(..) => {
-                let in_target = expect_from_str(&mut args, "in pipe target expected")
+                let in_target = expect_from_next_word(&mut args, "in pipe target expected")
                     .map_err(|_| E::PipeTargetExpected)?;
 
-                let out_target = expect_from_str(&mut args, "out pipe target expected")
+                let out_target = expect_from_next_word(&mut args, "out pipe target expected")
                     .map_err(|_| E::PipeTargetExpected)?;
 
                 let command = expect_something(args, "expecting shell command")
