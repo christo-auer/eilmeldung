@@ -59,6 +59,7 @@ This video demonstrates
 
 - **Homebrew**: `brew tap christo-auer/eilmeldung  https://github.com/christo-auer/eilmeldung && brew install eilmeldung`
 - **Arch (AUR)**: `paru -S eilmeldung` or `yay -S eilmeldung`
+- **NixOS (unstable)**: `nix run nixpkgs#eilmeldung` for a quick try; or install `nixpkgs.eilmeldung` or use the home-manager module `eilmeldung`
 - **Scoop** (Windows): 
 ```
   scoop install eilmeldung
@@ -248,7 +249,7 @@ No, *eilmeldung* does not have AI/LLM support. However, you can use the [Pipe Co
 
 This project was built as an experiment in learning Rust through LLM use. LLMs were used as tutors (asking questions, not providing solutions) and for documentation, but every line of code was intentionally written to solve a problem I understood.
 
-📖 Read more about the LLM development approach in [LLM Development](docs/llm-development.md).
+Read more about the LLM development approach in [LLM Development](docs/llm-development.md).
 
 ---
 

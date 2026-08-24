@@ -1,5 +1,11 @@
 # Unreleased
 
+*eilmeldung* is now officially in `nixpks` and `home-manager`!
+- **many, many, many** thanks and a round of applause to @rachitvrma for all the hard work in creating the necessary pull requests and having the patience to see this through!
+- if you are on NixOS unstable and/or home-manager unstable, you can now switch to the official versions (just remove the inputs and overlays)
+- the flake package and hm-module provided in this repository are now *deprecated* but will be updated until the next releases of NixOS and home-manager
+
+
 # 1.7.2 - 2026-08-08
 
 This release just some minor bugfixes and one minor breaking change:
