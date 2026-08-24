@@ -1,6 +1,8 @@
 # Unreleased
 
-- bugfix: using the command `read` with a query does now work also for queries with multiple conditions
+- bugfixes
+  - handling of ampersand (&) in HTML content is now more reliable
+  - using the command `read` with a query does now work also for queries with multiple conditions
 - minor: error messages regarding queriy and command parsing are now containing more specific informations
 - updated dependencies
 
