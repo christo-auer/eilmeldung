@@ -2,6 +2,7 @@
 
 - bugfix: using the command `read` with a query does now work also for queries with multiple conditions
 - minor: error messages regarding queriy and command parsing are now containing more specific informations
+- updated dependencies
 
 
 # 1.7.2 - 2026-08-08
