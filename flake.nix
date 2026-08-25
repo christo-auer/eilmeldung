@@ -21,6 +21,14 @@
         (pkgs.callPackage ./nix/package.nix {
           inherit (pkgs) llvmPackages_19;
         }) { inherit src; version = ver; };
+
+      deprecationWarning = ''
+      eilmeldung has moved into nixpkgs unstable (pkgs.eilmeldung) and the
+      home-manager module has moved into the official home-manager repository
+      (master branch)! Installing and configuring eilmeldung via this flake is
+      **deprecated**. This flake will receive updates until the next release of
+      nixos and home-manager. After that, this warning will be an error.
+      '';
     in
     {
       overlays.default = final: prev: {
@@ -38,9 +46,9 @@
       in
       {
         packages = {
-          eilmeldung = mkEilmeldung pkgs (releaseSrc pkgs) version;
-          eilmeldung-git = mkEilmeldung pkgs self (self.shortRev or "dirty");
-          default = self.outputs.packages.${system}.eilmeldung;
+          eilmeldung = pkgs.lib.warn deprecationWarning (mkEilmeldung pkgs (releaseSrc pkgs) version);
+          eilmeldung-git = pkgs.lib.warn deprecationWarning (mkEilmeldung pkgs self (self.shortRev or "dirty"));
+          default = pkgs.lib.warn deprecationWarning (self.outputs.packages.${system}.eilmeldung);
         };
 
         devShells.default = import ./nix/shell.nix { inherit pkgs; };

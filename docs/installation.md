@@ -11,7 +11,7 @@ Follow any of the installation methods below, then run *eilmeldung*. It will gui
 - [Via Homebrew](#via-homebrew)
 - [Via AUR (Arch)](#via-aur-arch)
 - [Via Cargo](#via-cargo)
-- [Nix Flake and Home Manager](#nix-flake-and-home-manager)
+- [NixOS and Home Manager](#nix-flake-and-home-manager)
 - [Void Linux](#void-linux)
 - [Windows via Scoop](#windows-via-scoop)
 - [Windows — Install latest from GitHub](#windows--install-latest-from-github)
@@ -75,8 +75,63 @@ cargo install --locked --git https://github.com/christo-auer/eilmeldung
 
 ---
 
-## Nix Flake and Home Manager
+## NixOS and Home Manager Module 
 
+*eilmeldung* is available on *unstable* in nixpkgs and home-manager (thanks to @rachitvrma!). Either install [`pkgs.eilmeldung`](https://search.nixos.org/packages?channel=unstable&query=eilmeldung) or use the [home-manager module](https://home-manager-options.extranix.com/?query=eilmeldung&release=master). If you quickly want to try out *eilmeldung* run:
+
+```bash
+nix run nixpkgs#eilmeldung
+```
+
+
+Home Manager configuration works by defining the settings from the configuration file:
+
+```nix
+programs.eilmeldung = {
+  enable = true;
+
+  settings = {
+    after_sync_commands = [
+      "query lastsync"
+        "tag rust title:\"rust\""
+        "read title:/^Advertisement/"
+        "refresh"
+    ];
+    audio_enclosure_command = "mpv --no-audio {url}";
+    feed_list = [
+      "query: \"Marked\" marked"
+        "query: \"Reviews\" #reviews"
+        "feeds"
+        "* categories"
+        "tags"
+    ];
+    input_config = {
+      mappings = {
+        "; i" = [
+          "cmd hintshare feh"
+        ];
+        y = [
+          "confirm in articles read all"
+            "nextunread"
+        ];
+      };
+    };
+    mouse_support = true;
+    share_targets = [
+      "clipboard"
+        "feh feh \"{url}\""
+    ];
+    startup_commands = [
+      "sync"
+    ];
+    video_enclosure_command = "mpv {url}";
+  }
+
+};
+```
+
+<details><summary>Use the flake from this repository only if you are **not on** nixpks unstable and/or home-manager unstable!</summary>
+  
 There are two packages, `eilmeldung` (latest release) and `eilmeldung-git` (`HEAD` of `main`).
 Add *eilmeldung* to your inputs, apply `eilmeldung.overlays.default` overlay to `pkgs`. If you want Home Manager integration, add Home Manager module `eilmeldung.homeManager.default`.
 
@@ -112,45 +167,8 @@ home.packages = [ eilmeldung.packages.x86_64-linux.eilmeldung ];
 home.packages = [ eilmeldung.packages.x86_64-linux.eilmeldung-git ];
 ```
 
-Home Manager configuration works by defining the settings from the configuration file:
+</details>
 
-```nix
-programs.eilmeldung = {
-  enable = true;
-  # for HEAD of main
-  #package = eilmeldung.packages.x86_64-linux.eilmeldung-git;
-
-  settings = {
-    refresh_fps = 60;
-    article_scope = "unread";
-
-
-    theme = {
-      color_palette = {
-        background = "#1e1e2e";
-        # ...
-      };
-    };
-
-    input_config.mappings = {
-        "q" = ["quit"];
-        "j" = ["down"];
-        "k" = ["up"];
-        "g g" = ["gotofirst"];
-        "G" = ["gotolast"];
-        "o" = ["open" "read" "nextunread"];
-    };
-
-    feed_list = [
-      "query: \"Today Unread\" today unread"
-      "query: \"Today Marked\" today marked"
-      "feeds"
-      "* categories"
-      "tags"
-    ];
-  };
-};
-```
 ## Void Linux
 
 Via an unoffical repository:

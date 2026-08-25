@@ -5,6 +5,12 @@ Here you can find migration guides for breaking changes.
 
 **IMPORTANT**: Don't copy `example/default-config.toml`. Start with an **empty** `config.toml` and just add the settings you want to be **different** from the `default-config.toml`! `default-config.toml` is for **reference purposes** only and is prone to break if used directly.
 
+## With 1.7.3
+- package and home-manager module from flake is now *depecrated*
+    - if you are on NixOS unstable and/or home-manager unstable, you can now switch to the official versions (just remove the inputs and overlays)
+    - the flake package and hm-module provided in this repository are now *deprecated* but will be updated until the next releases of NixOS and home-manager
+
+
 ## With 1.7.1
 ### Icon Set
 - `icon_set.filter_reverse` has been renamed to `icon_set.sort_reversed`
