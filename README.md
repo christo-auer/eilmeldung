@@ -59,7 +59,7 @@ This video demonstrates
 
 - **Homebrew**: `brew tap christo-auer/eilmeldung  https://github.com/christo-auer/eilmeldung && brew install eilmeldung`
 - **Arch (AUR)**: `paru -S eilmeldung` or `yay -S eilmeldung`
-- **NixOS (unstable)**: `nix run nixpkgs#eilmeldung` for a quick try; or install `nixpkgs.eilmeldung` or use the home-manager module `eilmeldung`
+- **NixOS (unstable)**: `nix run nixpkgs#eilmeldung` for a quick try; or install `pkgs.eilmeldung` or use the home-manager module `eilmeldung`
 - **Scoop** (Windows): 
 ```
   scoop install eilmeldung
