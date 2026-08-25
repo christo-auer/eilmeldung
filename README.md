@@ -6,7 +6,6 @@
 [![made-with-rust](https://img.shields.io/badge/Made%20with-Rust-1f425f.svg)](https://www.rust-lang.org/)
 [![Built With Ratatui](https://img.shields.io/badge/Built_With_Ratatui-555?logo=ratatui)](https://ratatui.rs/) 
 ![GitHub Actions Workflow Status: Build Main](https://img.shields.io/github/actions/workflow/status/christo-auer/eilmeldung/build-main.yml?label=build)
-![GitHub Actions Workflow Status: Release](https://img.shields.io/github/actions/workflow/status/christo-auer/eilmeldung/release.yml?label=release)
 
 
 ![Screenshot of eilmeldung](docs/images/hero-shot.png) 
