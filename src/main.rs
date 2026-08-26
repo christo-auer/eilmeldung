@@ -129,8 +129,16 @@ async fn main() -> color_eyre::Result<()> {
     let connectivity_monitor =
         ConnectivityMonitor::new(news_flash_utils.clone(), message_sender.clone());
 
+    // crate config file poller
+    let config_file_poller = ConfigFilePoller::new(eilmeldung_config_file);
+
     // create the main app
-    let app = App::new(config.clone(), news_flash_utils.clone(), message_sender);
+    let app = App::new(
+        config.clone(),
+        news_flash_utils.clone(),
+        message_sender,
+        config_file_poller,
+    );
 
     info!("Initializing terminal");
     let terminal = ratatui::init();
