@@ -27,6 +27,7 @@ use crate::prelude::*;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
+use notify::{EventKind, PollWatcher, Watcher};
 use notify_rust::{Notification, Timeout};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{MouseButton, MouseEventKind};
@@ -135,6 +136,7 @@ pub struct App {
     config: Arc<Config>,
     news_flash_utils: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
+    config_file_watcher: Option<PollWatcher>,
 
     tooltip: Tooltip<'static>,
 
@@ -177,6 +179,7 @@ impl App {
             news_flash_utils: news_flash_utils.clone(),
             is_running: true,
             message_sender: message_sender.clone(),
+            config_file_watcher: None,
             input_command_generator: InputCommandGenerator::new(
                 config_arc.clone(),
                 message_sender.clone(),
@@ -260,6 +263,8 @@ impl App {
         self.message_sender
             .send(Message::Command(Command::PanelFocus(Panel::FeedList)))?;
 
+        self.install_config_file_watch()?;
+
         // execute all startup commands
         debug!(
             "executing startup commands: {:?}",
@@ -280,6 +285,40 @@ impl App {
         Ok(())
     }
 
+    fn install_config_file_watch(&mut self) -> color_eyre::Result<()> {
+        if self.config.auto_reload_config {
+            info!("Installing configuation auto reloading");
+
+            match self.config.source_path.as_ref() {
+                Some(path) => {
+                    let message_sender = self.message_sender.clone();
+                    let mut watcher = notify::PollWatcher::new(
+                        move |event: notify::Result<notify::Event>| {
+                            info!("notify event received {event:?}");
+                            if let Ok(event) = event
+                                && matches!(event.kind, EventKind::Modify(_))
+                            {
+                                info!("notify event: configuration file has changed");
+                                let _ =
+                                    message_sender.send(Message::Command(Command::ReloadConfig));
+                            };
+                        },
+                        notify::Config::default().with_poll_interval(Duration::from_secs(1)),
+                    )?;
+                    info!("watching config file: {path:?}");
+                    watcher.watch(path, notify::RecursiveMode::NonRecursive)?;
+                    self.config_file_watcher.replace(watcher);
+                }
+                None => tooltip(
+                    &self.message_sender,
+                    "unable to activate config auto reloading: no configuration file found",
+                    TooltipFlavor::Warning,
+                )?,
+            }
+        }
+        Ok(())
+    }
+
     fn tick(&mut self) -> bool {
         if self.news_flash_utils.is_async_operation_running() {
             trace!("Async operation running, updating throbber");
@@ -294,14 +333,21 @@ impl App {
         rx: &mut UnboundedReceiver<Message>,
         mut terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
-        let mut render_interval =
-            tokio::time::interval(Duration::from_millis(1000 / self.config.refresh_fps));
+        let mut update_millis = 1000 / self.config.refresh_fps;
+        let mut render_interval = tokio::time::interval(Duration::from_millis(update_millis));
         debug!(
             "Command processing loop started with {}fps refresh rate",
             self.config.refresh_fps
         );
 
         while self.is_running {
+            // update FPS if value has changed
+            let current_update_millis = 1000 / self.config.refresh_fps;
+            if update_millis != current_update_millis {
+                update_millis = current_update_millis;
+                render_interval = tokio::time::interval(Duration::from_millis(update_millis));
+            }
+
             let can_process_batch =
                 !self.batch_processor.waiting_for_async_operation() && rx.is_empty();
 

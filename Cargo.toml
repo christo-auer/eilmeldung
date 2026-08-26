@@ -73,6 +73,7 @@ tui-tree-widget = "0.24.1"
 url = "2.5.8"
 webbrowser = "1.2.4"
 shellexpand = "3.1.2"
+notify = { version = "8.2.0", default-features = false }
 
 [dev-dependencies]
 claims = "0.8.0"

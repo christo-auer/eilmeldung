@@ -142,7 +142,7 @@ impl ArticleScope {
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     #[serde(skip_serializing)]
-    pub source_path: Option<String>,
+    pub source_path: Option<PathBuf>,
 
     pub input_config: InputConfig,
     pub theme: Theme,
@@ -163,6 +163,8 @@ pub struct Config {
     pub notify_after_sync_stats_format: SyncStatsOutputFormat,
 
     pub mouse_support: bool,
+
+    pub auto_reload_config: bool,
 
     pub feeds_label: String,
     pub last_synced_label: String,
@@ -303,6 +305,8 @@ impl Default for Config {
             notify_after_sync_stats_format: SyncStatsOutputFormat::notify_default(),
             cli_sync_stats_format: SyncStatsOutputFormat::cli_default(),
 
+            auto_reload_config: true,
+
             feeds_label: "{icon} All {unread_count}".into(),
             feed_label: "{icon} {label} {unread_count}".into(),
             last_synced_label: "{icon} Last Synced".into(),
@@ -434,26 +438,20 @@ pub fn resolve_eilmeldung_config_dir(cli_args: &CliArgs) -> PathBuf {
         .unwrap_or(PathBuf::from(PROJECT_DIRS.config_dir()))
 }
 
-pub fn load_config(config_dir: &Path) -> color_eyre::Result<Config> {
-    let mut config_path = PathBuf::from(config_dir);
-    config_path.push(CONFIG_FILE);
-
-    let Some(config_path) = config_path.to_str() else {
+pub fn load_config(config_path: &Path) -> color_eyre::Result<Config> {
+    let Some(config_path_str) = config_path.to_str() else {
         return Err(color_eyre::eyre::eyre!("invalid configuration path"));
     };
 
-    info!("Trying to load config from {}", config_path);
+    info!("Trying to load config from {}", config_path_str);
 
-    if !Path::new(config_path).exists() {
+    if !Path::new(config_path_str).exists() {
         info!("No config file found, using default config");
-        let mut default_config = Config::default();
-        default_config.source_path.replace(config_path.to_owned());
-
         return Ok(Config::default());
     }
 
     let mut config = match config::Config::builder()
-        .add_source(config::File::new(config_path, FileFormat::Toml))
+        .add_source(config::File::new(config_path_str, FileFormat::Toml))
         .build()
     {
         Ok(config) => config.try_deserialize::<Config>()?,
@@ -463,9 +461,7 @@ pub fn load_config(config_dir: &Path) -> color_eyre::Result<Config> {
         }
     };
 
-    config
-        .source_path
-        .replace(config_dir.to_str().unwrap().to_owned()); // unwrap save here (see above)
+    config.source_path.replace(config_path.to_path_buf());
     config.validate()?;
 
     Ok(config)

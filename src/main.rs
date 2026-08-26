@@ -26,7 +26,9 @@ use crate::{connectivity::ConnectivityMonitor, prelude::*};
 async fn main() -> color_eyre::Result<()> {
     let cli_args = CliArgs::parse();
 
-    let eilmeldung_config_dir = resolve_eilmeldung_config_dir(&cli_args);
+    let eilmeldung_config_file = resolve_eilmeldung_config_dir(&cli_args)
+        .to_path_buf()
+        .join(CONFIG_FILE);
 
     let news_flash_config_dir = cli_args
         .news_flash_config_dir()
@@ -44,12 +46,12 @@ async fn main() -> color_eyre::Result<()> {
     crate::logging::init_logging(&cli_args)?;
     debug!("Error handling and logging initialized");
 
-    info!("eilmeldung config dir: {eilmeldung_config_dir:?}");
+    info!("eilmeldung config dir: {eilmeldung_config_file:?}");
     info!("newsflash config dir: {news_flash_config_dir:?}");
     info!("state dir: {state_dir:?}");
 
     info!("Loading configuration");
-    let config = Arc::new(load_config(&eilmeldung_config_dir)?);
+    let config = Arc::new(load_config(&eilmeldung_config_file)?);
 
     info!("Initializing NewsFlash");
     let news_flash_attempt = NewsFlash::builder()
