@@ -1,4 +1,4 @@
-use std::{collections::HashMap, process::ExitStatus};
+use std::{collections::HashMap, process::ExitStatus, sync::Arc};
 
 use news_flash::{
     error::NewsFlashError,
@@ -111,6 +111,8 @@ pub enum Event {
 
     AsyncLogout,
     AsyncLogoutFinished,
+
+    ConfigReloaded(Arc<Config>),
 
     Tick, // general tick for animations and regular updates
 

@@ -871,6 +871,10 @@ impl crate::messages::MessageReceiver for CommandInput {
                 }
             }
 
+            Message::Event(Event::ConfigReloaded(config)) => {
+                self.config = Arc::clone(config);
+            }
+
             _ => {
                 view_needs_update = false;
             }

@@ -313,6 +313,12 @@ impl<'a> MessageReceiver for HelpPopup<'a> {
                     self.on_key_event(key_event)?;
                     redraw_required = true;
                 }
+
+                E::ConfigReloaded(config) => {
+                    self.config = Arc::clone(config);
+                    redraw_required = true;
+                }
+
                 _ => {}
             }
         }

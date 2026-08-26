@@ -65,6 +65,10 @@ impl MessageReceiver for CommandConfirm {
             needs_redraw = true;
         }
 
+        if let Message::Event(Event::ConfigReloaded(config)) = message {
+            self.config = Arc::clone(config);
+        }
+
         if let Message::Event(Event::Key(key_event)) = message {
             match key_event.code {
                 KeyCode::Char('y') if self.is_active => {

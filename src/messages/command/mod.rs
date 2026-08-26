@@ -785,6 +785,13 @@ pub enum Command {
         detailed_message = "refreshes contents of all panels according to selections (all)"
     )]
     Refresh,
+
+    #[strum(
+        serialize = "reloadconfig",
+        message = "reloadconfig",
+        detailed_message = "reload configuration file"
+    )]
+    ReloadConfig,
 }
 
 impl Command {
@@ -931,6 +938,7 @@ impl Display for Command {
                 write!(f, "add tag #{}", tag_title)
             }
             Undo => write!(f, "undos the last read/unread operation"),
+            ReloadConfig => write!(f, "reload configuration file"),
             CommandConfirm(command) => write!(f, "{}?", command),
             In(panel, command) => write!(f, "{command} in {panel}"),
         }

@@ -16,10 +16,7 @@ use std::{path::Path, sync::Arc, time::Duration};
 use clap::Parser;
 use log::{debug, error, info};
 use news_flash::{NewsFlash, models::LoginData};
-use ratatui::crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
-    execute,
-};
+use ratatui::crossterm::{event::DisableMouseCapture, execute};
 use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
 
 mod prelude;
@@ -29,7 +26,9 @@ use crate::{connectivity::ConnectivityMonitor, prelude::*};
 async fn main() -> color_eyre::Result<()> {
     let cli_args = CliArgs::parse();
 
-    let eilmeldung_config_dir = resolve_eilmeldung_config_dir(&cli_args);
+    let eilmeldung_config_file = resolve_eilmeldung_config_dir(&cli_args)
+        .to_path_buf()
+        .join(CONFIG_FILE);
 
     let news_flash_config_dir = cli_args
         .news_flash_config_dir()
@@ -47,12 +46,12 @@ async fn main() -> color_eyre::Result<()> {
     crate::logging::init_logging(&cli_args)?;
     debug!("Error handling and logging initialized");
 
-    info!("eilmeldung config dir: {eilmeldung_config_dir:?}");
+    info!("eilmeldung config dir: {eilmeldung_config_file:?}");
     info!("newsflash config dir: {news_flash_config_dir:?}");
     info!("state dir: {state_dir:?}");
 
     info!("Loading configuration");
-    let config = Arc::new(load_config(&eilmeldung_config_dir)?);
+    let config = Arc::new(load_config(&eilmeldung_config_file)?);
 
     info!("Initializing NewsFlash");
     let news_flash_attempt = NewsFlash::builder()
@@ -125,7 +124,6 @@ async fn main() -> color_eyre::Result<()> {
     let news_flash_utils = Arc::new(NewsFlashUtils::new(
         news_flash,
         client,
-        config.clone(),
         message_sender.clone(),
     ));
     let connectivity_monitor =
@@ -136,11 +134,6 @@ async fn main() -> color_eyre::Result<()> {
 
     info!("Initializing terminal");
     let terminal = ratatui::init();
-
-    if config.mouse_support {
-        info!("Enabling mouse capture");
-        execute!(std::io::stdout(), EnableMouseCapture)?;
-    }
 
     // startup task which reads the crossterm events
     let _input_reader_handle = spawn_blocking(move || {

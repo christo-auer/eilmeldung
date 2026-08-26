@@ -40,7 +40,7 @@ impl ArticlesList {
             message_sender,
 
             view_data: ArticleListViewData::default(),
-            filter_state: FilterState::new(config.article_scope, config.default_sort_order.clone()),
+            filter_state: FilterState::new(config.article_scope),
 
             model_data: ArticleListModelData::new(news_flash_utils.clone()),
 
@@ -654,7 +654,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 C::ArticleListSearch(query) => {
                     *self.filter_state.article_search_query_mut() = Some(query.clone());
                     self.view_data.update(
-                        self.config.clone(),
+                        &self.config,
                         &self.model_data,
                         &self.filter_state,
                         handle_command,
@@ -761,6 +761,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     *offset = (*offset).saturating_sub(1);
                 }
 
+                ConfigReloaded(config) => {
+                    self.config = Arc::clone(config);
+                    view_needs_update = true;
+                }
+
                 event if event.caused_model_update() => model_needs_update = true,
 
                 _ => {}
@@ -769,12 +774,14 @@ impl crate::messages::MessageReceiver for ArticlesList {
 
         // update state where needed
         if model_needs_update {
-            self.model_data.update(&self.filter_state).await?;
+            self.model_data
+                .update(&self.config, &self.filter_state)
+                .await?;
         }
 
         if model_needs_update || view_needs_update {
             self.view_data.update(
-                self.config.clone(),
+                &self.config,
                 &self.model_data,
                 &self.filter_state,
                 self.is_focused,

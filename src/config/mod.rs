@@ -36,6 +36,10 @@ pub mod prelude {
 use config::FileFormat;
 use log::{info, warn};
 use once_cell::sync::Lazy;
+use ratatui::crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
+    execute,
+};
 
 static HINT_CHARS: Lazy<Vec<char>> = Lazy::new(|| vec!['F', 'J', 'G', 'H', 'D', 'K']);
 static HINT_NUMBERS: Lazy<Vec<char>> =
@@ -137,6 +141,9 @@ impl ArticleScope {
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
+    #[serde(skip_serializing)]
+    pub source_path: Option<PathBuf>,
+
     pub input_config: InputConfig,
     pub theme: Theme,
     pub icon_set: IconSet,
@@ -156,6 +163,8 @@ pub struct Config {
     pub notify_after_sync_stats_format: SyncStatsOutputFormat,
 
     pub mouse_support: bool,
+
+    pub auto_reload_config: bool,
 
     pub feeds_label: String,
     pub last_synced_label: String,
@@ -227,7 +236,7 @@ macro_rules! deprecated {
 }
 
 impl Config {
-    fn validate(&mut self) -> color_eyre::Result<()> {
+    pub fn validate(&mut self) -> color_eyre::Result<()> {
         self.validate_input_config()?;
 
         if let Some(sync_interval) = self.sync_every_minutes
@@ -236,6 +245,14 @@ impl Config {
             return Err(color_eyre::eyre::eyre!(
                 "sync_every_minutes must at least be 1"
             ));
+        }
+
+        if self.mouse_support {
+            info!("Enabling mouse capture");
+            execute!(std::io::stdout(), EnableMouseCapture)?;
+        } else {
+            info!("Disabling mouse capture");
+            execute!(std::io::stdout(), DisableMouseCapture)?;
         }
 
         deprecated!(self.show_top_bar);
@@ -274,6 +291,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            source_path: None,
             refresh_fps: 10,
             network_timeout_seconds: 60,
             keep_articles_days: 30,
@@ -286,6 +304,8 @@ impl Default for Config {
             notify_after_sync_cmd: None,
             notify_after_sync_stats_format: SyncStatsOutputFormat::notify_default(),
             cli_sync_stats_format: SyncStatsOutputFormat::cli_default(),
+
+            auto_reload_config: true,
 
             feeds_label: "{icon} All {unread_count}".into(),
             feed_label: "{icon} {label} {unread_count}".into(),
@@ -418,23 +438,28 @@ pub fn resolve_eilmeldung_config_dir(cli_args: &CliArgs) -> PathBuf {
         .unwrap_or(PathBuf::from(PROJECT_DIRS.config_dir()))
 }
 
-pub fn load_config(config_dir: &Path) -> color_eyre::Result<Config> {
-    let mut config_path = PathBuf::from(config_dir);
-    config_path.push(CONFIG_FILE);
-
-    let Some(config_path) = config_path.to_str() else {
+pub fn load_config(config_path: &Path) -> color_eyre::Result<Config> {
+    let Some(config_path_str) = config_path.to_str() else {
         return Err(color_eyre::eyre::eyre!("invalid configuration path"));
     };
 
-    info!("Trying to load config from {}", config_path);
+    info!("Trying to load config from {}", config_path_str);
 
-    if !Path::new(config_path).exists() {
+    if !Path::new(config_path_str).exists() {
         info!("No config file found, using default config");
-        return Ok(Config::default());
+        let mut default_config = Config::default();
+        default_config
+            .source_path
+            .replace(config_path.to_path_buf());
+        let mut default_config = Config::default();
+        default_config
+            .source_path
+            .replace(config_path.to_path_buf());
+        return Ok(default_config);
     }
 
     let mut config = match config::Config::builder()
-        .add_source(config::File::new(config_path, FileFormat::Toml))
+        .add_source(config::File::new(config_path_str, FileFormat::Toml))
         .build()
     {
         Ok(config) => config.try_deserialize::<Config>()?,
@@ -444,6 +469,7 @@ pub fn load_config(config_dir: &Path) -> color_eyre::Result<Config> {
         }
     };
 
+    config.source_path.replace(config_path.to_path_buf());
     config.validate()?;
 
     Ok(config)

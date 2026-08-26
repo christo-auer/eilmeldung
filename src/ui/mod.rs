@@ -27,10 +27,12 @@ use crate::prelude::*;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
+use notify::{EventKind, PollWatcher, Watcher};
 use notify_rust::{Notification, Timeout};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{MouseButton, MouseEventKind};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::process::Stdio;
 use std::{fmt::Display, path::Path, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
@@ -134,6 +136,7 @@ pub struct App {
     config: Arc<Config>,
     news_flash_utils: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
+    config_file_watcher: Option<PollWatcher>,
 
     tooltip: Tooltip<'static>,
 
@@ -176,6 +179,7 @@ impl App {
             news_flash_utils: news_flash_utils.clone(),
             is_running: true,
             message_sender: message_sender.clone(),
+            config_file_watcher: None,
             input_command_generator: InputCommandGenerator::new(
                 config_arc.clone(),
                 message_sender.clone(),
@@ -259,6 +263,8 @@ impl App {
         self.message_sender
             .send(Message::Command(Command::PanelFocus(Panel::FeedList)))?;
 
+        self.install_config_file_watch()?;
+
         // execute all startup commands
         debug!(
             "executing startup commands: {:?}",
@@ -279,6 +285,40 @@ impl App {
         Ok(())
     }
 
+    fn install_config_file_watch(&mut self) -> color_eyre::Result<()> {
+        if self.config.auto_reload_config {
+            info!("Installing configuation auto reloading");
+
+            match self.config.source_path.as_ref() {
+                Some(path) => {
+                    let message_sender = self.message_sender.clone();
+                    let mut watcher = notify::PollWatcher::new(
+                        move |event: notify::Result<notify::Event>| {
+                            info!("notify event received {event:?}");
+                            if let Ok(event) = event
+                                && matches!(event.kind, EventKind::Modify(_))
+                            {
+                                info!("notify event: configuration file has changed");
+                                let _ =
+                                    message_sender.send(Message::Command(Command::ReloadConfig));
+                            };
+                        },
+                        notify::Config::default().with_poll_interval(Duration::from_secs(1)),
+                    )?;
+                    info!("watching config file: {path:?}");
+                    watcher.watch(path, notify::RecursiveMode::NonRecursive)?;
+                    self.config_file_watcher.replace(watcher);
+                }
+                None => tooltip(
+                    &self.message_sender,
+                    "unable to activate config auto reloading: no configuration file found",
+                    TooltipFlavor::Warning,
+                )?,
+            }
+        }
+        Ok(())
+    }
+
     fn tick(&mut self) -> bool {
         if self.news_flash_utils.is_async_operation_running() {
             trace!("Async operation running, updating throbber");
@@ -293,14 +333,21 @@ impl App {
         rx: &mut UnboundedReceiver<Message>,
         mut terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
-        let mut render_interval =
-            tokio::time::interval(Duration::from_millis(1000 / self.config.refresh_fps));
+        let mut update_millis = 1000 / self.config.refresh_fps;
+        let mut render_interval = tokio::time::interval(Duration::from_millis(update_millis));
         debug!(
             "Command processing loop started with {}fps refresh rate",
             self.config.refresh_fps
         );
 
         while self.is_running {
+            // update FPS if value has changed
+            let current_update_millis = 1000 / self.config.refresh_fps;
+            if update_millis != current_update_millis {
+                update_millis = current_update_millis;
+                render_interval = tokio::time::interval(Duration::from_millis(update_millis));
+            }
+
             let can_process_batch =
                 !self.batch_processor.waiting_for_async_operation() && rx.is_empty();
 
@@ -331,10 +378,13 @@ impl App {
                         }
 
                         // TODO refactor all this
-                        if !self.batch_processor.has_commands()
+                        if
+                            (!self.batch_processor.has_commands()
                         && !self.command_input.is_active()
                         && !self.command_confirm.is_active()
-                        && !self.help_popup.is_modal().unwrap_or(false)
+                        && !self.help_popup.is_modal().unwrap_or(false))
+                                || matches!(message, Message::Event(Event::ConfigReloaded(_)))
+
                         {
                             self.input_command_generator.process_command(&message).await?;
                         }
@@ -611,6 +661,49 @@ impl App {
 
         Ok(())
     }
+
+    fn reload_config(&mut self) -> color_eyre::Result<()> {
+        let Some(config_path) = &self.config.source_path else {
+            tooltip(
+                &self.message_sender,
+                "configuration has no source file, restart eilmeldung to open config file",
+                TooltipFlavor::Warning,
+            )?;
+            return Ok(());
+        };
+
+        let load_config_res = load_config(&PathBuf::from(config_path));
+
+        let Ok(mut config) = load_config_res else {
+            tooltip(
+                &self.message_sender,
+                &*format!(
+                    "could not read config file: {}",
+                    load_config_res.unwrap_err()
+                ),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        if let Err(validate_error) = config.validate() {
+            tooltip(
+                &self.message_sender,
+                &*format!("could not validate config file: {}", validate_error),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        }
+
+        config.source_path = self.config.source_path.clone();
+
+        tooltip(&self.message_sender, "config reloaded", TooltipFlavor::Info)?;
+
+        self.message_sender
+            .send(Message::Event(Event::ConfigReloaded(Arc::new(config))))?;
+
+        Ok(())
+    }
 }
 
 impl MessageReceiver for App {
@@ -795,6 +888,15 @@ impl MessageReceiver for App {
                 self.switch_state(self.state.previous_cyclic())?;
             }
 
+            Message::Command(ReloadConfig) => {
+                self.reload_config()?;
+            }
+
+            Message::Event(ConfigReloaded(config)) => {
+                self.config = Arc::clone(config);
+                self.install_config_file_watch()?;
+            }
+
             Message::Event(Event::ConnectionAvailable) => {
                 let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
@@ -804,7 +906,7 @@ impl MessageReceiver for App {
                         "Trying to get online...",
                         TooltipFlavor::Info,
                     )?;
-                    self.news_flash_utils.rebuild_client().await?;
+                    self.news_flash_utils.rebuild_client(&self.config).await?;
                     self.news_flash_utils.set_offline(false);
                 }
             }
