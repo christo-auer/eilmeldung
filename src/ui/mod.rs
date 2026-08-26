@@ -27,12 +27,10 @@ use crate::prelude::*;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
-use notify::{EventKind, PollWatcher, Watcher};
 use notify_rust::{Notification, Timeout};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{MouseButton, MouseEventKind};
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::process::Stdio;
 use std::{fmt::Display, path::Path, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
@@ -136,7 +134,7 @@ pub struct App {
     config: Arc<Config>,
     news_flash_utils: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
-    config_file_watcher: Option<PollWatcher>,
+    config_file_poller: ConfigFilePoller,
 
     tooltip: Tooltip<'static>,
 
@@ -168,6 +166,7 @@ impl App {
         config: Arc<Config>,
         news_flash_utils: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
+        config_file_poller: ConfigFilePoller,
     ) -> Self {
         debug!("Creating new App instance");
         let config_arc = config.clone();
@@ -179,7 +178,7 @@ impl App {
             news_flash_utils: news_flash_utils.clone(),
             is_running: true,
             message_sender: message_sender.clone(),
-            config_file_watcher: None,
+            config_file_poller,
             input_command_generator: InputCommandGenerator::new(
                 config_arc.clone(),
                 message_sender.clone(),
@@ -263,8 +262,6 @@ impl App {
         self.message_sender
             .send(Message::Command(Command::PanelFocus(Panel::FeedList)))?;
 
-        self.install_config_file_watch()?;
-
         // execute all startup commands
         debug!(
             "executing startup commands: {:?}",
@@ -282,40 +279,6 @@ impl App {
         drop(message_receiver);
 
         info!("Application run loop completed");
-        Ok(())
-    }
-
-    fn install_config_file_watch(&mut self) -> color_eyre::Result<()> {
-        if self.config.auto_reload_config {
-            info!("Installing configuation auto reloading");
-
-            match self.config.source_path.as_ref() {
-                Some(path) => {
-                    let message_sender = self.message_sender.clone();
-                    let mut watcher = notify::PollWatcher::new(
-                        move |event: notify::Result<notify::Event>| {
-                            info!("notify event received {event:?}");
-                            if let Ok(event) = event
-                                && matches!(event.kind, EventKind::Modify(_))
-                            {
-                                info!("notify event: configuration file has changed");
-                                let _ =
-                                    message_sender.send(Message::Command(Command::ReloadConfig));
-                            };
-                        },
-                        notify::Config::default().with_poll_interval(Duration::from_secs(1)),
-                    )?;
-                    info!("watching config file: {path:?}");
-                    watcher.watch(path, notify::RecursiveMode::NonRecursive)?;
-                    self.config_file_watcher.replace(watcher);
-                }
-                None => tooltip(
-                    &self.message_sender,
-                    "unable to activate config auto reloading: no configuration file found",
-                    TooltipFlavor::Warning,
-                )?,
-            }
-        }
         Ok(())
     }
 
@@ -340,6 +303,9 @@ impl App {
             self.config.refresh_fps
         );
 
+        // check config file poll
+        let mut config_file_poll_interval = tokio::time::interval(Duration::from_secs(1));
+
         while self.is_running {
             // update FPS if value has changed
             let current_update_millis = 1000 / self.config.refresh_fps;
@@ -357,6 +323,13 @@ impl App {
                     if let Ok(batch_command) = batch_command {
                         info!("sending next batch command {batch_command:?}");
                         self.message_sender.send(Message::Command(batch_command.to_owned()))?;
+                    }
+                }
+
+                _ = config_file_poll_interval.tick() => {
+                    if self.config.auto_reload_config && self.config_file_poller.config_file_modified() {
+                        info!("config file has changed: reloading");
+                        self.message_sender.send(Message::Command(Command::ReloadConfig))?;
                     }
                 }
 
@@ -663,16 +636,7 @@ impl App {
     }
 
     fn reload_config(&mut self) -> color_eyre::Result<()> {
-        let Some(config_path) = &self.config.source_path else {
-            tooltip(
-                &self.message_sender,
-                "configuration has no source file, restart eilmeldung to open config file",
-                TooltipFlavor::Warning,
-            )?;
-            return Ok(());
-        };
-
-        let load_config_res = load_config(&PathBuf::from(config_path));
+        let load_config_res = load_config(self.config_file_poller.config_file_path());
 
         let Ok(mut config) = load_config_res else {
             tooltip(
@@ -694,8 +658,6 @@ impl App {
             )?;
             return Ok(());
         }
-
-        config.source_path = self.config.source_path.clone();
 
         tooltip(&self.message_sender, "config reloaded", TooltipFlavor::Info)?;
 
@@ -894,7 +856,6 @@ impl MessageReceiver for App {
 
             Message::Event(ConfigReloaded(config)) => {
                 self.config = Arc::clone(config);
-                self.install_config_file_watch()?;
             }
 
             Message::Event(Event::ConnectionAvailable) => {

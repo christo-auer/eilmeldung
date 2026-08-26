@@ -141,9 +141,6 @@ impl ArticleScope {
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
-    #[serde(skip_serializing)]
-    pub source_path: Option<PathBuf>,
-
     pub input_config: InputConfig,
     pub theme: Theme,
     pub icon_set: IconSet,
@@ -291,7 +288,6 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            source_path: None,
             refresh_fps: 10,
             network_timeout_seconds: 60,
             keep_articles_days: 30,
@@ -447,15 +443,7 @@ pub fn load_config(config_path: &Path) -> color_eyre::Result<Config> {
 
     if !Path::new(config_path_str).exists() {
         info!("No config file found, using default config");
-        let mut default_config = Config::default();
-        default_config
-            .source_path
-            .replace(config_path.to_path_buf());
-        let mut default_config = Config::default();
-        default_config
-            .source_path
-            .replace(config_path.to_path_buf());
-        return Ok(default_config);
+        return Ok(Default::default());
     }
 
     let mut config = match config::Config::builder()
@@ -469,7 +457,6 @@ pub fn load_config(config_path: &Path) -> color_eyre::Result<Config> {
         }
     };
 
-    config.source_path.replace(config_path.to_path_buf());
     config.validate()?;
 
     Ok(config)
