@@ -31,6 +31,7 @@ use notify_rust::{Notification, Timeout};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{MouseButton, MouseEventKind};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::process::Stdio;
 use std::{fmt::Display, path::Path, str::FromStr, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
@@ -331,10 +332,13 @@ impl App {
                         }
 
                         // TODO refactor all this
-                        if !self.batch_processor.has_commands()
+                        if
+                            (!self.batch_processor.has_commands()
                         && !self.command_input.is_active()
                         && !self.command_confirm.is_active()
-                        && !self.help_popup.is_modal().unwrap_or(false)
+                        && !self.help_popup.is_modal().unwrap_or(false))
+                                || matches!(message, Message::Event(Event::ConfigReloaded(_)))
+
                         {
                             self.input_command_generator.process_command(&message).await?;
                         }
@@ -611,6 +615,49 @@ impl App {
 
         Ok(())
     }
+
+    fn reload_config(&mut self) -> color_eyre::Result<()> {
+        let Some(config_path) = &self.config.source_path else {
+            tooltip(
+                &self.message_sender,
+                "configuration has no source file, restart eilmeldung to open config file",
+                TooltipFlavor::Warning,
+            )?;
+            return Ok(());
+        };
+
+        let load_config_res = load_config(&PathBuf::from(config_path));
+
+        let Ok(mut config) = load_config_res else {
+            tooltip(
+                &self.message_sender,
+                &*format!(
+                    "could not read config file: {}",
+                    load_config_res.unwrap_err()
+                ),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        if let Err(validate_error) = config.validate() {
+            tooltip(
+                &self.message_sender,
+                &*format!("could not validate config file: {}", validate_error),
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        }
+
+        config.source_path = self.config.source_path.clone();
+
+        tooltip(&self.message_sender, "config reloaded", TooltipFlavor::Info)?;
+
+        self.message_sender
+            .send(Message::Event(Event::ConfigReloaded(Arc::new(config))))?;
+
+        Ok(())
+    }
 }
 
 impl MessageReceiver for App {
@@ -795,6 +842,14 @@ impl MessageReceiver for App {
                 self.switch_state(self.state.previous_cyclic())?;
             }
 
+            Message::Command(ReloadConfig) => {
+                self.reload_config()?;
+            }
+
+            Message::Event(ConfigReloaded(config)) => {
+                self.config = Arc::clone(config);
+            }
+
             Message::Event(Event::ConnectionAvailable) => {
                 let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
@@ -804,7 +859,7 @@ impl MessageReceiver for App {
                         "Trying to get online...",
                         TooltipFlavor::Info,
                     )?;
-                    self.news_flash_utils.rebuild_client().await?;
+                    self.news_flash_utils.rebuild_client(&self.config).await?;
                     self.news_flash_utils.set_offline(false);
                 }
             }

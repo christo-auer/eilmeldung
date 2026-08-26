@@ -1034,6 +1034,11 @@ impl MessageReceiver for FeedList {
                     self.view_data.tree_state_mut().scroll_up(1);
                 }
 
+                E::ConfigReloaded(config) => {
+                    self.config = Arc::clone(config);
+                    view_needs_update = true;
+                }
+
                 event if event.caused_model_update() => model_needs_update = true,
                 _ => {}
             }

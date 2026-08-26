@@ -36,6 +36,10 @@ pub mod prelude {
 use config::FileFormat;
 use log::{info, warn};
 use once_cell::sync::Lazy;
+use ratatui::crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
+    execute,
+};
 
 static HINT_CHARS: Lazy<Vec<char>> = Lazy::new(|| vec!['F', 'J', 'G', 'H', 'D', 'K']);
 static HINT_NUMBERS: Lazy<Vec<char>> =
@@ -137,6 +141,9 @@ impl ArticleScope {
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
+    #[serde(skip_serializing)]
+    pub source_path: Option<String>,
+
     pub input_config: InputConfig,
     pub theme: Theme,
     pub icon_set: IconSet,
@@ -227,7 +234,7 @@ macro_rules! deprecated {
 }
 
 impl Config {
-    fn validate(&mut self) -> color_eyre::Result<()> {
+    pub fn validate(&mut self) -> color_eyre::Result<()> {
         self.validate_input_config()?;
 
         if let Some(sync_interval) = self.sync_every_minutes
@@ -236,6 +243,14 @@ impl Config {
             return Err(color_eyre::eyre::eyre!(
                 "sync_every_minutes must at least be 1"
             ));
+        }
+
+        if self.mouse_support {
+            info!("Enabling mouse capture");
+            execute!(std::io::stdout(), EnableMouseCapture)?;
+        } else {
+            info!("Disabling mouse capture");
+            execute!(std::io::stdout(), DisableMouseCapture)?;
         }
 
         deprecated!(self.show_top_bar);
@@ -274,6 +289,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            source_path: None,
             refresh_fps: 10,
             network_timeout_seconds: 60,
             keep_articles_days: 30,
@@ -430,6 +446,9 @@ pub fn load_config(config_dir: &Path) -> color_eyre::Result<Config> {
 
     if !Path::new(config_path).exists() {
         info!("No config file found, using default config");
+        let mut default_config = Config::default();
+        default_config.source_path.replace(config_path.to_owned());
+
         return Ok(Config::default());
     }
 
@@ -444,6 +463,9 @@ pub fn load_config(config_dir: &Path) -> color_eyre::Result<Config> {
         }
     };
 
+    config
+        .source_path
+        .replace(config_dir.to_str().unwrap().to_owned()); // unwrap save here (see above)
     config.validate()?;
 
     Ok(config)

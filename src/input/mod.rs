@@ -68,6 +68,10 @@ impl MessageReceiver for InputCommandGenerator {
                 self.process_key_event(Some((*key_event).into()))
             }
             Message::Event(Event::Tick) => self.process_key_event(None),
+            Message::Event(Event::ConfigReloaded(config)) => {
+                self.config = Arc::clone(config);
+                Ok(())
+            }
 
             _ => Ok(()),
         }

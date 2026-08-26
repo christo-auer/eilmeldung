@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use crate::ui::articles_list::model::ArticleListModelData;
-use std::sync::Arc;
 
 use getset::{Getters, MutGetters};
 use news_flash::models::{ArticleFilter, Marked, Read};
@@ -16,8 +15,6 @@ use strum::IntoEnumIterator;
 #[derive(Getters, MutGetters)]
 #[getset(get = "pub(super)")]
 pub struct FilterState {
-    default_sort_order: SortOrder,
-
     augmented_article_filter: Option<AugmentedArticleFilter>,
 
     #[get_mut = "pub(super)"]
@@ -43,9 +40,8 @@ pub struct FilterState {
 }
 
 impl FilterState {
-    pub fn new(article_scope: ArticleScope, default_sort_order: SortOrder) -> Self {
+    pub fn new(article_scope: ArticleScope) -> Self {
         Self {
-            default_sort_order,
             article_scope,
             augmented_article_filter: None,
             article_search_query: None,
@@ -97,7 +93,7 @@ impl FilterState {
             && !*self.reverse_sort_order()
     }
 
-    pub fn get_effective_sort_order(&self) -> SortOrder {
+    pub fn get_effective_sort_order(&self, config: &Config) -> SortOrder {
         self.adhoc_sort_order
             .as_ref()
             .or_else(|| {
@@ -110,7 +106,7 @@ impl FilterState {
                     .as_ref()
                     .and_then(|filter| filter.article_query.sort_order().as_ref())
             })
-            .unwrap_or(&self.default_sort_order)
+            .unwrap_or(&config.default_sort_order)
             .to_owned()
             .reverse(self.reverse_sort_order)
     }
@@ -224,7 +220,9 @@ impl<'a> ArticleListViewData<'a> {
                 } else {
                     config.icon_set.sort_normal_icon()
                 },
-                filter_state.get_effective_sort_order().as_string(config)
+                filter_state
+                    .get_effective_sort_order(config)
+                    .as_string(config)
             );
             spans.push(Span::styled(filter_text.to_owned(), config.theme.header()));
         }
@@ -244,7 +242,7 @@ impl<'a> ArticleListViewData<'a> {
 
     pub fn update(
         &mut self,
-        config: Arc<Config>,
+        config: &Config,
         model_data: &ArticleListModelData,
         filter_state: &FilterState,
         _is_focused: bool,

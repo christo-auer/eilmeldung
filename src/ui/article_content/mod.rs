@@ -471,6 +471,11 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.message_sender.send(Message::Command(Command::Clear))?;
                 }
 
+                ConfigReloaded(config) => {
+                    self.config = Arc::clone(config);
+                    view_needs_update = true;
+                }
+
                 event if event.caused_model_update() => {
                     view_needs_update = true;
                 }

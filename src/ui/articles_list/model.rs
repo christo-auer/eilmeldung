@@ -39,7 +39,11 @@ impl ArticleListModelData {
         }
     }
 
-    pub(super) async fn update(&mut self, filter_state: &FilterState) -> color_eyre::Result<()> {
+    pub(super) async fn update(
+        &mut self,
+        config: &Config,
+        filter_state: &FilterState,
+    ) -> color_eyre::Result<()> {
         let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
         // last sync
@@ -105,7 +109,7 @@ impl ArticleListModelData {
         drop(news_flash);
 
         // apply the current filter
-        self.filter_articles(filter_state).await
+        self.filter_articles(config, filter_state).await
     }
 
     pub(super) fn effectively_flagged_articles(&self) -> Vec<ArticleID> {
@@ -119,7 +123,11 @@ impl ArticleListModelData {
             .collect()
     }
 
-    async fn filter_articles(&mut self, filter_state: &FilterState) -> color_eyre::Result<()> {
+    async fn filter_articles(
+        &mut self,
+        config: &Config,
+        filter_state: &FilterState,
+    ) -> color_eyre::Result<()> {
         let Some(augmented_article_filter) = filter_state.augmented_article_filter().as_ref()
         else {
             return Ok(());
@@ -148,7 +156,7 @@ impl ArticleListModelData {
         }
 
         filter_state
-            .get_effective_sort_order()
+            .get_effective_sort_order(config)
             .sort(&mut self.articles, &self.feed_map);
 
         Ok(())

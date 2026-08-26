@@ -27,7 +27,6 @@ pub struct NewsFlashUtils {
     pub news_flash_lock: Arc<RwLock<NewsFlash>>,
     client_lock: Arc<RwLock<Client>>,
     undo_stack_lock: Arc<RwLock<Vec<UndoOperation>>>,
-    config: Arc<Config>,
     command_sender: UnboundedSender<Message>,
 
     async_operation_mutex: Arc<Mutex<()>>,
@@ -101,24 +100,22 @@ impl NewsFlashUtils {
     pub fn new(
         news_flash: NewsFlash,
         client: Client,
-        config: Arc<Config>,
         command_sender: UnboundedSender<Message>,
     ) -> Self {
         debug!("Creating NewsFlashUtils");
         Self {
             news_flash_lock: Arc::new(RwLock::new(news_flash)),
             client_lock: Arc::new(RwLock::new(client)),
-            config,
             command_sender,
             undo_stack_lock: Default::default(),
             async_operation_mutex: Arc::new(Mutex::new(())),
         }
     }
 
-    pub async fn rebuild_client(&self) -> color_eyre::Result<()>{
+    pub async fn rebuild_client(&self, config: &Config) -> color_eyre::Result<()>{
         info!("rebuilding reqwest client");
         let mut client = self.client_lock.write().await;
-        *client = build_client(Duration::from_secs(self.config.network_timeout_seconds))?;
+        *client = build_client(Duration::from_secs(config.network_timeout_seconds))?;
         Ok(())
     }
 
