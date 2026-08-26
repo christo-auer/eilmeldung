@@ -1,5 +1,10 @@
 # Unreleased
 
+- *eilmeldung* now auto-reloads the configuration file when it has changed!
+  - use this to tweak your configuration!
+  - you can deactivate this behavior by setting `auto_reload_config` to `false`
+  - to manually reload the confiugration run the command `reloadconfig` (press `:reloadconfig` and then enter) or press `Ctrl-r` (which simply maps to `reloadconfig`)
+
 # 1.7.3 - 2026-08-25
 
 *eilmeldung* is now officially in `nixpkgs` and `home-manager`! 🎉

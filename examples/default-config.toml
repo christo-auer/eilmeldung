@@ -18,6 +18,7 @@ default_sort_order = "<date"
 keep_articles_days = 30
 # sync_every_minutes = 10  # disabled by default
 after_sync_commands = []
+auto_reload_config = true
 
 
 # Labels
@@ -267,6 +268,7 @@ timeout_millis = 5000
 "?"         = ["helpinput"]
 "C-r"       = ["clear"]
 "C-z"       = ["undo"]
+"C-r"       = ["reload"]
 
 
 # Theme Configuration

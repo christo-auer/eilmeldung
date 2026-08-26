@@ -894,6 +894,7 @@ impl MessageReceiver for App {
 
             Message::Event(ConfigReloaded(config)) => {
                 self.config = Arc::clone(config);
+                self.install_config_file_watch()?;
             }
 
             Message::Event(Event::ConnectionAvailable) => {

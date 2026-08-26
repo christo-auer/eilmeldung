@@ -447,7 +447,15 @@ pub fn load_config(config_path: &Path) -> color_eyre::Result<Config> {
 
     if !Path::new(config_path_str).exists() {
         info!("No config file found, using default config");
-        return Ok(Config::default());
+        let mut default_config = Config::default();
+        default_config
+            .source_path
+            .replace(config_path.to_path_buf());
+        let mut default_config = Config::default();
+        default_config
+            .source_path
+            .replace(config_path.to_path_buf());
+        return Ok(default_config);
     }
 
     let mut config = match config::Config::builder()
