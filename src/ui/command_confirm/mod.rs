@@ -57,7 +57,7 @@ impl Widget for &CommandConfirm {
 }
 
 impl MessageReceiver for CommandConfirm {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+    async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         let mut needs_redraw = false;
         if let Message::Command(Command::CommandConfirm(command)) = message {
             self.is_active = true;

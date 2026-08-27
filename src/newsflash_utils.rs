@@ -1,7 +1,7 @@
 use crate::{messages::event::AsyncOperationError, prelude::*};
 use std::{
-    collections::HashMap, error::Error, hash::Hash, process::Stdio, str::FromStr, sync::Arc,
-    time::Duration,
+    collections::HashMap, error::Error, hash::Hash, path::Path, process::Stdio, str::FromStr,
+    sync::Arc, time::Duration,
 };
 
 use htmd::HtmlToMarkdown;
@@ -10,7 +10,7 @@ use news_flash::{
     error::NewsFlashError,
     models::{
         ArticleFilter, ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping,
-        Marked, Read, Tag, TagID, Url,
+        LoginData, Marked, Read, Tag, TagID, Url,
     },
 };
 
@@ -103,6 +103,7 @@ impl NewsFlashUtils {
         command_sender: UnboundedSender<Message>,
     ) -> Self {
         debug!("Creating NewsFlashUtils");
+
         Self {
             news_flash_lock: Arc::new(RwLock::new(news_flash)),
             client_lock: Arc::new(RwLock::new(client)),
@@ -747,6 +748,84 @@ impl NewsFlashUtils {
             }
         }
     }
+}
+
+pub async fn login_news_flash(
+    client: &reqwest::Client,
+    cli_args: &CliArgs,
+    config: &Config,
+) -> color_eyre::Result<NewsFlash> {
+    let news_flash_config_dir = cli_args
+        .news_flash_config_dir()
+        .as_ref()
+        .map(Path::new)
+        .unwrap_or(PROJECT_DIRS.config_dir());
+
+    let state_dir = cli_args
+        .news_flash_state_dir()
+        .as_ref()
+        .map(Path::new)
+        .unwrap_or(PROJECT_DIRS.state_dir().unwrap_or(PROJECT_DIRS.data_dir()));
+
+    info!("newsflash config dir: {news_flash_config_dir:?}");
+    info!("state dir: {state_dir:?}");
+
+    let news_flash_attempt = NewsFlash::builder()
+        .config_dir(news_flash_config_dir)
+        .data_dir(state_dir)
+        .try_load();
+
+    Ok(match news_flash_attempt {
+        Ok(news_flash) => {
+            // Re-login to refresh session token
+            if let Some(login_data) = news_flash.get_login_data().await {
+                info!("Re-logging in to refresh session");
+                if let Err(e) = news_flash.login(login_data, client).await {
+                    error!("Failed to re-login: {}. Session may have expired.", e);
+                }
+            }
+            news_flash
+        }
+        Err(_) => {
+            // this is the initial setup => setup login data
+            info!("no profile found => ask user or try config");
+            let mut logged_in = false;
+            // skip if login configuration is given
+            let mut skip_asking_for_login = config.login_setup.is_some();
+
+            let mut login_data: Option<LoginData> = config
+                .login_setup
+                .as_ref()
+                .inspect(|_| info!("login configuration found"))
+                .map(|login_configuration| login_configuration.to_login_data())
+                .transpose()?;
+            let login_setup = LoginSetup::new();
+            let mut news_flash: Option<NewsFlash> = None;
+            while !logged_in {
+                login_data = if login_data.is_none() || !skip_asking_for_login {
+                    skip_asking_for_login = false;
+                    Some(login_setup.inquire_login_data(&login_data).await?)
+                } else {
+                    login_data
+                };
+                news_flash = Some(
+                    NewsFlash::builder()
+                        .data_dir(state_dir)
+                        .config_dir(news_flash_config_dir)
+                        .plugin(login_data.as_ref().unwrap().id())
+                        .create()?,
+                );
+                logged_in = login_setup
+                    .login_and_initial_sync(
+                        news_flash.as_ref().unwrap(),
+                        login_data.as_ref().unwrap(),
+                        client,
+                    )
+                    .await?;
+            }
+            news_flash.unwrap()
+        }
+    })
 }
 
 #[allow(clippy::type_complexity)]

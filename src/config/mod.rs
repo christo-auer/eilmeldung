@@ -1,4 +1,5 @@
 mod border_theme;
+mod config_file_manager;
 mod dimension;
 mod feed_list_content_identfier;
 mod icon_set;
@@ -9,15 +10,11 @@ mod share_target;
 mod sync_stats;
 mod theme;
 
-use std::{
-    env,
-    path::{Path, PathBuf},
-};
-
 use crate::prelude::*;
 
 pub mod prelude {
     pub use super::border_theme::BorderTheme;
+    pub use super::config_file_manager::ConfigFileManager;
     pub use super::dimension::Dimension;
     pub use super::feed_list_content_identfier::{
         FeedListContentIdentifier, FeedListItemType, LabeledQuery,
@@ -26,14 +23,12 @@ pub mod prelude {
     pub use super::input_config::InputConfig;
     pub use super::login_configuration::LoginConfiguration;
     pub use super::paths::{CONFIG_FILE, PROJECT_DIRS};
-    pub use super::resolve_eilmeldung_config_dir;
     pub use super::share_target::ShareTarget;
     pub use super::sync_stats::SyncStatsOutputFormat;
     pub use super::theme::Theme;
-    pub use super::{ArticleContentType, ArticleScope, Config, ConfigError, load_config};
+    pub use super::{ArticleContentType, ArticleScope, Config, ConfigError};
 }
 
-use config::FileFormat;
 use log::{info, warn};
 use once_cell::sync::Lazy;
 use ratatui::crossterm::{
@@ -389,75 +384,4 @@ impl Default for Config {
             scrollbar_thumb_symbol: None,
         }
     }
-}
-
-fn try_path(path: &Path) -> Option<PathBuf> {
-    let mut config_file_path = PathBuf::from(path);
-    config_file_path.push(CONFIG_FILE);
-
-    if !config_file_path.try_exists().unwrap_or(false) {
-        return None;
-    }
-    Some(PathBuf::from(path))
-}
-
-fn extend_eilmeldung(prefix: Option<&str>, path: &str) -> PathBuf {
-    let mut path_buf = PathBuf::from(path);
-
-    if let Some(prefix) = prefix {
-        path_buf.push(prefix);
-    };
-
-    path_buf.push("eilmeldung");
-    path_buf
-}
-
-pub fn resolve_eilmeldung_config_dir(cli_args: &CliArgs) -> PathBuf {
-    // CLI has priority
-    if let Some(cli_config_path) = cli_args.config_dir() {
-        return PathBuf::from(cli_config_path);
-    };
-
-    // first try XDG_CONFIG_HOME
-    env::var("XDG_CONFIG_HOME")
-        .ok()
-        .and_then(|path| try_path(&extend_eilmeldung(None, &path)))
-        // or $HOME/.config/eilmeldung
-        .or_else(|| {
-            env::var("HOME")
-                .ok()
-                .and_then(|home_path| try_path(&extend_eilmeldung(Some(".config"), &home_path)))
-        })
-        // or OS-dependent path
-        .or_else(|| try_path(PROJECT_DIRS.config_dir()))
-        // if none worked, revert to "official" one
-        .unwrap_or(PathBuf::from(PROJECT_DIRS.config_dir()))
-}
-
-pub fn load_config(config_path: &Path) -> color_eyre::Result<Config> {
-    let Some(config_path_str) = config_path.to_str() else {
-        return Err(color_eyre::eyre::eyre!("invalid configuration path"));
-    };
-
-    info!("Trying to load config from {}", config_path_str);
-
-    if !Path::new(config_path_str).exists() {
-        info!("No config file found, using default config");
-        return Ok(Default::default());
-    }
-
-    let mut config = match config::Config::builder()
-        .add_source(config::File::new(config_path_str, FileFormat::Toml))
-        .build()
-    {
-        Ok(config) => config.try_deserialize::<Config>()?,
-        Err(err) => {
-            warn!("unable to read config file: {err}");
-            return Err(color_eyre::eyre::eyre!(err));
-        }
-    };
-
-    config.validate()?;
-
-    Ok(config)
 }

@@ -19,7 +19,7 @@ pub enum Message {
 }
 
 pub trait MessageReceiver {
-    fn process_command(
+    fn process_message(
         &mut self,
         message: &Message,
     ) -> impl std::future::Future<Output = color_eyre::Result<()>>;

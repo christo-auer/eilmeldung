@@ -112,6 +112,7 @@ pub enum Event {
     AsyncLogout,
     AsyncLogoutFinished,
 
+    ConfigFileChanged,
     ConfigReloaded(Arc<Config>),
 
     Tick, // general tick for animations and regular updates

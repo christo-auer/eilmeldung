@@ -266,9 +266,9 @@ timeout_millis = 5000
 "E"         = ["cmd openenclosure"]
 "S"         = ["cmd share"]
 "?"         = ["helpinput"]
-"C-r"       = ["clear"]
+"C-x"       = ["clear"]
 "C-z"       = ["undo"]
-"C-r"       = ["reload"]
+"C-r"       = ["reloadconfig"]
 
 
 # Theme Configuration

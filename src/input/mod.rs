@@ -61,7 +61,7 @@ pub struct InputCommandGenerator {
 }
 
 impl MessageReceiver for InputCommandGenerator {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+    async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         match message {
             Message::Command(Command::HelpInput) => self.show_help_input(),
             Message::Event(Event::Key(key_event)) if key_event.is_press() => {

@@ -6,10 +6,12 @@ mod command_input;
 mod feeds_list;
 mod help_popup;
 mod mouse;
+mod state;
 mod tooltip;
 mod view;
 
 pub mod prelude {
+    pub use super::App;
     pub use super::article_content::prelude::*;
     pub use super::articles_list::prelude::*;
     pub use super::batch::BatchProcessor;
@@ -18,8 +20,8 @@ pub mod prelude {
     pub use super::feeds_list::prelude::*;
     pub use super::help_popup::HelpPopup;
     pub use super::mouse::PanelAreas;
+    pub use super::state::AppState;
     pub use super::tooltip::{Tooltip, TooltipFlavor, tooltip};
-    pub use super::{App, AppState};
 }
 
 use crate::prelude::*;
@@ -32,101 +34,9 @@ use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{MouseButton, MouseEventKind};
 use std::collections::HashMap;
 use std::process::Stdio;
-use std::{fmt::Display, path::Path, str::FromStr, sync::Arc, time::Duration};
+use std::{path::Path, sync::Arc, time::Duration};
 use throbber_widgets_tui::ThrobberState;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-
-#[derive(Copy, Clone, Eq, PartialEq, Debug, serde::Serialize, serde::Deserialize, Default)]
-pub enum AppState {
-    #[default]
-    FeedSelection,
-    ArticleSelection,
-    ArticleContent,
-    ArticleContentDistractionFree,
-}
-
-impl From<Panel> for AppState {
-    fn from(value: Panel) -> Self {
-        match value {
-            Panel::FeedList => Self::FeedSelection,
-            Panel::ArticleList => Self::ArticleSelection,
-            Panel::ArticleContent => Self::ArticleContent,
-        }
-    }
-}
-
-impl FromStr for AppState {
-    type Err = color_eyre::Report;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.to_lowercase().as_str() {
-            "feeds" => Self::FeedSelection,
-            "articles" => Self::ArticleSelection,
-            "content" => Self::ArticleContent,
-            "zen" => Self::ArticleContentDistractionFree,
-            _ => {
-                return Err(color_eyre::eyre::eyre!(
-                    "expected feeds, articles, content or zen"
-                ));
-            }
-        })
-    }
-}
-
-impl Display for AppState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AppState::FeedSelection => write!(f, "feed selection"),
-            AppState::ArticleSelection => write!(f, "article selection"),
-            AppState::ArticleContent => write!(f, "article content"),
-            AppState::ArticleContentDistractionFree => {
-                write!(f, "article content distraction free")
-            }
-        }
-    }
-}
-
-impl AppState {
-    fn previous_cyclic(&self) -> AppState {
-        use AppState::*;
-        match self {
-            ArticleSelection => FeedSelection,
-            ArticleContent => ArticleSelection,
-            FeedSelection => ArticleContent,
-            _ => *self,
-        }
-    }
-
-    fn next_cyclic(&self) -> AppState {
-        use AppState::*;
-        match self {
-            FeedSelection => ArticleSelection,
-            ArticleSelection => ArticleContent,
-            ArticleContent => FeedSelection,
-            _ => *self,
-        }
-    }
-
-    fn next(&self) -> AppState {
-        use AppState::*;
-        match self {
-            FeedSelection => ArticleSelection,
-            ArticleSelection => ArticleContent,
-            ArticleContent => ArticleContent,
-            _ => *self,
-        }
-    }
-
-    fn previous(&self) -> AppState {
-        use AppState::*;
-        match self {
-            FeedSelection => FeedSelection,
-            ArticleSelection => FeedSelection,
-            ArticleContent => ArticleSelection,
-            _ => *self,
-        }
-    }
-}
 
 pub struct App {
     state: AppState,
@@ -134,7 +44,7 @@ pub struct App {
     config: Arc<Config>,
     news_flash_utils: Arc<NewsFlashUtils>,
     message_sender: UnboundedSender<Message>,
-    config_file_poller: ConfigFilePoller,
+    config_file_manager: ConfigFileManager,
 
     tooltip: Tooltip<'static>,
 
@@ -163,13 +73,13 @@ pub struct App {
 
 impl App {
     pub fn new(
-        config: Arc<Config>,
+        config: Config,
+        config_file_manager: ConfigFileManager,
         news_flash_utils: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
-        config_file_poller: ConfigFilePoller,
     ) -> Self {
         debug!("Creating new App instance");
-        let config_arc = config.clone();
+        let config_arc = Arc::new(config);
 
         debug!("Initializing UI components");
         let app = Self {
@@ -178,7 +88,7 @@ impl App {
             news_flash_utils: news_flash_utils.clone(),
             is_running: true,
             message_sender: message_sender.clone(),
-            config_file_poller,
+            config_file_manager,
             input_command_generator: InputCommandGenerator::new(
                 config_arc.clone(),
                 message_sender.clone(),
@@ -272,7 +182,7 @@ impl App {
             .send(Message::Batch(self.config.startup_commands.to_vec()))?;
 
         info!("Starting command processing loop");
-        self.process_commands(&mut message_receiver, terminal)
+        self.process_messages(&mut message_receiver, terminal)
             .await?;
 
         // closing receiver
@@ -291,7 +201,7 @@ impl App {
         false
     }
 
-    async fn process_commands(
+    async fn process_messages(
         mut self,
         rx: &mut UnboundedReceiver<Message>,
         mut terminal: DefaultTerminal,
@@ -302,9 +212,6 @@ impl App {
             "Command processing loop started with {}fps refresh rate",
             self.config.refresh_fps
         );
-
-        // check config file poll
-        let mut config_file_poll_interval = tokio::time::interval(Duration::from_secs(1));
 
         while self.is_running {
             // update FPS if value has changed
@@ -326,13 +233,6 @@ impl App {
                     }
                 }
 
-                _ = config_file_poll_interval.tick() => {
-                    if self.config.auto_reload_config && self.config_file_poller.config_file_modified() {
-                        info!("config file has changed: reloading");
-                        self.message_sender.send(Message::Command(Command::ReloadConfig))?;
-                    }
-                }
-
                 _ = render_interval.tick() => {
                     self.message_sender.send(Message::Event(Event::Tick))?;
                 }
@@ -351,25 +251,25 @@ impl App {
                         }
 
                         // TODO refactor all this
-                        if
-                            (!self.batch_processor.has_commands()
+                        if (!self.batch_processor.has_commands()
                         && !self.command_input.is_active()
                         && !self.command_confirm.is_active()
                         && !self.help_popup.is_modal().unwrap_or(false))
                                 || matches!(message, Message::Event(Event::ConfigReloaded(_)))
 
                         {
-                            self.input_command_generator.process_command(&message).await?;
+                            self.input_command_generator.process_message(&message).await?;
                         }
 
-                        self.batch_processor.process_command(&message).await?;
-                        self.process_command(&message).await?;
-                        self.feed_list.process_command(&message).await?;
-                        self.articles_list.process_command(&message).await?;
-                        self.article_content.process_command(&message).await?;
-                        self.command_input.process_command(&message).await?;
-                        self.command_confirm.process_command(&message).await?;
-                        self.help_popup.process_command(&message).await?;
+                        self.config_file_manager.process_message(&message).await?;
+                        self.batch_processor.process_message(&message).await?;
+                        self.process_message(&message).await?;
+                        self.feed_list.process_message(&message).await?;
+                        self.articles_list.process_message(&message).await?;
+                        self.article_content.process_message(&message).await?;
+                        self.command_input.process_message(&message).await?;
+                        self.command_confirm.process_message(&message).await?;
+                        self.help_popup.process_message(&message).await?;
 
                         if redraw {
                             terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
@@ -636,9 +536,9 @@ impl App {
     }
 
     fn reload_config(&mut self) -> color_eyre::Result<()> {
-        let load_config_res = load_config(self.config_file_poller.config_file_path());
+        let load_config_res = self.config_file_manager.load_config();
 
-        let Ok(mut config) = load_config_res else {
+        let Ok(config) = load_config_res else {
             tooltip(
                 &self.message_sender,
                 &*format!(
@@ -650,15 +550,6 @@ impl App {
             return Ok(());
         };
 
-        if let Err(validate_error) = config.validate() {
-            tooltip(
-                &self.message_sender,
-                &*format!("could not validate config file: {}", validate_error),
-                TooltipFlavor::Error,
-            )?;
-            return Ok(());
-        }
-
         tooltip(&self.message_sender, "config reloaded", TooltipFlavor::Info)?;
 
         self.message_sender
@@ -669,7 +560,7 @@ impl App {
 }
 
 impl MessageReceiver for App {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+    async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         use Command::*;
         use Event::*;
         let mut needs_redraw = true;
@@ -851,6 +742,10 @@ impl MessageReceiver for App {
             }
 
             Message::Command(ReloadConfig) => {
+                self.reload_config()?;
+            }
+
+            Message::Event(Event::ConfigFileChanged) if self.config.auto_reload_config => {
                 self.reload_config()?;
             }
 
