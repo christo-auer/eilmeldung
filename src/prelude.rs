@@ -10,7 +10,8 @@ pub use super::cli::{CliArgs, execute_cli_actions};
 
 pub use super::messages::prelude::*;
 pub use super::newsflash_utils::{
-    NewsFlashUtils, build_client, get_feeds_and_categories, sort_feeds_and_categories,
+    NewsFlashUtils, build_client, get_feeds_and_categories, login_news_flash,
+    sort_feeds_and_categories,
 };
 pub use super::query::prelude::*;
 

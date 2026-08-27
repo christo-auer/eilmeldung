@@ -276,7 +276,7 @@ impl<'a> Widget for &HelpPopup<'a> {
 }
 
 impl<'a> MessageReceiver for HelpPopup<'a> {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+    async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         let mut redraw_required = false;
         if let Message::Event(event) = message {
             use Event as E;

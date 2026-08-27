@@ -83,7 +83,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "; ;"       => "cmd hintfollow",
         "; y"       => "cmd hintshare clipboard",
         "; s"       => "cmd hintshare",
-        "C-r"       => "clear",
+        "C-x"       => "clear",
         "C-z"       => "undo",
 
         // flagging

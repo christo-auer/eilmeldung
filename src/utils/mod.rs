@@ -1,5 +1,3 @@
-mod config_file_poller;
-
 use ratatui::{
     style::Style,
     text::{Line, Span, Text},
@@ -9,7 +7,6 @@ use crate::prelude::*;
 
 pub mod prelude {
     pub use super::StderrRedirect;
-    pub use super::config_file_poller::ConfigFilePoller;
     pub use super::html_sanitize;
     pub use super::lex_ordering;
     pub use super::patch_text_style;

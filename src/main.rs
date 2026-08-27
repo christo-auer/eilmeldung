@@ -11,12 +11,10 @@ mod ui;
 mod undo;
 mod utils;
 
-use std::{path::Path, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use clap::Parser;
 use log::{debug, error, info};
-use news_flash::{NewsFlash, models::LoginData};
-use ratatui::crossterm::{event::DisableMouseCapture, execute};
 use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
 
 mod prelude;
@@ -26,92 +24,22 @@ use crate::{connectivity::ConnectivityMonitor, prelude::*};
 async fn main() -> color_eyre::Result<()> {
     let cli_args = CliArgs::parse();
 
-    let eilmeldung_config_file = resolve_eilmeldung_config_dir(&cli_args)
-        .to_path_buf()
-        .join(CONFIG_FILE);
-
-    let news_flash_config_dir = cli_args
-        .news_flash_config_dir()
-        .as_ref()
-        .map(Path::new)
-        .unwrap_or(PROJECT_DIRS.config_dir());
-
-    let state_dir = cli_args
-        .news_flash_state_dir()
-        .as_ref()
-        .map(Path::new)
-        .unwrap_or(PROJECT_DIRS.state_dir().unwrap_or(PROJECT_DIRS.data_dir()));
+    // crate the channel
 
     color_eyre::install()?;
     crate::logging::init_logging(&cli_args)?;
     debug!("Error handling and logging initialized");
 
-    info!("eilmeldung config dir: {eilmeldung_config_file:?}");
-    info!("newsflash config dir: {news_flash_config_dir:?}");
-    info!("state dir: {state_dir:?}");
+    let (message_sender, message_receiver) = unbounded_channel::<Message>();
 
     info!("Loading configuration");
-    let config = Arc::new(load_config(&eilmeldung_config_file)?);
+    let mut config_file_manager = ConfigFileManager::build(&cli_args, message_sender.clone());
+    let config = config_file_manager.load_config()?;
 
     info!("Initializing NewsFlash");
-    let news_flash_attempt = NewsFlash::builder()
-        .config_dir(news_flash_config_dir)
-        .data_dir(state_dir)
-        .try_load();
-
     let client = build_client(Duration::from_secs(config.network_timeout_seconds))?;
 
-    let news_flash = match news_flash_attempt {
-        Ok(news_flash) => {
-            // Re-login to refresh session token
-            if let Some(login_data) = news_flash.get_login_data().await {
-                info!("Re-logging in to refresh session");
-                if let Err(e) = news_flash.login(login_data, &client).await {
-                    error!("Failed to re-login: {}. Session may have expired.", e);
-                }
-            }
-            news_flash
-        }
-        Err(_) => {
-            // this is the initial setup => setup login data
-            info!("no profile found => ask user or try config");
-            let mut logged_in = false;
-            // skip if login configuration is given
-            let mut skip_asking_for_login = config.login_setup.is_some();
-
-            let mut login_data: Option<LoginData> = config
-                .login_setup
-                .as_ref()
-                .inspect(|_| info!("login configuration found"))
-                .map(|login_configuration| login_configuration.to_login_data())
-                .transpose()?;
-            let login_setup = LoginSetup::new();
-            let mut news_flash: Option<NewsFlash> = None;
-            while !logged_in {
-                login_data = if login_data.is_none() || !skip_asking_for_login {
-                    skip_asking_for_login = false;
-                    Some(login_setup.inquire_login_data(&login_data).await?)
-                } else {
-                    login_data
-                };
-                news_flash = Some(
-                    NewsFlash::builder()
-                        .data_dir(state_dir)
-                        .config_dir(news_flash_config_dir)
-                        .plugin(login_data.as_ref().unwrap().id())
-                        .create()?,
-                );
-                logged_in = login_setup
-                    .login_and_initial_sync(
-                        news_flash.as_ref().unwrap(),
-                        login_data.as_ref().unwrap(),
-                        &client,
-                    )
-                    .await?;
-            }
-            news_flash.unwrap()
-        }
-    };
+    let news_flash = login_news_flash(&client, &cli_args, &config).await?;
 
     // execute CLI actions -> if true, exit after execution (CLI only)
     if execute_cli_actions(&config, &cli_args, &news_flash, &client).await? {
@@ -119,8 +47,6 @@ async fn main() -> color_eyre::Result<()> {
     }
 
     // setup of things we need in the app
-    let (message_sender, message_receiver) = unbounded_channel::<Message>();
-    let input_reader_message_sender = message_sender.clone();
     let news_flash_utils = Arc::new(NewsFlashUtils::new(
         news_flash,
         client,
@@ -129,36 +55,30 @@ async fn main() -> color_eyre::Result<()> {
     let connectivity_monitor =
         ConnectivityMonitor::new(news_flash_utils.clone(), message_sender.clone());
 
-    // crate config file poller
-    let config_file_poller = ConfigFilePoller::new(eilmeldung_config_file);
-
-    // create the main app
-    let app = App::new(
-        config.clone(),
-        news_flash_utils.clone(),
-        message_sender,
-        config_file_poller,
-    );
-
-    info!("Initializing terminal");
-    let terminal = ratatui::init();
-
     // startup task which reads the crossterm events
+    let input_reader_message_sender = message_sender.clone();
     let _input_reader_handle = spawn_blocking(move || {
         if let Err(err) = input_reader(input_reader_message_sender) {
             error!("input reader got an error: {err}");
         }
     });
 
+    // create the main app
+    let app = App::new(
+        config,
+        config_file_manager,
+        news_flash_utils.clone(),
+        message_sender,
+    );
+
+    info!("Initializing terminal");
+    let terminal = ratatui::init();
+
+    // starting connectivity monitor
     let _connecitivty_monitor_handle = connectivity_monitor.spawn()?;
 
     info!("Starting application main loop");
     let result = app.run(message_receiver, terminal).await;
-
-    if config.mouse_support {
-        info!("Disabling mouse capture");
-        let _ = execute!(std::io::stdout(), DisableMouseCapture);
-    }
 
     info!("Application loop ended, restoring terminal");
     ratatui::restore();

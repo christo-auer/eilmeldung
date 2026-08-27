@@ -121,7 +121,7 @@ impl BatchProcessor {
 }
 
 impl MessageReceiver for BatchProcessor {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+    async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         if let Message::Event(Event::ConfigReloaded(config)) = message {
             self.config = Arc::clone(config);
         }

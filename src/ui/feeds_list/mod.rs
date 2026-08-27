@@ -682,7 +682,7 @@ impl FeedList {
 }
 
 impl MessageReceiver for FeedList {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+    async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         if matches!(message, Message::Event(Event::Tick)) {
             if let Some(sync_interval) = self.config.sync_every_minutes
                 && self

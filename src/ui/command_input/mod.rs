@@ -792,7 +792,7 @@ impl Widget for &mut CommandInput {
 }
 
 impl crate::messages::MessageReceiver for CommandInput {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+    async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         let mut view_needs_update = true;
         match message {
             Message::Event(Event::Key(key_event)) if self.is_active => {

@@ -519,7 +519,7 @@ impl ArticlesList {
 }
 
 impl crate::messages::MessageReceiver for ArticlesList {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+    async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         if matches!(message, Message::Event(Event::Tick)) {
             return Ok(());
         }

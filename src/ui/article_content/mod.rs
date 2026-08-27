@@ -303,7 +303,7 @@ impl ArticleContent {
 }
 
 impl crate::messages::MessageReceiver for ArticleContent {
-    async fn process_command(&mut self, message: &Message) -> color_eyre::Result<()> {
+    async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         let mut view_needs_update = false;
 
         if let Message::Command(command) = message {
