@@ -23,7 +23,7 @@ use crate::{connectivity::ConnectivityMonitor, prelude::*};
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
     let cli_args = CliArgs::parse();
-    
+
     color_eyre::install()?;
     crate::logging::init_logging(&cli_args)?;
     debug!("Error handling and logging initialized");
