@@ -780,7 +780,7 @@ pub async fn login_news_flash(
             // Re-login to refresh session token
             if let Some(login_data) = news_flash.get_login_data().await {
                 info!("Re-logging in to refresh session");
-                if let Err(e) = news_flash.login(login_data, &client).await {
+                if let Err(e) = news_flash.login(login_data, client).await {
                     error!("Failed to re-login: {}. Session may have expired.", e);
                 }
             }
@@ -819,7 +819,7 @@ pub async fn login_news_flash(
                     .login_and_initial_sync(
                         news_flash.as_ref().unwrap(),
                         login_data.as_ref().unwrap(),
-                        &client,
+                        client,
                     )
                     .await?;
             }
