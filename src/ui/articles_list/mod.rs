@@ -287,7 +287,7 @@ impl ArticlesList {
                 amount,
                 match read {
                     Read::Read => "read",
-                    Read::Unread => "read",
+                    Read::Unread => "unread",
                 }
             )
             .as_str(),
