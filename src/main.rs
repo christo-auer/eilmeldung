@@ -23,13 +23,12 @@ use crate::{connectivity::ConnectivityMonitor, prelude::*};
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
     let cli_args = CliArgs::parse();
-
-    // crate the channel
-
+    
     color_eyre::install()?;
     crate::logging::init_logging(&cli_args)?;
     debug!("Error handling and logging initialized");
 
+    // create channel
     let (message_sender, message_receiver) = unbounded_channel::<Message>();
 
     info!("Loading configuration");
