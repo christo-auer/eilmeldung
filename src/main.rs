@@ -30,6 +30,8 @@ async fn main() -> color_eyre::Result<()> {
 
     // create channel
     let (message_sender, message_receiver) = unbounded_channel::<Message>();
+    let (term_event_sender, term_event_receiver) =
+        unbounded_channel::<ratatui::crossterm::event::Event>();
 
     info!("Loading configuration");
     let mut config_file_manager = ConfigFileManager::build(&cli_args, message_sender.clone());
@@ -55,9 +57,8 @@ async fn main() -> color_eyre::Result<()> {
         ConnectivityMonitor::new(news_flash_utils.clone(), message_sender.clone());
 
     // startup task which reads the crossterm events
-    let input_reader_message_sender = message_sender.clone();
     let _input_reader_handle = spawn_blocking(move || {
-        if let Err(err) = input_reader(input_reader_message_sender) {
+        if let Err(err) = input_reader(term_event_sender) {
             error!("input reader got an error: {err}");
         }
     });
@@ -77,7 +78,9 @@ async fn main() -> color_eyre::Result<()> {
     let _connecitivty_monitor_handle = connectivity_monitor.spawn()?;
 
     info!("Starting application main loop");
-    let result = app.run(message_receiver, terminal).await;
+    let result = app
+        .run(term_event_receiver, message_receiver, terminal)
+        .await;
 
     info!("Application loop ended, restoring terminal");
     ratatui::restore();

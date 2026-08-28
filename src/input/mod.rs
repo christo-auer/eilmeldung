@@ -3,6 +3,7 @@ mod key;
 pub mod prelude {
     pub use super::key::{Key, KeySequence};
     pub use super::{InputCommandGenerator, input_reader};
+    pub use super::{TermEventForwarding, TermEventHandler};
 }
 
 use crate::prelude::*;
@@ -10,46 +11,50 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use log::{info, trace};
-use ratatui::crossterm::event::{self, MouseEventKind};
+use ratatui::crossterm::event::{self};
 use ratatui::text::{Line, Span, Text};
-use ratatui_image::picker::Picker;
 use throbber_widgets_tui::{Throbber, ThrobberState, VERTICAL_BLOCK};
 use tokio::sync::mpsc::UnboundedSender;
 
-pub fn input_reader(message_sender: UnboundedSender<Message>) -> color_eyre::Result<()> {
+use ratatui::crossterm::event::Event as TermEvent;
+
+pub trait TermEventHandler {
+    async fn process_term_event(
+        &mut self,
+        event: &TermEvent,
+    ) -> color_eyre::Result<TermEventForwarding>;
+}
+
+pub enum TermEventForwarding {
+    PassOn,
+    Consumed,
+}
+
+impl TermEventForwarding {
+    pub async fn pass_to(
+        self,
+        event: &TermEvent,
+        next_handler: &mut impl TermEventHandler,
+    ) -> color_eyre::Result<TermEventForwarding> {
+        if matches!(self, TermEventForwarding::PassOn) {
+            Ok(next_handler.process_term_event(event).await?)
+        } else {
+            Ok(TermEventForwarding::Consumed)
+        }
+    }
+}
+
+pub fn input_reader(input_event_sender: UnboundedSender<TermEvent>) -> color_eyre::Result<()> {
     info!("starting input reader loop");
     loop {
         if !event::poll(Duration::from_millis(100))? {
-            if message_sender.is_closed() {
+            if input_event_sender.is_closed() {
                 return Ok(());
             }
             continue;
         }
 
-        match event::read()? {
-            event::Event::Key(key_event) => {
-                trace!("crossterm input event: {:?}", key_event);
-                message_sender.send(Message::Event(Event::Key(key_event)))?;
-            }
-            event::Event::Resize(width, height) => {
-                trace!("resized to {width} {height}");
-                message_sender.send(Message::Event(Event::Resized(width, height)))?;
-
-                // silently ignore if querying picker fails
-                if let Ok(picker) = Picker::from_query_stdio() {
-                    message_sender
-                        .send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
-                }
-            }
-            event::Event::Mouse(mouse_event) => {
-                // Filter out Moved events — we only care about clicks, drags, and scrolls
-                if !matches!(mouse_event.kind, MouseEventKind::Moved) {
-                    trace!("mouse event: {:?}", mouse_event);
-                    message_sender.send(Message::Event(Event::Mouse(mouse_event)))?;
-                }
-            }
-            event => trace!("ignoring event {:?}", event),
-        }
+        input_event_sender.send(event::read()?)?;
     }
 }
 
@@ -60,13 +65,25 @@ pub struct InputCommandGenerator {
     last_input_instant: Instant,
 }
 
+impl TermEventHandler for InputCommandGenerator {
+    async fn process_term_event(
+        &mut self,
+        event: &TermEvent,
+    ) -> color_eyre::Result<TermEventForwarding> {
+        match event {
+            TermEvent::Key(key_event) if key_event.is_press() => {
+                self.process_key_event(Some((*key_event).into()))?;
+                Ok(TermEventForwarding::Consumed)
+            }
+            _ => Ok(TermEventForwarding::PassOn),
+        }
+    }
+}
+
 impl MessageReceiver for InputCommandGenerator {
     async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         match message {
             Message::Command(Command::HelpInput) => self.show_help_input(),
-            Message::Event(Event::Key(key_event)) if key_event.is_press() => {
-                self.process_key_event(Some((*key_event).into()))
-            }
             Message::Event(Event::Tick) => self.process_key_event(None),
             Message::Event(Event::ConfigReloaded(config)) => {
                 self.config = Arc::clone(config);

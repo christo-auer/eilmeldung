@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use ratatui::{
-    crossterm::event::KeyCode,
+    crossterm::event::{Event as TermEvent, KeyCode},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Padding, Widget},
 };
@@ -69,30 +69,42 @@ impl MessageReceiver for CommandConfirm {
             self.config = Arc::clone(config);
         }
 
-        if let Message::Event(Event::Key(key_event)) = message {
-            match key_event.code {
-                KeyCode::Char('y') if self.is_active => {
-                    self.is_active = false;
-                    self.message_sender
-                        .send(Message::Command(self.command_to_confirm.take().unwrap()))?;
-                    needs_redraw = true;
-                }
-
-                KeyCode::Char('n') | KeyCode::Esc if self.is_active => {
-                    self.is_active = false;
-                    self.command_to_confirm = None;
-                    needs_redraw = true;
-                }
-
-                _ => {}
-            }
-        }
-
         if needs_redraw {
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
         }
 
         Ok(())
+    }
+}
+
+impl TermEventHandler for CommandConfirm {
+    async fn process_term_event(
+        &mut self,
+        event: &TermEvent,
+    ) -> color_eyre::Result<TermEventForwarding> {
+        if let TermEvent::Key(key_event) = event
+            && self.is_active
+        {
+            match key_event.code {
+                KeyCode::Char('y') => {
+                    self.is_active = false;
+                    self.message_sender
+                        .send(Message::Command(self.command_to_confirm.take().unwrap()))?;
+                }
+
+                KeyCode::Char('n') | KeyCode::Esc if self.is_active => {
+                    self.is_active = false;
+                    self.command_to_confirm = None;
+                }
+
+                _ => {}
+            }
+            self.message_sender
+                .send(Message::Command(Command::Redraw))?;
+            return Ok(TermEventForwarding::Consumed);
+        }
+
+        Ok(TermEventForwarding::PassOn)
     }
 }

@@ -3,7 +3,7 @@ use crate::prelude::*;
 use std::{str::FromStr, sync::Arc};
 
 use log::trace;
-use ratatui::{crossterm::event::KeyCode, layout::Flex};
+use ratatui::{crossterm::event::Event as TermEvent, crossterm::event::KeyCode, layout::Flex};
 use ratatui_textarea::TextArea;
 use strum::{EnumMessage, IntoEnumIterator};
 use tokio::sync::mpsc::UnboundedSender;
@@ -795,57 +795,6 @@ impl crate::messages::MessageReceiver for CommandInput {
     async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         let mut view_needs_update = true;
         match message {
-            Message::Event(Event::Key(key_event)) if self.is_active => {
-                let key: Key = (*key_event).into();
-
-                match (
-                    key,
-                    key_event.is_press(),
-                    self.config
-                        .input_config
-                        .match_single_key_to_single_command(&key),
-                ) {
-                    (_, true, Some(Command::InputAbort)) => {
-                        if self.help_dialog_open {
-                            self.hide_help_dialog()?;
-                        } else {
-                            self.history.remove(self.history.len() - 1);
-                            self.is_active = false;
-                        }
-                    }
-                    (_, true, Some(Command::InputSubmit)) => {
-                        if self.help_dialog_open {
-                            self.hide_help_dialog()?;
-                        }
-                        self.on_submit()?;
-                    }
-
-                    (_, true, Some(Command::InputClear)) => self.clear(""),
-
-                    (Key::Just(KeyCode::Down), true, _) => self.on_history_next(),
-                    (Key::Just(KeyCode::Up), true, _) => self.on_history_previous(),
-                    (Key::Just(KeyCode::Tab), true, _) => {
-                        self.update_command_help().await?;
-                        self.on_complete(true);
-                    }
-                    (Key::Just(KeyCode::BackTab), true, _) => {
-                        self.update_command_help().await?;
-                        self.on_complete(false);
-                    }
-                    _ => {
-                        if self.text_input.input(*key_event) {
-                            self.update_completion_prefix();
-                            self.update_current_history_entry();
-                        }
-                    }
-                }
-                if self.help_dialog_open {
-                    self.update_command_help().await?;
-                }
-
-                self.update_command_hint();
-            }
-
             Message::Command(Command::CommandLineOpen(preset_command)) => {
                 self.is_active = true;
                 let preset_command_present = preset_command.is_some();
@@ -886,5 +835,72 @@ impl crate::messages::MessageReceiver for CommandInput {
         }
 
         Ok(())
+    }
+}
+
+impl TermEventHandler for CommandInput {
+    async fn process_term_event(
+        &mut self,
+        event: &TermEvent,
+    ) -> color_eyre::Result<TermEventForwarding> {
+        if let TermEvent::Key(key_event) = event
+            && self.is_active
+        {
+            let key: Key = (*key_event).into();
+
+            match (
+                key,
+                key_event.is_press(),
+                self.config
+                    .input_config
+                    .match_single_key_to_single_command(&key),
+            ) {
+                (_, true, Some(Command::InputAbort)) => {
+                    if self.help_dialog_open {
+                        self.hide_help_dialog()?;
+                    } else {
+                        self.history.remove(self.history.len() - 1);
+                        self.is_active = false;
+                    }
+                }
+                (_, true, Some(Command::InputSubmit)) => {
+                    if self.help_dialog_open {
+                        self.hide_help_dialog()?;
+                    }
+                    self.on_submit()?;
+                }
+
+                (_, true, Some(Command::InputClear)) => self.clear(""),
+
+                (Key::Just(KeyCode::Down), true, _) => self.on_history_next(),
+                (Key::Just(KeyCode::Up), true, _) => self.on_history_previous(),
+                (Key::Just(KeyCode::Tab), true, _) => {
+                    self.update_command_help().await?;
+                    self.on_complete(true);
+                }
+                (Key::Just(KeyCode::BackTab), true, _) => {
+                    self.update_command_help().await?;
+                    self.on_complete(false);
+                }
+                _ => {
+                    if self.text_input.input(*key_event) {
+                        self.update_completion_prefix();
+                        self.update_current_history_entry();
+                    }
+                }
+            }
+            if self.help_dialog_open {
+                self.update_command_help().await?;
+            }
+
+            self.update_command_hint();
+
+            self.message_sender
+                .send(Message::Command(Command::Redraw))?;
+
+            Ok(TermEventForwarding::Consumed)
+        } else {
+            Ok(TermEventForwarding::PassOn)
+        }
     }
 }

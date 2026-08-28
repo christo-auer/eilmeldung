@@ -4,10 +4,7 @@ use news_flash::{
     error::NewsFlashError,
     models::{ArticleID, Category, FatArticle, Feed, FeedID, Tag, Thumbnail},
 };
-use ratatui::{
-    crossterm::event::{KeyEvent, MouseEvent},
-    text::Text,
-};
+use ratatui::text::Text;
 use ratatui_image::picker::Picker;
 
 use crate::prelude::*;
@@ -128,12 +125,6 @@ pub enum Event {
     // application
     ApplicationStarted,
     ApplicationStateChanged(AppState),
-
-    // raw key event
-    Key(KeyEvent),
-
-    // raw mouse event
-    Mouse(MouseEvent),
 
     // mouse click on article list at row offset from top of inner area
     MouseArticleClick(u16),

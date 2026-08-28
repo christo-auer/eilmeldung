@@ -745,7 +745,7 @@ pub enum Command {
     #[strum(
         serialize = "helpinput",
         message = "helpinput",
-        detailed_message = "show help on in put mappings (all)"
+        detailed_message = "show all input mappings (all)"
     )]
     HelpInput,
 
