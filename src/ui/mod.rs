@@ -633,7 +633,8 @@ impl MessageReceiver for App {
                                     TooltipFlavor::Error,
                                 )?;
                             }
-                        } else {
+                            // silently ignore thumbnail fetch errors
+                        } else if !matches!(news_flash_error, NewsFlashError::Thumbnail) {
                             tooltip(
                                 &self.message_sender,
                                 NewsFlashUtils::error_to_message(news_flash_error).as_str(),
