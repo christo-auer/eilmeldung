@@ -31,7 +31,8 @@ use log::{debug, error, info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
 use notify_rust::{Notification, Timeout};
 use ratatui::DefaultTerminal;
-use ratatui::crossterm::event::{MouseButton, MouseEventKind};
+use ratatui::crossterm::event::{Event as TermEvent, MouseEventKind};
+use ratatui_image::picker::Picker;
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::{path::Path, sync::Arc, time::Duration};
@@ -137,6 +138,7 @@ impl App {
 
     pub async fn run(
         mut self,
+        mut term_event_receiver: UnboundedReceiver<TermEvent>,
         mut message_receiver: UnboundedReceiver<Message>,
         terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
@@ -182,10 +184,11 @@ impl App {
             .send(Message::Batch(self.config.startup_commands.to_vec()))?;
 
         info!("Starting command processing loop");
-        self.process_messages(&mut message_receiver, terminal)
+        self.process_messages(&mut term_event_receiver, &mut message_receiver, terminal)
             .await?;
 
-        // closing receiver
+        // close channels
+        drop(term_event_receiver);
         drop(message_receiver);
 
         info!("Application run loop completed");
@@ -203,7 +206,8 @@ impl App {
 
     async fn process_messages(
         mut self,
-        rx: &mut UnboundedReceiver<Message>,
+        term_event_receiver: &mut UnboundedReceiver<TermEvent>,
+        message_receiver: &mut UnboundedReceiver<Message>,
         mut terminal: DefaultTerminal,
     ) -> color_eyre::Result<()> {
         let mut update_millis = 1000 / self.config.refresh_fps;
@@ -222,7 +226,7 @@ impl App {
             }
 
             let can_process_batch =
-                !self.batch_processor.waiting_for_async_operation() && rx.is_empty();
+                !self.batch_processor.waiting_for_async_operation() && message_receiver.is_empty();
 
             tokio::select! {
 
@@ -237,12 +241,25 @@ impl App {
                     self.message_sender.send(Message::Event(Event::Tick))?;
                 }
 
+                term_event = term_event_receiver.recv(), if !self.batch_processor.has_commands() => {
+                    // pass on term events until consumed
+                    if let Some(term_event) = term_event.as_ref() {
+                        self.process_term_event(term_event).await?
+                            .pass_to(term_event, &mut self.help_popup).await?
+                            .pass_to(term_event, &mut self.command_input).await?
+                            .pass_to(term_event, &mut self.command_confirm).await?
+                            .pass_to(term_event, &mut self.input_command_generator).await?;
+                    }
 
-                message = rx.recv() =>  {
+                },
+
+
+                message = message_receiver.recv() =>  {
                     if let Some(message) = message {
 
                         let mut redraw = matches!(message, Message::Command(Command::Redraw));
 
+                        // we must handle Clear here as we have access to terminal
                         if matches!(message, Message::Command(Command::Clear)) {
                             if let Err(error) = terminal.clear() {
                                 tooltip(&self.message_sender, &*error.to_string(), TooltipFlavor::Error)?;
@@ -250,20 +267,10 @@ impl App {
                             redraw = true;
                         }
 
-                        // TODO refactor all this
-                        if (!self.batch_processor.has_commands()
-                        && !self.command_input.is_active()
-                        && !self.command_confirm.is_active()
-                        && !self.help_popup.is_modal().unwrap_or(false))
-                                || matches!(message, Message::Event(Event::ConfigReloaded(_)))
-
-                        {
-                            self.input_command_generator.process_message(&message).await?;
-                        }
-
+                        self.process_message(&message).await?;
+                        self.input_command_generator.process_message(&message).await?;
                         self.config_file_manager.process_message(&message).await?;
                         self.batch_processor.process_message(&message).await?;
-                        self.process_message(&message).await?;
                         self.feed_list.process_message(&message).await?;
                         self.articles_list.process_message(&message).await?;
                         self.article_content.process_message(&message).await?;
@@ -334,106 +341,6 @@ impl App {
 
     fn logout(&self) {
         self.news_flash_utils.logout();
-    }
-
-    fn handle_mouse_event(
-        &mut self,
-        mouse_event: ratatui::crossterm::event::MouseEvent,
-    ) -> color_eyre::Result<()> {
-        // Skip mouse events when a modal/dialog is active
-        if self.command_input.is_active()
-            || self.command_confirm.is_active()
-            || self.help_popup.is_modal().unwrap_or(false)
-        {
-            return Ok(());
-        }
-
-        let col = mouse_event.column;
-        let row = mouse_event.row;
-
-        match mouse_event.kind {
-            MouseEventKind::Down(MouseButton::Left) => {
-                // Check if clicking on the horizontal border to start a drag-resize
-                if self.panel_areas.is_on_horizontal_border(col, row) {
-                    self.drag_resize_active = true;
-                    return Ok(());
-                }
-
-                if let Some(panel) = self.panel_areas.panel_at(col, row) {
-                    // Focus the clicked panel
-                    let target_state: AppState = panel.into();
-                    if self.state != target_state {
-                        self.switch_state(target_state)?;
-                    }
-
-                    match panel {
-                        Panel::ArticleList => {
-                            if let Some(row_offset) = self.panel_areas.article_row_offset(row) {
-                                self.message_sender
-                                    .send(Message::Event(Event::MouseArticleClick(row_offset)))?;
-                            }
-                        }
-                        Panel::FeedList => {
-                            self.message_sender
-                                .send(Message::Event(Event::MouseFeedClick(col, row)))?;
-                        }
-                        _ => {}
-                    }
-
-                    self.message_sender
-                        .send(Message::Command(Command::Redraw))?;
-                }
-            }
-
-            MouseEventKind::Drag(MouseButton::Left) if self.drag_resize_active => {
-                // Calculate the new articles list height based on drag position
-                let articles_top = self.panel_areas.articles_list().y;
-                let content_bottom = self.panel_areas.article_content().y
-                    + self.panel_areas.article_content().height;
-                let total_height = content_bottom.saturating_sub(articles_top);
-                // Clamp: minimum 3 rows for each panel
-                let new_articles_height = row
-                    .saturating_sub(articles_top)
-                    .clamp(3, total_height.saturating_sub(3));
-
-                let old_articles_height =
-                    self.articles_height_override.replace(new_articles_height);
-
-                // only redraw if height has changed
-                if let Some(old_articles_height) = old_articles_height
-                    && old_articles_height != new_articles_height
-                {
-                    self.message_sender
-                        .send(Message::Command(Command::Redraw))?;
-                }
-            }
-
-            MouseEventKind::Up(MouseButton::Left) => {
-                self.drag_resize_active = false;
-            }
-
-            MouseEventKind::ScrollDown => {
-                if let Some(panel) = self.panel_areas.panel_at(col, row) {
-                    self.message_sender
-                        .send(Message::Event(Event::MouseScrollDown(panel)))?;
-                    self.message_sender
-                        .send(Message::Command(Command::Redraw))?;
-                }
-            }
-
-            MouseEventKind::ScrollUp => {
-                if let Some(panel) = self.panel_areas.panel_at(col, row) {
-                    self.message_sender
-                        .send(Message::Event(Event::MouseScrollUp(panel)))?;
-                    self.message_sender
-                        .send(Message::Command(Command::Redraw))?;
-                }
-            }
-
-            _ => {}
-        }
-
-        Ok(())
     }
 
     async fn after_sync_notify(
@@ -559,6 +466,35 @@ impl App {
     }
 }
 
+impl TermEventHandler for App {
+    async fn process_term_event(
+        &mut self,
+        event: &TermEvent,
+    ) -> color_eyre::Result<TermEventForwarding> {
+        match event {
+            TermEvent::Mouse(mouse_event) if !matches!(mouse_event.kind, MouseEventKind::Moved) => {
+                self.handle_mouse_event(mouse_event)?;
+                Ok(TermEventForwarding::Consumed)
+            }
+
+            TermEvent::Resize(width, height) => {
+                self.message_sender
+                    .send(Message::Event(Event::Resized(*width, *height)))?;
+
+                // silently ignore if querying picker fails
+                if let Ok(picker) = Picker::from_query_stdio() {
+                    self.message_sender
+                        .send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
+                }
+
+                Ok(TermEventForwarding::Consumed)
+            }
+
+            _ => Ok(TermEventForwarding::PassOn),
+        }
+    }
+}
+
 impl MessageReceiver for App {
     async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         use Command::*;
@@ -626,12 +562,6 @@ impl MessageReceiver for App {
                 trace!("terminal resized, forcing redraw");
                 self.message_sender
                     .send(Message::Command(Command::Redraw))?;
-            }
-
-            Message::Event(Event::Mouse(mouse_event)) => {
-                self.handle_mouse_event(*mouse_event)?;
-                // handle_mouse_event sends its own Redraw when needed (e.g. during drag)
-                needs_redraw = false;
             }
 
             Message::Event(Tick) => {

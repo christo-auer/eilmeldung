@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 use fuzzy_matcher::{FuzzyMatcher, skim::SkimMatcherV2};
 use ratatui::{
-    crossterm::event::{KeyCode, KeyEvent},
+    crossterm::event::{Event as TermEvent, KeyCode, KeyEvent},
     layout::{Constraint, Direction, Flex, Layout},
     text::{Line, Span, Text},
     widgets::{Block, Borders, Clear, Padding, Paragraph, Widget},
@@ -46,9 +46,9 @@ impl<'a> HelpPopup<'a> {
         self.state.as_ref().map(|state| state.is_modal)
     }
 
-    fn on_key_event(&mut self, key_event: &KeyEvent) -> color_eyre::Result<()> {
+    fn on_key_event(&mut self, key_event: &KeyEvent) -> color_eyre::Result<TermEventForwarding> {
         let Some(state) = self.state.as_ref() else {
-            return Ok(());
+            return Ok(TermEventForwarding::PassOn);
         };
 
         let command = self
@@ -67,7 +67,7 @@ impl<'a> HelpPopup<'a> {
             _ => {}
         }
 
-        Ok(())
+        Ok(TermEventForwarding::Consumed)
     }
 
     fn on_key_event_modal(&mut self, command: &Command) -> color_eyre::Result<()> {
@@ -275,6 +275,24 @@ impl<'a> Widget for &HelpPopup<'a> {
     }
 }
 
+impl TermEventHandler for HelpPopup<'_> {
+    async fn process_term_event(
+        &mut self,
+        event: &TermEvent,
+    ) -> color_eyre::Result<TermEventForwarding> {
+        if let TermEvent::Key(key_event) = event
+            && self.is_visible()
+            && self.is_modal().unwrap_or(false)
+        {
+            self.message_sender
+                .send(Message::Command(Command::Redraw))?;
+            self.on_key_event(key_event)
+        } else {
+            Ok(TermEventForwarding::PassOn)
+        }
+    }
+}
+
 impl<'a> MessageReceiver for HelpPopup<'a> {
     async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         let mut redraw_required = false;
@@ -309,11 +327,6 @@ impl<'a> MessageReceiver for HelpPopup<'a> {
                     self.state = None;
                     redraw_required = true;
                 }
-                E::Key(key_event) if self.is_visible() => {
-                    self.on_key_event(key_event)?;
-                    redraw_required = true;
-                }
-
                 E::ConfigReloaded(config) => {
                     self.config = Arc::clone(config);
                     redraw_required = true;

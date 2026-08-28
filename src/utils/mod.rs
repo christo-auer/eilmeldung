@@ -15,7 +15,7 @@ pub mod prelude {
 }
 
 pub fn html_sanitize(html_escaped_string: &str) -> String {
-    let wide_amp_replaced = html_escaped_string.replace("\u{FF06}", "&amp;"); // sometimes &xyz; gets encoded as \u{FF06}xyz; (FF06 is wide ampersand)
+    let wide_amp_replaced = html_escaped_string.replace("\u{FF06}", "&"); // sometimes &xyz; gets encoded as \u{FF06}xyz; (FF06 is wide ampersand)
     htmlescape::decode_html(&wide_amp_replaced)
         .inspect_err(|error| {
             log::warn!(
