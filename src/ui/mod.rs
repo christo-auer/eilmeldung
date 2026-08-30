@@ -279,7 +279,17 @@ impl App {
                         self.help_popup.process_message(&message).await?;
 
                         if redraw {
-                            terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
+                            terminal.draw(|frame| {
+                                frame.render_widget(
+                                    ratatui::widgets::Block::default()
+                                      .style(Style::default().bg(*self.config.theme.color_palette().background())), frame.area()
+                                );
+
+                                frame.render_widget(&mut self, frame.area());
+
+                            }
+
+                                )?;
                         }
 
                     } else {

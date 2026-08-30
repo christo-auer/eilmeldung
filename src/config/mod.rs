@@ -1,3 +1,4 @@
+mod base16_palette;
 mod border_theme;
 mod config_file_manager;
 mod dimension;
@@ -13,6 +14,7 @@ mod theme;
 use crate::prelude::*;
 
 pub mod prelude {
+    pub use super::base16_palette::{Base16ThemeLibrary, Base16ToColorPaletteMapping};
     pub use super::border_theme::BorderTheme;
     pub use super::config_file_manager::ConfigFileManager;
     pub use super::dimension::Dimension;
@@ -246,6 +248,8 @@ impl Config {
             info!("Disabling mouse capture");
             execute!(std::io::stdout(), DisableMouseCapture)?;
         }
+
+        self.theme.validate()?;
 
         deprecated!(self.show_top_bar);
         deprecated!(self.scrollbar_begin_symbol);

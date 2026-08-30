@@ -73,6 +73,8 @@ tui-tree-widget = "0.24.1"
 url = "2.5.8"
 webbrowser = "1.2.4"
 shellexpand = "3.1.2"
+include_dir = { version = "0.7.4" }
+serde_yaml = "0.9.34"
 
 [dev-dependencies]
 claims = "0.8.0"
