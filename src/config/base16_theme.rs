@@ -68,7 +68,9 @@ impl Base16ThemeEntry {
             Base16ThemeEntry::Custom { name: _, path } => std::fs::read_to_string(path)?,
             Base16ThemeEntry::Library { name: _, file } => file.contents_utf8().unwrap().to_owned(),
         };
-        Ok(serde_yaml::from_str(&contents)?)
+        serde_yaml::from_str(&contents).map_err(|serde_error| {
+            color_eyre::eyre::eyre!("could not parse theme {}: {serde_error}", self.name())
+        })
     }
 
     pub fn name(&self) -> String {
@@ -85,7 +87,6 @@ impl Base16Theme {
     ) -> color_eyre::Result<Vec<Base16ThemeEntry>> {
         let mut themes: Vec<Base16ThemeEntry> = if custom_themes_path.exists() {
             std::fs::read_dir(custom_themes_path)?
-                .inspect(|dir_entry| log::trace!("custom theme entry: {dir_entry:?}"))
                 .filter_map(|dir_entry| {
                     dir_entry
                         .ok()
@@ -106,23 +107,18 @@ impl Base16Theme {
             Default::default()
         };
 
-        themes.extend(
-            BASE16_THEMES_DIR
-                .files()
-                .inspect(|dir_entry| log::trace!("library theme entry: {dir_entry:?}"))
-                .filter_map(|entry| {
-                    entry
-                        .path()
-                        .to_string_lossy()
-                        .ends_with(".yaml")
-                        .then(|| {
-                            entry.path().file_stem().map(|stem| {
-                                Base16ThemeEntry::library(&stem.to_string_lossy(), entry.to_owned())
-                            })
-                        })
-                        .flatten()
-                }),
-        );
+        themes.extend(BASE16_THEMES_DIR.files().filter_map(|entry| {
+            entry
+                .path()
+                .to_string_lossy()
+                .ends_with(".yaml")
+                .then(|| {
+                    entry.path().file_stem().map(|stem| {
+                        Base16ThemeEntry::library(&stem.to_string_lossy(), entry.to_owned())
+                    })
+                })
+                .flatten()
+        }));
 
         Ok(themes)
     }

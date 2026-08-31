@@ -490,29 +490,38 @@ impl App {
                 &*format!("config could not be reloaded: {error}"),
                 TooltipFlavor::Error,
             )?;
+            return Err(color_eyre::eyre::eyre!(
+                "config could not be reloaded {error}"
+            ));
         }
         Ok(())
     }
 
-    async fn change_theme(&mut self, theme_name: &str) -> color_eyre::Result<()> {
-        let Some(theme) = self
-            .config
-            .theme
-            .base16_themes()
-            .iter()
-            .find(|entry| entry.name() == theme_name)
-            .cloned()
-        else {
-            tooltip(
-                &self.message_sender,
-                &*format!("theme with name {theme_name} does not exist"),
-                TooltipFlavor::Error,
-            )?;
-            return Ok(());
+    async fn change_theme(&mut self, theme_name: Option<&String>) -> color_eyre::Result<()> {
+        let theme = match theme_name {
+            Some(theme_name) => {
+                let Some(theme) = self
+                    .config
+                    .theme
+                    .base16_themes()
+                    .iter()
+                    .find(|entry| entry.name() == *theme_name)
+                    .cloned()
+                else {
+                    tooltip(
+                        &self.message_sender,
+                        &*format!("theme with name {theme_name} does not exist"),
+                        TooltipFlavor::Error,
+                    )?;
+                    return Ok(());
+                };
+                Some(theme)
+            }
+            None => None,
         };
 
         if let Ok(Some(mut config)) = self.load_config().await {
-            *config.theme.runtime_base16_theme_mut() = Some(theme);
+            *config.theme.runtime_base16_theme_mut() = theme;
 
             let res = self.config_file_manager.validate_config(&mut config).await;
             match res {
@@ -612,7 +621,7 @@ impl MessageReceiver for App {
             }
 
             Message::Command(Command::ChangeTheme(theme_name)) => {
-                self.change_theme(theme_name).await?;
+                self.change_theme(theme_name.as_ref()).await?;
             }
 
             Message::Event(Event::AsyncLogoutFinished) => {

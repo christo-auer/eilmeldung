@@ -390,14 +390,16 @@ impl Command {
                 }
             }
 
-            C::ChangeTheme(_) => {
-                let theme_name = expect_word(&mut args, "expecting valid theme name")
-                    .map_err(|_| E::ThemeNameExpected)?;
-
-                expect_nothing(args)?;
-
-                C::ChangeTheme(theme_name)
-            }
+            C::ChangeTheme(_) => match args {
+                None if eager => return Err(E::ThemeNameExpected),
+                None => C::ChangeTheme(None),
+                mut args => {
+                    let theme_name = expect_word(&mut args, "expecting valid theme name")
+                        .map_err(|_| E::ThemeNameExpected)?;
+                    expect_nothing(args)?;
+                    C::ChangeTheme(Some(theme_name))
+                }
+            },
 
             C::Logout(..) => {
                 let word = expect_word(
