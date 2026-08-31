@@ -4,7 +4,7 @@
   - *eilmeldung* now supports [Base16 Themes](https://github.com/chriskempson/base16)
   - **all** the Base16 themes [Tinted Theming Project](https://github.com/tinted-theming/schemes) are directly available without any further configuration!
   - want to try it out? Press `:` and enter `theme`, a *space* and then press *Tab* to cycle through all available themes:
-    TODO
+    <img width="640" height="442" alt="eilmeldung-themes" src="https://github.com/user-attachments/assets/9051ad9d-e5de-42db-9609-0e7cfdac9017" />
     Press *enter* to choose a theme.
   - found a nice theme? set the configuration option `theme.base16_theme = "name-of-theme"` to use the theme
   - of course, you can also import custom themes and fine-tune everthing (see [Theme Configuration](docs/configuration.md#theme-configuration))
