@@ -1,7 +1,7 @@
-use crate::{config::base16_palette::Base16ThemePolarity, prelude::*};
-use std::str::FromStr;
+use crate::prelude::*;
+use std::{path::Path, str::FromStr};
 
-use getset::Getters;
+use getset::{Getters, MutGetters};
 use ratatui::style::{Color, Modifier, Style};
 
 #[derive(Debug, Clone, serde::Deserialize, Getters)]
@@ -241,11 +241,18 @@ impl Default for StyleSet {
     }
 }
 
-#[derive(Debug, Clone, serde::Deserialize, Getters)]
+#[derive(Debug, Clone, serde::Deserialize, Getters, MutGetters)]
 #[serde(default)]
 #[getset(get = "pub")]
 pub struct Theme {
-    preset: Option<String>,
+    #[serde(skip)]
+    #[getset(get_mut = "pub")]
+    runtime_base16_theme: Option<Base16ThemeEntry>,
+
+    #[serde(skip)]
+    base16_themes: Vec<Base16ThemeEntry>,
+
+    base16_theme: Option<String>,
     color_palette: ColorPalette,
     style_set: StyleSet,
     base16_dark: Base16ToColorPaletteMapping,
@@ -255,7 +262,9 @@ pub struct Theme {
 impl Default for Theme {
     fn default() -> Self {
         Self {
-            preset: Default::default(),
+            runtime_base16_theme: None,
+            base16_themes: Default::default(),
+            base16_theme: Default::default(),
             color_palette: Default::default(),
             style_set: Default::default(),
             base16_dark: Base16ToColorPaletteMapping::default_for_polarity(
@@ -322,26 +331,39 @@ impl Theme {
         }
     }
 
-    pub fn validate(&mut self) -> color_eyre::Result<()> {
-        let Some(preset) = self.preset.as_ref() else {
-            return Ok(());
+    pub async fn validate(&mut self, config_dir: &Path) -> color_eyre::Result<()> {
+        self.base16_themes = Base16Theme::available_themes(config_dir)?;
+
+        let runtime_theme = self
+            .runtime_base16_theme()
+            .as_ref()
+            .map(|entry| entry.load_theme())
+            .transpose()?;
+
+        let configured_theme = match self.base16_theme.as_ref() {
+            Some(name) => {
+                let Some(base16_theme) = self
+                    .base16_themes
+                    .iter()
+                    .find(|entry| entry.name() == *name)
+                else {
+                    return Err(color_eyre::eyre::eyre!(
+                        "base 16 theme preset with name {name} not found. check value of `base16_theme`"
+                    ));
+                };
+                Some(base16_theme.load_theme()?)
+            }
+
+            None => None,
         };
 
-        let library = Base16ThemeLibrary::load()?;
+        if let Some(theme) = runtime_theme.as_ref().or(configured_theme.as_ref()) {
+            self.color_palette = theme.palette().as_color_palette(match theme.variant() {
+                Base16ThemePolarity::Dark => &self.base16_dark,
+                Base16ThemePolarity::Light => &self.base16_light,
+            });
+        }
 
-        let Some(base16_theme) = library.theme_for_name().get(preset) else {
-            return Err(color_eyre::eyre::eyre!(
-                "base 16 theme preset with name {preset} not found. check value of `preset`"
-            ));
-        };
-
-        self.color_palette =
-            base16_theme
-                .palette()
-                .as_color_palette(match base16_theme.variant() {
-                    Base16ThemePolarity::Dark => &self.base16_dark,
-                    Base16ThemePolarity::Light => &self.base16_light,
-                });
         Ok(())
     }
 

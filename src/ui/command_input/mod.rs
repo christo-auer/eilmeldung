@@ -169,6 +169,10 @@ impl CommandInput {
                 self.generate_help_content_share_target(&current_part)?
             }
 
+            Err(E::ThemeNameExpected) => {
+                self.generate_help_content_theme_name(&current_part)?;
+            }
+
             Err(E::FilePathExpected) => self.generate_help_content_file_path(&current_part)?,
 
             Err(other_err) => self.generate_help_content_error(other_err, &current_part)?,
@@ -581,6 +585,41 @@ impl CommandInput {
             color
                 .iter()
                 .map(|color| color.to_string().to_lowercase())
+                .collect(),
+        );
+
+        Ok(())
+    }
+
+    fn generate_help_content_theme_name(&mut self, current_part: &str) -> color_eyre::Result<()> {
+        // let theme_names = self
+        //     .config
+        //     .theme
+        //     .base16_themes()
+        //     .iter()
+        //     .map(|entry| entry.name().to_owned())
+        //     .collect::<Vec<String>>();
+        let tag_spans = self
+            .config
+            .theme
+            .base16_themes()
+            .iter()
+            .filter(|entry| entry.name().starts_with(current_part))
+            .map(|theme_entry| {
+                Line::styled(theme_entry.name().to_owned(), self.config.theme.header())
+            })
+            .collect::<Vec<Line<'_>>>();
+
+        let text = Self::distribute_in_columns(tag_spans, 6);
+
+        self.show_help_dialog("Color Themes".to_owned(), text)?;
+
+        self.completion_targets = Some(
+            self.config
+                .theme
+                .base16_themes()
+                .iter()
+                .map(|entry| entry.name().to_owned())
                 .collect(),
         );
 

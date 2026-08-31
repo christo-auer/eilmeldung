@@ -65,6 +65,9 @@ pub enum CommandParseError {
     #[error("URL hint expected")]
     UrlHintExpected,
 
+    #[error("Valid theme name expected")]
+    ThemeNameExpected,
+
     #[error("expecting a word")]
     WordExpected(String),
 
@@ -385,6 +388,15 @@ impl Command {
                     C::ImportOpml(..) => C::ImportOpml(path),
                     _ => unreachable!(),
                 }
+            }
+
+            C::ChangeTheme(_) => {
+                let theme_name = expect_word(&mut args, "expecting valid theme name")
+                    .map_err(|_| E::ThemeNameExpected)?;
+
+                expect_nothing(args)?;
+
+                C::ChangeTheme(theme_name)
             }
 
             C::Logout(..) => {

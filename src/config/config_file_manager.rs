@@ -12,7 +12,7 @@ use std::{
 #[derive(getset::Getters)]
 pub struct ConfigFileManager {
     #[getset(get = "pub")]
-    config_file_path: PathBuf,
+    config_dir: PathBuf,
 
     message_sender: UnboundedSender<Message>,
 
@@ -24,7 +24,7 @@ pub struct ConfigFileManager {
 impl ConfigFileManager {
     pub fn build(cli_args: &CliArgs, message_sender: UnboundedSender<Message>) -> Self {
         let mut manager = Self {
-            config_file_path: Self::resolve_eilmeldung_config_dir(cli_args).join(CONFIG_FILE),
+            config_dir: Self::resolve_eilmeldung_config_dir(cli_args),
             last_metadata: (None, None),
             last_poll: Instant::now(),
             poll_interval: Duration::from_secs(1),
@@ -77,18 +77,19 @@ impl ConfigFileManager {
             .unwrap_or(PathBuf::from(PROJECT_DIRS.config_dir()))
     }
 
-    pub fn load_config(&mut self) -> color_eyre::Result<Config> {
-        info!("Trying to load config from {:?}", self.config_file_path);
+    pub async fn load_config(&mut self) -> color_eyre::Result<Config> {
+        let full_path = self.config_dir.join(CONFIG_FILE);
+        info!("Trying to load config from {:?}", full_path);
         self.get_metadata();
 
-        if !self.config_file_path.exists() {
+        if !full_path.exists() {
             info!("No config file found, using default config");
             return Ok(Default::default());
         }
 
-        let mut config = match config::Config::builder()
+        let config = match config::Config::builder()
             .add_source(config::File::new(
-                &self.config_file_path.to_string_lossy(),
+                &full_path.to_string_lossy(),
                 FileFormat::Toml,
             ))
             .build()
@@ -100,13 +101,15 @@ impl ConfigFileManager {
             }
         };
 
-        config.validate()?;
-
         Ok(config)
     }
 
+    pub async fn validate_config(&self, config: &mut Config) -> color_eyre::Result<()> {
+        config.validate(&self.config_dir).await
+    }
+
     fn get_metadata(&self) -> (Option<u64>, Option<SystemTime>) {
-        let Ok(metadata) = fs::metadata(&self.config_file_path) else {
+        let Ok(metadata) = fs::metadata(&self.config_dir.join(CONFIG_FILE)) else {
             return (None, None);
         };
 

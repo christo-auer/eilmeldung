@@ -452,8 +452,8 @@ impl App {
         Ok(())
     }
 
-    fn reload_config(&mut self) -> color_eyre::Result<()> {
-        let load_config_res = self.config_file_manager.load_config();
+    async fn load_config(&mut self) -> color_eyre::Result<Option<Config>> {
+        let load_config_res = self.config_file_manager.load_config().await;
 
         let Ok(config) = load_config_res else {
             tooltip(
@@ -464,13 +464,71 @@ impl App {
                 ),
                 TooltipFlavor::Error,
             )?;
+            return Ok(None);
+        };
+
+        Ok(Some(config))
+    }
+
+    async fn reload_config(&mut self) -> color_eyre::Result<()> {
+        if let Ok(Some(mut config)) = self.load_config().await
+            && self.validate_config(&mut config).await.is_ok()
+        {
+            tooltip(&self.message_sender, "config reloaded", TooltipFlavor::Info)?;
+
+            self.message_sender
+                .send(Message::Event(Event::ConfigReloaded(Arc::new(config))))?;
+        }
+
+        Ok(())
+    }
+
+    async fn validate_config(&mut self, config: &mut Config) -> color_eyre::Result<()> {
+        if let Err(error) = self.config_file_manager.validate_config(config).await {
+            tooltip(
+                &self.message_sender,
+                &*format!("config could not be reloaded: {error}"),
+                TooltipFlavor::Error,
+            )?;
+        }
+        Ok(())
+    }
+
+    async fn change_theme(&mut self, theme_name: &str) -> color_eyre::Result<()> {
+        let Some(theme) = self
+            .config
+            .theme
+            .base16_themes()
+            .iter()
+            .find(|entry| entry.name() == theme_name)
+            .cloned()
+        else {
+            tooltip(
+                &self.message_sender,
+                &*format!("theme with name {theme_name} does not exist"),
+                TooltipFlavor::Error,
+            )?;
             return Ok(());
         };
 
-        tooltip(&self.message_sender, "config reloaded", TooltipFlavor::Info)?;
+        if let Ok(Some(mut config)) = self.load_config().await {
+            *config.theme.runtime_base16_theme_mut() = Some(theme);
 
-        self.message_sender
-            .send(Message::Event(Event::ConfigReloaded(Arc::new(config))))?;
+            let res = self.config_file_manager.validate_config(&mut config).await;
+            match res {
+                Ok(()) => {
+                    self.message_sender
+                        .send(Message::Event(Event::ConfigReloaded(Arc::new(config))))?;
+                }
+                Err(error) => {
+                    tooltip(
+                        &self.message_sender,
+                        &*format!("config could be loaded: {error}"),
+                        TooltipFlavor::Error,
+                    )?;
+                }
+            }
+        }
 
         Ok(())
     }
@@ -551,6 +609,10 @@ impl MessageReceiver for App {
                         tooltip(&self.message_sender, &*message, TooltipFlavor::Warning)?;
                     }
                 }
+            }
+
+            Message::Command(Command::ChangeTheme(theme_name)) => {
+                self.change_theme(theme_name).await?;
             }
 
             Message::Event(Event::AsyncLogoutFinished) => {
@@ -683,11 +745,11 @@ impl MessageReceiver for App {
             }
 
             Message::Command(ReloadConfig) => {
-                self.reload_config()?;
+                self.reload_config().await?;
             }
 
             Message::Event(Event::ConfigFileChanged) if self.config.auto_reload_config => {
-                self.reload_config()?;
+                self.reload_config().await?;
             }
 
             Message::Event(ConfigReloaded(config)) => {
