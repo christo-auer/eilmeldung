@@ -1,9 +1,26 @@
 # Unreleased
 
+- 🎨🎨🎨 *themes for everyone*! 🎨🎨🎨
+  - *eilmeldung* now supports [Base16 Themes](https://github.com/chriskempson/base16)
+  - **all** the Base16 themes [Tinted Theming Project](https://github.com/tinted-theming/schemes) are directly available without any further configuration!
+  - want to try it out? Press `:` and enter `theme`, a *space* and then press *Tab* to cycle through all available themes:
+    TODO
+    Press *enter* to choose a theme.
+  - found a nice theme? set the configuration option `theme.base16_theme = "name-of-theme"` to use the theme
+  - of course, you can also import custom themes and fine-tune everthing (see [Theme Configuration](docs/configuration.md#theme-configuration))
+  - and for you power-users out there, define key mappings for quickly changing themes:
+  ```toml
+  [input_config.mappings]
+  "6" = ["theme catppuccin-frappe"]
+  "7" = ["theme catppuccin-latte"]
+  "8" = ["theme catppuccin-macchiato"]
+  "9" = ["theme catppuccin-mocha"]
+
+  ```
 - *eilmeldung* now auto-reloads the configuration file when it has changed!
   - use this to tweak your configuration!
   - you can deactivate this behavior by setting `auto_reload_config` to `false`
-  - to manually reload the confiugration run the command `reloadconfig` (press `:reloadconfig` and then enter) or press `Ctrl-r` (which simply maps to `reloadconfig`)
+  - to manually reload the configuration run the command `reloadconfig` (press `:reloadconfig` and then enter) or press `Ctrl-r` (which simply maps to `reloadconfig`)
 - refactoring for better maintainability of *eilmeldung*
 - quality of life: no error message anymore if the thumbnail couldn't be downloaded
 

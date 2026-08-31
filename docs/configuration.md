@@ -18,9 +18,11 @@
 - [Input Configuration](#input-configuration)
   - [Keybinding Customization](#keybinding-customization)
 - [Theme Configuration](#theme-configuration)
+  - [Base16 Themes](#base16-themes)
   - [Color Palette](#color-palette)
   - [Component Styles](#component-styles)
   - [Component Style Modifiers](#component-style-modifiers)
+  - [Base16 Color Mapping](#base16-color-mapping)
 - [Border Theme](#border-theme)
 - [Icon Set](#icon-set)
 - [After-Sync Commands](#after-sync-commands)
@@ -270,7 +272,30 @@ For a complete list of available commands, see the Commands section. For default
 
 ## Theme Configuration
 
-Theme configuration is defined in the `[theme]` section with two subsections: `color_palette` and `style_set`.
+Theme configuration is defined in the `[theme]` section.
+
+### Base16 Themes
+
+*eilmeldung* natively supports [Base16 Themes](https://github.com/chriskempson/base16) and in fact statically imports the Base16 themes from the [Tinted Theming Project](https://github.com/tinted-theming/schemes).
+A preview of all themes can be found [here](https://tinted-theming.github.io/tinted-gallery/).
+In *eilmeldung* you can preview a theme using the command `theme`: Press `:` to open the command line, type in `theme`, *space* and then press *TAB* to cycle through the themes:
+
+TODO
+
+#### Setting a Base16 Theme
+
+To statically set a theme, use the option `theme.base16_theme`. Set it to the **filename** of the base16 theme, e.g., `dracula` instead of `Dracula`, `arroz-con-dulce-dark` instead of `Arroc con Dulce Dark`:
+
+```toml
+base16_theme = "dracula"
+```
+
+#### Custom Base16 Themes
+
+Place your custom Base16 Themes in standard Base16 YAML-format into your *eilmeldung* configuration directory under the subdirectory `themes`, e.g., `~/.config/eilmeldung/themes/frankenstein.yaml`.
+Don't use whitespaces or special characters in your filename.
+Reload your configuration (`:reloadconfig`) and your custom theme should be available via the `theme` command.
+
 
 ### Color Palette
 
@@ -359,6 +384,46 @@ unread = { fg = "highlight", mods = ["italic"] }
 highlighted = { bg = "#FF0000" }
 unread_count = { fg = "highlight" }
 ```
+
+### Base16 Color Mapping
+
+If you use a Base16 theme, *eilmeldung* automatically maps the 16 base colors to an *eilmeldung* color palette for *dark* and *light* themes. 
+The mappings are defined by the settings `base16_dark` and `base16_light` with the following defaults:
+
+```toml
+[theme.base16_dark]
+background = "base00"
+foreground = "base05"
+muted = "base02"
+highlight = "base0A"
+flagged = "base08"
+accent_primary = "base0B"
+accent_secondary = "base0C"
+accent_tertiary = "base0D"
+accent_quaternary = "base0E"
+
+info = "base0B"
+warning = "base0A"
+error = "base08"
+
+[theme.base16_dark]
+background = "base00"
+foreground = "base07"
+muted = "base03"
+highlight = "base02"
+flagged = "base08"
+accent_primary = "base0B"
+accent_secondary = "base0C"
+accent_tertiary = "base0D"
+accent_quaternary = "base0E"
+
+info = "base0B"
+warning = "base0A"
+error = "base08"
+```
+
+If you want to fine-tune the exact happing between your base16 theme and a color map, overwrite these settings.
+  
 
 ---
 

@@ -186,7 +186,7 @@ pub struct Base16Palette {
 }
 
 #[derive(Debug, serde::Deserialize, Clone, Copy)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "lowercase")]
 pub enum Base16Index {
     Base00,
     Base01,
