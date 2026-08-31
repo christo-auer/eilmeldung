@@ -1,0 +1,3 @@
+[submodule "assets/base-16-themes"]
+	path = assets/base-16-themes
+	url = https://github.com/tinted-theming/schemes/

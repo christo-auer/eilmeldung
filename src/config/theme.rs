@@ -1,32 +1,33 @@
-use std::str::FromStr;
+use crate::prelude::*;
+use std::{path::Path, str::FromStr};
 
-use getset::Getters;
+use getset::{Getters, MutGetters};
 use ratatui::style::{Color, Modifier, Style};
 
 #[derive(Debug, Clone, serde::Deserialize, Getters)]
 #[serde(default)]
 #[getset(get = "pub")]
 pub struct ColorPalette {
-    background: Color,
-    foreground: Color,
-    muted: Color,
-    highlight: Color,
-    flagged: Color,
-    accent_primary: Color,
-    accent_secondary: Color,
-    accent_tertiary: Color,
-    accent_quaternary: Color,
+    pub(crate) background: Color,
+    pub(crate) foreground: Color,
+    pub(crate) muted: Color,
+    pub(crate) highlight: Color,
+    pub(crate) flagged: Color,
+    pub(crate) accent_primary: Color,
+    pub(crate) accent_secondary: Color,
+    pub(crate) accent_tertiary: Color,
+    pub(crate) accent_quaternary: Color,
 
-    info: Color,
-    warning: Color,
-    error: Color,
+    pub(crate) info: Color,
+    pub(crate) warning: Color,
+    pub(crate) error: Color,
 }
 
 impl Default for ColorPalette {
     fn default() -> Self {
         use Color as C;
         Self {
-            background: C::Black,
+            background: C::Reset,
             foreground: C::White,
             muted: C::DarkGray,
             highlight: C::Yellow,
@@ -240,12 +241,40 @@ impl Default for StyleSet {
     }
 }
 
-#[derive(Debug, Clone, Default, serde::Deserialize, Getters)]
+#[derive(Debug, Clone, serde::Deserialize, Getters, MutGetters)]
 #[serde(default)]
 #[getset(get = "pub")]
 pub struct Theme {
+    #[serde(skip)]
+    #[getset(get_mut = "pub")]
+    runtime_base16_theme: Option<Base16ThemeEntry>,
+
+    #[serde(skip)]
+    base16_themes: Vec<Base16ThemeEntry>,
+
+    base16_theme: Option<String>,
     color_palette: ColorPalette,
     style_set: StyleSet,
+    base16_dark: Base16ToColorPaletteMapping,
+    base16_light: Base16ToColorPaletteMapping,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            runtime_base16_theme: None,
+            base16_themes: Default::default(),
+            base16_theme: Default::default(),
+            color_palette: Default::default(),
+            style_set: Default::default(),
+            base16_dark: Base16ToColorPaletteMapping::default_for_polarity(
+                Base16ThemePolarity::Dark,
+            ),
+            base16_light: Base16ToColorPaletteMapping::default_for_polarity(
+                Base16ThemePolarity::Light,
+            ),
+        }
+    }
 }
 
 macro_rules! component_funs {
@@ -300,6 +329,42 @@ impl Theme {
             add_modifier: component_style.modifiers(),
             ..Default::default()
         }
+    }
+
+    pub async fn validate(&mut self, config_dir: &Path) -> color_eyre::Result<()> {
+        self.base16_themes = Base16Theme::available_themes(config_dir)?;
+
+        let runtime_theme = self
+            .runtime_base16_theme()
+            .as_ref()
+            .map(|entry| entry.load_theme())
+            .transpose()?;
+
+        let configured_theme = match self.base16_theme.as_ref() {
+            Some(name) => {
+                let Some(base16_theme) = self
+                    .base16_themes
+                    .iter()
+                    .find(|entry| entry.name() == *name)
+                else {
+                    return Err(color_eyre::eyre::eyre!(
+                        "base 16 theme preset with name {name} not found. check value of `base16_theme`"
+                    ));
+                };
+                Some(base16_theme.load_theme()?)
+            }
+
+            None => None,
+        };
+
+        if let Some(theme) = runtime_theme.as_ref().or(configured_theme.as_ref()) {
+            self.color_palette = theme.palette().as_color_palette(match theme.variant() {
+                Base16ThemePolarity::Dark => &self.base16_dark,
+                Base16ThemePolarity::Light => &self.base16_light,
+            });
+        }
+
+        Ok(())
     }
 
     patch_funs! {

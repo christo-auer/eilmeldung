@@ -19,6 +19,7 @@ pub struct CommandInput {
     completion_targets: Option<Vec<String>>,
     completion_prefix: String,
     help_dialog_open: bool,
+    runtime_theme_on_open: Option<String>,
 
     history: Vec<String>,
     history_index: usize,
@@ -44,6 +45,7 @@ impl CommandInput {
             command_hint: None,
             history_index: 0,
             is_active: false,
+            runtime_theme_on_open: None,
         }
     }
 
@@ -61,6 +63,7 @@ impl CommandInput {
         match self.to_command() {
             Ok(command) => {
                 self.is_active = false;
+                self.preview_theme(self.runtime_theme_on_open.clone())?;
                 self.message_sender
                     .send(Message::Command(command.clone()))?;
                 self.update_current_history_entry();
@@ -167,6 +170,10 @@ impl CommandInput {
 
             Err(E::ShareTargetExpected) => {
                 self.generate_help_content_share_target(&current_part)?
+            }
+
+            Err(E::ThemeNameExpected) => {
+                self.generate_help_content_theme_name(&current_part)?;
             }
 
             Err(E::FilePathExpected) => self.generate_help_content_file_path(&current_part)?,
@@ -587,6 +594,95 @@ impl CommandInput {
         Ok(())
     }
 
+    fn generate_help_content_theme_name(&mut self, current_part: &str) -> color_eyre::Result<()> {
+        // let theme_names = self
+        //     .config
+        //     .theme
+        //     .base16_themes()
+        //     .iter()
+        //     .map(|entry| entry.name().to_owned())
+        //     .collect::<Vec<String>>();
+        let base16_themes = self.config.theme.base16_themes();
+
+        log::trace!("theme current part: {current_part}");
+
+        let tag_spans = base16_themes
+            .iter()
+            .filter(|entry| entry.name().starts_with(&self.completion_prefix))
+            .map(|theme_entry| {
+                let modifier = if theme_entry.name() == current_part {
+                    Modifier::REVERSED
+                } else {
+                    Modifier::default()
+                };
+                Line::from(Span::styled(
+                    theme_entry.name().to_owned(),
+                    self.config.theme.header().add_modifier(modifier),
+                ))
+            })
+            .collect::<Vec<Line<'_>>>();
+
+        let text = match tag_spans.len() {
+            0 => Text::styled("no matching themes", self.config.theme.header()),
+            1..30 => Self::distribute_in_columns(tag_spans, 6),
+            _ => Text::styled(
+                format!(
+                    "{} matching themes: enter letters to reduce matches",
+                    tag_spans.len()
+                ),
+                self.config.theme.header(),
+            ),
+        };
+
+        self.show_help_dialog("Themes".to_owned(), text)?;
+
+        self.preview_theme(Some(current_part.to_owned()))?;
+
+        self.completion_targets = Some(
+            self.config
+                .theme
+                .base16_themes()
+                .iter()
+                // .filter(|entry| entry.name().starts_with(current_part))
+                .map(|entry| entry.name().to_owned())
+                .collect(),
+        );
+
+        Ok(())
+    }
+
+    fn preview_theme(&mut self, theme_name: Option<String>) -> color_eyre::Result<()> {
+        if self
+            .config
+            .theme
+            .runtime_base16_theme()
+            .as_ref()
+            .map(|entry| entry.name())
+            == theme_name
+        {
+            return Ok(());
+        }
+
+        match theme_name {
+            None => self
+                .message_sender
+                .send(Message::Command(Command::ChangeTheme(None)))?,
+            Some(theme_name) => {
+                if self
+                    .config
+                    .theme
+                    .base16_themes()
+                    .iter()
+                    .any(|entry| entry.name() == theme_name)
+                {
+                    self.message_sender
+                        .send(Message::Command(Command::ChangeTheme(Some(theme_name))))?;
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn generate_help_content_share_target(&mut self, current_part: &str) -> color_eyre::Result<()> {
         let text = Self::distribute_in_columns(
             self.generate_help_tab_std(self.config.share_targets.clone(), current_part)
@@ -814,9 +910,14 @@ impl crate::messages::MessageReceiver for CommandInput {
                 self.completion_targets = None;
                 self.update_completion_prefix();
                 self.update_command_hint();
+                self.runtime_theme_on_open = self
+                    .config
+                    .theme
+                    .runtime_base16_theme()
+                    .as_ref()
+                    .map(|entry| entry.name().to_owned());
                 if preset_command_present {
                     self.update_command_help().await?;
-                    // self.on_complete(true);
                 }
             }
 
@@ -862,6 +963,7 @@ impl TermEventHandler for CommandInput {
                         self.history.remove(self.history.len() - 1);
                         self.is_active = false;
                     }
+                    self.preview_theme(self.runtime_theme_on_open.clone())?;
                 }
                 (_, true, Some(Command::InputSubmit)) => {
                     if self.help_dialog_open {
@@ -878,7 +980,7 @@ impl TermEventHandler for CommandInput {
                     self.update_command_help().await?;
                     self.on_complete(true);
                 }
-                (Key::Just(KeyCode::BackTab), true, _) => {
+                (Key::Just(KeyCode::BackTab), true, _) | (Key::Shift(KeyCode::Tab), true, _) => {
                     self.update_command_help().await?;
                     self.on_complete(false);
                 }

@@ -35,7 +35,8 @@ async fn main() -> color_eyre::Result<()> {
 
     info!("Loading configuration");
     let mut config_file_manager = ConfigFileManager::build(&cli_args, message_sender.clone());
-    let config = config_file_manager.load_config()?;
+    let mut config = config_file_manager.load_config().await?;
+    config_file_manager.validate_config(&mut config).await?;
 
     info!("Initializing NewsFlash");
     let client = build_client(Duration::from_secs(config.network_timeout_seconds))?;

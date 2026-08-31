@@ -65,6 +65,9 @@ pub enum CommandParseError {
     #[error("URL hint expected")]
     UrlHintExpected,
 
+    #[error("Valid theme name expected")]
+    ThemeNameExpected,
+
     #[error("expecting a word")]
     WordExpected(String),
 
@@ -386,6 +389,17 @@ impl Command {
                     _ => unreachable!(),
                 }
             }
+
+            C::ChangeTheme(_) => match args {
+                None if eager => return Err(E::ThemeNameExpected),
+                None => C::ChangeTheme(None),
+                mut args => {
+                    let theme_name = expect_word(&mut args, "expecting valid theme name")
+                        .map_err(|_| E::ThemeNameExpected)?;
+                    expect_nothing(args)?;
+                    C::ChangeTheme(Some(theme_name))
+                }
+            },
 
             C::Logout(..) => {
                 let word = expect_word(

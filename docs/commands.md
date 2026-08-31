@@ -110,19 +110,20 @@ Here are some common command examples to get you started:
 
 ## Application Commands
 
-| Command        | Syntax                 | Context   | Description                                                                                                                       |
-| ---------      | --------               | --------- | -------------                                                                                                                     |
-| `quit`         | `quit`                 | All       | Quit eilmeldung                                                                                                                   |
-| `cmd`          | `cmd [<content>]`      | All       | Open command line with optional pre-filled content                                                                                |
-| `clear`        | `clear`                | All       | Clears the terminal and forces a redraw                                                                                           |
-| `reloadconfig` | `reloadconfig`         | All       | Reloads the configuration file (see also [Reloading the Configuration](configuration.md#reloading-the-configuratio))              |
-| `redraw`       | `redraw`               | All       | Redraw the screen                                                                                                                 |
-| `refresh`      | `refresh`              | All       | Refreshes the contents of all panels according to the current selections                                                          |
-| `confirm`      | `confirm <command>`    | All       | Ask for confirmation before executing command (typically used in key bindings)                                                    |
-| `in`           | `in <panel> <command>` | All       | Run a command in the given panel (`feeds`, `articles`, `content`) (typically used in key bindings or `read`, `show` and `unread`) |
-| `LOGOUT`       | `LOGOUT NOW`           | All       | Logout and remove ALL local data (requires `NOW` as confirmation)                                                                 |
-| `nop`          | `nop`                  | All       | No operation (useful for unmapping key bindings)                                                                                  |
-| `helpinput`    | `helpinput`            | All       | Show help on input mappings (displays all keybindings)                                                                            |
+| Command        | Syntax                 | Context   | Description                                                                                                                                 |
+| ---------      | --------               | --------- | -------------                                                                                                                               |
+| `quit`         | `quit`                 | All       | Quit eilmeldung                                                                                                                             |
+| `cmd`          | `cmd [<content>]`      | All       | Open command line with optional pre-filled content                                                                                          |
+| `clear`        | `clear`                | All       | Clears the terminal and forces a redraw                                                                                                     |
+| `reloadconfig` | `reloadconfig`         | All       | Reloads the configuration file (see also [Reloading the Configuration](configuration.md#reloading-the-configuratio))                        |
+| `theme`        | `theme [<theme>]`      | All       | Temporarily selects a base16 theme; omit the parameter to unset the base16 theme (see also [Base16 Themes](configuration.md#base16-themes)) |
+| `redraw`       | `redraw`               | All       | Redraw the screen                                                                                                                           |
+| `refresh`      | `refresh`              | All       | Refreshes the contents of all panels according to the current selections                                                                    |
+| `confirm`      | `confirm <command>`    | All       | Ask for confirmation before executing command (typically used in key bindings)                                                              |
+| `in`           | `in <panel> <command>` | All       | Run a command in the given panel (`feeds`, `articles`, `content`) (typically used in key bindings or `read`, `show` and `unread`)           |
+| `LOGOUT`       | `LOGOUT NOW`           | All       | Logout and remove ALL local data (requires `NOW` as confirmation)                                                                           |
+| `nop`          | `nop`                  | All       | No operation (useful for unmapping key bindings)                                                                                            |
+| `helpinput`    | `helpinput`            | All       | Show help on input mappings (displays all keybindings)                                                                                      |
 
 ## Panel Management
 

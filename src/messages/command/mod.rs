@@ -792,6 +792,13 @@ pub enum Command {
         detailed_message = "reload configuration file"
     )]
     ReloadConfig,
+
+    #[strum(
+        serialize = "theme",
+        message = "theme [<theme-name>]",
+        detailed_message = "changes to the given color theme (leave empty to unset theme)"
+    )]
+    ChangeTheme(Option<String>),
 }
 
 impl Command {
@@ -938,6 +945,8 @@ impl Display for Command {
                 write!(f, "add tag #{}", tag_title)
             }
             Undo => write!(f, "undos the last read/unread operation"),
+            ChangeTheme(Some(theme_name)) => write!(f, "change color theme to {theme_name}"),
+            ChangeTheme(None) => write!(f, "unset theme"),
             ReloadConfig => write!(f, "reload configuration file"),
             CommandConfirm(command) => write!(f, "{}?", command),
             In(panel, command) => write!(f, "{command} in {panel}"),

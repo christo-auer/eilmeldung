@@ -270,6 +270,8 @@ timeout_millis = 5000
 "C-z"       = ["undo"]
 "C-r"       = ["reloadconfig"]
 
+[theme]
+# base16_theme is not set
 
 # Theme Configuration
 [theme.color_palette]
@@ -310,3 +312,34 @@ highlighted = { fg = "highlight", mods = ["italic"] }
 flagged = { fg = "flagged" }
 unread_count = { mods = ["italic"] }
 marked_count = { mods = ["italic"] }
+
+[theme.base16_dark]
+background = "base00"
+foreground = "base05"
+muted = "base02"
+highlight = "base0A"
+flagged = "base08"
+accent_primary = "base0B"
+accent_secondary = "base0C"
+accent_tertiary = "base0D"
+accent_quaternary = "base0E"
+
+info = "base0B"
+warning = "base0A"
+error = "base08"
+
+[theme.base16_dark]
+background = "base00"
+foreground = "base07"
+muted = "base03"
+highlight = "base02"
+flagged = "base08"
+accent_primary = "base0B"
+accent_secondary = "base0C"
+accent_tertiary = "base0D"
+accent_quaternary = "base0E"
+
+info = "base0B"
+warning = "base0A"
+error = "base08"
+

@@ -23,7 +23,6 @@
 
 *eilmeldung* is German for *breaking news*
 
-
 ---
 
 ## Table of Contents
@@ -217,6 +216,13 @@ Yes, there is rudimentary mouse support with the option `mouse_support = true` (
 ### Does eilmeldung support AI/LLMs? All the cool RSS readers are doing it!
 
 No, *eilmeldung* does not have AI/LLM support. However, you can use the [Pipe Command](docs/pipe.md) for piping the article content through an LLM via an external command (like opencode).
+
+### Can I choose a different color theme?
+
+Yes, *eilmeldung* natively supports [Base16 Themes](https://github.com/chriskempson/base16) and in fact statically imports the Base16 themes from the [Tinted Theming Project](https://github.com/tinted-theming/schemes).
+In *eilmeldung* you can preview a theme using the command `theme`: Press `:` to open the command line, type in `theme`, *space* and then press *TAB* to cycle through the themes.
+In the configuration file set `theme.base16_theme` to your desired theme.
+Have a look at [docs/configuration.md#theme-configuration] for more information and how to install custom themes.
 
 ---
 

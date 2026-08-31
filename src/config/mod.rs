@@ -1,3 +1,4 @@
+mod base16_theme;
 mod border_theme;
 mod config_file_manager;
 mod dimension;
@@ -10,9 +11,14 @@ mod share_target;
 mod sync_stats;
 mod theme;
 
+use std::path::Path;
+
 use crate::prelude::*;
 
 pub mod prelude {
+    pub use super::base16_theme::{
+        Base16Theme, Base16ThemeEntry, Base16ThemePolarity, Base16ToColorPaletteMapping,
+    };
     pub use super::border_theme::BorderTheme;
     pub use super::config_file_manager::ConfigFileManager;
     pub use super::dimension::Dimension;
@@ -228,8 +234,8 @@ macro_rules! deprecated {
 }
 
 impl Config {
-    pub fn validate(&mut self) -> color_eyre::Result<()> {
-        self.validate_input_config()?;
+    pub async fn validate(&mut self, config_dir: &Path) -> color_eyre::Result<()> {
+        self.validate_input_config().await?;
 
         if let Some(sync_interval) = self.sync_every_minutes
             && sync_interval == 0
@@ -247,6 +253,8 @@ impl Config {
             execute!(std::io::stdout(), DisableMouseCapture)?;
         }
 
+        self.theme.validate(&config_dir.join("themes/")).await?;
+
         deprecated!(self.show_top_bar);
         deprecated!(self.scrollbar_begin_symbol);
         deprecated!(self.scrollbar_end_symbol);
@@ -256,7 +264,7 @@ impl Config {
         Ok(())
     }
 
-    fn validate_input_config(&mut self) -> color_eyre::Result<()> {
+    async fn validate_input_config(&mut self) -> color_eyre::Result<()> {
         Self::default()
             .input_config
             .mappings

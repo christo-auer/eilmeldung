@@ -198,6 +198,7 @@ impl<'a> Widget for &HelpPopup<'a> {
 
             let mut block = Block::default()
                 .borders(Borders::ALL)
+                .style(Style::default().bg(*self.config.theme.color_palette().background()))
                 .border_type(self.config.border_theme.focused)
                 .border_style(self.config.theme.border_focused())
                 .title_top(Line::styled(
