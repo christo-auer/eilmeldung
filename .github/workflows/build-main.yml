@@ -15,7 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
+        with:
+          submodules: true
 
       - name: Install system dependencies
         run: |
@@ -69,7 +71,9 @@ jobs:
     needs: lint
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
+        with:
+          submodules: true
 
       - name: Install system dependencies
         run: |
@@ -128,7 +132,9 @@ jobs:
     container: ghcr.io/blackdex/rust-musl:${{ matrix.docker-tag }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
+        with:
+          submodules: true
       - name: Build
         run: |
           cargo build --release
@@ -165,7 +171,9 @@ jobs:
             target: aarch64-apple-darwin
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
+        with:
+          submodules: true
 
       - name: Install system dependencies (Ubuntu Linux)
         if: ${{ runner.os == 'Linux' }}
@@ -245,7 +253,9 @@ jobs:
     needs: [lint, test]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
+        with:
+          submodules: true
 
       - name: Install vcpkg dependencies
         run: vcpkg install libxml2:x64-windows-static
