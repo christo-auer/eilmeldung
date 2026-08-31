@@ -109,7 +109,7 @@ impl ConfigFileManager {
     }
 
     fn get_metadata(&self) -> (Option<u64>, Option<SystemTime>) {
-        let Ok(metadata) = fs::metadata(&self.config_dir.join(CONFIG_FILE)) else {
+        let Ok(metadata) = fs::metadata(self.config_dir.join(CONFIG_FILE)) else {
             return (None, None);
         };
 
