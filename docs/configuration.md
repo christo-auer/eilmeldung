@@ -280,7 +280,8 @@ Theme configuration is defined in the `[theme]` section.
 A preview of all themes can be found [here](https://tinted-theming.github.io/tinted-gallery/).
 In *eilmeldung* you can preview a theme using the command `theme`: Press `:` to open the command line, type in `theme`, *space* and then press *TAB* to cycle through the themes:
 
-TODO
+<img width="640" height="442" alt="eilmeldung-themes" src="https://github.com/user-attachments/assets/9051ad9d-e5de-42db-9609-0e7cfdac9017" />
+
 
 #### Setting a Base16 Theme
 
