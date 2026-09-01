@@ -24,6 +24,9 @@ Many useful features are not obvious from the basic documentation. Here is a cur
 - **`sync_every_minutes`**: Set `sync_every_minutes = 10` to auto-sync in the background at a fixed interval while eilmeldung is running.
 - **Configurable article columns** (`article_table`): Control which columns appear in the article list and in what order. Default: `"{flagged},{read},{marked},{tag_icons},{age},{title}"`. Remove or reorder fields to suit your reading style.
 - **Pipe Command**: piping the content of the article through an external command, e.g., saving an article, processing through an LLM, sending the content via a mail, etc.
+- **Base16 themes** (`theme.base16_theme`): Over 200 built-in Base16 themes from the Tinted Theming project are available without any extra configuration. Preview themes interactively: press `:` then type `theme ` and press Tab to cycle through all available themes. Set `theme.base16_theme = "catppuccin-mocha"` (or any theme name) in `config.toml` to persist the choice. You can also bind keys for quick switching, e.g., `"9" = ["theme catppuccin-mocha"]`.
+- **Auto-reload config** (`auto_reload_config`): eilmeldung watches `config.toml` and reloads it automatically when the file changes — useful for live-tweaking your configuration. Disable with `auto_reload_config = false`. Manually trigger a reload with `:reloadconfig` or the default binding `Ctrl-r`.
+- **Undo** (`Ctrl-z` / `undo`): Undo the last operation. Supports undoing read/unread status changes, mark/unmark, and tag/untag actions. Press `Ctrl-z` multiple times to undo several steps in sequence.
 
 ## Docs
 
