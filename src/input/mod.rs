@@ -13,6 +13,7 @@ use std::time::{Duration, Instant};
 use log::{info, trace};
 use ratatui::crossterm::event::{self};
 use ratatui::text::{Line, Span, Text};
+use ratatui_image::picker::Picker;
 use throbber_widgets_tui::{Throbber, ThrobberState, VERTICAL_BLOCK};
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -41,20 +42,6 @@ impl TermEventForwarding {
         } else {
             Ok(TermEventForwarding::Consumed)
         }
-    }
-}
-
-pub fn input_reader(input_event_sender: UnboundedSender<TermEvent>) -> color_eyre::Result<()> {
-    info!("starting input reader loop");
-    loop {
-        if !event::poll(Duration::from_millis(100))? {
-            if input_event_sender.is_closed() {
-                return Ok(());
-            }
-            continue;
-        }
-
-        input_event_sender.send(event::read()?)?;
     }
 }
 
@@ -94,6 +81,34 @@ impl MessageReceiver for InputCommandGenerator {
         }
     }
 }
+pub fn input_reader(
+    message_sender: UnboundedSender<Message>,
+    input_event_sender: UnboundedSender<TermEvent>,
+) -> color_eyre::Result<()> {
+    info!("starting input reader loop");
+    loop {
+        if !event::poll(Duration::from_millis(100))? {
+            if input_event_sender.is_closed() {
+                return Ok(());
+            }
+            continue;
+        }
+        let event = event::read()?;
+
+        // we have to handle this here as otherwise, input handling hangs
+        if let TermEvent::Resize(width, height) = event {
+            // silently ignore if querying picker fails
+            if let Ok(picker) = Picker::from_query_stdio() {
+                message_sender.send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
+            }
+
+            message_sender.send(Message::Event(Event::Resized(width, height)))?;
+        }
+
+        input_event_sender.send(event)?;
+    }
+}
+
 impl InputCommandGenerator {
     pub fn new(config: Arc<Config>, message_sender: UnboundedSender<Message>) -> Self {
         Self {
