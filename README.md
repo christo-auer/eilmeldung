@@ -240,7 +240,9 @@ Have a look at [docs/configuration.md#theme-configuration] for more information 
 > "[eilmeldung] is [...] beautiful. It's strange to say about a TUI [...] but it is actually very beautiful."
 
 ## Screenshots from Users
-*eilmeldung* running on an iMac G4 PowerPC from 2003 (thanks to @maciej!)
+  
+- *eilmeldung* running on an iMac G4 PowerPC from 2003 (thanks to @maciej!)
+
 <img width="256" alt="6Uu7D0pAUzbeqTFB" src="https://github.com/user-attachments/assets/5241f68d-9958-46e3-98f0-55a502224e9f" />
 
 
