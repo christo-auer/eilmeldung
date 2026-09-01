@@ -76,9 +76,11 @@ impl App {
                 }
 
                 if let Some(panel) = self.panel_areas.panel_at(col, row) {
-                    // Focus the clicked panel
+                    // Focus the clicked panel (only if not in distraction free mode)
                     let target_state: AppState = panel.into();
-                    if self.state != target_state {
+                    if !matches!(self.state, AppState::ArticleContentDistractionFree)
+                        && self.state != target_state
+                    {
                         self.switch_state(target_state)?;
                     }
 

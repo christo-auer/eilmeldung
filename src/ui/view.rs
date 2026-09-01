@@ -128,6 +128,9 @@ impl App {
     fn render_panels(&mut self, area: Rect, buf: &mut Buffer) {
         if self.state == AppState::ArticleContentDistractionFree {
             self.article_content.render(area, buf);
+            *self.panel_areas.feed_list_mut() = Rect::default(); // 0 0 0 0
+            *self.panel_areas.articles_list_mut() = Rect::default(); // 0 0 0 0
+            *self.panel_areas.article_content_mut() = area;
             return;
         }
 
@@ -178,7 +181,7 @@ impl App {
                 articles_constraint_height,
                 article_content_constraint_height,
             ])
-            .areas(articles_chunk);
+            .areas::<2>(articles_chunk);
 
         // store areas for mouse hit-testing
         *self.panel_areas.feed_list_mut() = feeds_list_chunk;
