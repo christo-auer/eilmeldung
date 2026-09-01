@@ -1,6 +1,8 @@
 # Unreleased
 
-- 🎨🎨🎨 *themes for everyone*! 🎨🎨🎨
+This release comes with *two new features*: your configuration file is now auto-reloaded while *eilmeldung* is running (see below) and...
+
+- ...🎨🎨🎨 *themes for everyone*! 🎨🎨🎨
   - *eilmeldung* now supports [Base16 Themes](https://github.com/chriskempson/base16)
   - **all** the Base16 themes [Tinted Theming Project](https://github.com/tinted-theming/schemes) are directly available without any further configuration!
   - want to try it out? Press `:` and enter `theme`, a *space* and then press *Tab* to cycle through all available themes:
