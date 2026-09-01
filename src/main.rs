@@ -15,6 +15,7 @@ use std::{sync::Arc, time::Duration};
 
 use clap::Parser;
 use log::{debug, error, info};
+use ratatui::crossterm::{event::DisableMouseCapture, execute};
 use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
 
 mod prelude;
@@ -24,7 +25,7 @@ use crate::{connectivity::ConnectivityMonitor, prelude::*};
 async fn main() -> color_eyre::Result<()> {
     let cli_args = CliArgs::parse();
 
-    color_eyre::install()?;
+    // color_eyre::install()?;
     crate::logging::init_logging(&cli_args)?;
     debug!("Error handling and logging initialized");
 
@@ -36,7 +37,6 @@ async fn main() -> color_eyre::Result<()> {
     info!("Loading configuration");
     let mut config_file_manager = ConfigFileManager::build(&cli_args, message_sender.clone());
     let mut config = config_file_manager.load_config().await?;
-    config_file_manager.validate_config(&mut config).await?;
 
     info!("Initializing NewsFlash");
     let client = build_client(Duration::from_secs(config.network_timeout_seconds))?;
@@ -47,6 +47,9 @@ async fn main() -> color_eyre::Result<()> {
     if execute_cli_actions(&config, &cli_args, &news_flash, &client).await? {
         return Ok(());
     }
+
+    // validate now
+    config_file_manager.validate_config(&mut config).await?;
 
     // setup of things we need in the app
     let news_flash_utils = Arc::new(NewsFlashUtils::new(
@@ -85,6 +88,7 @@ async fn main() -> color_eyre::Result<()> {
         .await;
 
     info!("Application loop ended, restoring terminal");
+    execute!(std::io::stdout(), DisableMouseCapture)?;
     ratatui::restore();
 
     match &result {
