@@ -243,7 +243,7 @@ Have a look at [docs/configuration.md#theme-configuration] for more information 
   
 - *eilmeldung* running on an iMac G4 PowerPC from 2003 (thanks to Maciej G.!)
 
-<img width="360" alt="eil2" src="https://github.com/user-attachments/assets/ee1c2624-d722-43b8-b891-2d68a912b77b" />
+<img width="250" alt="eil2" src="https://github.com/user-attachments/assets/ee1c2624-d722-43b8-b891-2d68a912b77b" />
 
 
 ---
