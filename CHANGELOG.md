@@ -23,6 +23,7 @@
   - to manually reload the configuration run the command `reloadconfig` (press `:reloadconfig` and then enter) or press `Ctrl-r` (which simply maps to `reloadconfig`)
 - refactoring for better maintainability of *eilmeldung*
 - quality of life: no error message anymore if the thumbnail couldn't be downloaded
+- bugfix: when in distraction-free (zen) mode, mouse clicks are now handled correctly (thanks to @cornservant)
 
 # 1.7.3 - 2026-08-25
 
