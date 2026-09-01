@@ -465,10 +465,11 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 }
 
                 ImageProtocolPickerUpdated(picker) => {
-                    self.view_data.picker_updated(picker)?;
-                    self.update_thumbnail()?;
+                    log::trace!("image protocol picker updated");
                     // force redraw of whole terminal
                     self.message_sender.send(Message::Command(Command::Clear))?;
+                    self.view_data.picker_updated(picker)?;
+                    self.update_thumbnail()?;
                 }
 
                 ConfigReloaded(config) => {

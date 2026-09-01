@@ -32,7 +32,6 @@ use news_flash::error::{FeedApiError, NewsFlashError};
 use notify_rust::{Notification, Timeout};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{Event as TermEvent, MouseEventKind};
-use ratatui_image::picker::Picker;
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::{path::Path, sync::Arc, time::Duration};
@@ -212,6 +211,10 @@ impl App {
     ) -> color_eyre::Result<()> {
         let mut update_millis = 1000 / self.config.refresh_fps;
         let mut render_interval = tokio::time::interval(Duration::from_millis(update_millis));
+        let mut redraw = false;
+        let mut clear_term = false;
+        let mut clear_interval = tokio::time::interval(Duration::from_secs(1));
+
         debug!(
             "Command processing loop started with {}fps refresh rate",
             self.config.refresh_fps
@@ -239,7 +242,35 @@ impl App {
 
                 _ = render_interval.tick() => {
                     self.message_sender.send(Message::Event(Event::Tick))?;
-                }
+                    if redraw {
+                        terminal.draw(|frame| {
+                            frame.render_widget(
+                                ratatui::widgets::Block::default()
+                                .style(Style::default().bg(*self.config.theme.color_palette().background())), frame.area()
+                            );
+
+                            frame.render_widget(&mut self, frame.area());
+                        })?;
+                        redraw = false;
+
+                    }
+                },
+
+                _ = clear_interval.tick() => {
+                    // we must handle Clear here as we have access to terminal
+                    // also we debounce clearing the terminal by 1 second
+                    if clear_term {
+                        log::trace!("clearing output");
+                        if let Err(error) = terminal.clear() {
+                            tooltip(&self.message_sender, &*error.to_string(), TooltipFlavor::Error)?;
+                        }
+                        log::trace!("clearing output finished");
+                        clear_term = false;
+                        redraw = true;
+                    }
+
+
+                },
 
                 term_event = term_event_receiver.recv(), if !self.batch_processor.has_commands() => {
                     // pass on term events until consumed
@@ -257,15 +288,10 @@ impl App {
                 message = message_receiver.recv() =>  {
                     if let Some(message) = message {
 
-                        let mut redraw = matches!(message, Message::Command(Command::Redraw));
+                        // schedule redraw and clear
+                        redraw = redraw || matches!(message, Message::Command(Command::Redraw));
+                        clear_term = clear_term || matches!(message, Message::Command(Command::Clear));
 
-                        // we must handle Clear here as we have access to terminal
-                        if matches!(message, Message::Command(Command::Clear)) {
-                            if let Err(error) = terminal.clear() {
-                                tooltip(&self.message_sender, &*error.to_string(), TooltipFlavor::Error)?;
-                            }
-                            redraw = true;
-                        }
 
                         self.process_message(&message).await?;
                         self.input_command_generator.process_message(&message).await?;
@@ -277,20 +303,6 @@ impl App {
                         self.command_input.process_message(&message).await?;
                         self.command_confirm.process_message(&message).await?;
                         self.help_popup.process_message(&message).await?;
-
-                        if redraw {
-                            terminal.draw(|frame| {
-                                frame.render_widget(
-                                    ratatui::widgets::Block::default()
-                                      .style(Style::default().bg(*self.config.theme.color_palette().background())), frame.area()
-                                );
-
-                                frame.render_widget(&mut self, frame.area());
-
-                            }
-
-                                )?;
-                        }
 
                     } else {
                         debug!("Message channel closed, stopping message processing");
@@ -551,19 +563,6 @@ impl TermEventHandler for App {
         match event {
             TermEvent::Mouse(mouse_event) if !matches!(mouse_event.kind, MouseEventKind::Moved) => {
                 self.handle_mouse_event(mouse_event)?;
-                Ok(TermEventForwarding::Consumed)
-            }
-
-            TermEvent::Resize(width, height) => {
-                self.message_sender
-                    .send(Message::Event(Event::Resized(*width, *height)))?;
-
-                // silently ignore if querying picker fails
-                if let Ok(picker) = Picker::from_query_stdio() {
-                    self.message_sender
-                        .send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
-                }
-
                 Ok(TermEventForwarding::Consumed)
             }
 

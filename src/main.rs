@@ -58,8 +58,9 @@ async fn main() -> color_eyre::Result<()> {
         ConnectivityMonitor::new(news_flash_utils.clone(), message_sender.clone());
 
     // startup task which reads the crossterm events
+    let input_reader_message_sender = message_sender.clone();
     let _input_reader_handle = spawn_blocking(move || {
-        if let Err(err) = input_reader(term_event_sender) {
+        if let Err(err) = input_reader(input_reader_message_sender, term_event_sender) {
             error!("input reader got an error: {err}");
         }
     });
