@@ -23,7 +23,9 @@
   - to manually reload the configuration run the command `reloadconfig` (press `:reloadconfig` and then enter) or press `Ctrl-r` (which simply maps to `reloadconfig`)
 - refactoring for better maintainability of *eilmeldung*
 - quality of life: no error message anymore if the thumbnail couldn't be downloaded
-- bugfix: when in distraction-free (zen) mode, mouse clicks are now handled correctly (thanks to @cornservant)
+- bugfixes
+  - when in distraction-free (zen) mode, mouse clicks are now handled correctly (thanks to @cornservant)
+  - handling of redrawing and clearing the terminal is now more reliable (implemented debouncing)
 
 # 1.7.3 - 2026-08-25
 
