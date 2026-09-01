@@ -239,11 +239,11 @@ Have a look at [docs/configuration.md#theme-configuration] for more information 
 - Pick on [Linux Unplugged Episode 647 (2025-12-28)](https://linuxunplugged.com/647) (1:28:35) had some very kind things to say about *eilmeldung* shortly after the initial release:
 > "[eilmeldung] is [...] beautiful. It's strange to say about a TUI [...] but it is actually very beautiful."
 
-## Screenshots from Users
+## Screenshots by Users
   
-- *eilmeldung* running on an iMac G4 PowerPC from 2003 (thanks to @maciej!)
+- *eilmeldung* running on an iMac G4 PowerPC from 2003 (thanks to Maciej G.!)
 
-<img width="256" alt="6Uu7D0pAUzbeqTFB" src="https://github.com/user-attachments/assets/5241f68d-9958-46e3-98f0-55a502224e9f" />
+<img width="360" alt="eil2" src="https://github.com/user-attachments/assets/ee1c2624-d722-43b8-b891-2d68a912b77b" />
 
 
 ---
