@@ -1,5 +1,7 @@
 # Unreleased
 
+- hotfix: eilmeldung does not output mouse dis-/enable code anymore when starting in CLI mode (thanks @Crandle for reporting)
+
 # 1.8.0 - 2026-09-01
 
 This release comes with *two new features*: your configuration file is now auto-reloaded while *eilmeldung* is running (see below) and...
