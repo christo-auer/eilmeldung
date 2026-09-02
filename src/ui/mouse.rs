@@ -70,7 +70,9 @@ impl App {
         match mouse_event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
                 // Check if clicking on the horizontal border to start a drag-resize
-                if self.panel_areas.is_on_horizontal_border(col, row) {
+                if !matches!(self.state, AppState::ArticleContentDistractionFree)
+                    && self.panel_areas.is_on_horizontal_border(col, row)
+                {
                     self.drag_resize_active = true;
                     return Ok(());
                 }
