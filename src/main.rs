@@ -48,6 +48,9 @@ async fn main() -> color_eyre::Result<()> {
         return Ok(());
     }
 
+    info!("Initializing terminal");
+    let terminal = ratatui::init();
+
     // validate now
     config_file_manager.validate_config(&mut config).await?;
 
@@ -75,9 +78,6 @@ async fn main() -> color_eyre::Result<()> {
         news_flash_utils.clone(),
         message_sender,
     );
-
-    info!("Initializing terminal");
-    let terminal = ratatui::init();
 
     // starting connectivity monitor
     let _connecitivty_monitor_handle = connectivity_monitor.spawn()?;
