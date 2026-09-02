@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.8.1 - 2026-09-02
+
 - bugfixes 
   - eilmeldung does not output mouse dis-/enable code anymore when starting in CLI mode (thanks @Crandle for reporting)
   - statically import (copy) base16-schemes from [tinted-theming](https://github.com/tinted-theming/schemes) (MIT license) instead of importing as a submodule
