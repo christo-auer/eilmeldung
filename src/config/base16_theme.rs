@@ -8,7 +8,7 @@ use ratatui::style::Color;
 
 use crate::config::theme::ColorPalette;
 
-const BASE16_THEMES_DIR: Dir = include_dir!("assets/base-16-themes/base16");
+const BASE16_THEMES_DIR: Dir = include_dir!("assets/base16-schemes");
 
 #[derive(Clone, Debug, serde::Deserialize, getset::CopyGetters, getset::Getters)]
 #[allow(non_snake_case, dead_code)]

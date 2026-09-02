@@ -259,6 +259,10 @@ Have a look at [docs/configuration.md#theme-configuration] for more information 
 - [neovim](https://neovim.io/) and [vim](https://www.vim.org/) for their philosophy on user input
 - [ratatui](https://ratatui.rs/) and all its supporting libraries for creating the TUI
 
+## Third-Party Licenses
+
+- *eilmeldung* (statically) imports/copies the base16 schemes from the [tinted-theming project](https://github.com/tinted-theming/schemes) licensed under the [MIT license](https://github.com/tinted-theming/schemes/blob/spec-0.11/LICENSE).
+
 ## On the use of LLMs in this Project
 
 This project was built as an experiment in learning Rust through LLM use. LLMs were used as tutors (asking questions, not providing solutions) and for documentation, but every line of code was intentionally written to solve a problem I understood.
