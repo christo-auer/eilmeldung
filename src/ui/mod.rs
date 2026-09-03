@@ -515,7 +515,7 @@ impl App {
                 let Some(theme) = self
                     .config
                     .theme
-                    .base16_themes()
+                    .base16_theme_entries()
                     .iter()
                     .find(|entry| entry.name() == *theme_name)
                     .cloned()

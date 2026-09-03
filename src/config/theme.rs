@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use std::{path::Path, str::FromStr};
+use std::{collections::HashMap, path::Path, str::FromStr};
 
 use getset::{Getters, MutGetters};
 use ratatui::style::{Color, Modifier, Style};
@@ -250,20 +250,22 @@ pub struct Theme {
     runtime_base16_theme: Option<Base16ThemeEntry>,
 
     #[serde(skip)]
-    base16_themes: Vec<Base16ThemeEntry>,
+    base16_theme_entries: Vec<Base16ThemeEntry>,
 
     base16_theme: Option<String>,
     color_palette: ColorPalette,
     style_set: StyleSet,
     base16_dark: Base16ToColorPaletteMapping,
     base16_light: Base16ToColorPaletteMapping,
+
+    base16_themes: HashMap<String, Base16Theme>,
 }
 
 impl Default for Theme {
     fn default() -> Self {
         Self {
             runtime_base16_theme: None,
-            base16_themes: Default::default(),
+            base16_theme_entries: Default::default(),
             base16_theme: Default::default(),
             color_palette: Default::default(),
             style_set: Default::default(),
@@ -273,6 +275,7 @@ impl Default for Theme {
             base16_light: Base16ToColorPaletteMapping::default_for_polarity(
                 Base16ThemePolarity::Light,
             ),
+            base16_themes: Default::default(),
         }
     }
 }
@@ -332,7 +335,7 @@ impl Theme {
     }
 
     pub async fn validate(&mut self, config_dir: &Path) -> color_eyre::Result<()> {
-        self.base16_themes = Base16Theme::available_themes(config_dir)?;
+        self.base16_theme_entries = Base16Theme::available_themes(config_dir, &self.base16_themes)?;
 
         let runtime_theme = self
             .runtime_base16_theme()
@@ -343,7 +346,7 @@ impl Theme {
         let configured_theme = match self.base16_theme.as_ref() {
             Some(name) => {
                 let Some(base16_theme) = self
-                    .base16_themes
+                    .base16_theme_entries
                     .iter()
                     .find(|entry| entry.name() == *name)
                 else {
