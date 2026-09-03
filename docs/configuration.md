@@ -293,9 +293,76 @@ base16_theme = "dracula"
 
 #### Custom Base16 Themes
 
-Place your custom Base16 Themes in standard Base16 YAML-format into your *eilmeldung* configuration directory under the subdirectory `themes`, e.g., `~/.config/eilmeldung/themes/frankenstein.yaml`.
-Don't use whitespaces or special characters in your filename.
-Reload your configuration (`:reloadconfig`) and your custom theme should be available via the `theme` command.
+There are two ways to install a custom theme:
+- Place Base16 YAML-file into your *eilmeldung* configuration directory under the subdirectory `themes`, e.g., `~/.config/eilmeldung/themes/frankenstein.yaml`. Don't use whitespaces or special characters in your filename. Reload your configuration (`:reloadconfig`) and your custom theme should be available via the `theme` command. To permantly use it, set `theme.base16_theme` to the name of your custom theme.
+- Or directly define a custom theme within your *eilmeldung* `config.toml` file like so:
+
+```toml
+[theme.base16_themes.frankenstein]
+variant = "dark" # this field is mandatory and either `dark` or `light`
+
+[theme.base16_themes.frankenstein.palette] 
+# this is just the awesome dracula theme renamed
+base00 = "#282a36"
+base01 = "#21222c"
+base02 = "#44475A"
+base03 = "#6272a4"
+base04 = "#9ea8c7"
+base05 = "#f8f8f2"
+base06 = "#f8f8f2"
+base07 = "#ffffff"
+base08 = "#ff5555"
+base09 = "#FFB86C"
+base0A = "#f1fa8c"
+base0B = "#50fa7b"
+base0C = "#8be9fd"
+base0D = "#bd93f9"
+base0E = "#ff79c6"
+base0F = "#993333"
+```
+  Dont' forget to also set `theme.base16_theme = "frankenstein"` to actually use it. You can define as many custom themes as you want.
+
+**Note**: In case of name clashes with predefined themes, themes from `config.toml` take precedence or themes in the `themes` directory which in turn take precedence over statically included theme files. Or you just use a different name.
+
+<details><summary>NixOS home-manager configuration</summary>
+If you have *eilmeldung* configured with home-manager, you can also define your custom theme within home-manager:
+
+```nix
+programs.eilmeldung.settings.theme = {
+  base16_theme = "frankenstein";
+
+  base16_themes = 
+  {
+    frankenstein = {
+      variant = "dark";
+
+      palette = {
+        base00= "#282a36";
+        base01= "#21222c";
+        base02= "#44475A";
+        base03= "#6272a4";
+        base04= "#9ea8c7";
+        base05= "#f8f8f2";
+        base06= "#f8f8f2";
+        base07= "#ffffff";
+        base08= "#ff5555";
+        base09= "#FFB86C";
+        base0A= "#f1fa8c";
+        base0B= "#50fa7b";
+        base0C= "#8be9fd";
+        base0D= "#bd93f9";
+        base0E= "#ff79c6";
+        base0F= "#993333";
+      };
+
+    };
+  } ;
+
+};
+```
+Also set `programs.eilmeldung.settings.theme.base16_theme` to the theme you want to use.
+</details>
+
 
 
 ### Color Palette

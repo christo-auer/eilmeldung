@@ -1,5 +1,6 @@
 use std::{
     cmp::Ordering,
+    collections::HashMap,
     path::{Path, PathBuf},
 };
 
@@ -10,7 +11,7 @@ use crate::config::theme::ColorPalette;
 
 const BASE16_THEMES_DIR: Dir = include_dir!("assets/base16-schemes");
 
-#[derive(Clone, Debug, serde::Deserialize, getset::CopyGetters, getset::Getters)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, getset::CopyGetters, getset::Getters)]
 #[allow(non_snake_case, dead_code)]
 pub struct Base16Theme {
     #[getset(get = "pub")]
@@ -36,14 +37,18 @@ pub enum Base16ThemeEntry {
         name: String,
         file: include_dir::File<'static>,
     },
+    Configured {
+        name: String,
+        theme: Base16Theme,
+    },
 }
 
 impl PartialOrd for Base16ThemeEntry {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         use Base16ThemeEntry as E;
         Some(match (self, other) {
-            (E::Custom { .. }, E::Library { .. }) => Ordering::Less,
-            (E::Library { .. }, E::Custom { .. }) => Ordering::Greater,
+            (E::Configured { .. }, _) => Ordering::Less,
+            (E::Custom { .. }, _) => Ordering::Less,
             (e1, e2) => e1.name().cmp(&e2.name()),
         })
     }
@@ -63,10 +68,20 @@ impl Base16ThemeEntry {
         }
     }
 
+    pub fn configured(name: &str, theme: &Base16Theme) -> Self {
+        Base16ThemeEntry::Configured {
+            name: name.to_owned(),
+            theme: theme.clone(),
+        }
+    }
+
     pub fn load_theme(&self) -> color_eyre::eyre::Result<Base16Theme> {
         let contents = match self {
             Base16ThemeEntry::Custom { name: _, path } => std::fs::read_to_string(path)?,
             Base16ThemeEntry::Library { name: _, file } => file.contents_utf8().unwrap().to_owned(),
+            Base16ThemeEntry::Configured { name: _, theme } => {
+                return Ok(theme.to_owned());
+            }
         };
         serde_yaml::from_str(&contents).map_err(|serde_error| {
             color_eyre::eyre::eyre!("could not parse theme {}: {serde_error}", self.name())
@@ -77,6 +92,7 @@ impl Base16ThemeEntry {
         match self {
             Base16ThemeEntry::Custom { name, .. } => name.to_owned(),
             Base16ThemeEntry::Library { name, .. } => name.to_owned(),
+            Base16ThemeEntry::Configured { name, .. } => name.to_owned(),
         }
     }
 }
@@ -84,8 +100,14 @@ impl Base16ThemeEntry {
 impl Base16Theme {
     pub fn available_themes(
         custom_themes_path: &Path,
+        configured_themes: &HashMap<String, Base16Theme>,
     ) -> color_eyre::Result<Vec<Base16ThemeEntry>> {
-        let mut themes: Vec<Base16ThemeEntry> = if custom_themes_path.exists() {
+        let mut themes = configured_themes
+            .iter()
+            .map(|(name, theme)| Base16ThemeEntry::configured(name, theme))
+            .collect::<Vec<Base16ThemeEntry>>();
+
+        themes.extend::<Vec<Base16ThemeEntry>>(if custom_themes_path.exists() {
             std::fs::read_dir(custom_themes_path)?
                 .filter_map(|dir_entry| {
                     dir_entry
@@ -105,7 +127,7 @@ impl Base16Theme {
                 .collect()
         } else {
             Default::default()
-        };
+        });
 
         themes.extend(BASE16_THEMES_DIR.files().filter_map(|entry| {
             entry
@@ -124,7 +146,7 @@ impl Base16Theme {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone, serde::Deserialize)]
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Base16ThemePolarity {
     #[default]
@@ -132,7 +154,7 @@ pub enum Base16ThemePolarity {
     Light,
 }
 
-#[derive(Clone, Debug, serde::Deserialize, getset::CopyGetters, getset::Getters)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, getset::CopyGetters, getset::Getters)]
 #[allow(non_snake_case, dead_code)]
 pub struct Base16Palette {
     #[getset(get_copy = "pub")]

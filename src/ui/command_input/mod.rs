@@ -602,7 +602,7 @@ impl CommandInput {
         //     .iter()
         //     .map(|entry| entry.name().to_owned())
         //     .collect::<Vec<String>>();
-        let base16_themes = self.config.theme.base16_themes();
+        let base16_themes = self.config.theme.base16_theme_entries();
 
         log::trace!("theme current part: {current_part}");
 
@@ -641,7 +641,7 @@ impl CommandInput {
         self.completion_targets = Some(
             self.config
                 .theme
-                .base16_themes()
+                .base16_theme_entries()
                 .iter()
                 // .filter(|entry| entry.name().starts_with(current_part))
                 .map(|entry| entry.name().to_owned())
@@ -671,7 +671,7 @@ impl CommandInput {
                 if self
                     .config
                     .theme
-                    .base16_themes()
+                    .base16_theme_entries()
                     .iter()
                     .any(|entry| entry.name() == theme_name)
                 {
