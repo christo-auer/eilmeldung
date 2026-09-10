@@ -14,6 +14,7 @@ pkgs.mkShell {
     # Build tools
     pkg-config
     cmake
+    perl
   ];
 
   # Libraries needed for building
