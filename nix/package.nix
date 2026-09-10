@@ -6,10 +6,6 @@
 , openssl
 , libxml2
 , sqlite
-, glib
-, glibc
-, stdenv
-, llvmPackages_19
 }:
 
 { src, version }:
@@ -23,6 +19,7 @@ rustPlatform.buildRustPackage {
   };
 
   nativeBuildInputs = [
+    rustPlatform.bindgenHook
     pkg-config
     cmake
     perl
@@ -33,19 +30,6 @@ rustPlatform.buildRustPackage {
     libxml2
     sqlite
   ];
-
-  LIBCLANG_PATH = lib.makeLibraryPath [ llvmPackages_19.libclang.lib ];
-  BINDGEN_EXTRA_CLANG_ARGS = lib.concatStringsSep " " (
-    lib.optionals stdenv.hostPlatform.isLinux [
-      ''-I"${glibc.dev}/include"''
-      ''-I"${glibc.dev}/include/"''
-    ]
-    ++ [
-      ''-I"${llvmPackages_19.libclang.lib}/lib/clang/19/include"''
-      ''-I"${glib.dev}/include/glib-2.0"''
-      ''-I${glib.out}/lib/glib-2.0/include/''
-    ]
-  );
 
   meta = {
     description = "Feature-rich TUI RSS Reader based on the news-flash library";
