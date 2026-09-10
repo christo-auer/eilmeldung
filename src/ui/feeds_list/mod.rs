@@ -831,13 +831,15 @@ impl MessageReceiver for FeedList {
                             TooltipFlavor::Error,
                         )?;
                     } else {
-                        self.model_data.add_feed(
-                            url.as_ref()
-                                .ok_or(color_eyre::eyre::eyre!("no url defined"))?
-                                .to_owned(),
-                            name.clone(),
-                            self.maybe_selected_category(),
-                        )?;
+                        self.model_data
+                            .add_feed(
+                                url.as_ref()
+                                    .ok_or(color_eyre::eyre::eyre!("no url defined"))?
+                                    .to_owned(),
+                                name.clone(),
+                                self.maybe_selected_category(),
+                            )
+                            .await?;
                         tooltip(&self.message_sender, "adding feed...", TooltipFlavor::Info)?;
                     }
                 }

@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, collections::HashMap, hash::Hash, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap, hash::Hash, str::FromStr, sync::Arc};
 
 use getset::Getters;
 use log::info;
@@ -370,12 +370,13 @@ impl FeedListModelData {
         Ok(())
     }
 
-    pub(super) fn add_feed(
+    pub(super) async fn add_feed(
         &self,
         url: Url,
         label: Option<String>,
         category_id: Option<CategoryID>,
     ) -> color_eyre::Result<()> {
+        let url = try_get_feed_from_html_header(url).await;
         self.news_flash_utils.add_feed(url, label, category_id);
         Ok(())
     }
@@ -461,4 +462,28 @@ impl FeedListModelData {
         news_flash.sort_alphabetically().await?;
         Ok(())
     }
+}
+
+async fn try_get_feed_from_html_header(url: Url) -> Url {
+    // FIXME: tacit assumption that every valid Url is also a valid reqwest Url
+    let rq_url = reqwest::Url::from_str(url.as_str()).unwrap();
+    let Ok(resp) = reqwest::get(rq_url).await else {
+        return url;
+    };
+    let Ok(text) = resp.text().await else {
+        return url;
+    };
+    let html = scraper::Html::parse_document(text.as_str());
+    let selector =
+        scraper::Selector::parse(r#"html > head > link[type="application/rss+xml"]"#).unwrap();
+    for elem in html.select(&selector) {
+        if let Some(rss_url) = elem
+            .attr("href")
+            .and_then(|href| url.join(href).ok())
+            .map(Url::new)
+        {
+            return rss_url;
+        }
+    }
+    url
 }

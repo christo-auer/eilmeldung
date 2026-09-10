@@ -52,6 +52,7 @@ ratatui-image = { version = "11.0.6", default-features = false, features = ["ser
 ratatui-textarea = "0.9.2"
 regex = "1.13.1"
 reqwest = { version = "0.13", default-features = false, features = ["http2", "charset", "brotli"] }
+scraper = "0.27.0"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 serde_toml = "0.0.1"
