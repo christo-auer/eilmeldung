@@ -774,7 +774,10 @@ impl StatefulWidget for &Table<'_> {
         let (_, rows_area, _) = self.layout(self.block.inner_if_some(area));
 
         self.ensure_selection_is_in_bounds(state);
-        self.ensure_selection_is_visible(rows_area, state);
+        if std::mem::take(&mut state.selection_changed) {
+            self.ensure_selection_is_visible(rows_area, state);
+        }
+        self.ensure_offset_is_in_bounds(rows_area, state);
         self.render_pure(area, buf, state);
     }
 }
@@ -824,6 +827,14 @@ impl Table<'_> {
     }
 
     ///
+    fn ensure_offset_is_in_bounds(&self, rows_area: Rect, state: &mut TableState) {
+        let visible_rows = usize::from(rows_area.height);
+        let last_row = self.rows.len().saturating_sub(1);
+        let max_offset = last_row.saturating_sub(visible_rows.saturating_sub(1));
+        state.offset = state.offset.min(max_offset);
+    }
+
+    ///
     fn ensure_selection_is_visible(&self, rows_area: Rect, state: &mut TableState) {
         let last_row = self.rows.len().saturating_sub(1);
         let visible_rows = usize::from(rows_area.height);
@@ -831,8 +842,6 @@ impl Table<'_> {
             assert!(selected <= last_row);
             let min_offset = selected.saturating_sub(visible_rows.saturating_sub(1));
             state.offset = state.offset.min(selected).max(min_offset);
-        } else {
-            state.offset = state.offset.min(last_row);
         }
     }
 
@@ -904,7 +913,7 @@ impl Table<'_> {
             return;
         }
 
-        let (start_index, end_index) = self.visible_rows(state, area);
+        let (start_index, end_index) = self.visible_rows_simple(area, state);
 
         let mut y_offset = 0;
 
@@ -1036,6 +1045,16 @@ impl Table<'_> {
         Some(Rect::new(first.x, first.y, width, 1))
     }
 
+    fn visible_rows_simple(&self, rows_area: Rect, state: &TableState) -> (usize, usize) {
+        for item in self.rows.iter() {
+            assert_eq!(1, item.height)
+        }
+
+        let visible_rows = usize::from(rows_area.height);
+
+        (state.offset, state.offset + visible_rows)
+    }
+
     /// Return the indexes of the visible rows.
     ///
     /// The algorithm works as follows:
@@ -1047,6 +1066,7 @@ impl Table<'_> {
     ///   impossible.
     /// - if there is still space to fill then there's a partial row at the end which should be
     ///   included in the view.
+    #[allow(dead_code)]
     fn visible_rows(&self, state: &TableState, area: Rect) -> (usize, usize) {
         let last_row = self.rows.len().saturating_sub(1);
         let mut start = state.offset.min(last_row);
