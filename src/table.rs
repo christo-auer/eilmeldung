@@ -771,38 +771,11 @@ impl StatefulWidget for &Table<'_> {
     type State = TableState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        buf.set_style(area, self.style);
-        self.block.as_ref().render(area, buf);
-        let table_area = self.block.inner_if_some(area);
-        if table_area.is_empty() {
-            return;
-        }
+        let (_, rows_area, _) = self.layout(self.block.inner_if_some(area));
 
-        if state.selected.is_some_and(|s| s >= self.rows.len()) {
-            state.select(Some(self.rows.len().saturating_sub(1)));
-        }
-
-        if self.rows.is_empty() {
-            state.select(None);
-        }
-
-        let column_count = self.column_count();
-        if state.selected_column.is_some_and(|s| s >= column_count) {
-            state.select_column(Some(column_count.saturating_sub(1)));
-        }
-        if column_count == 0 {
-            state.select_column(None);
-        }
-
-        let selection_width = self.selection_width(state);
-        let column_widths = self.get_column_widths(table_area.width, selection_width, column_count);
-        let (header_area, rows_area, footer_area) = self.layout(table_area);
-
-        self.render_header(header_area, buf, &column_widths);
-
-        self.render_rows(rows_area, buf, selection_width, state, &column_widths);
-
-        self.render_footer(footer_area, buf, &column_widths);
+        self.ensure_selection_is_in_bounds(state);
+        self.ensure_selection_is_visible(rows_area, state);
+        self.render_pure(area, buf, state);
     }
 }
 
@@ -828,6 +801,61 @@ impl Table<'_> {
         .split(area);
         let (header_area, rows_area, footer_area) = (layout[1], layout[3], layout[5]);
         (header_area, rows_area, footer_area)
+    }
+
+    ///
+    fn ensure_selection_is_in_bounds(&self, state: &mut TableState) {
+        if state.selected.is_some_and(|s| s >= self.rows.len()) {
+            state.select(Some(self.rows.len().saturating_sub(1)));
+        }
+
+        if self.rows.is_empty() {
+            state.select(None);
+        }
+
+        let column_count = self.column_count();
+
+        if state.selected_column.is_some_and(|s| s >= column_count) {
+            state.select_column(Some(column_count.saturating_sub(1)));
+        }
+        if column_count == 0 {
+            state.select_column(None);
+        }
+    }
+
+    ///
+    fn ensure_selection_is_visible(&self, rows_area: Rect, state: &mut TableState) {
+        let last_row = self.rows.len().saturating_sub(1);
+        let visible_rows = usize::from(rows_area.height);
+        if let Some(selected) = state.selected {
+            assert!(selected <= last_row);
+            let min_offset = selected.saturating_sub(visible_rows.saturating_sub(1));
+            state.offset = state.offset.min(selected).max(min_offset);
+        } else {
+            state.offset = state.offset.min(last_row);
+        }
+    }
+
+    ///
+    fn render_pure(&self, area: Rect, buf: &mut Buffer, state: &TableState) {
+        buf.set_style(area, self.style);
+        self.block.as_ref().render(area, buf);
+        let table_area = self.block.inner_if_some(area);
+        if table_area.is_empty() {
+            return;
+        }
+
+        let column_count = self.column_count();
+
+        let selection_width = self.selection_width(state);
+        let column_widths = self.get_column_widths(table_area.width, selection_width, column_count);
+        let (header_area, rows_area, footer_area) = self.layout(table_area);
+
+        self.render_header(header_area, buf, &column_widths);
+
+        self.render_rows(rows_area, buf, selection_width, state, &column_widths);
+
+        self.render_footer(footer_area, buf, &column_widths);
     }
 
     /// Render the header cells, if they are not `None`
@@ -869,7 +897,7 @@ impl Table<'_> {
         area: Rect,
         buf: &mut Buffer,
         selection_width: u16,
-        state: &mut TableState,
+        state: &TableState,
         columns_widths: &[Rect],
     ) {
         if self.rows.is_empty() {
@@ -877,7 +905,6 @@ impl Table<'_> {
         }
 
         let (start_index, end_index) = self.visible_rows(state, area);
-        state.offset = start_index;
 
         let mut y_offset = 0;
 
@@ -2823,6 +2850,7 @@ mod tests {
         use ratatui_core::widgets::StatefulWidget;
         use rstest::rstest;
 
+        use super::*;
         use crate::table::{Row, Table, TableState};
 
         #[rstest]
