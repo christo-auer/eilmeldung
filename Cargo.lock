@@ -1885,6 +1885,7 @@ dependencies = [
  "paste",
  "percent-encoding",
  "ratatui",
+ "ratatui-core",
  "ratatui-image",
  "ratatui-textarea",
  "regex",
