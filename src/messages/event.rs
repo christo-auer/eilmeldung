@@ -24,7 +24,7 @@ pub enum Event {
     ArticleSelected(Option<ArticleID>),
 
     AsyncSync,
-    AsyncSyncFinished(HashMap<FeedID, i64>),
+    AsyncSyncFinished(HashMap<FeedID, Vec<ArticleID>>),
 
     AsyncArticleThumbnailFetch,
     AsyncArticleThumbnailFetchFinished(Option<Thumbnail>),
@@ -54,7 +54,7 @@ pub enum Event {
     AsyncFeedAddFinished(Feed),
 
     AsyncFeedFetch,
-    AsyncFeedFetchFinished(FeedID, i64),
+    AsyncFeedFetchFinished(FeedID, Vec<ArticleID>),
 
     AsyncCategoryAdd,
     AsyncCategoryAddFinished(Category),
