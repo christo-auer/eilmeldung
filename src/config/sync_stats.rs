@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::prelude::*;
 use itertools::Itertools;
-use news_flash::models::FeedID;
+use news_flash::models::{ArticleID, FeedID};
 
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(default)]
@@ -38,11 +38,11 @@ impl SyncStatsOutputFormat {
     pub fn gen_output(
         &self,
         news_flash: &news_flash::NewsFlash,
-        new_articles: &HashMap<FeedID, i64>,
+        new_articles: &HashMap<FeedID, Vec<ArticleID>>,
     ) -> color_eyre::Result<String> {
         let mut output = String::new();
 
-        let all_unread: i64 = new_articles.values().sum();
+        let all_unread: usize = new_articles.values().into_iter().map(Vec::len).sum();
 
         let (
             mut feeds,
@@ -74,7 +74,13 @@ impl SyncStatsOutputFormat {
             output.push_str(
                 &feeds
                     .iter()
-                    .filter(|feed| *new_articles.get(&feed.feed_id).unwrap_or(&0) > 0)
+                    .filter(|feed| {
+                        new_articles
+                            .get(&feed.feed_id)
+                            .map(Vec::len)
+                            .unwrap_or_default()
+                            > 0
+                    })
                     .map(|feed| {
                         self.sync_output_format
                             .replace("{label}", &self.feed_label_format)
@@ -98,7 +104,11 @@ impl SyncStatsOutputFormat {
                             )
                             .replace(
                                 "{count}",
-                                &new_articles.get(&feed.feed_id).unwrap_or(&0).to_string(),
+                                &new_articles
+                                    .get(&feed.feed_id)
+                                    .map(Vec::len)
+                                    .unwrap_or_default()
+                                    .to_string(),
                             )
                     })
                     .join("\n"),

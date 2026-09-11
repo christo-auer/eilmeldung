@@ -29,6 +29,7 @@ use crate::prelude::*;
 use chrono::TimeDelta;
 use log::{debug, error, info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
+use news_flash::models::ArticleID;
 use notify_rust::{Notification, Timeout};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{Event as TermEvent, MouseEventKind};
@@ -367,10 +368,14 @@ impl App {
 
     async fn after_sync_notify(
         &self,
-        new_articles: &HashMap<news_flash::models::FeedID, i64>,
+        new_articles: &HashMap<news_flash::models::FeedID, Vec<ArticleID>>,
     ) -> color_eyre::Result<()> {
         // show a tooltip
-        let new_count = new_articles.values().sum::<i64>();
+        let new_count = new_articles
+            .values()
+            .into_iter()
+            .map(Vec::len)
+            .sum::<usize>();
         tooltip(
             &self.message_sender,
             &*format!("{new_count} new articles synced"),
@@ -378,7 +383,7 @@ impl App {
         )?;
 
         // don't do anything if no notification is wanted or needed
-        if !self.config.notify_after_sync || new_articles.values().sum::<i64>() == 0 {
+        if !self.config.notify_after_sync || new_count == 0 {
             return Ok(());
         }
 
