@@ -50,6 +50,7 @@ percent-encoding = "2.3.2"
 ratatui = { version = "0.30.2", features = ["all-widgets", "palette", "serde"] }
 ratatui-image = { version = "11.0.6", default-features = false, features = ["serde", "tokio"] }
 ratatui-textarea = "0.9.2"
+ratatui-core = "0.1.2"
 regex = "1.13.1"
 reqwest = { version = "0.13", default-features = false, features = ["http2", "charset", "brotli"] }
 serde = { version = "1.0.229", features = ["derive"] }
