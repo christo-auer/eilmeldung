@@ -806,7 +806,7 @@ impl Table<'_> {
         (header_area, rows_area, footer_area)
     }
 
-    ///
+    /// ensures that the selection points to a valid row
     fn ensure_selection_is_in_bounds(&self, state: &mut TableState) {
         if state.selected.is_some_and(|s| s >= self.rows.len()) {
             state.select(Some(self.rows.len().saturating_sub(1)));
@@ -826,7 +826,7 @@ impl Table<'_> {
         }
     }
 
-    ///
+    /// prevents overscrolling i.e. the view doesn't scroll past the last item
     fn ensure_offset_is_in_bounds(&self, rows_area: Rect, state: &mut TableState) {
         let visible_rows = usize::from(rows_area.height);
         let last_row = self.rows.len().saturating_sub(1);
@@ -834,7 +834,7 @@ impl Table<'_> {
         state.offset = state.offset.min(max_offset);
     }
 
-    ///
+    /// ensures that the selection is visible
     fn ensure_selection_is_visible(&self, rows_area: Rect, state: &mut TableState) {
         let last_row = self.rows.len().saturating_sub(1);
         let visible_rows = usize::from(rows_area.height);
@@ -845,7 +845,7 @@ impl Table<'_> {
         }
     }
 
-    ///
+    /// renders the widget without modifying the state
     fn render_pure(&self, area: Rect, buf: &mut Buffer, state: &TableState) {
         buf.set_style(area, self.style);
         self.block.as_ref().render(area, buf);
@@ -2870,7 +2870,6 @@ mod tests {
         use ratatui_core::widgets::StatefulWidget;
         use rstest::rstest;
 
-        use super::*;
         use crate::table::{Row, Table, TableState};
 
         #[rstest]
