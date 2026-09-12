@@ -34,7 +34,7 @@ impl PanelAreas {
         // Account for the border (1 row top)
         let inner_top = area.y + 1;
         let inner_bottom = area.y + area.height.saturating_sub(1);
-        if row >= inner_top && row < inner_bottom {
+        if row >= inner_top && row <= inner_bottom {
             Some(row - inner_top)
         } else {
             None
@@ -47,7 +47,7 @@ impl PanelAreas {
         let border_row = self.articles_list.y + self.articles_list.height;
         let in_column_range =
             col >= self.articles_list.x && col < self.articles_list.x + self.articles_list.width;
-        (row == border_row || row == border_row.saturating_sub(1)) && in_column_range
+        row == border_row && in_column_range
     }
 }
 
