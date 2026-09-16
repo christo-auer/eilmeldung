@@ -75,7 +75,7 @@ pub enum CommandParseError {
     SomethingExpected(String),
 
     #[error("unexpected")]
-    NothingExcepted(String),
+    NothingExpected(String),
 }
 
 fn split_off_first(s: &str) -> (String, Option<String>) {
@@ -123,7 +123,7 @@ where
 
 fn expect_nothing(s: Option<String>) -> Result<(), CommandParseError> {
     match s {
-        Some(s) => Err(CommandParseError::NothingExcepted(s)),
+        Some(s) => Err(CommandParseError::NothingExpected(s)),
         None => Ok(()),
     }
 }
@@ -223,8 +223,8 @@ impl Command {
                     &mut args,
                     "expecting feed URL",
                 )?);
-                let name = args;
-                C::FeedListFeedAdd(Some(url), name)
+                expect_nothing(args)?;
+                C::FeedListFeedAdd(Some(url))
             }
 
             C::FeedListFeedChangeUrl(..) => {

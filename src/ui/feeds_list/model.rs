@@ -19,7 +19,6 @@ pub enum FeedOrCategory {
 #[derive(Getters)]
 #[getset(get = "pub")]
 pub(super) struct FeedListModelData {
-    #[getset(skip)]
     news_flash_utils: Arc<NewsFlashUtils>,
 
     feeds: Vec<Feed>,

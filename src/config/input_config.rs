@@ -120,7 +120,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "c d"       => "confirm remove",
         "c x"       => "confirm removeall",
         "c f"       => "cmd feedadd",
-        "c e"       => "confirm feedadd https://github.com/christo-auer/eilmeldung/releases.atom eilmeldung releases",
+        "c e"       => "confirm feedadd https://github.com/christo-auer/eilmeldung/releases.atom",
         "c a"       => "cmd categoryadd",
         "c u"       => "cmd feedchangeurl",
         "c y"       => "yank",

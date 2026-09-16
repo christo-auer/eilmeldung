@@ -6,6 +6,8 @@ mod command_input;
 mod feeds_list;
 mod help_popup;
 mod mouse;
+mod popup_manager;
+mod selection_popup;
 mod state;
 mod tooltip;
 mod view;
@@ -20,6 +22,8 @@ pub mod prelude {
     pub use super::feeds_list::prelude::*;
     pub use super::help_popup::HelpPopup;
     pub use super::mouse::PanelAreas;
+    pub use super::popup_manager::{PopupEvent, PopupManager};
+    pub use super::selection_popup::{SelectionPopup, SelectionPopupMapper};
     pub use super::state::AppState;
     pub use super::tooltip::{Tooltip, TooltipFlavor, tooltip};
 }
@@ -55,7 +59,7 @@ pub struct App {
     article_content: ArticleContent,
     command_input: CommandInput,
     command_confirm: CommandConfirm,
-    help_popup: HelpPopup<'static>,
+    popup_manager: PopupManager<'static>,
     async_operation_throbber: ThrobberState,
     batch_processor: BatchProcessor,
 
@@ -119,7 +123,7 @@ impl App {
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
-            help_popup: HelpPopup::new(config_arc.clone(), message_sender.clone()),
+            popup_manager: PopupManager::new(message_sender.clone(), config_arc.clone()),
             command_confirm: CommandConfirm::new(config_arc.clone(), message_sender.clone()),
             tooltip: Tooltip::new(
                 "Stay up-to-date! Press `c e` to add eilmeldung release feed!".into(),
@@ -277,7 +281,7 @@ impl App {
                     // pass on term events until consumed
                     if let Some(term_event) = term_event.as_ref() {
                         self.process_term_event(term_event).await?
-                            .pass_to(term_event, &mut self.help_popup).await?
+                            .pass_to(term_event, &mut self.popup_manager).await?
                             .pass_to(term_event, &mut self.command_input).await?
                             .pass_to(term_event, &mut self.command_confirm).await?
                             .pass_to(term_event, &mut self.input_command_generator).await?;
@@ -303,7 +307,7 @@ impl App {
                         self.article_content.process_message(&message).await?;
                         self.command_input.process_message(&message).await?;
                         self.command_confirm.process_message(&message).await?;
-                        self.help_popup.process_message(&message).await?;
+                        self.popup_manager.process_message(&message).await?;
 
                     } else {
                         debug!("Message channel closed, stopping message processing");
@@ -726,6 +730,13 @@ impl MessageReceiver for App {
                                 TooltipFlavor::Error,
                             )?;
                         }
+                    }
+                    AsyncOperationError::FeedParseError(report) => {
+                        tooltip(
+                            &self.message_sender,
+                            report.to_string().as_str(),
+                            TooltipFlavor::Error,
+                        )?;
                     }
                     AsyncOperationError::Report(report) => {
                         tooltip(

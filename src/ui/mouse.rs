@@ -59,7 +59,7 @@ impl App {
         // Skip mouse events when a modal/dialog is active
         if self.command_input.is_active()
             || self.command_confirm.is_active()
-            || self.help_popup.is_modal().unwrap_or(false)
+            || self.popup_manager.is_active()
         {
             return Ok(());
         }

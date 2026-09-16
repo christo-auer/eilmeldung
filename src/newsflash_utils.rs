@@ -405,6 +405,20 @@ impl NewsFlashUtils {
     }
 
     gen_async_call! {
+        method_name: discover_feeds,
+        params: (url: Url),
+        news_flash_var: news_flash,
+        client_var: client,
+        undo_stack_var: _undo_stack,
+        start_event: Event::AsyncDiscoverFeeds,
+        operation: let discover_result = {
+            let semaphore = news_flash.get_semaphore();
+            news_flash::feed_parser::discover_and_parse_feed(&url, &FeedID::new(url.as_str()), None, semaphore, &client).await?
+        },
+        success_event: Event::AsyncDiscoverFeedsFinished(discover_result),
+    }
+
+    gen_async_call! {
         method_name: fetch_feed,
         params: (feed_id: FeedID),
         news_flash_var: news_flash,

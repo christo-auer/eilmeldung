@@ -16,10 +16,8 @@ impl Widget for &mut App {
 
         self.render_command_line(buf, command_line_chunk);
 
-        // and finally the pop if visible
-        if self.help_popup.is_visible() {
-            self.help_popup.render(area, buf);
-        }
+        // render popups
+        self.popup_manager.render(area, buf);
     }
 }
 

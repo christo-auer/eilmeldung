@@ -12,8 +12,9 @@ use ratatui::{
 use ratatui_textarea::TextArea;
 use tokio::sync::mpsc::UnboundedSender;
 
-#[derive(Default)]
-pub struct PopupState<'a> {
+pub struct HelpPopup<'a> {
+    config: Arc<Config>,
+    message_sender: UnboundedSender<Message>,
     title: String,
     contents: Text<'a>,
     is_modal: bool,
@@ -23,41 +24,35 @@ pub struct PopupState<'a> {
     search_input_active: bool,
 }
 
-pub struct HelpPopup<'a> {
-    config: Arc<Config>,
-    message_sender: UnboundedSender<Message>,
-    state: Option<PopupState<'a>>,
-}
-
 impl<'a> HelpPopup<'a> {
-    pub fn new(config: Arc<Config>, message_sender: UnboundedSender<Message>) -> Self {
+    pub fn new(
+        config: Arc<Config>,
+        message_sender: UnboundedSender<Message>,
+        title: String,
+        contents: Text<'a>,
+        is_modal: bool,
+    ) -> Self {
         Self {
             config,
             message_sender,
-            state: None,
+            contents,
+            title,
+            is_modal,
+            search_input: None,
+            scroll_offset_y: 0,
+            scroll_offset_x: 0,
+            search_input_active: false,
         }
     }
 
-    pub fn is_visible(&self) -> bool {
-        self.state.is_some()
-    }
-
-    pub fn is_modal(&self) -> Option<bool> {
-        self.state.as_ref().map(|state| state.is_modal)
-    }
-
     fn on_key_event(&mut self, key_event: &KeyEvent) -> color_eyre::Result<TermEventForwarding> {
-        let Some(state) = self.state.as_ref() else {
-            return Ok(TermEventForwarding::PassOn);
-        };
-
         let command = self
             .config
             .input_config
             .match_single_key_to_single_command(&Key::from(*key_event))
             .cloned();
 
-        match state.search_input_active {
+        match self.search_input_active {
             true => self.on_key_event_search_input(key_event, command)?,
             false if key_event.is_press() => {
                 if let Some(command) = command {
@@ -71,52 +66,49 @@ impl<'a> HelpPopup<'a> {
     }
 
     fn on_key_event_modal(&mut self, command: &Command) -> color_eyre::Result<()> {
-        let Some(state) = self.state.as_mut() else {
-            return Ok(());
-        };
-
         use Command as C;
 
         match command {
             C::NavigateUp => {
-                state.scroll_offset_y = (state.scroll_offset_y.saturating_sub(1))
-                    .clamp(0, state.contents.height() as u16)
+                self.scroll_offset_y =
+                    (self.scroll_offset_y.saturating_sub(1)).clamp(0, self.contents.height() as u16)
             }
             C::NavigateDown => {
-                state.scroll_offset_y = (state.scroll_offset_y.saturating_add(1))
-                    .clamp(0, state.contents.height() as u16)
+                self.scroll_offset_y =
+                    (self.scroll_offset_y.saturating_add(1)).clamp(0, self.contents.height() as u16)
             }
             C::NavigatePageUp => {
-                state.scroll_offset_y = (state
+                self.scroll_offset_y = (self
                     .scroll_offset_y
                     .saturating_sub(self.config.input_config.scroll_amount as u16))
-                .clamp(0, state.contents.height() as u16)
+                .clamp(0, self.contents.height() as u16)
             }
             C::NavigatePageDown => {
-                state.scroll_offset_y = (state
+                self.scroll_offset_y = (self
                     .scroll_offset_y
                     .saturating_add(self.config.input_config.scroll_amount as u16))
-                .clamp(0, state.contents.height() as u16)
+                .clamp(0, self.contents.height() as u16)
             }
             C::NavigateLeft => {
-                state.scroll_offset_x = (state.scroll_offset_x.saturating_sub(1))
-                    .clamp(0, state.contents.width() as u16)
+                self.scroll_offset_x =
+                    (self.scroll_offset_x.saturating_sub(1)).clamp(0, self.contents.width() as u16)
             }
             C::NavigateRight => {
-                state.scroll_offset_x = (state.scroll_offset_x.saturating_add(1))
-                    .clamp(0, state.contents.width() as u16)
+                self.scroll_offset_x =
+                    (self.scroll_offset_x.saturating_add(1)).clamp(0, self.contents.width() as u16)
             }
             C::InputSearch => {
-                if state.search_input.is_none() {
+                if self.search_input.is_none() {
                     let mut text_area = TextArea::default();
                     text_area.set_placeholder_text("search term");
                     text_area.set_style(self.config.theme.command_input());
-                    state.search_input = Some(text_area);
+                    self.search_input = Some(text_area);
                 }
-                state.search_input_active = true;
+                self.search_input_active = true;
             }
             C::InputSubmit | C::InputAbort => {
-                self.state = None;
+                self.message_sender
+                    .send(Message::Event(Event::Popup(PopupEvent::HideHelp)))?;
             }
             _ => {}
         }
@@ -129,18 +121,15 @@ impl<'a> HelpPopup<'a> {
         key_event: &KeyEvent,
         command: Option<Command>,
     ) -> color_eyre::Result<()> {
-        let Some(state) = self.state.as_mut() else {
-            return Ok(());
-        };
-        let Some(text_area) = state.search_input.as_mut() else {
+        let Some(text_area) = self.search_input.as_mut() else {
             return Ok(());
         };
 
         match command {
-            Some(Command::InputSubmit) if key_event.is_press() => state.search_input_active = false,
+            Some(Command::InputSubmit) if key_event.is_press() => self.search_input_active = false,
             Some(Command::InputAbort) if key_event.is_press() => {
-                state.search_input_active = false;
-                state.search_input = None;
+                self.search_input_active = false;
+                self.search_input = None;
             }
 
             Some(Command::InputClear) if key_event.is_press() => {
@@ -169,109 +158,96 @@ impl<'a> HelpPopup<'a> {
 
 impl<'a> Widget for &HelpPopup<'a> {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        if let Some(PopupState {
-            title,
-            contents,
-            is_modal,
-            scroll_offset_y,
-            scroll_offset_x,
-            search_input,
-            search_input_active,
-        }) = self.state.as_ref()
-        {
-            let (width, height) = (
-                (contents.width() + 4).min((area.width as usize).saturating_sub(4)),
-                contents.height() + 2,
-            );
+        let (width, height) = (
+            (self.contents.width() + 4).min((area.width as usize).saturating_sub(4)),
+            self.contents.height() + 2,
+        );
 
-            let [popup_area] = Layout::horizontal([Constraint::Length(width as u16)])
-                .flex(Flex::Center)
-                .areas::<1>(area);
+        let [popup_area] = Layout::horizontal([Constraint::Length(width as u16)])
+            .flex(Flex::Center)
+            .areas::<1>(area);
 
-            let [_, popup_area, _] = Layout::vertical([
-                Constraint::Length(3),
-                Constraint::Length(height as u16),
-                Constraint::Length(6),
-            ])
-            .flex(Flex::End)
-            .areas::<3>(popup_area);
+        let [_, popup_area, _] = Layout::vertical([
+            Constraint::Length(3),
+            Constraint::Length(height as u16),
+            Constraint::Length(6),
+        ])
+        .flex(Flex::End)
+        .areas::<3>(popup_area);
 
-            let mut block = Block::default()
-                .borders(Borders::ALL)
-                .style(Style::default().bg(*self.config.theme.color_palette().background()))
-                .border_type(self.config.border_theme.focused)
-                .border_style(self.config.theme.border_focused())
-                .title_top(Line::styled(
-                    format!(" {title} "),
-                    self.config.theme.header(),
-                ))
-                .padding(Padding::horizontal(1));
+        let mut block = Block::default()
+            .borders(Borders::ALL)
+            .style(Style::default().bg(*self.config.theme.color_palette().background()))
+            .border_type(self.config.border_theme.focused)
+            .border_style(self.config.theme.border_focused())
+            .title_top(Line::styled(
+                format!(" {} ", self.title),
+                self.config.theme.header(),
+            ))
+            .padding(Padding::horizontal(1));
 
-            if self.config.shadows {
-                block = block.shadow(Shadow::light_shade());
-            }
+        if self.config.shadows {
+            block = block.shadow(Shadow::light_shade());
+        }
 
-            let inner_area = block.inner(popup_area);
+        let inner_area = block.inner(popup_area);
 
-            Widget::render(Clear, popup_area, buf);
-            block.render(popup_area, buf);
+        Widget::render(Clear, popup_area, buf);
+        block.render(popup_area, buf);
 
-            if *is_modal {
-                match search_input {
-                    Some(search_input) => {
-                        let [contents_chunk, search_chunk] = Layout::default()
-                            .direction(Direction::Vertical)
-                            .flex(Flex::End)
-                            .constraints(vec![
-                                Constraint::Length(height.saturating_sub(1) as u16),
-                                Constraint::Length(1),
-                            ])
-                            .areas(inner_area);
+        if self.is_modal {
+            match self.search_input.as_ref() {
+                Some(search_input) => {
+                    let [contents_chunk, search_chunk] = Layout::default()
+                        .direction(Direction::Vertical)
+                        .flex(Flex::End)
+                        .constraints(vec![
+                            Constraint::Length(height.saturating_sub(1) as u16),
+                            Constraint::Length(1),
+                        ])
+                        .areas(inner_area);
 
-                        let matcher = SkimMatcherV2::default();
-                        let lines = contents
-                            .lines
-                            .iter()
-                            .filter(|line| {
-                                line.spans.iter().any(|span| {
-                                    matcher
-                                        .fuzzy_match(
-                                            span.content.as_ref(),
-                                            &search_input.lines()[0],
-                                        )
-                                        .is_some()
-                                })
+                    let matcher = SkimMatcherV2::default();
+                    let lines = self
+                        .contents
+                        .lines
+                        .iter()
+                        .filter(|line| {
+                            line.spans.iter().any(|span| {
+                                matcher
+                                    .fuzzy_match(span.content.as_ref(), &search_input.lines()[0])
+                                    .is_some()
                             })
-                            .cloned()
-                            .collect::<Vec<Line>>();
+                        })
+                        .cloned()
+                        .collect::<Vec<Line>>();
 
-                        let entries: u16 = lines.len() as u16;
-                        let paragraph = Paragraph::new(lines).scroll((
-                            (*scroll_offset_y).min(entries.saturating_sub(contents_chunk.height)),
-                            *scroll_offset_x,
-                        ));
-                        paragraph.render(contents_chunk, buf);
+                    let entries: u16 = lines.len() as u16;
+                    let paragraph = Paragraph::new(lines).scroll((
+                        (self.scroll_offset_y).min(entries.saturating_sub(contents_chunk.height)),
+                        self.scroll_offset_x,
+                    ));
+                    paragraph.render(contents_chunk, buf);
 
-                        if *search_input_active {
-                            search_input.render(search_chunk, buf);
-                        } else {
-                            Span::styled(
-                                search_input.lines()[0].as_str(),
-                                self.config.theme.command_input(),
-                            )
-                            .render(search_chunk, buf);
-                        }
-                    }
-                    None => {
-                        let paragraph = Paragraph::new(contents.to_owned())
-                            .scroll((*scroll_offset_y, *scroll_offset_x));
-
-                        paragraph.render(inner_area, buf);
+                    if self.search_input_active {
+                        search_input.render(search_chunk, buf);
+                    } else {
+                        Span::styled(
+                            search_input.lines()[0].as_str(),
+                            self.config.theme.command_input(),
+                        )
+                        .render(search_chunk, buf);
                     }
                 }
-            } else {
-                contents.render(inner_area, buf);
+                None => {
+                    let paragraph = Paragraph::new(self.contents.to_owned())
+                        .scroll((self.scroll_offset_y, self.scroll_offset_x));
+
+                    paragraph.render(inner_area, buf);
+                }
             }
+        } else {
+            (&self.contents).render(inner_area, buf);
         }
     }
 }
@@ -282,8 +258,7 @@ impl TermEventHandler for HelpPopup<'_> {
         event: &TermEvent,
     ) -> color_eyre::Result<TermEventForwarding> {
         if let TermEvent::Key(key_event) = event
-            && self.is_visible()
-            && self.is_modal().unwrap_or(false)
+            && self.is_modal
         {
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
@@ -300,39 +275,10 @@ impl<'a> MessageReceiver for HelpPopup<'a> {
         if let Message::Event(event) = message {
             use Event as E;
             match event {
-                E::ShowHelpPopup(title, contents) => {
-                    self.state = Some(PopupState {
-                        contents: contents.to_owned(),
-                        title: title.to_owned(),
-                        is_modal: false,
-                        search_input: None,
-                        scroll_offset_y: 0,
-                        scroll_offset_x: 0,
-                        search_input_active: false,
-                    });
-                    redraw_required = true;
-                }
-                E::ShowModalHelpPopup(title, contents) => {
-                    self.state = Some(PopupState {
-                        contents: contents.to_owned(),
-                        title: title.to_owned(),
-                        is_modal: true,
-                        search_input: None,
-                        scroll_offset_y: 0,
-                        scroll_offset_x: 0,
-                        search_input_active: false,
-                    });
-                    redraw_required = true;
-                }
-                E::HideHelpPopup => {
-                    self.state = None;
-                    redraw_required = true;
-                }
                 E::ConfigReloaded(config) => {
                     self.config = Arc::clone(config);
                     redraw_required = true;
                 }
-
                 _ => {}
             }
         }

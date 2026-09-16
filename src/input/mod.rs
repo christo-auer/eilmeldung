@@ -26,6 +26,7 @@ pub trait TermEventHandler {
     ) -> color_eyre::Result<TermEventForwarding>;
 }
 
+#[derive(Debug)]
 pub enum TermEventForwarding {
     PassOn,
     Consumed,
@@ -181,17 +182,14 @@ impl InputCommandGenerator {
         match key_sequence {
             Some(key_sequence) => {
                 self.message_sender
-                    .send(Message::Event(Event::ShowHelpPopup(
+                    .send(Message::Event(Event::Popup(PopupEvent::ShowHelp(
                         format!("Input: {}", key_sequence),
                         lines,
-                    )))?
+                    ))))?
             }
-            None => self
-                .message_sender
-                .send(Message::Event(Event::ShowModalHelpPopup(
-                    "Input Mappings".to_owned(),
-                    lines,
-                )))?,
+            None => self.message_sender.send(Message::Event(Event::Popup(
+                PopupEvent::ShowModalHelp("Input Mappings".to_owned(), lines),
+            )))?,
         }
 
         Ok(())
@@ -266,7 +264,7 @@ impl InputCommandGenerator {
             }
             self.key_sequence.keys.clear();
             self.message_sender
-                .send(Message::Event(Event::HideHelpPopup))?;
+                .send(Message::Event(Event::Popup(PopupEvent::HideHelp)))?;
         } else if !self.key_sequence.keys.is_empty()
             && (aborted || timeout || prefix_matches.is_empty())
         {
@@ -280,7 +278,7 @@ impl InputCommandGenerator {
             };
 
             self.message_sender
-                .send(Message::Event(Event::HideHelpPopup))?;
+                .send(Message::Event(Event::Popup(PopupEvent::HideHelp)))?;
 
             self.key_sequence.keys.clear();
 

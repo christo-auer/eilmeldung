@@ -312,14 +312,16 @@ impl CommandInput {
         paragraph: Text<'static>,
     ) -> Result<(), color_eyre::eyre::Error> {
         self.message_sender
-            .send(Message::Event(Event::ShowHelpPopup(title, paragraph)))?;
+            .send(Message::Event(Event::Popup(PopupEvent::ShowHelp(
+                title, paragraph,
+            ))))?;
         self.help_dialog_open = true;
         Ok(())
     }
 
     fn hide_help_dialog(&mut self) -> Result<(), color_eyre::eyre::Error> {
         self.message_sender
-            .send(Message::Event(Event::HideHelpPopup))?;
+            .send(Message::Event(Event::Popup(PopupEvent::HideHelp)))?;
         self.help_dialog_open = false;
         Ok(())
     }
