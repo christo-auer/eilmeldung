@@ -272,15 +272,9 @@ impl TermEventHandler for HelpPopup<'_> {
 impl<'a> MessageReceiver for HelpPopup<'a> {
     async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
         let mut redraw_required = false;
-        if let Message::Event(event) = message {
-            use Event as E;
-            match event {
-                E::ConfigReloaded(config) => {
-                    self.config = Arc::clone(config);
-                    redraw_required = true;
-                }
-                _ => {}
-            }
+        if let Message::Event(Event::ConfigReloaded(config)) = message {
+            self.config = Arc::clone(config);
+            redraw_required = true;
         }
 
         if redraw_required {

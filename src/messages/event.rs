@@ -57,9 +57,9 @@ pub enum Event {
     AsyncFeedAddFinished(Feed),
 
     AsyncDiscoverFeeds,
-    AsyncDiscoverFeedsFinished(DiscoverResult),
+    AsyncDiscoverFeedsFinished(Option<String>, DiscoverResult),
 
-    FeedSelected(Feed),
+    FeedSelected(Option<String>, Feed),
 
     AsyncFeedFetch,
     AsyncFeedFetchFinished(FeedID, Vec<ArticleID>),

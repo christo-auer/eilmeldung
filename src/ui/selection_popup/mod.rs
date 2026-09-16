@@ -13,7 +13,7 @@ pub struct SelectionPopup<'a, T, M: SelectionPopupMapper<Item = T>> {
     contents: Vec<T>,
     mapper: M,
 
-    title: String,
+    label: Option<String>,
 
     list_state: ListState,
     list: List<'a>,
@@ -24,12 +24,12 @@ pub struct SelectionPopup<'a, T, M: SelectionPopupMapper<Item = T>> {
 pub trait SelectionPopupMapper {
     type Item;
     fn as_line(&self, value: &Self::Item) -> Line<'static>;
-    fn on_selected_event(&self, value: &Self::Item) -> Event;
+    fn on_selected_event(&self, label: Option<&str>, value: &Self::Item) -> Event;
 }
 
 impl<'a, T, M: SelectionPopupMapper<Item = T>> SelectionPopup<'a, T, M> {
     pub fn new(
-        title: String,
+        label: Option<String>,
         contents: Vec<T>,
         config: Arc<Config>,
         mapper: M,
@@ -48,7 +48,7 @@ impl<'a, T, M: SelectionPopupMapper<Item = T>> SelectionPopup<'a, T, M> {
         list_state.select_first();
 
         Self {
-            title,
+            label,
             contents,
             mapper,
             config,
@@ -63,7 +63,7 @@ impl<'a, T, M: SelectionPopupMapper<Item = T>> SelectionPopup<'a, T, M> {
         if let Some(selected_index) = self.list_state.selected()
             && let Some(item) = self.contents.get(selected_index)
         {
-            let event = self.mapper.on_selected_event(item);
+            let event = self.mapper.on_selected_event(self.label.as_deref(), item);
             self.message_sender.send(Message::Event(event))?;
             self.message_sender
                 .send(Message::Event(Event::Popup(PopupEvent::HideFeedSelection)))?;
@@ -101,7 +101,7 @@ impl<'a, T, M: SelectionPopupMapper<Item = T>> Widget for &mut SelectionPopup<'a
             .border_type(self.config.border_theme.focused)
             .border_style(self.config.theme.border_focused())
             .title_top(Line::styled(
-                format!(" {} ", self.title),
+                format!(" {} ", self.label.as_deref().unwrap_or("Select")),
                 self.config.theme.header(),
             ))
             .padding(Padding::horizontal(1));
