@@ -42,7 +42,7 @@ impl SyncStatsOutputFormat {
     ) -> color_eyre::Result<String> {
         let mut output = String::new();
 
-        let all_unread: usize = new_articles.values().into_iter().map(Vec::len).sum();
+        let all_unread: usize = new_articles.values().map(Vec::len).sum();
 
         let (
             mut feeds,

@@ -375,11 +375,7 @@ impl App {
         new_articles: &HashMap<news_flash::models::FeedID, Vec<ArticleID>>,
     ) -> color_eyre::Result<()> {
         // show a tooltip
-        let new_count = new_articles
-            .values()
-            .into_iter()
-            .map(Vec::len)
-            .sum::<usize>();
+        let new_count = new_articles.values().map(Vec::len).sum::<usize>();
         tooltip(
             &self.message_sender,
             &*format!("{new_count} new articles synced"),

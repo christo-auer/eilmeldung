@@ -389,10 +389,10 @@ pub enum Command {
 
     #[strum(
         serialize = "feedadd",
-        message = "feedadd <feed URL>",
-        detailed_message = "add a new feed with the given URL"
+        message = "feedadd <feed URL> [<label>]",
+        detailed_message = "add a new feed with the given URL and optional label"
     )]
-    FeedListFeedAdd(Option<Url>),
+    FeedListFeedAdd(Option<Url>, Option<String>),
 
     #[strum(
         serialize = "tagchangecolor",
@@ -845,8 +845,11 @@ impl Display for Command {
                 write!(f, "expand all categories with marked items")
             }
             FeedListCategoryAdd(name) => write!(f, "add category {name}"),
-            FeedListFeedAdd(Some(url)) => write!(f, "add feed {url}"),
-            FeedListFeedAdd(None) => unreachable!(),
+            FeedListFeedAdd(Some(url), None) => write!(f, "add feed {url}"),
+            FeedListFeedAdd(Some(url), Some(label)) => {
+                write!(f, "add feed {url} with label {label}")
+            }
+            FeedListFeedAdd(None, _) => unreachable!(),
             FeedListRenameEntity(name) => write!(f, "rename selected to {name}"),
             FeedListRemoveEntity => write!(f, "remove selected"),
             FeedListRemoveEntityWithChildren => write!(f, "remove selected and its children"),
