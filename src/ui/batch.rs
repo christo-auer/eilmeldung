@@ -94,17 +94,17 @@ impl BatchProcessor {
         lines.pop();
 
         self.message_sender
-            .send(Message::Event(Event::ShowHelpPopup(
+            .send(Message::Event(Event::Popup(PopupEvent::ShowHelp(
                 "".to_owned(),
                 Text::from(lines),
-            )))?;
+            ))))?;
 
         Ok(())
     }
 
     fn hide_popup(&self) -> color_eyre::Result<()> {
         self.message_sender
-            .send(Message::Event(Event::HideHelpPopup))?;
+            .send(Message::Event(Event::Popup(PopupEvent::HideHelp)))?;
 
         Ok(())
     }

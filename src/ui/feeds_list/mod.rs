@@ -1,17 +1,20 @@
+use crate::prelude::*;
 mod feed_list_item;
 mod model;
 mod view;
-use crate::prelude::*;
 
 pub mod prelude {
     pub use super::FeedList;
     pub use super::feed_list_item::FeedListItem;
+    pub use super::model::{FeedListModelData, FeedOrCategory};
     pub use super::view::FeedListViewData;
 }
 
 use log::info;
-use model::{FeedListModelData, FeedOrCategory};
-use news_flash::models::{CategoryID, PluginCapabilities, UnifiedMapping, Url};
+use news_flash::{
+    DiscoverResult,
+    models::{CategoryID, Feed, PluginCapabilities, UnifiedMapping, Url},
+};
 use ratatui::layout::Position;
 use tui_tree_widget::TreeItem;
 
@@ -87,17 +90,17 @@ impl FeedList {
     }
 
     fn set_current_read(&mut self) -> color_eyre::Result<()> {
-        use FeedListItem::*;
+        use FeedListItem as I;
         if let Some(selected) = self.selected().as_ref() {
             match selected {
-                Feeds => self.model_data.set_all_read()?,
-                Feed(feed) => self.model_data.set_feed_read(feed.feed_id.clone())?,
-                Category(category) => self
+                I::Feeds => self.model_data.set_all_read()?,
+                I::Feed(feed) => self.model_data.set_feed_read(feed.feed_id.clone())?,
+                I::Category(category) => self
                     .model_data
                     .set_category_read(category.category_id.clone())?,
-                Tag(tag) => self.model_data.set_tag_read(tag.tag_id.clone())?,
-                Tags => {}
-                Categories | Query(_) => {
+                I::Tag(tag) => self.model_data.set_tag_read(tag.tag_id.clone())?,
+                I::Tags => {}
+                I::Categories | I::Query(_) => {
                     // reroute to article list
                     self.message_sender.send(Message::Command(Command::In(
                         Panel::ArticleList,
@@ -672,6 +675,47 @@ impl FeedList {
     async fn sort(&self) -> color_eyre::Result<()> {
         self.model_data.sort().await
     }
+
+    fn on_add_feed(&mut self, feed: &Feed) -> color_eyre::Result<()> {
+        let Some(url) = feed.feed_url.as_ref() else {
+            tooltip(
+                &self.message_sender,
+                "feed has no URL: cannot add",
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
+        tooltip(
+            &self.message_sender,
+            &*format!("adding feed {}...", feed.label),
+            TooltipFlavor::Info,
+        )?;
+
+        self.model_data.add_feed(
+            url.to_owned(),
+            Some(feed.label.to_owned()),
+            self.maybe_selected_category(),
+        )?;
+
+        Ok(())
+    }
+
+    fn on_discover_result(
+        &mut self,
+        result: &news_flash::DiscoverResult,
+    ) -> color_eyre::Result<()> {
+        match result {
+            DiscoverResult::SingleFeed(feed) => {
+                self.on_add_feed(feed)?;
+            }
+            DiscoverResult::MultipleFeeds(feeds) => self.message_sender.send(Message::Event(
+                Event::Popup(PopupEvent::ShowFeedSelection(feeds.to_vec())),
+            ))?,
+        }
+
+        Ok(())
+    }
 }
 
 impl MessageReceiver for FeedList {
@@ -819,7 +863,7 @@ impl MessageReceiver for FeedList {
                     }
                 }
 
-                C::FeedListFeedAdd(url, name) => {
+                C::FeedListFeedAdd(url) => {
                     let features = self.model_data.features().await?;
                     if !features.contains(PluginCapabilities::ADD_REMOVE_FEEDS) {
                         tooltip(
@@ -828,14 +872,16 @@ impl MessageReceiver for FeedList {
                             TooltipFlavor::Error,
                         )?;
                     } else {
-                        self.model_data.add_feed(
-                            url.as_ref()
-                                .ok_or(color_eyre::eyre::eyre!("no url defined"))?
-                                .to_owned(),
-                            name.clone(),
-                            self.maybe_selected_category(),
+                        let url = url
+                            .as_ref()
+                            .ok_or(color_eyre::eyre::eyre!("no url defined"))?
+                            .to_owned();
+                        self.model_data.news_flash_utils().discover_feeds(url);
+                        tooltip(
+                            &self.message_sender,
+                            "fetching feed information...",
+                            TooltipFlavor::Info,
                         )?;
-                        tooltip(&self.message_sender, "adding feed...", TooltipFlavor::Info)?;
                     }
                 }
 
@@ -953,6 +999,14 @@ impl MessageReceiver for FeedList {
 
                 E::ApplicationStateChanged(state) => {
                     self.is_focused = *state == AppState::FeedSelection;
+                }
+
+                E::AsyncDiscoverFeedsFinished(result) => {
+                    self.on_discover_result(result)?;
+                }
+
+                E::FeedSelected(feed) => {
+                    self.on_add_feed(feed)?;
                 }
 
                 E::AsyncFeedAddFinished(feed) => {
