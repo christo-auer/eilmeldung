@@ -676,7 +676,7 @@ impl FeedList {
         self.model_data.sort().await
     }
 
-    fn on_add_feed(&mut self, feed: &Feed) -> color_eyre::Result<()> {
+    fn on_add_feed(&mut self, label: Option<String>, feed: &Feed) -> color_eyre::Result<()> {
         let Some(url) = feed.feed_url.as_ref() else {
             tooltip(
                 &self.message_sender,
@@ -688,29 +688,30 @@ impl FeedList {
 
         tooltip(
             &self.message_sender,
-            &*format!("adding feed {}...", feed.label),
+            &*format!(
+                "adding feed {}...",
+                label.as_ref().unwrap_or(&url.to_string())
+            ),
             TooltipFlavor::Info,
         )?;
 
-        self.model_data.add_feed(
-            url.to_owned(),
-            Some(feed.label.to_owned()),
-            self.maybe_selected_category(),
-        )?;
+        self.model_data
+            .add_feed(url.to_owned(), label, self.maybe_selected_category())?;
 
         Ok(())
     }
 
     fn on_discover_result(
         &mut self,
+        label: Option<String>,
         result: &news_flash::DiscoverResult,
     ) -> color_eyre::Result<()> {
         match result {
             DiscoverResult::SingleFeed(feed) => {
-                self.on_add_feed(feed)?;
+                self.on_add_feed(label, feed)?;
             }
             DiscoverResult::MultipleFeeds(feeds) => self.message_sender.send(Message::Event(
-                Event::Popup(PopupEvent::ShowFeedSelection(feeds.to_vec())),
+                Event::Popup(PopupEvent::ShowFeedSelection(label, feeds.to_vec())),
             ))?,
         }
 
@@ -863,7 +864,7 @@ impl MessageReceiver for FeedList {
                     }
                 }
 
-                C::FeedListFeedAdd(url) => {
+                C::FeedListFeedAdd(url, label) => {
                     let features = self.model_data.features().await?;
                     if !features.contains(PluginCapabilities::ADD_REMOVE_FEEDS) {
                         tooltip(
@@ -876,7 +877,9 @@ impl MessageReceiver for FeedList {
                             .as_ref()
                             .ok_or(color_eyre::eyre::eyre!("no url defined"))?
                             .to_owned();
-                        self.model_data.news_flash_utils().discover_feeds(url);
+                        self.model_data
+                            .news_flash_utils()
+                            .discover_feeds(label, url);
                         tooltip(
                             &self.message_sender,
                             "fetching feed information...",
@@ -1001,12 +1004,12 @@ impl MessageReceiver for FeedList {
                     self.is_focused = *state == AppState::FeedSelection;
                 }
 
-                E::AsyncDiscoverFeedsFinished(result) => {
-                    self.on_discover_result(result)?;
+                E::AsyncDiscoverFeedsFinished(label, result) => {
+                    self.on_discover_result(label.to_owned(), result)?;
                 }
 
-                E::FeedSelected(feed) => {
-                    self.on_add_feed(feed)?;
+                E::FeedSelected(label, feed) => {
+                    self.on_add_feed(label.to_owned(), feed)?;
                 }
 
                 E::AsyncFeedAddFinished(feed) => {
@@ -1099,8 +1102,6 @@ impl MessageReceiver for FeedList {
                 _ => {}
             }
         }
-
-        // let selected_after_item = self.selected();
 
         if model_needs_update {
             self.model_data.update(&self.config).await?;

@@ -13,7 +13,7 @@ pub enum PopupEvent {
     HideHelp,
 
     // feed selection
-    ShowFeedSelection(Vec<Feed>),
+    ShowFeedSelection(Option<String>, Vec<Feed>),
     HideFeedSelection,
 }
 
@@ -50,9 +50,9 @@ impl<'a> PopupManager<'a> {
             }
             E::HideHelp => self.help_popup = None,
 
-            E::ShowFeedSelection(feeds) => {
+            E::ShowFeedSelection(label, feeds) => {
                 self.feed_selection_popup = Some(SelectionPopup::new(
-                    "Select Feed".to_owned(),
+                    label.to_owned(),
                     feeds.to_vec(),
                     Arc::clone(&self.config),
                     FeedSelectionMapper(Arc::clone(&self.config)),
@@ -128,7 +128,7 @@ impl SelectionPopupMapper for FeedSelectionMapper {
         Line::styled(value.label.clone(), self.0.theme.paragraph())
     }
 
-    fn on_selected_event(&self, value: &Self::Item) -> Event {
-        Event::FeedSelected(value.to_owned())
+    fn on_selected_event(&self, label: Option<&str>, value: &Self::Item) -> Event {
+        Event::FeedSelected(label.map(&str::to_owned), value.to_owned())
     }
 }

@@ -42,7 +42,7 @@ impl SyncStatsOutputFormat {
     ) -> color_eyre::Result<String> {
         let mut output = String::new();
 
-        let all_unread: usize = new_articles.values().into_iter().map(Vec::len).sum();
+        let all_unread: usize = new_articles.values().map(Vec::len).sum();
 
         let (mut feeds, feed_for_feed_id, feed_mapping_for_feed_id) =
             NewsFlashUtils::get_feeds(news_flash)?;
