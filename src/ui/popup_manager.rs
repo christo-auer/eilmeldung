@@ -52,10 +52,10 @@ impl<'a> PopupManager<'a> {
 
             E::ShowFeedSelection(label, feeds) => {
                 self.feed_selection_popup = Some(SelectionPopup::new(
-                    label.to_owned(),
+                    "Select a feed".to_owned(),
                     feeds.to_vec(),
                     Arc::clone(&self.config),
-                    FeedSelectionMapper(Arc::clone(&self.config)),
+                    FeedSelectionMapper(Arc::clone(&self.config), label.clone()),
                     self.message_sender.clone(),
                 ))
             }
@@ -121,14 +121,14 @@ impl MessageReceiver for PopupManager<'_> {
     }
 }
 
-struct FeedSelectionMapper(Arc<Config>);
+struct FeedSelectionMapper(Arc<Config>, Option<String>);
 impl SelectionPopupMapper for FeedSelectionMapper {
     type Item = Feed;
     fn as_line(&self, value: &Self::Item) -> Line<'static> {
         Line::styled(value.label.clone(), self.0.theme.paragraph())
     }
 
-    fn on_selected_event(&self, label: Option<&str>, value: &Self::Item) -> Event {
-        Event::FeedSelected(label.map(&str::to_owned), value.to_owned())
+    fn on_selected_event(&self, value: &Self::Item) -> Event {
+        Event::FeedSelected(self.1.clone(), value.to_owned())
     }
 }
