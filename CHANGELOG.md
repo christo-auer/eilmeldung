@@ -4,6 +4,7 @@
   - you can now directly configure custom base16 themes within the *eilmeldung* configuration file `config.toml`; see *Custom Base16 Themes* in `docs/configuration.md`.
   - this also works if you configure *eilmeldung* through home-manager
 - bugfix: disabling mouse support under Windows now does not crash *eilmeldung*
+- update of nix devshell to use rust bindgen hook (thanks to @cornservant)
 
 # 1.8.1 - 2026-09-02
 
