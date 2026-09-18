@@ -43,7 +43,6 @@ async fn main() -> color_eyre::Result<()> {
 
     let news_flash = login_news_flash(&client, &cli_args, &config).await?;
 
-
     // execute CLI actions -> if true, exit after execution (CLI only)
     if execute_cli_actions(&config, &cli_args, &news_flash, &client).await? {
         return Ok(());
