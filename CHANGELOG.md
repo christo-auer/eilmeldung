@@ -5,6 +5,7 @@
   - this also works if you configure *eilmeldung* through home-manager
 - bugfix: disabling mouse support under Windows now does not crash *eilmeldung*
 - update of nix devshell to use rust bindgen hook (thanks to @cornservant)
+- deps updated
 
 # 1.8.1 - 2026-09-02
 

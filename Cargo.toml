@@ -20,7 +20,7 @@ strip = true
 [dependencies]
 arboard = { version = "3.6.1", default-features = false, features = ["wayland-data-control" ] }
 chrono = "0.4.45"
-clap = { version = "4.6.6", features = ["derive"] }
+clap = { version = "4.6.7", features = ["derive"] }
 color-eyre = "0.6.5"
 config = "0.15.25"
 derive = "1.0.0"
@@ -33,7 +33,7 @@ htmd = "0.5.5"
 htmlescape = "0.3.1"
 if-watch = { version = "3.2.2", features = ["tokio"] }
 image = "0.25.10"
-indexmap = { version = "2.14.0", features = ["serde"] }
+indexmap = { version = "2.14.2", features = ["serde"] }
 inquire = "0.9.4"
 itertools = "0.14.0"
 libc = "0.2"
@@ -48,7 +48,7 @@ openssl = { version = "0.10.81", features = ["vendored"] }
 parse_datetime = "0.14.0"
 percent-encoding = "2.3.2"
 ratatui = { version = "0.30.2", features = ["all-widgets", "palette", "serde"] }
-ratatui-image = { version = "11.0.6", default-features = false, features = ["serde", "tokio"] }
+ratatui-image = { version = "11.1.0", default-features = false, features = ["serde", "tokio"] }
 ratatui-textarea = "0.9.2"
 regex = "1.13.1"
 reqwest = { version = "0.13", default-features = false, features = ["http2", "charset", "brotli"] }
@@ -65,7 +65,7 @@ the-other-tui-markdown = "0.1.0"
 thiserror = "2.0.20"
 throbber-widgets-tui = "0.11.1"
 tokio = { version = "1.53.1", features = ["macros", "tokio-macros", "time", "process", "io-util" ] }
-toml = "1.1.4"
+toml = "1.1.6"
 tui-logger = { version = "0.18.3", features = ["crossterm"] }
 tui-markdown = "0.3.9"
 tui-prompts = "0.6.7"
