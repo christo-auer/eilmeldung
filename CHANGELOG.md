@@ -1,5 +1,7 @@
 # Unreleased
 
+# 1.8.2 - 2026-09-18
+
 - feature: custom base16 themes in `config.toml`
   - you can now directly configure custom base16 themes within the *eilmeldung* configuration file `config.toml`; see *Custom Base16 Themes* in `docs/configuration.md`.
   - this also works if you configure *eilmeldung* through home-manager
