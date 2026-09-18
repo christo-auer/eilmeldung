@@ -245,12 +245,14 @@ impl Config {
             ));
         }
 
-        if self.mouse_support {
+        if let Err(error) = if self.mouse_support {
             info!("Enabling mouse capture");
-            execute!(std::io::stdout(), EnableMouseCapture)?;
+            execute!(std::io::stdout(), EnableMouseCapture)
         } else {
             info!("Disabling mouse capture");
-            execute!(std::io::stdout(), DisableMouseCapture)?;
+            execute!(std::io::stdout(), DisableMouseCapture)
+        } {
+            log::error!("{error}");
         }
 
         self.theme.validate(&config_dir.join("themes/")).await?;

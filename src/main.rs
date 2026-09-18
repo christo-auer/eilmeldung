@@ -65,6 +65,7 @@ async fn main() -> color_eyre::Result<()> {
 
     // startup task which reads the crossterm events
     let input_reader_message_sender = message_sender.clone();
+
     let _input_reader_handle = spawn_blocking(move || {
         if let Err(err) = input_reader(input_reader_message_sender, term_event_sender) {
             error!("input reader got an error: {err}");
@@ -88,7 +89,10 @@ async fn main() -> color_eyre::Result<()> {
         .await;
 
     info!("Application loop ended, restoring terminal");
-    execute!(std::io::stdout(), DisableMouseCapture)?;
+
+    if let Err(error) = execute!(std::io::stdout(), DisableMouseCapture) {
+        log::error!("{error}");
+    }
     ratatui::restore();
 
     match &result {

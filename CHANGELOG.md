@@ -3,6 +3,7 @@
 - feature: custom base16 themes in `config.toml`
   - you can now directly configure custom base16 themes within the *eilmeldung* configuration file `config.toml`; see *Custom Base16 Themes* in `docs/configuration.md`.
   - this also works if you configure *eilmeldung* through home-manager
+- bugfix: disabling mouse support under Windows now does not crash *eilmeldung*
 
 # 1.8.1 - 2026-09-02
 
