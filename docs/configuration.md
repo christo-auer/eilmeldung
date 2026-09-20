@@ -665,7 +665,7 @@ feed_list = [
 ```toml
 feed_list = [
   'query: "Urgent" marked #urgent',
-  'query: "This Week" newer:"1 week"',
+  'query: "This Week" newer:"1 week ago"',
   'query: "Tech News" feed:/tech/ unread',
   "feeds",                    # Hierarchical feed tree
   "* tags",                   # Flat tag list
