@@ -729,7 +729,7 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     self.filter_state
                         .on_new_article_filter(augmented_article_filter.clone());
                     current_article = None;
-                    self.select_index_and_send_message(Some(0))?;
+                    *self.view_data.table_state_mut().selected_mut() = Some(0);
                     model_needs_update = true;
                 }
 

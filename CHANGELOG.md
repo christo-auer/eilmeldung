@@ -1,5 +1,7 @@
 # Unreleased
 
+- bugfix: no crash anymore when deleting a feed while in article list
+
 # 1.8.2 - 2026-09-18
 
 - feature: custom base16 themes in `config.toml`
