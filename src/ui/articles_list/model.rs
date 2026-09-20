@@ -139,7 +139,6 @@ impl ArticleListModelData {
 
         let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
-        // TODO make configurable
         article_filter.order_by = Some(news_flash::models::OrderBy::Published);
         article_filter.order = Some(news_flash::models::ArticleOrder::NewestFirst);
 

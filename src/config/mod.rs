@@ -207,6 +207,7 @@ pub struct Config {
     pub image_enclosure_command: Option<String>,
 
     pub feed_list: Vec<FeedListContentIdentifier>,
+    pub feed_list_compute_query_count: bool,
 
     pub share_targets: Vec<ShareTarget>,
 
@@ -315,7 +316,7 @@ impl Default for Config {
             categories_label: "{icon} Categories {unread_count}".into(),
             tags_label: "{icon} Tags {unread_count}".into(),
             tag_label: "{icon} {label} {unread_count}".into(),
-            query_label: "{icon} {label}".into(),
+            query_label: "{icon} {label} {unread_count}".into(),
             article_table: "{flagged},{read},{marked},{tag_icons},{age},{title}".into(),
             date_format: "%m/%d %H:%M".into(),
             theme: Default::default(),
@@ -375,6 +376,7 @@ impl Default for Config {
                 FeedListContentIdentifier::Categories(FeedListItemType::List),
                 FeedListContentIdentifier::Tags(FeedListItemType::Tree),
             ],
+            feed_list_compute_query_count: true,
 
             share_targets: vec![
                 ShareTarget::Clipboard,

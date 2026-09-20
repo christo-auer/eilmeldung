@@ -1,10 +1,10 @@
-use std::{cmp::Ordering, collections::HashMap, hash::Hash, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap, hash::Hash, str::FromStr, sync::Arc};
 
 use getset::Getters;
 use log::info;
 use news_flash::models::{
     ArticleFilter, ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping,
-    PluginCapabilities, Tag, TagID, Url,
+    PluginCapabilities, Read, Tag, TagID, Url,
 };
 use ratatui::style::Color;
 
@@ -18,7 +18,7 @@ pub enum FeedOrCategory {
 
 #[derive(Getters)]
 #[getset(get = "pub")]
-pub(super) struct FeedListModelData {
+pub struct FeedListModelData {
     #[getset(skip)]
     news_flash_utils: Arc<NewsFlashUtils>,
 
@@ -27,15 +27,16 @@ pub(super) struct FeedListModelData {
     categories: Vec<Category>,
     category_map: HashMap<CategoryID, Category>,
     articles_for_tag: HashMap<TagID, Vec<ArticleID>>,
-
-    unread_count_all: i64,
-    unread_count_for_feed_or_category: HashMap<FeedOrCategory, i64>,
-    unread_count_for_tag: HashMap<TagID, i64>,
-    marked_count_for_feed_or_category: HashMap<FeedOrCategory, i64>,
     category_tree: HashMap<CategoryID, Vec<FeedOrCategory>>,
     roots: Vec<FeedOrCategory>,
     category_mapping_for_category: HashMap<CategoryID, CategoryMapping>,
     feed_mapping_for_feed: HashMap<FeedID, FeedMapping>,
+
+    unread_count_all: i64,
+    unread_count_for_feed_or_category: HashMap<FeedOrCategory, i64>,
+    unread_count_for_tag: HashMap<TagID, i64>,
+    unread_count_for_query: HashMap<LabeledQuery, i64>,
+    marked_count_for_feed_or_category: HashMap<FeedOrCategory, i64>,
 
     tags: Vec<Tag>,
 }
@@ -65,6 +66,7 @@ impl FeedListModelData {
             unread_count_all: 0,
             unread_count_for_feed_or_category: HashMap::default(),
             unread_count_for_tag: HashMap::default(),
+            unread_count_for_query: HashMap::default(),
             marked_count_for_feed_or_category: HashMap::default(),
             category_tree: HashMap::default(),
             roots: Vec::default(),
@@ -73,7 +75,7 @@ impl FeedListModelData {
         }
     }
 
-    pub(super) async fn update(&mut self) -> color_eyre::Result<()> {
+    pub(super) async fn update(&mut self, config: &Config) -> color_eyre::Result<()> {
         let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
         // feeds
@@ -215,8 +217,6 @@ impl FeedListModelData {
             .map(|(feed_id, marked)| (feed_id.into(), marked))
             .collect();
 
-        drop(news_flash);
-
         self.roots.iter().for_each(|feed_or_category| {
             // count unread
             if let FeedOrCategory::Category(category_id) = feed_or_category {
@@ -237,6 +237,73 @@ impl FeedListModelData {
 
         self.unread_count_for_feed_or_category = unread_count_for_feed_or_category;
         self.marked_count_for_feed_or_category = marked_count_for_feed_or_category;
+
+        // TODO: refactor out!
+        if config.feed_list_compute_query_count {
+            let tags_for_article = NewsFlashUtils::generate_one_to_many(
+                &taggings,
+                |a| a.article_id.clone(),
+                |t| t.tag_id.clone(),
+            );
+
+            let tag_map = NewsFlashUtils::generate_id_map(&self.tags, |t| t.tag_id.clone())
+                .into_iter()
+                .map(|(k, v)| (k, v.clone()))
+                .collect();
+            let category_for_category_id =
+                NewsFlashUtils::generate_id_map(&self.categories, |category| {
+                    category.category_id.to_owned()
+                });
+            let feed_mapping_for_feed_id =
+                NewsFlashUtils::generate_id_map(&feed_mappings, |feed_mapping| {
+                    feed_mapping.feed_id.to_owned()
+                });
+
+            let category_for_feed = self
+                .feeds
+                .iter()
+                .filter_map(|feed| {
+                    feed_mapping_for_feed_id
+                        .get(&feed.feed_id)
+                        .and_then(|feed_mapping| {
+                            category_for_category_id.get(&feed_mapping.category_id)
+                        })
+                        .map(|category| (feed.feed_id.to_owned(), category.to_owned()))
+                })
+                .collect::<HashMap<FeedID, Category>>();
+
+            for query in config
+                .feed_list
+                .iter()
+                .filter(|item| matches!(item, FeedListContentIdentifier::Query(..)))
+            {
+                if let FeedListContentIdentifier::Query(labeled_query) = query {
+                    let filter = AugmentedArticleFilter::from_str(&labeled_query.query)?;
+
+                    let articles = filter.article_query.filter(
+                        &news_flash.get_articles(filter.article_filter.to_owned())?,
+                        &ArticleQueryContext {
+                            feed_map: &self.feed_map,
+                            category_for_feed: &category_for_feed,
+                            tags_for_article: &tags_for_article,
+                            tag_map: &tag_map,
+                            last_sync: &news_flash.last_sync().await,
+                            flagged: &Default::default(),
+                        },
+                    );
+
+                    let unread_count = articles
+                        .iter()
+                        .filter(|article| matches!(article.unread, Read::Unread))
+                        .count() as i64;
+
+                    self.unread_count_for_query
+                        .insert(labeled_query.to_owned(), unread_count);
+                };
+            }
+        }
+
+        drop(news_flash);
 
         Ok(())
     }
@@ -325,6 +392,7 @@ impl FeedListModelData {
         self.news_flash_utils.set_all_read();
         self.unread_count_for_tag.clear();
         self.unread_count_for_feed_or_category.clear();
+        self.unread_count_for_query.clear();
         Ok(())
     }
 

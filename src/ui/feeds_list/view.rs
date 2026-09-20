@@ -119,7 +119,9 @@ impl FeedListViewData {
                     self.add_tags_item(config, model_data, item_type, search_term)
                         .await?
                 }
-                Query(labeled_query) => self.add_query_item(config, labeled_query, search_term),
+                Query(labeled_query) => {
+                    self.add_query_item(config, labeled_query, search_term, model_data)
+                }
             }
         }
 
@@ -151,10 +153,18 @@ impl FeedListViewData {
         config: &Config,
         labeled_query: &LabeledQuery,
         search_term: &Option<SearchTerm>,
+        model_data: &FeedListModelData,
     ) {
         // queries
         let query_item = FeedListItem::Query(Box::new(labeled_query.clone()));
-        let mut query_item_text = query_item.to_text(config, None, None);
+        let mut query_item_text = query_item.to_text(
+            config,
+            model_data
+                .unread_count_for_query()
+                .get(labeled_query)
+                .copied(),
+            None,
+        );
 
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&query_item_text)
