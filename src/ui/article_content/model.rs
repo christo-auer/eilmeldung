@@ -86,26 +86,30 @@ impl ArticleContentModelData {
 
         match article_id {
             Some(article_id) => {
-                let article = {
-                    let news_flash = self.news_flash_utils.news_flash_lock.read().await;
-                    let article = news_flash.get_article(article_id)?;
-                    self.feed = news_flash
-                        .get_feeds()?
-                        .0
-                        .into_iter()
-                        .find(|feed| feed.feed_id == article.feed_id);
-                    self.enclosures = Some(news_flash.get_enclosures(article_id)?);
-                    article
-                };
+                let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
-                self.update_article_tags().await?;
+                self.article = match news_flash.get_article(article_id) {
+                    Ok(article) => {
+                        self.feed = news_flash
+                            .get_feeds()?
+                            .0
+                            .into_iter()
+                            .find(|feed| feed.feed_id == article.feed_id);
+                        self.enclosures = Some(news_flash.get_enclosures(article_id)?);
 
-                self.article = Some(article);
+                        Some(article)
+                    }
+                    Err(error) => {
+                        log::error!("unable to retrieve article: {error}");
+                        None
+                    }
+                }
             }
             None => {
                 self.article = None;
             }
         }
+        self.update_article_tags().await?;
 
         Ok(true)
     }
