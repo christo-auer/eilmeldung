@@ -278,14 +278,15 @@ impl<'a> ArticleListViewData<'a> {
                         )
                         .into(),
                         "{tag_icons}" => Line::from(
-                            match model_data.tags_for_article().get(&article.article_id) {
+                            match model_data.tags_for_article_id().get(&article.article_id) {
                                 Some(tag_ids) => {
                                     max_tags = u16::max(max_tags, tag_ids.len() as u16);
 
                                     tag_ids
                                         .iter()
                                         .map(|tag_id| {
-                                            let Some(tag) = model_data.tag_map().get(tag_id) else {
+                                            let Some(tag) = model_data.tag_for_tag_id().get(tag_id)
+                                            else {
                                                 return Span::from("");
                                             };
 
@@ -308,7 +309,7 @@ impl<'a> ArticleListViewData<'a> {
                         }
                         "{feed}" => html_sanitize(
                             model_data
-                                .feed_map()
+                                .feed_for_feed_id()
                                 .get(&article.feed_id)
                                 .map(|feed| feed.label.as_str())
                                 .unwrap_or("unknown feed"),
@@ -378,10 +379,11 @@ impl<'a> ArticleListViewData<'a> {
                         if query.test(
                             article,
                             &ArticleQueryContext {
-                                feed_map: model_data.feed_map(),
-                                category_for_feed: model_data.category_for_feed(),
-                                tags_for_article: model_data.tags_for_article(),
-                                tag_map: model_data.tag_map(),
+                                feed_for_feed_id: model_data.feed_for_feed_id(),
+                                parent_category_for_feed_id: model_data
+                                    .parent_category_for_feed_id(),
+                                tags_for_article_id: model_data.tags_for_article_id(),
+                                tag_for_tag_id: model_data.tag_for_tag_id(),
                                 last_sync: model_data.last_sync(),
                                 flagged: model_data.flagged_articles(),
                             },

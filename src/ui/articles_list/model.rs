@@ -14,10 +14,10 @@ use news_flash::models::{Article, ArticleID, Category, Feed, FeedID, Marked, Tag
 pub struct ArticleListModelData {
     news_flash_utils: Arc<NewsFlashUtils>,
     articles: Vec<Article>,
-    feed_map: HashMap<FeedID, Feed>,
-    category_for_feed: HashMap<FeedID, Category>,
-    tags_for_article: HashMap<ArticleID, Vec<TagID>>,
-    tag_map: HashMap<TagID, Tag>,
+    feed_for_feed_id: HashMap<FeedID, Feed>,
+    parent_category_for_feed_id: HashMap<FeedID, Category>,
+    tags_for_article_id: HashMap<ArticleID, Vec<TagID>>,
+    tag_for_tag_id: HashMap<TagID, Tag>,
     last_sync: DateTime<Utc>,
 
     #[get_mut = "pub(super)"]
@@ -30,10 +30,10 @@ impl ArticleListModelData {
             news_flash_utils: news_flash_utils.clone(),
 
             articles: Default::default(),
-            feed_map: Default::default(),
-            category_for_feed: Default::default(),
-            tags_for_article: Default::default(),
-            tag_map: Default::default(),
+            feed_for_feed_id: Default::default(),
+            parent_category_for_feed_id: Default::default(),
+            tags_for_article_id: Default::default(),
+            tag_for_tag_id: Default::default(),
             last_sync: Default::default(),
             flagged_articles: Default::default(),
         }
@@ -50,46 +50,22 @@ impl ArticleListModelData {
         self.last_sync = news_flash.last_sync().await;
 
         // fill model data
-        let (feeds, feed_mappings) = news_flash.get_feeds()?;
-        self.feed_map = NewsFlashUtils::generate_id_map(&feeds, |f| f.feed_id.clone())
-            .into_iter()
-            .map(|(k, v)| (k, v.clone()))
-            .collect();
+        let (_feeds, feed_for_feed_id, feed_mapping_for_feed_id) =
+            NewsFlashUtils::get_feeds(&news_flash)?;
 
-        let (categories, _) = news_flash.get_categories()?;
+        self.feed_for_feed_id = feed_for_feed_id;
 
-        let category_for_category_id = NewsFlashUtils::generate_id_map(&categories, |category| {
-            category.category_id.to_owned()
-        });
+        let (_categories, category_for_category_id, _category_mapping_for_category_id) =
+            NewsFlashUtils::get_categories(&news_flash)?;
 
-        let feed_mapping_for_feed_id =
-            NewsFlashUtils::generate_id_map(&feed_mappings, |feed_mapping| {
-                feed_mapping.feed_id.to_owned()
-            });
-
-        self.category_for_feed = feeds
-            .iter()
-            .filter_map(|feed| {
-                feed_mapping_for_feed_id
-                    .get(&feed.feed_id)
-                    .and_then(|feed_mapping| {
-                        category_for_category_id.get(&feed_mapping.category_id)
-                    })
-                    .map(|category| (feed.feed_id.to_owned(), category.to_owned()))
-            })
-            .collect::<HashMap<FeedID, Category>>();
-
-        let (tags, taggings) = news_flash.get_tags()?;
-        self.tag_map = NewsFlashUtils::generate_id_map(&tags, |t| t.tag_id.clone())
-            .into_iter()
-            .map(|(k, v)| (k, v.clone()))
-            .collect();
-
-        self.tags_for_article = NewsFlashUtils::generate_one_to_many(
-            &taggings,
-            |a| a.article_id.clone(),
-            |t| t.tag_id.clone(),
+        self.parent_category_for_feed_id = NewsFlashUtils::get_parent_category_id_for_feed_id(
+            &category_for_category_id,
+            &feed_mapping_for_feed_id,
         );
+
+        let (tags, tag_for_tag_id, tagging_for_tag_id) = NewsFlashUtils::get_tags(&news_flash)?;
+        self.tag_for_tag_id = tag_for_tag_id;
+        self.tags_for_article_id = NewsFlashUtils::get_tags_for_article(&tagging_for_tag_id);
 
         let position_for_tag = tags
             .iter()
@@ -97,14 +73,16 @@ impl ArticleListModelData {
             .map(|(pos, tag)| (&tag.tag_id, pos))
             .collect::<HashMap<&TagID, usize>>();
 
-        self.tags_for_article.iter_mut().for_each(|(_, tag_ids)| {
-            tag_ids.sort_by(|tag_a, tag_b| {
-                position_for_tag
-                    .get(tag_a)
-                    .unwrap()
-                    .cmp(position_for_tag.get(tag_b).unwrap())
-            })
-        });
+        self.tags_for_article_id
+            .iter_mut()
+            .for_each(|(_, tag_ids)| {
+                tag_ids.sort_by(|tag_a, tag_b| {
+                    position_for_tag
+                        .get(tag_a)
+                        .unwrap()
+                        .cmp(position_for_tag.get(tag_b).unwrap())
+                })
+            });
 
         drop(news_flash);
 
@@ -139,7 +117,6 @@ impl ArticleListModelData {
 
         let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
-        // TODO make configurable
         article_filter.order_by = Some(news_flash::models::OrderBy::Published);
         article_filter.order = Some(news_flash::models::ArticleOrder::NewestFirst);
 
@@ -157,7 +134,7 @@ impl ArticleListModelData {
 
         filter_state
             .get_effective_sort_order(config)
-            .sort(&mut self.articles, &self.feed_map);
+            .sort(&mut self.articles, &self.feed_for_feed_id);
 
         Ok(())
     }
@@ -166,10 +143,10 @@ impl ArticleListModelData {
         query.filter(
             &self.articles,
             &ArticleQueryContext {
-                feed_map: self.feed_map(),
-                category_for_feed: self.category_for_feed(),
-                tags_for_article: self.tags_for_article(),
-                tag_map: self.tag_map(),
+                feed_for_feed_id: self.feed_for_feed_id(),
+                parent_category_for_feed_id: self.parent_category_for_feed_id(),
+                tags_for_article_id: self.tags_for_article_id(),
+                tag_for_tag_id: self.tag_for_tag_id(),
                 last_sync: self.last_sync(),
                 flagged: &self.flagged_articles,
             },
@@ -232,7 +209,7 @@ impl ArticleListModelData {
         let article_ids = article_ids
             .into_iter()
             .filter(|article_id| {
-                self.tags_for_article
+                self.tags_for_article_id
                     .get(article_id)
                     .map(|tags| !tags.contains(&tag_id))
                     .unwrap_or(true)
@@ -258,7 +235,7 @@ impl ArticleListModelData {
         let article_ids = article_ids
             .into_iter()
             .filter(|article_id| {
-                self.tags_for_article
+                self.tags_for_article_id
                     .get(article_id)
                     .map(|tags| tags.contains(&tag_id))
                     .unwrap_or(false)

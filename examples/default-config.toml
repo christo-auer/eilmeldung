@@ -29,7 +29,7 @@ category_label = "{icon} {label} {unread_count}"
 categories_label = "{icon} Categories {unread_count}"
 tags_label = "{icon} Tags {unread_count}"
 tag_label = "{icon} {label} {unread_count}"
-query_label = "{icon} {label}"
+query_label = "{icon} {label} {unread_count}"
 
 # Article Display
 article_table = "{flagged},{read},{marked},{tag_icons},{age},{title}"
@@ -68,6 +68,7 @@ feed_list = [
   "* categories",
   "tags",
 ]
+feed_list_query_compute_unread = true
 
 # Enclosures
 enclosure_command = "xdg-open {url}"

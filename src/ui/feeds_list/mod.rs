@@ -1,27 +1,20 @@
 mod feed_list_item;
 mod model;
 mod view;
+use crate::prelude::*;
 
 pub mod prelude {
     pub use super::FeedList;
+    pub use super::feed_list_item::FeedListItem;
+    pub use super::view::FeedListViewData;
 }
 
-use feed_list_item::FeedListItem;
 use log::info;
+use model::{FeedListModelData, FeedOrCategory};
 use news_flash::models::{CategoryID, PluginCapabilities, UnifiedMapping, Url};
 use ratatui::layout::Position;
 use tui_tree_widget::TreeItem;
 
-use crate::{
-    prelude::*,
-    ui::{
-        feeds_list::{
-            model::{FeedListModelData, FeedOrCategory},
-            view::FeedListViewData,
-        },
-        tooltip,
-    },
-};
 use std::{sync::Arc, time::Duration};
 
 use tokio::{sync::mpsc::UnboundedSender, time::Instant};
@@ -381,7 +374,7 @@ impl FeedList {
         let Some((mut new_parent_category_id, dest_unified_mapping)) = (match self.selected() {
             Some(Category(category)) => self
                 .model_data
-                .category_mapping_for_category()
+                .category_mapping_for_category_id()
                 .get(&category.category_id)
                 .cloned()
                 .map(|mapping| {
@@ -393,7 +386,7 @@ impl FeedList {
 
             Some(Feed(feed)) => self
                 .model_data
-                .feed_mapping_for_feed()
+                .feed_mapping_for_feed_id()
                 .get(&feed.feed_id)
                 .cloned()
                 .map(|mapping| {
@@ -1047,7 +1040,7 @@ impl MessageReceiver for FeedList {
         // let selected_after_item = self.selected();
 
         if model_needs_update {
-            self.model_data.update().await?;
+            self.model_data.update(&self.config).await?;
             self.view_data
                 .update(&self.config, &self.model_data, &self.search_term)
                 .await?;

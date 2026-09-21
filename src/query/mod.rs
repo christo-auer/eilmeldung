@@ -78,10 +78,10 @@ pub struct ArticleQuery {
 }
 
 pub struct ArticleQueryContext<'a> {
-    pub feed_map: &'a HashMap<FeedID, Feed>,
-    pub category_for_feed: &'a HashMap<FeedID, Category>,
-    pub tags_for_article: &'a HashMap<ArticleID, Vec<TagID>>,
-    pub tag_map: &'a HashMap<TagID, Tag>,
+    pub feed_for_feed_id: &'a HashMap<FeedID, Feed>,
+    pub parent_category_for_feed_id: &'a HashMap<FeedID, Category>,
+    pub tags_for_article_id: &'a HashMap<ArticleID, Vec<TagID>>,
+    pub tag_for_tag_id: &'a HashMap<TagID, Tag>,
     pub last_sync: &'a DateTime<Utc>,
     pub flagged: &'a HashSet<ArticleID>,
 }
@@ -98,18 +98,21 @@ impl ArticleQuery {
 
     #[inline(always)]
     pub fn test(&self, article: &Article, context: &ArticleQueryContext) -> bool {
-        let feed = context.feed_map.get(&article.feed_id);
+        let feed = context.feed_for_feed_id.get(&article.feed_id);
 
-        let category = context.category_for_feed.get(&article.feed_id);
+        let category = context.parent_category_for_feed_id.get(&article.feed_id);
 
         let tags = context
-            .tags_for_article
+            .tags_for_article_id
             .get(&article.article_id)
             .map(|tag_ids| {
                 tag_ids
                     .iter()
                     .filter_map(|tag_id| {
-                        context.tag_map.get(tag_id).map(|tag| tag.label.to_string())
+                        context
+                            .tag_for_tag_id
+                            .get(tag_id)
+                            .map(|tag| tag.label.to_string())
                     })
                     .collect::<HashSet<String>>()
             });

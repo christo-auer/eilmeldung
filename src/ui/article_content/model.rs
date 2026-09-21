@@ -117,16 +117,16 @@ impl ArticleContentModelData {
     pub(super) async fn update_article_tags(&mut self) -> color_eyre::Result<()> {
         if let Some(article_id) = self.article.as_ref().map(|article| &article.article_id) {
             let news_flash = self.news_flash_utils.news_flash_lock.read().await;
-            let (tags, taggings) = news_flash.get_tags()?;
-            let mut tag_for_tag_id =
-                NewsFlashUtils::generate_id_map(&tags, |tag| tag.tag_id.clone());
-            self.tags = Some(
-                taggings
-                    .into_iter()
-                    .filter(|tagging| tagging.article_id == *article_id)
-                    .filter_map(|tagging| tag_for_tag_id.remove(&tagging.tag_id))
-                    .collect::<Vec<Tag>>(),
-            );
+            let (_, tag_for_tag_id, tagging_for_tag_id) = NewsFlashUtils::get_tags(&news_flash)?;
+            self.tags = NewsFlashUtils::get_tags_for_article(&tagging_for_tag_id)
+                .get(article_id)
+                .map(|tag_ids| {
+                    tag_ids
+                        .iter()
+                        .filter_map(|tag_id| tag_for_tag_id.get(tag_id))
+                        .cloned()
+                        .collect()
+                });
         }
         Ok(())
     }

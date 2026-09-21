@@ -44,16 +44,13 @@ impl SyncStatsOutputFormat {
 
         let all_unread: i64 = new_articles.values().sum();
 
-        let (
-            mut feeds,
-            feed_for_feed_id,
-            feed_mapping_for_feed_id,
-            mut categories,
-            category_for_category_id,
-            category_mapping_for_category_id,
-        ) = get_feeds_and_categories(news_flash)?;
+        let (mut feeds, feed_for_feed_id, feed_mapping_for_feed_id) =
+            NewsFlashUtils::get_feeds(news_flash)?;
 
-        sort_feeds_and_categories(
+        let (mut categories, category_for_category_id, category_mapping_for_category_id) =
+            NewsFlashUtils::get_categories(news_flash)?;
+
+        NewsFlashUtils::sort_feeds_and_categories(
             &mut feeds,
             &mut categories,
             &feed_mapping_for_feed_id,

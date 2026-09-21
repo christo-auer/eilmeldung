@@ -119,7 +119,9 @@ impl FeedListViewData {
                     self.add_tags_item(config, model_data, item_type, search_term)
                         .await?
                 }
-                Query(labeled_query) => self.add_query_item(config, labeled_query, search_term),
+                Query(labeled_query) => {
+                    self.add_query_item(config, labeled_query, search_term, model_data)
+                }
             }
         }
 
@@ -151,10 +153,18 @@ impl FeedListViewData {
         config: &Config,
         labeled_query: &LabeledQuery,
         search_term: &Option<SearchTerm>,
+        model_data: &FeedListModelData,
     ) {
         // queries
         let query_item = FeedListItem::Query(Box::new(labeled_query.clone()));
-        let mut query_item_text = query_item.to_text(config, None, None);
+        let mut query_item_text = query_item.to_text(
+            config,
+            model_data
+                .unread_count_for_query()
+                .get(labeled_query)
+                .copied(),
+            None,
+        );
 
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&query_item_text)
@@ -208,7 +218,7 @@ impl FeedListViewData {
         for root in feeds_or_categories {
             match root {
                 FeedOrCategory::Category(category_id) => {
-                    if let Some(category) = model_data.category_map().get(category_id) {
+                    if let Some(category) = model_data.category_for_category_id().get(category_id) {
                         root_items.push(self.map_category_to_tree_item(
                             config,
                             category,
@@ -407,7 +417,10 @@ impl FeedListViewData {
             for child in child_categories {
                 children.push(match child {
                     FeedOrCategory::Category(category_id) => {
-                        let child_category = model_data.category_map().get(category_id).unwrap();
+                        let child_category = model_data
+                            .category_for_category_id()
+                            .get(category_id)
+                            .unwrap();
                         self.map_category_to_tree_item(
                             config,
                             child_category,
@@ -499,7 +512,7 @@ impl FeedListViewData {
         use FeedOrCategory::*;
         self.yanked_unified_mapping = match feed_or_category {
             Feed(feed_id) => {
-                let feed_mapping = match model_data.feed_mapping_for_feed().get(&feed_id) {
+                let feed_mapping = match model_data.feed_mapping_for_feed_id().get(&feed_id) {
                     Some(feed_mapping) => feed_mapping.to_owned(),
                     None => FeedMapping {
                         feed_id: feed_id.to_owned(),
@@ -510,7 +523,7 @@ impl FeedListViewData {
                 Some(UnifiedMapping::Feed(feed_mapping))
             }
             Category(category_id) => model_data
-                .category_mapping_for_category()
+                .category_mapping_for_category_id()
                 .get(&category_id)
                 .map(|mapping| UnifiedMapping::Category(mapping.to_owned())),
         };
