@@ -176,7 +176,7 @@ content_resize = true
 
 [mouse.content_mapping]
 "left" = ["focus content"]
-"middle" = ["open" "read"]
+"middle" = ["open", "read"]
 "right" = ["read"]
 "scroll_down" = ["in content down"]
 "scroll_up" = ["in content up"]
