@@ -1,5 +1,8 @@
 # Unreleased
 
+- queries in the feed list now support the `{unread_count}` field in their label
+  - new default value for is `{icon} {label} {unread_count}`
+  - if you have many queries/feeds/articles and this causes a *slowdown* you can set `feed_list_query_compute_unread = false`
 - bugfix: no crash anymore when deleting a feed while in article list
 
 # 1.8.2 - 2026-09-18

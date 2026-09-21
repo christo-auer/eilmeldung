@@ -207,7 +207,7 @@ pub struct Config {
     pub image_enclosure_command: Option<String>,
 
     pub feed_list: Vec<FeedListContentIdentifier>,
-    pub feed_list_compute_query_count: bool,
+    pub feed_list_query_compute_unread: bool,
 
     pub share_targets: Vec<ShareTarget>,
 
@@ -376,7 +376,7 @@ impl Default for Config {
                 FeedListContentIdentifier::Categories(FeedListItemType::List),
                 FeedListContentIdentifier::Tags(FeedListItemType::Tree),
             ],
-            feed_list_compute_query_count: true,
+            feed_list_query_compute_unread: true,
 
             share_targets: vec![
                 ShareTarget::Clipboard,

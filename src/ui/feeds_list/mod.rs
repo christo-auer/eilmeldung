@@ -374,7 +374,7 @@ impl FeedList {
         let Some((mut new_parent_category_id, dest_unified_mapping)) = (match self.selected() {
             Some(Category(category)) => self
                 .model_data
-                .category_mapping_for_category()
+                .category_mapping_for_category_id()
                 .get(&category.category_id)
                 .cloned()
                 .map(|mapping| {
@@ -386,7 +386,7 @@ impl FeedList {
 
             Some(Feed(feed)) => self
                 .model_data
-                .feed_mapping_for_feed()
+                .feed_mapping_for_feed_id()
                 .get(&feed.feed_id)
                 .cloned()
                 .map(|mapping| {

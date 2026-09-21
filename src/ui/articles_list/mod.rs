@@ -180,10 +180,10 @@ impl ArticlesList {
             article_query.test(
                 article,
                 &ArticleQueryContext {
-                    feed_map: self.model_data.feed_map(),
-                    category_for_feed: self.model_data.category_for_feed(),
-                    tags_for_article: self.model_data.tags_for_article(),
-                    tag_map: self.model_data.tag_map(),
+                    feed_for_feed_id: self.model_data.feed_for_feed_id(),
+                    parent_category_for_feed_id: self.model_data.parent_category_for_feed_id(),
+                    tags_for_article_id: self.model_data.tags_for_article_id(),
+                    tag_for_tag_id: self.model_data.tag_for_tag_id(),
                     last_sync: self.model_data.last_sync(),
                     flagged: self.model_data.flagged_articles(),
                 },
@@ -429,7 +429,7 @@ impl ArticlesList {
     ) -> Result<(), color_eyre::eyre::Error> {
         match self
             .model_data
-            .tag_map()
+            .tag_for_tag_id()
             .values()
             .find(|&tag| tag.label == tag_name)
         {
