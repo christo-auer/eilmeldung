@@ -1013,14 +1013,22 @@ impl MessageReceiver for FeedList {
                 }
 
                 E::MouseFeedSelect(col, row) => {
-                    let identifier = self
-                        .view_data
-                        .tree_state()
-                        .rendered_at(Position::new(*col, *row))
-                        .map(|slice| slice.to_vec());
-                    if let Some(identifier) = identifier {
-                        self.view_data.tree_state_mut().select(identifier);
-                        selection_changed = true;
+                    let pos = Position::new(*col, *row);
+
+                    if self.config.mouse.toggle_tree_on_click {
+                        if self.view_data.tree_state_mut().click_at(pos) {
+                            selection_changed = true;
+                        }
+                    } else {
+                        let identifier = self
+                            .view_data
+                            .tree_state()
+                            .rendered_at(Position::new(*col, *row))
+                            .map(|slice| slice.to_vec());
+                        if let Some(identifier) = identifier {
+                            self.view_data.tree_state_mut().select(identifier);
+                            selection_changed = true;
+                        }
                     }
                 }
 
