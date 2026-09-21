@@ -1012,19 +1012,16 @@ impl MessageReceiver for FeedList {
                     // self.model_data.sync()?;
                 }
 
-                E::MouseFeedClick(col, row) => {
-                    let pos = Position::new(*col, *row);
-                    if self.view_data.tree_state_mut().click_at(pos) {
+                E::MouseFeedSelect(col, row) => {
+                    let identifier = self
+                        .view_data
+                        .tree_state()
+                        .rendered_at(Position::new(*col, *row))
+                        .map(|slice| slice.to_vec());
+                    if let Some(identifier) = identifier {
+                        self.view_data.tree_state_mut().select(identifier);
                         selection_changed = true;
                     }
-                }
-
-                E::MouseScrollDown(Panel::FeedList) => {
-                    self.view_data.tree_state_mut().scroll_down(1);
-                }
-
-                E::MouseScrollUp(Panel::FeedList) => {
-                    self.view_data.tree_state_mut().scroll_up(1);
                 }
 
                 E::ConfigReloaded(config) => {

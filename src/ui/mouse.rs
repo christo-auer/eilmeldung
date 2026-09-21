@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::prelude::*;
 
 use getset::{Getters, MutGetters};
@@ -5,6 +7,9 @@ use ratatui::{
     crossterm::event::{MouseButton, MouseEventKind},
     prelude::Rect,
 };
+
+use ratatui::crossterm::event::Event as TermEvent;
+use tokio::sync::mpsc::UnboundedSender;
 
 /// Stores the last rendered areas of the three main panels for mouse hit-testing.
 #[derive(Default, Clone, Copy, Getters, MutGetters)]
@@ -51,60 +56,52 @@ impl PanelAreas {
     }
 }
 
-impl App {
-    pub(super) fn handle_mouse_event(
-        &mut self,
-        mouse_event: &ratatui::crossterm::event::MouseEvent,
-    ) -> color_eyre::Result<()> {
-        // Skip mouse events when a modal/dialog is active
-        if self.command_input.is_active()
-            || self.command_confirm.is_active()
-            || self.help_popup.is_modal().unwrap_or(false)
-        {
-            return Ok(());
+#[derive(getset::MutGetters, getset::Getters)]
+pub struct MouseInputHandler {
+    message_sender: UnboundedSender<Message>,
+    config: Arc<Config>,
+    #[getset(get_mut = "pub")]
+    panel_areas: PanelAreas,
+
+    drag_resize_active: bool,
+
+    #[getset(get = "pub")]
+    articles_height_override: Option<u16>,
+
+    state: AppState,
+
+    #[getset(get_mut = "pub")]
+    enabled: bool,
+}
+
+impl MouseInputHandler {
+    pub fn new(config: Arc<Config>, message_sender: UnboundedSender<Message>) -> Self {
+        Self {
+            enabled: true,
+            message_sender,
+            config,
+            panel_areas: Default::default(),
+            drag_resize_active: false,
+            articles_height_override: None,
+            state: Default::default(),
         }
+    }
 
-        let col = mouse_event.column;
-        let row = mouse_event.row;
-
+    fn handle_content_resize_dragging(
+        &mut self,
+        col: u16,
+        row: u16,
+        mouse_event: &ratatui::crossterm::event::MouseEvent,
+    ) -> color_eyre::Result<Option<TermEventForwarding>> {
         match mouse_event.kind {
-            MouseEventKind::Down(MouseButton::Left) => {
-                // Check if clicking on the horizontal border to start a drag-resize
+            MouseEventKind::Down(MouseButton::Left)
                 if !matches!(self.state, AppState::ArticleContentDistractionFree)
-                    && self.panel_areas.is_on_horizontal_border(col, row)
-                {
-                    self.drag_resize_active = true;
-                    return Ok(());
-                }
-
-                if let Some(panel) = self.panel_areas.panel_at(col, row) {
-                    // Focus the clicked panel (only if not in distraction free mode)
-                    let target_state: AppState = panel.into();
-                    if !matches!(self.state, AppState::ArticleContentDistractionFree)
-                        && self.state != target_state
-                    {
-                        self.switch_state(target_state)?;
-                    }
-
-                    match panel {
-                        Panel::ArticleList => {
-                            if let Some(row_offset) = self.panel_areas.article_row_offset(row) {
-                                self.message_sender
-                                    .send(Message::Event(Event::MouseArticleClick(row_offset)))?;
-                            }
-                        }
-                        Panel::FeedList => {
-                            self.message_sender
-                                .send(Message::Event(Event::MouseFeedClick(col, row)))?;
-                        }
-                        _ => {}
-                    }
-
-                    self.message_sender
-                        .send(Message::Command(Command::Redraw))?;
-                }
+                    && self.panel_areas.is_on_horizontal_border(col, row) =>
+            {
+                log::trace!("start dragging border");
+                self.drag_resize_active = true;
+                Ok(Some(TermEventForwarding::Consumed))
             }
-
             MouseEventKind::Drag(MouseButton::Left) if self.drag_resize_active => {
                 // Calculate the new articles list height based on drag position
                 let articles_top = self.panel_areas.articles_list().y;
@@ -123,34 +120,100 @@ impl App {
                 if let Some(old_articles_height) = old_articles_height
                     && old_articles_height != new_articles_height
                 {
+                    log::trace!("dragging border: {new_articles_height}");
                     self.message_sender
                         .send(Message::Command(Command::Redraw))?;
                 }
-            }
 
-            MouseEventKind::Up(MouseButton::Left) => {
+                Ok(Some(TermEventForwarding::Consumed))
+            }
+            MouseEventKind::Up(MouseButton::Left) if self.drag_resize_active => {
+                log::trace!("dragging stopped");
                 self.drag_resize_active = false;
+                Ok(Some(TermEventForwarding::Consumed))
             }
 
-            MouseEventKind::ScrollDown => {
-                if let Some(panel) = self.panel_areas.panel_at(col, row) {
-                    self.message_sender
-                        .send(Message::Event(Event::MouseScrollDown(panel)))?;
-                    self.message_sender
-                        .send(Message::Command(Command::Redraw))?;
+            _ => Ok(None),
+        }
+    }
+}
+
+impl TermEventHandler for MouseInputHandler {
+    async fn process_term_event(
+        &mut self,
+        event: &TermEvent,
+    ) -> color_eyre::Result<TermEventForwarding> {
+        if !self.enabled {
+            return Ok(TermEventForwarding::PassOn);
+        }
+
+        let TermEvent::Mouse(mouse_event) = event else {
+            return Ok(TermEventForwarding::PassOn);
+        };
+
+        let col = mouse_event.column;
+        let row = mouse_event.row;
+
+        let TermEvent::Mouse(mouse_event) = event else {
+            return Ok(TermEventForwarding::PassOn);
+        };
+
+        if self.config.mouse.content_resize
+            && let Some(event_forwarding) =
+                self.handle_content_resize_dragging(col, row, mouse_event)?
+        {
+            return Ok(event_forwarding);
+        }
+
+        let mouse_input = MouseInput::from(*mouse_event);
+
+        let select = mouse_input
+            .kind()
+            .map(|kind| matches!(kind, MouseEventKind::Down(..)))
+            .unwrap_or(false);
+
+        if let Some(panel) = self.panel_areas.panel_at(col, row) {
+            // Focus the clicked panel (only if not in distraction free mode)
+            // let target_state: AppState = panel.into();
+
+            if select {
+                match panel {
+                    Panel::ArticleList => {
+                        if let Some(row_offset) = self.panel_areas.article_row_offset(row) {
+                            self.message_sender
+                                .send(Message::Event(Event::MouseArticleSelect(row_offset)))?;
+                        }
+                    }
+                    Panel::FeedList => {
+                        self.message_sender
+                            .send(Message::Event(Event::MouseFeedSelect(col, row)))?;
+                    }
+                    _ => {}
                 }
             }
 
-            MouseEventKind::ScrollUp => {
-                if let Some(panel) = self.panel_areas.panel_at(col, row) {
-                    self.message_sender
-                        .send(Message::Event(Event::MouseScrollUp(panel)))?;
-                    self.message_sender
-                        .send(Message::Command(Command::Redraw))?;
-                }
-            }
+            self.message_sender
+                .send(Message::Command(Command::Redraw))?;
 
-            _ => {}
+            if let Some(command_sequence) = self.config.mouse.get_mapping(mouse_input, panel) {
+                self.message_sender
+                    .send(Message::Batch(command_sequence.commands.to_owned()))?;
+                return Ok(TermEventForwarding::Consumed);
+            }
+        }
+
+        Ok(if select {
+            TermEventForwarding::Consumed
+        } else {
+            TermEventForwarding::PassOn
+        })
+    }
+}
+
+impl MessageReceiver for MouseInputHandler {
+    async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
+        if let Message::Event(Event::ApplicationStateChanged(new_state)) = message {
+            self.state = *new_state;
         }
 
         Ok(())

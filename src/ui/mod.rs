@@ -19,7 +19,7 @@ pub mod prelude {
     pub use super::command_input::CommandInput;
     pub use super::feeds_list::prelude::*;
     pub use super::help_popup::HelpPopup;
-    pub use super::mouse::PanelAreas;
+    pub use super::mouse::MouseInputHandler;
     pub use super::state::AppState;
     pub use super::tooltip::{Tooltip, TooltipFlavor, tooltip};
 }
@@ -31,7 +31,7 @@ use log::{debug, error, info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
 use notify_rust::{Notification, Timeout};
 use ratatui::DefaultTerminal;
-use ratatui::crossterm::event::{Event as TermEvent, MouseEventKind};
+use ratatui::crossterm::event::Event as TermEvent;
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::{path::Path, sync::Arc, time::Duration};
@@ -49,6 +49,7 @@ pub struct App {
     tooltip: Tooltip<'static>,
 
     input_command_generator: InputCommandGenerator,
+    mouse_input_handler: MouseInputHandler,
     feed_list: FeedList,
     articles_list: ArticlesList,
     article_content: ArticleContent,
@@ -61,14 +62,6 @@ pub struct App {
     is_offline: bool,
 
     is_running: bool,
-
-    panel_areas: PanelAreas,
-
-    /// When true, the user is dragging the horizontal border; stores the initial row of the drag.
-    drag_resize_active: bool,
-
-    /// Override for the articles/content split height (absolute row count for articles list).
-    articles_height_override: Option<u16>,
 }
 
 impl App {
@@ -89,32 +82,36 @@ impl App {
             is_running: true,
             message_sender: message_sender.clone(),
             config_file_manager,
+            mouse_input_handler: MouseInputHandler::new(
+                Arc::clone(&config_arc),
+                message_sender.clone(),
+            ),
             input_command_generator: InputCommandGenerator::new(
-                config_arc.clone(),
+                Arc::clone(&config_arc),
                 message_sender.clone(),
             ),
             feed_list: FeedList::new(
-                config_arc.clone(),
+                Arc::clone(&config_arc),
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
             articles_list: ArticlesList::new(
-                config_arc.clone(),
+                Arc::clone(&config_arc),
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
             article_content: ArticleContent::new(
-                config_arc.clone(),
+                Arc::clone(&config_arc),
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
             command_input: CommandInput::new(
-                config_arc.clone(),
+                Arc::clone(&config_arc),
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
             batch_processor: BatchProcessor::new(
-                config_arc.clone(),
+                Arc::clone(&config_arc),
                 news_flash_utils.clone(),
                 message_sender.clone(),
             ),
@@ -126,9 +123,6 @@ impl App {
             ),
             async_operation_throbber: ThrobberState::default(),
             is_offline: false,
-            panel_areas: PanelAreas::default(),
-            drag_resize_active: false,
-            articles_height_override: None,
         };
 
         info!("App instance created with initial state: FeedSelection");
@@ -272,11 +266,18 @@ impl App {
 
                 },
 
+
+
                 term_event = term_event_receiver.recv(), if !self.batch_processor.has_commands() => {
+                    // diable mouse input handler if a modal dialog is enabled
+                    *self.mouse_input_handler.enabled_mut() = !(self.command_input.is_active() ||
+                        self.command_confirm.is_active() ||
+                        self.help_popup.is_modal().unwrap_or(false));
+
                     // pass on term events until consumed
                     if let Some(term_event) = term_event.as_ref() {
-                        self.process_term_event(term_event).await?
-                            .pass_to(term_event, &mut self.help_popup).await?
+                        self.help_popup.process_term_event(term_event).await?
+                            .pass_to(term_event, &mut self.mouse_input_handler).await?
                             .pass_to(term_event, &mut self.command_input).await?
                             .pass_to(term_event, &mut self.command_confirm).await?
                             .pass_to(term_event, &mut self.input_command_generator).await?;
@@ -295,6 +296,7 @@ impl App {
 
                         self.process_message(&message).await?;
                         self.input_command_generator.process_message(&message).await?;
+                        self.mouse_input_handler.process_message(&message).await?;
                         self.config_file_manager.process_message(&message).await?;
                         self.batch_processor.process_message(&message).await?;
                         self.feed_list.process_message(&message).await?;
@@ -552,22 +554,6 @@ impl App {
         }
 
         Ok(())
-    }
-}
-
-impl TermEventHandler for App {
-    async fn process_term_event(
-        &mut self,
-        event: &TermEvent,
-    ) -> color_eyre::Result<TermEventForwarding> {
-        match event {
-            TermEvent::Mouse(mouse_event) if !matches!(mouse_event.kind, MouseEventKind::Moved) => {
-                self.handle_mouse_event(mouse_event)?;
-                Ok(TermEventForwarding::Consumed)
-            }
-
-            _ => Ok(TermEventForwarding::PassOn),
-        }
     }
 }
 

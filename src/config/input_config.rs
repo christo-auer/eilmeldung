@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 
-use crate::prelude::*;
+use crate::{config::input_mappings, prelude::*};
 
 #[derive(Clone, Debug, serde::Deserialize)]
 #[serde(rename_all = "snake_case", default)]
@@ -10,15 +10,31 @@ pub struct InputConfig {
     pub mappings: IndexMap<KeySequence, CommandSequence>,
 }
 
-// a macro for pleasure
-macro_rules! cmd_mappings {
-    [$($key_seq:literal => $($command_seq:literal)*),*,] => {
-        vec![$(($key_seq.into(), [$(Command::parse($command_seq, false).unwrap()),*].into()),)*].into_iter().collect()
-    };
+impl InputConfig {
+    pub async fn validate(&mut self) -> color_eyre::Result<()> {
+        Self::default()
+            .mappings
+            .into_iter()
+            .for_each(|(key_seq, cmd_seq)| {
+                self.mappings.entry(key_seq).or_insert(cmd_seq);
+            });
+
+        self.mappings
+            .iter()
+            .filter_map(|(key_seq, command_seq)| command_seq.commands.is_empty().then_some(key_seq))
+            .cloned()
+            .collect::<Vec<KeySequence>>()
+            .into_iter()
+            .for_each(|key| {
+                self.mappings.shift_remove(&key);
+            });
+
+        Ok(())
+    }
 }
 
 fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
-    cmd_mappings! [
+    input_mappings! [
         "up"        => "up",
         "down"      => "down",
         "C-j"       => "in feeds down",

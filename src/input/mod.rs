@@ -1,7 +1,9 @@
 mod key;
+mod mouse;
 
 pub mod prelude {
     pub use super::key::{Key, KeySequence};
+    pub use super::mouse::MouseInput;
     pub use super::{InputCommandGenerator, input_reader};
     pub use super::{TermEventForwarding, TermEventHandler};
 }

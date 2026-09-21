@@ -245,7 +245,7 @@ impl NewsFlashUtils {
         operation: {
             news_flash.set_article_marked(&article_ids, marked, &client).await?;
 
-            if undoable {
+            if undoable && !article_ids.is_empty() {
                 undo_stack.push(
                     UndoOperation::ChangeMarked(article_ids, marked)
                     );
@@ -270,7 +270,7 @@ impl NewsFlashUtils {
                     tagged_articles.push(article_id);
             }
 
-            if undoable {
+            if undoable && !tagged_articles.is_empty() {
                 undo_stack.push(UndoOperation::AddTag(tagged_articles, tag_id));
             }
 
@@ -292,7 +292,7 @@ impl NewsFlashUtils {
                     untagged_articles.push(article_id);
             }
 
-            if undoable {
+            if undoable && !untagged_articles.is_empty() {
                 undo_stack.push(UndoOperation::RemoveTag(untagged_articles, tag_id));
             }
 
@@ -342,10 +342,12 @@ impl NewsFlashUtils {
         undo_stack_var: undo_stack,
         start_event: Event::AsyncFeedSetRead,
         operation: {
-            let article_ids = news_flash.get_articles(
+            let article_ids: Vec<ArticleID> = news_flash.get_articles(
                         ArticleFilter::all_unread())?.into_iter().map(|article| article.article_id).collect();
             news_flash.set_all_read(&client).await?;
-            undo_stack.push(UndoOperation::ChangeRead(article_ids, Read::Read));
+            if !article_ids.is_empty() {
+              undo_stack.push(UndoOperation::ChangeRead(article_ids, Read::Read));
+            }
         },
         success_event: Event::AsyncSetAllReadFinished,
     }
@@ -359,12 +361,14 @@ impl NewsFlashUtils {
         start_event: Event::AsyncFeedSetRead,
         operation: {
             let feed_id = [feed_id];
-            let article_ids = news_flash.get_articles(
+            let article_ids: Vec<ArticleID> = news_flash.get_articles(
                         ArticleFilter::feed_unread(&feed_id[0]))?
                 .into_iter().map(|article| article.article_id).collect();
             news_flash.set_feed_read(&feed_id, &client).await?;
-            undo_stack.push(UndoOperation::ChangeRead(
-                    article_ids, Read::Read,));
+            if !article_ids.is_empty() {
+                undo_stack.push(UndoOperation::ChangeRead(
+                        article_ids, Read::Read,));
+            }
         }, 
         success_event: Event::AsyncFeedSetReadFinished,
     }
@@ -378,11 +382,13 @@ impl NewsFlashUtils {
         start_event: Event::AsyncCategorySetRead,
         operation: {
             let category_id = [category_id];
-            let article_ids = news_flash.get_articles(
+            let article_ids: Vec<ArticleID> = news_flash.get_articles(
                         ArticleFilter::category_unread(&category_id[0]))?.into_iter().map(|article| article.article_id).collect();
             news_flash.set_category_read(&category_id, &client).await?;
-            undo_stack.push(UndoOperation::ChangeRead(
-                    article_ids, Read::Read,));
+            if !article_ids.is_empty() {
+                undo_stack.push(UndoOperation::ChangeRead(
+                        article_ids, Read::Read,));
+            }
 
         },
         success_event: Event::AsyncCategorySetReadFinished,
@@ -398,12 +404,15 @@ impl NewsFlashUtils {
         operation: {
 
             let tag_id = [tag_id];
-            let article_ids = news_flash.get_articles(
+            let article_ids: Vec<ArticleID> = news_flash.get_articles(
                         ArticleFilter::tag_unread(&tag_id[0]))?.into_iter().map(|article| article.article_id).collect();
             news_flash.set_tag_read(&tag_id, &client).await?;
 
-            undo_stack.push(UndoOperation::ChangeRead(
-                    article_ids, Read::Read,));
+            if !article_ids.is_empty() {
+                undo_stack.push(UndoOperation::ChangeRead(
+                        article_ids, Read::Read,));
+
+            }
 
 
         },

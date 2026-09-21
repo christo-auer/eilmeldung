@@ -11,7 +11,7 @@
 startup_commands = []
 refresh_fps = 10
 network_timeout_seconds = 60
-mouse_support = false
+# mouse_support is deprecated, use mouse.enable instead
 article_scope = "unread"
 feed_list_scope = "all"
 default_sort_order = "<date" 
@@ -153,6 +153,33 @@ feed_label_format = "{label}"
 sync_output_format = "{label}:{count}"
 all_label_format = "all:All"
 feed_label_format = "feed:{category}/{label}"
+
+[mouse]
+enable = true
+content_resize = true
+
+[mouse.feeds_mapping]
+"left" = ["focus feeds"]
+"C-left" = ["focus feeds", "toggle"]
+"middle" = ["toggle"]
+"right" = ["in feeds read current"]
+"scroll_down" = ["in feeds down"]
+"scroll_up" = ["in feeds up"]
+
+[mouse.articles_mapping]
+"left" = "focus articles"
+"right" = "in articles read"
+"middle" = ["in articles open", "in articles read"]
+"C-left" = ["flaginvert current"]
+"scroll_down" = ["in articles down"]
+"scroll_up" = ["in articles up"]
+
+[mouse.content_mapping]
+"left" = ["focus content"]
+"middle" = ["open" "read"]
+"right" = ["read"]
+"scroll_down" = ["in content down"]
+"scroll_up" = ["in content up"]
 
 # Input Configuration
 [input_config]

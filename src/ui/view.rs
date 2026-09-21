@@ -128,9 +128,15 @@ impl App {
     fn render_panels(&mut self, area: Rect, buf: &mut Buffer) {
         if self.state == AppState::ArticleContentDistractionFree {
             self.article_content.render(area, buf);
-            *self.panel_areas.feed_list_mut() = Rect::default(); // 0 0 0 0
-            *self.panel_areas.articles_list_mut() = Rect::default(); // 0 0 0 0
-            *self.panel_areas.article_content_mut() = area;
+            *self.mouse_input_handler.panel_areas_mut().feed_list_mut() = Rect::default(); // 0 0 0 0
+            *self
+                .mouse_input_handler
+                .panel_areas_mut()
+                .articles_list_mut() = Rect::default(); // 0 0 0 0
+            *self
+                .mouse_input_handler
+                .panel_areas_mut()
+                .article_content_mut() = area;
             return;
         }
 
@@ -150,9 +156,9 @@ impl App {
         };
 
         let (articles_constraint_height, article_content_constraint_height) =
-            if let Some(override_height) = self.articles_height_override {
+            if let Some(override_height) = self.mouse_input_handler.articles_height_override() {
                 // User is dragging the border — use absolute heights
-                (Constraint::Length(override_height), Constraint::Min(0))
+                (Constraint::Length(*override_height), Constraint::Min(0))
             } else {
                 match self.state {
                     AppState::FeedSelection | AppState::ArticleSelection => (
@@ -184,9 +190,15 @@ impl App {
             .areas::<2>(articles_chunk);
 
         // store areas for mouse hit-testing
-        *self.panel_areas.feed_list_mut() = feeds_list_chunk;
-        *self.panel_areas.articles_list_mut() = articles_list_chunk;
-        *self.panel_areas.article_content_mut() = article_content_chunk;
+        *self.mouse_input_handler.panel_areas_mut().feed_list_mut() = feeds_list_chunk;
+        *self
+            .mouse_input_handler
+            .panel_areas_mut()
+            .articles_list_mut() = articles_list_chunk;
+        *self
+            .mouse_input_handler
+            .panel_areas_mut()
+            .article_content_mut() = article_content_chunk;
 
         if !self.feed_list.is_focused() && feeds_list_chunk.area() > 0 {
             self.feed_list.render(feeds_list_chunk, buf);
