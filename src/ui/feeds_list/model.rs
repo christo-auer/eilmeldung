@@ -205,14 +205,14 @@ impl FeedListModelData {
             .collect();
 
         self.roots.iter().for_each(|feed_or_category| {
-            // count unread
             if let FeedOrCategory::Category(category_id) = feed_or_category {
+                // count unread
                 Self::count_recursive(
                     category_id,
                     &self.category_tree,
                     &mut unread_count_for_feed_or_category,
                 );
-                //
+
                 // count marked
                 Self::count_recursive(
                     category_id,
@@ -287,9 +287,11 @@ impl FeedListModelData {
         tree: &HashMap<CategoryID, Vec<FeedOrCategory>>,
         count_map: &mut HashMap<FeedOrCategory, i64>,
     ) -> i64 {
-        let count = tree
-            .get(category_id)
-            .unwrap()
+        let Some(children) = tree.get(category_id) else {
+            return 0;
+        };
+
+        let count = children
             .iter()
             .map(|child| match child {
                 FeedOrCategory::Category(category_id) => {
