@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use crate::prelude::*;
 
@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 use ratatui::crossterm::event::Event as TermEvent;
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::{sync::mpsc::UnboundedSender, time::Instant};
 
 /// Stores the last rendered areas of the three main panels for mouse hit-testing.
 #[derive(Default, Clone, Copy, Getters, MutGetters)]
@@ -72,6 +72,8 @@ pub struct MouseInputHandler {
 
     #[getset(get_mut = "pub")]
     enabled: bool,
+
+    last_scroll_event: Instant,
 }
 
 impl MouseInputHandler {
@@ -84,6 +86,7 @@ impl MouseInputHandler {
             drag_resize_active: false,
             articles_height_override: None,
             state: Default::default(),
+            last_scroll_event: Instant::now(),
         }
     }
 
@@ -166,6 +169,15 @@ impl TermEventHandler for MouseInputHandler {
         }
 
         let mouse_input = MouseInput::from(*mouse_event);
+
+        if mouse_input.is_scroll_event()
+            && Instant::now().duration_since(self.last_scroll_event)
+                < Duration::from_millis(self.config.mouse.scroll_debounce_millis)
+        {
+            return Ok(TermEventForwarding::Consumed);
+        } else {
+            self.last_scroll_event = Instant::now();
+        }
 
         let select = mouse_input
             .kind()

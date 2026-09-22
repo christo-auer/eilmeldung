@@ -38,6 +38,19 @@ impl MouseInput {
             I::Unknown => None,
         }
     }
+
+    pub fn is_scroll_event(self) -> bool {
+        use MouseEventKind as K;
+        if let Some(event_kind) = self.kind()
+            && matches!(
+                event_kind,
+                K::ScrollDown | K::ScrollUp | K::ScrollLeft | K::ScrollRight
+            )
+        {
+            return true;
+        }
+        false
+    }
 }
 
 impl From<&str> for MouseInput {

@@ -11,6 +11,7 @@ pub struct MouseConfig {
     pub enable: bool,
     pub content_resize: bool,
     pub toggle_tree_on_click: bool,
+    pub scroll_debounce_millis: u64,
     feeds_mapping: IndexMap<MouseInput, CommandSequence>,
     articles_mapping: IndexMap<MouseInput, CommandSequence>,
     content_mapping: IndexMap<MouseInput, CommandSequence>,
@@ -71,6 +72,7 @@ impl Default for MouseConfig {
             enable: true,
             content_resize: true,
             toggle_tree_on_click: true,
+            scroll_debounce_millis: 300,
             feeds_mapping: input_mappings![
                 "left" => "focus feeds",
                 "C-left" => "focus feeds" "toggle",
