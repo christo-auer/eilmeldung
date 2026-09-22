@@ -74,27 +74,27 @@ impl Default for MouseConfig {
             toggle_tree_on_click: true,
             scroll_debounce_millis: 300,
             feeds_mapping: input_mappings![
-                "left" => "focus feeds",
-                "C-left" => "focus feeds" "toggle",
-                "middle" => "toggle",
-                "right" => "in feeds read current",
-                "scroll_down" => "in feeds down",
-                "scroll_up" => "in feeds up",
+                "left" = ["focus feeds"]
+                "C-left" = ["focus feeds", "toggle"]
+                "middle" = ["toggle"]
+                "right" = ["in feeds read current"]
+                "scroll_down" = ["in feeds down"]
+                "scroll_up" = ["in feeds up"]
             ],
             articles_mapping: input_mappings![
-                "left" => "focus articles",
-                "right" => "in articles read",
-                "middle" => "in articles open" "in articles read",
-                "C-left" => "flaginvert current",
-                "scroll_down" => "in articles down",
-                "scroll_up" => "in articles up",
+                "left" = ["focus articles"]
+                "right" = ["in articles read"]
+                "middle" = ["in articles open", "in articles read"]
+                "C-left" = ["flaginvert current"]
+                "scroll_down" = ["in articles down"]
+                "scroll_up" = ["in articles up"]
             ],
             content_mapping: input_mappings![
-                "left" => "focus content",
-                "middle" => "open" "read",
-                "right" => "read",
-                "scroll_down" => "in content down",
-                "scroll_up" => "in content up",
+                "left" = ["focus content"]
+                "middle" = ["open", "read"]
+                "right" = ["read"]
+                "scroll_down" = ["in content down"]
+                "scroll_up" = ["in content up"]
             ],
         }
     }

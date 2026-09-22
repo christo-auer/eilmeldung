@@ -16,13 +16,13 @@ use std::path::Path;
 
 use crate::prelude::*;
 
-// a macro for pleasure
-macro_rules! input_mappings {
-    [$($key_seq:literal => $($command_seq:literal)*),*,] => {
+// a macro for pleasure for defining mappings in TOML syntax
+macro_rules! toml_mappings {
+    [$($key_seq:literal = [$($command_seq:literal),*])*] => {
         vec![$(($key_seq.into(), [$(Command::parse($command_seq, false).unwrap()),*].into()),)*].into_iter().collect()
     };
 }
-pub(crate) use input_mappings;
+pub(crate) use toml_mappings;
 
 pub mod prelude {
     pub use super::base16_theme::{
