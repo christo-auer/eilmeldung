@@ -53,7 +53,6 @@ text_max_width = 66
 content_preferred_type = "markdown"
 
 # Layout
-# show_top_bar = true # deprecated, will be removed in future versions
 shadows = true
 feed_list_focused_width = "25%"
 article_list_focused_width = "75%"
@@ -153,33 +152,6 @@ feed_label_format = "{label}"
 sync_output_format = "{label}:{count}"
 all_label_format = "all:All"
 feed_label_format = "feed:{category}/{label}"
-
-[mouse]
-enable = true
-content_resize = true
-
-[mouse.feeds_mapping]
-"left" = ["focus feeds"]
-"C-left" = ["focus feeds", "toggle"]
-"middle" = ["toggle"]
-"right" = ["in feeds read current"]
-"scroll_down" = ["in feeds down"]
-"scroll_up" = ["in feeds up"]
-
-[mouse.articles_mapping]
-"left" = "focus articles"
-"right" = "in articles read"
-"middle" = ["in articles open", "in articles read"]
-"C-left" = ["flaginvert current"]
-"scroll_down" = ["in articles down"]
-"scroll_up" = ["in articles up"]
-
-[mouse.content_mapping]
-"left" = ["focus content"]
-"middle" = ["open", "read"]
-"right" = ["read"]
-"scroll_down" = ["in content down"]
-"scroll_up" = ["in content up"]
 
 # Input Configuration
 [input_config]
@@ -297,6 +269,33 @@ timeout_millis = 5000
 "C-x"       = ["clear"]
 "C-z"       = ["undo"]
 "C-r"       = ["reloadconfig"]
+
+[mouse_config]
+enable = true
+content_resize = true
+toggle_tree_on_click = true
+scroll_debounce_millis = 0
+
+[mouse_config.feeds_mappings]
+"left" = ["focus feeds"]
+"right" = ["confirm in feeds read current"]
+"scroll_down" = ["in feeds down"]
+"scroll_up" = ["in feeds up"]
+
+[mouse_config.articles_mappings]
+"left" = ["focus articles"]
+"right" = ["in articles read"]
+"middle" = ["in articles open", "in articles read"]
+"C-left" = ["in articles open", "in articles read"] # to mitigate for ghostty not passing middle mouse button
+"scroll_down" = ["in articles down"]
+"scroll_up" = ["in articles up"]
+
+[mouse_config.content_mappings]
+"left" = ["focus content"]
+"middle" = ["scrape"]
+"scroll_down" = ["in content down"]
+"scroll_up" = ["in content up"]
+
 
 [theme]
 # base16_theme is not set

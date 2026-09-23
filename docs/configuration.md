@@ -15,8 +15,12 @@
   - [news-flash State Files](#news-flash-state-files)
 - [List of Configuration Options](#list-of-configuration-options)
 - [Default Sort Order](#default-sort-order)
-- [Input Configuration](#input-configuration)
+- [Keyboard Input Configuration](#keyboard-input-configuration)
+  - [General Keyboard Input Settings](#general-keyboard-input-settings)
   - [Keybinding Customization](#keybinding-customization)
+- [Mouse Input Configuration](#mouse-input-configuration)
+  - [General Mouse Input Settings](#general-mouse-input-settings)
+  - [Mouse Input Customization](#mouse-input-customization)
 - [Theme Configuration](#theme-configuration)
   - [Base16 Themes](#base16-themes)
   - [Color Palette](#color-palette)
@@ -213,7 +217,9 @@ For complete sort order syntax and available sort keys, see [Commands](commands.
 
 ---
 
-## Input Configuration
+## Keyboard Input Configuration
+
+### General Keyboard Input Settings
 
 Input configuration is defined in the `[input_config]` section.
 
@@ -268,6 +274,87 @@ Key bindings are defined in the `[input_config.mappings]` section as key-value p
 
 
 For a complete list of available commands, see the Commands section. For default keybindings, see the main page or execute the command `helpinput`.
+
+---
+
+## Mouse Input Configuration
+### General Mouse Input Settings
+
+Mouse configuration is defined in the `[mouse_config]` section.
+
+| Option                   | Type    | Default   | Description                                                                                                                                                                     |
+| --------                 | ------  | --------- | -------------                                                                                                                                                                   |
+| `enable`                 | boolean | `true`    | Mouse support enabled if `true`                                                                                                                                                 |
+| `content_resize`         | boolean | `true`    | If `true`, enables change of content panel's size by dragging the bar between article list and content                                                                          |
+| `toggle_tree_on_click`   | boolean | `true`    | If `true`, clicking a selected element in the feed tree toggles it open/closed. If `false`, it just selects the item.                                                           |
+| `scroll_debounce_millis` | integer | `0`       | Minimum amount of milliseconds between mouse scroll events. Set this value to a value between 50 and 500 for terminal emulators/input devices which rapidly fire scroll events (looking at you *ghostty*). |
+
+
+
+### Mouse Input Customization
+
+Mouse input bindings are defined just like keyboard input bindings but for each panel separately:
+
+```toml
+[mouse_config.feeds_mappings]
+left = ["focus feeds"] # focus feeds on a left click (and select item under cursor)
+
+[mouse_config.articles_mappings]
+middle = ["in articles open", "in articles read"] # open the selected article in the browser and mark as read
+
+[mouse_config.content_mappings]
+middle = ["scrape"] # on middle click, scrape article
+
+```
+
+The left-side values are mouse input events, the right side are *eilmeldung* command sequences.
+
+#### Mouse Input Events
+
+| Value                  | Description                                                     |
+| --------               | ------                                                          |
+| `left`                 | Left mouse button, automatically selects element under cursor   |
+| `middle`               | Middle mouse button, automatically selects element under cursor |
+| `right`                | Right mouse button, automatically selects element under cursor  |
+| `scroll_up`/`up`       | Scroll (mouse wheel) up                                         |
+| `scroll_down`/`down`   | Scroll (mouse wheel) up                                         |
+| `scroll_left`          | Scroll  left                                                    |
+| `scroll_right`/`right` | Scroll right                                                    |
+
+
+Mouse input events support modifier keys
+
+- `C-` Ctrl, e.g., `C-left` for *control left-click*
+- `M-` Meta (Alt), e.g., `M-middle` for *alt middle-click*
+- `S-` Shift, e.g., `S-page_down` for *shift while scrolling down*
+
+**Note**: Depending on the operating system, terminal emulator, window manager, desktop environment, etc. not all modifier-mouse input combination are working!
+
+#### Command Sequences
+
+As with key bindings, you can define arbitrary command sequences. 
+For button clicks (`left`, `right`, `middle`), the element under the cursor is automatically selected bevor any of the commands are executed. 
+However, the panel which is clicked is **not** focused automatically!
+For instance, if you middle-click on an article in the article list while the feed panel is focused, any command is executed within the context of the feed panel.
+This means that if you set
+```toml
+[mouse_config.articles_mappings]
+middle = ["read"]
+```
+and click on an article, while the feeds panel is active, the `read` command is executed on whatever is selected in the feeds panel.
+In order to execute `read` on the article, there are two possibilities. 
+You either focus the articles panel before:
+```toml
+[mouse_config.articles_mappings]
+middle = ["focus articles", "read"]
+```
+Or you explicitely execute the `read` command in the articles panel using the `in` meta command:
+```toml
+[mouse_config.articles_mappings]
+middle = ["in articles read"]
+```
+Other than that, sky is the limit!
+
 
 ---
 

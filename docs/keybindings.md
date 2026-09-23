@@ -24,7 +24,7 @@ This document provides a comprehensive reference of all default key bindings in 
 - [Sorting Articles](#sorting-articles)
 - [Command Line](#command-line)
 - [Customizing Key Bindings](#customizing-key-bindings)
-- [Mouse Support](#mouse-support)
+- [Mouse Input](#mouse-input)
 
 ---
 
@@ -337,9 +337,34 @@ See [Commands Reference](commands.md#using-commands-in-key-bindings) for more de
 
 See the [default configuration](../examples/default-config.toml) for the complete list of default key bindings.
 
-## Mouse Support
+## Mouse Input
 
-Mouse support is disabled by default. Enable it by `mouse_support = true`:
-- selection by a mouse click is supported in the feed and article list
-- rudimentary scrolling support in the article list and the article content
-- drag the border between the articles and the content to resize (note that this overrides layout settings from the config file)
+### Feeds Panel
+
+- left: focus panel and select item, click again for closing/opening tree
+- scrolling selects next/previous item
+
+### Article List
+
+- left click: focus panel and select article
+- right click: mark article as read
+- middle: open article in browser and mark as read
+- Ctrl-left: inverts flagging of article
+- scrolling select next/previous item
+
+### Content Panel
+
+- left: focus content panel
+- middle: scrape article (without focusing panel)
+- scrolling works as expected
+
+### Resize Content Panel
+
+Click and drag the horizontal bar between article list and content to dynamically resize the conten/article panel.
+
+### Customization
+
+As with keyboard input, mouse input can be completely customized:
+
+- [Mouse Input Configuration](configuration.md#mouse-input-configuration)
+- see `examples/default-configuration.toml` for the default mappings above 

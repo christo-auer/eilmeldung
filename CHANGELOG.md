@@ -1,5 +1,13 @@
 # Unreleased
 
+New neat features with this release!
+
+And a reminder: *eilmeldung* is still **hand-crafted**!
+
+- 🐁 completely revamped mouse support! 🐁
+  - mouse input is now *freely configurable* and it works just like with key bindings: just assign an input a (sequence) of ordinary *eilmeldung* commands! For instance: `articles_mappings.middle = ["in articles read", "open"]` marks the article as read and opens in in the browser when you press the middle mouse button in an article! Neat!
+  - checkout *Mouse Input Configuration* in `docs/configuration.md`!
+  - as always, there are sane defaults: *Mouse Input* in `docs/keybindings.md`
 - queries in the feed list now support the `{unread_count}` field in their label
   - new default value for is `{icon} {label} {unread_count}`
   - if you have many queries/feeds/articles and this causes a *slowdown* you can set `feed_list_query_compute_unread = false`

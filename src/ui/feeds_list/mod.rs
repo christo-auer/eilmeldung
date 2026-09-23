@@ -1015,7 +1015,7 @@ impl MessageReceiver for FeedList {
                 E::MouseFeedSelect(col, row) => {
                     let pos = Position::new(*col, *row);
 
-                    if self.config.mouse.toggle_tree_on_click {
+                    if self.config.mouse_config.toggle_tree_on_click {
                         if self.view_data.tree_state_mut().click_at(pos) {
                             selection_changed = true;
                         }

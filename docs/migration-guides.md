@@ -5,6 +5,10 @@ Here you can find migration guides for breaking changes.
 
 **IMPORTANT**: Don't copy `example/default-config.toml`. Start with an **empty** `config.toml` and just add the settings you want to be **different** from the `default-config.toml`! `default-config.toml` is for **reference purposes** only and is prone to break if used directly.
 
+## With 1.9.0
+- with complete rewrite of mouse support, setting `mouse_support` is now deprecated, use `mouse_config.enable` instead (default is `true`)
+- the settings `scrollbar_begin_symbol`, `scrollbar_end_symbol, `scrollbar_track_symbol`, `scrollbar_thumb_symbol` have been removed 
+
 ## With 1.7.3
 - package and home-manager module from flake is now *depecrated*
     - if you are on NixOS unstable and/or home-manager unstable, you can now switch to the official versions (just remove the inputs and overlays)

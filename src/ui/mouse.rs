@@ -161,7 +161,7 @@ impl TermEventHandler for MouseInputHandler {
             return Ok(TermEventForwarding::PassOn);
         };
 
-        if self.config.mouse.content_resize
+        if self.config.mouse_config.content_resize
             && let Some(event_forwarding) =
                 self.handle_content_resize_dragging(col, row, mouse_event)?
         {
@@ -172,7 +172,7 @@ impl TermEventHandler for MouseInputHandler {
 
         if mouse_input.is_scroll_event()
             && Instant::now().duration_since(self.last_scroll_event)
-                < Duration::from_millis(self.config.mouse.scroll_debounce_millis)
+                < Duration::from_millis(self.config.mouse_config.scroll_debounce_millis)
         {
             return Ok(TermEventForwarding::Consumed);
         } else {
@@ -207,7 +207,8 @@ impl TermEventHandler for MouseInputHandler {
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
 
-            if let Some(command_sequence) = self.config.mouse.get_mapping(mouse_input, panel) {
+            if let Some(command_sequence) = self.config.mouse_config.get_mapping(mouse_input, panel)
+            {
                 self.message_sender
                     .send(Message::Batch(command_sequence.commands.to_owned()))?;
                 return Ok(TermEventForwarding::Consumed);

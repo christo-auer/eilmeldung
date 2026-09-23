@@ -148,7 +148,7 @@ impl ArticleScope {
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub input_config: InputConfig,
-    pub mouse: MouseConfig,
+    pub mouse_config: MouseConfig,
     pub theme: Theme,
     pub icon_set: IconSet,
     pub border_theme: BorderTheme,
@@ -165,8 +165,6 @@ pub struct Config {
     pub notify_after_sync: bool,
     pub notify_after_sync_cmd: Option<String>,
     pub notify_after_sync_stats_format: SyncStatsOutputFormat,
-
-    pub mouse_support: Option<bool>,
 
     pub auto_reload_config: bool,
 
@@ -222,11 +220,7 @@ pub struct Config {
     pub cli_sync_stats_format: SyncStatsOutputFormat,
 
     // DEPRECATED
-    pub show_top_bar: Option<bool>,
-    pub scrollbar_begin_symbol: Option<char>,
-    pub scrollbar_end_symbol: Option<char>,
-    pub scrollbar_track_symbol: Option<char>,
-    pub scrollbar_thumb_symbol: Option<char>,
+    pub mouse_support: Option<bool>,
 }
 
 macro_rules! deprecated {
@@ -243,7 +237,7 @@ macro_rules! deprecated {
 impl Config {
     pub async fn validate(&mut self, config_dir: &Path) -> color_eyre::Result<()> {
         self.input_config.validate().await?;
-        self.mouse.validate().await?;
+        self.mouse_config.validate().await?;
 
         if let Some(sync_interval) = self.sync_every_minutes
             && sync_interval == 0
@@ -256,11 +250,6 @@ impl Config {
         self.theme.validate(&config_dir.join("themes/")).await?;
         self.input_config.validate().await?;
 
-        deprecated!(self.show_top_bar);
-        deprecated!(self.scrollbar_begin_symbol);
-        deprecated!(self.scrollbar_end_symbol);
-        deprecated!(self.scrollbar_track_symbol);
-        deprecated!(self.scrollbar_thumb_symbol);
         deprecated!(self.mouse_support);
 
         Ok(())
@@ -299,7 +288,7 @@ impl Default for Config {
             icon_set: Default::default(),
             border_theme: Default::default(),
             input_config: Default::default(),
-            mouse: Default::default(),
+            mouse_config: Default::default(),
             article_scope: ArticleScope::Unread,
             feed_list_scope: ArticleScope::All,
 
@@ -363,14 +352,9 @@ impl Default for Config {
                 ShareTarget::Telegram,
             ],
             login_setup: None,
-            mouse_support: None,
 
             // DEPRECATED
-            show_top_bar: None,
-            scrollbar_begin_symbol: None,
-            scrollbar_end_symbol: None,
-            scrollbar_track_symbol: None,
-            scrollbar_thumb_symbol: None,
+            mouse_support: None,
         }
     }
 }

@@ -4,7 +4,7 @@ use ratatui::crossterm::{
     execute,
 };
 
-use crate::{config::input_mappings, prelude::*};
+use crate::{config::toml_mappings, prelude::*};
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct MouseConfig {
@@ -12,26 +12,26 @@ pub struct MouseConfig {
     pub content_resize: bool,
     pub toggle_tree_on_click: bool,
     pub scroll_debounce_millis: u64,
-    feeds_mapping: IndexMap<MouseInput, CommandSequence>,
-    articles_mapping: IndexMap<MouseInput, CommandSequence>,
-    content_mapping: IndexMap<MouseInput, CommandSequence>,
+    feeds_mappings: IndexMap<MouseInput, CommandSequence>,
+    articles_mappings: IndexMap<MouseInput, CommandSequence>,
+    content_mappings: IndexMap<MouseInput, CommandSequence>,
 }
 
 impl MouseConfig {
     pub fn get_mapping(&self, mouse_input: MouseInput, panel: Panel) -> Option<&CommandSequence> {
         match panel {
-            Panel::FeedList => &self.feeds_mapping,
-            Panel::ArticleList => &self.articles_mapping,
-            Panel::ArticleContent => &self.content_mapping,
+            Panel::FeedList => &self.feeds_mappings,
+            Panel::ArticleList => &self.articles_mappings,
+            Panel::ArticleContent => &self.content_mappings,
         }
         .get(&mouse_input)
     }
 
     pub async fn validate(&mut self) -> color_eyre::Result<()> {
         let default = Self::default();
-        Self::prepare_mapping(default.feeds_mapping, &mut self.feeds_mapping);
-        Self::prepare_mapping(default.articles_mapping, &mut self.articles_mapping);
-        Self::prepare_mapping(default.content_mapping, &mut self.content_mapping);
+        Self::prepare_mapping(default.feeds_mappings, &mut self.feeds_mappings);
+        Self::prepare_mapping(default.articles_mappings, &mut self.articles_mappings);
+        Self::prepare_mapping(default.content_mappings, &mut self.content_mappings);
 
         if let Err(error) = if self.enable {
             log::info!("Enabling mouse capture");
@@ -72,27 +72,24 @@ impl Default for MouseConfig {
             enable: true,
             content_resize: true,
             toggle_tree_on_click: true,
-            scroll_debounce_millis: 300,
-            feeds_mapping: input_mappings![
+            scroll_debounce_millis: 0,
+            feeds_mappings: toml_mappings![
                 "left" = ["focus feeds"]
-                "C-left" = ["focus feeds", "toggle"]
-                "middle" = ["toggle"]
-                "right" = ["in feeds read current"]
+                "right" = ["confirm in feeds read current"]
                 "scroll_down" = ["in feeds down"]
                 "scroll_up" = ["in feeds up"]
             ],
-            articles_mapping: input_mappings![
+            articles_mappings: toml_mappings![
                 "left" = ["focus articles"]
                 "right" = ["in articles read"]
                 "middle" = ["in articles open", "in articles read"]
-                "C-left" = ["flaginvert current"]
+                "C-left" = ["in articles open", "in articles read"]
                 "scroll_down" = ["in articles down"]
                 "scroll_up" = ["in articles up"]
             ],
-            content_mapping: input_mappings![
+            content_mappings: toml_mappings![
                 "left" = ["focus content"]
-                "middle" = ["open", "read"]
-                "right" = ["read"]
+                "middle" = ["scrape"]
                 "scroll_down" = ["in content down"]
                 "scroll_up" = ["in content up"]
             ],

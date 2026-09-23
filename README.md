@@ -14,7 +14,7 @@
 
 *eilmeldung* is
 
-- *fast* in every aspect: non-blocking terminal user interface, (neo)vim-inspired keybindings, instant start-up and no clutter
+- *fast* in every aspect: non-blocking terminal user interface, (neo)vim-inspired keybindings and mouse support, instant start-up and no clutter
 - *stands* on the shoulder of *giants*: based on the news-flash library, *eilmeldung* supports many RSS providers, is efficient and reliable
 - *powerful* and yet *easy to use out-of-the-box*: sane defaults which work for most, and yet configurable to meet anyone's requirements, from keybindings to colors, from displayed content to RSS provider
 - for reading news like a pro: filter and search news with an easy-to-learn powerful *query language*, activate *zen mode* to focus on the article content and nothing else
@@ -211,7 +211,7 @@ Checkout [FAQ](docs/faq.md#features--capabilities)!
 
 ### Is mouse input supported?
 
-Yes, there is rudimentary mouse support with the option `mouse_support = true` (default is `false`). See [Mouse Support](docs/keybindings.md#mouse-support)]
+Yes, mouse input is supported is very configurable:  see [default mouse input configuration](docs/keybindings.md#mouse-input)] and [see here how to freely configure mouse input bindings](docs/configuration.md#mouse-input-configuration).
 
 ### Does eilmeldung support AI/LLMs? All the cool RSS readers are doing it!
 
