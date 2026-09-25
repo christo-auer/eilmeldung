@@ -3,7 +3,6 @@ name = "eilmeldung"
 version = "1.9.0"
 edition = "2024"
 description = "a feature-rich TUI RSS Reader based on the news-flash library"
-homepage = "https://github.com/christo-auer/eilmeldung"
 repository = "https://github.com/christo-auer/eilmeldung"
 license = "GPL-3.0-or-later"
 keywords = [ "rss", "tui", "news", "newsflash" ]
@@ -16,16 +15,13 @@ lto = true
 opt-level = 3
 strip = true
 
-
 [dependencies]
 arboard = { version = "3.6.1", default-features = false, features = ["wayland-data-control" ] }
 chrono = "0.4.45"
 clap = { version = "4.6.7", features = ["derive"] }
 color-eyre = "0.6.5"
-config = "0.15.25"
-derive = "1.0.0"
+config = "0.15.26"
 directories = "6.0.0"
-env_logger = "0.11.11"
 futures = "0.3.34"
 fuzzy-matcher = "0.3.7"
 getset = "0.1.7"
@@ -54,21 +50,16 @@ regex = "1.13.1"
 reqwest = { version = "0.13", default-features = false, features = ["http2", "charset", "brotli"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
-serde_toml = "0.0.1"
 shell-words = "1.1.1"
-strfmt = "0.2.5"
 string_manipulation_utf8 = "0.3.0"
 strum = { version = "0.28.0", features = ["derive", "strum_macros"] }
 termimad = "0.34.1"
-text-splitter = { version = "0.30.1", features = ["markdown"] }
-the-other-tui-markdown = "0.1.0"
-thiserror = "2.0.20"
+the-other-tui-markdown = "0.2.0"
+thiserror = "2.0.21"
 throbber-widgets-tui = "0.11.1"
 tokio = { version = "1.53.1", features = ["macros", "tokio-macros", "time", "process", "io-util" ] }
 toml = "1.1.6"
 tui-logger = { version = "0.18.3", features = ["crossterm"] }
-tui-markdown = "0.3.9"
-tui-prompts = "0.6.7"
 tui-tree-widget = "0.24.1"
 url = "2.5.8"
 webbrowser = "1.2.4"
