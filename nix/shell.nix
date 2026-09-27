@@ -7,7 +7,7 @@ pkgs.mkShell {
     cargo
     rustc
     rust-analyzer
-    rustup
+    # rustup
     clippy
     rustfmt
     rustPlatform.bindgenHook

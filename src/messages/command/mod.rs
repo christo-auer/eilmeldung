@@ -245,17 +245,17 @@ pub enum Command {
     // general navigation
     #[strum(
         serialize = "up",
-        message = "up",
-        detailed_message = "nagivates up in the current context (all)"
+        message = "up [<amount>]",
+        detailed_message = "navigates up in the current context (by amount) (all)"
     )]
-    NavigateUp,
+    NavigateUp(Option<u16>),
 
     #[strum(
         serialize = "down",
-        message = "down",
-        detailed_message = "nagivates down in the current context (all)"
+        message = "down [<amount>]",
+        detailed_message = "navigates down in the current context (by amount) (all)"
     )]
-    NavigateDown,
+    NavigateDown(Option<u16>),
 
     #[strum(
         serialize = "pageup",
@@ -815,8 +815,10 @@ impl Display for Command {
         use Command::*;
         match self.clone() {
             NoOperation => write!(f, "no operation"),
-            NavigateUp => write!(f, "up"),
-            NavigateDown => write!(f, "down"),
+            NavigateUp(None) => write!(f, "up"),
+            NavigateUp(Some(amount)) => write!(f, "up by {amount}"),
+            NavigateDown(None) => write!(f, "down"),
+            NavigateDown(Some(amount)) => write!(f, "down by {amount}"),
             NavigatePageUp => write!(f, "page up"),
             NavigatePageDown => write!(f, "page down"),
             NavigateFirst => write!(f, "to first"),

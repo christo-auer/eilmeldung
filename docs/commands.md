@@ -227,18 +227,18 @@ The command `undo` can undo the last operation. You can call `undo` multiple tim
 
 These commands are typically used via key bindings rather than the command line.
 
-| Command      | Syntax       | Context                 | Description                                                 |
-| ---------    | --------     | ---------               | -------------                                               |
-| `up`         | `up`         | All                     | Navigate up in the current context                          |
-| `down`       | `down`       | All                     | Navigate down in the current context                        |
-| `left`       | `left`       | All                     | Navigate left in the current context                        |
-| `right`      | `right`      | All                     | Navigate right in the current context                       |
-| `pageup`     | `pageup`     | All                     | Navigate up by one page                                     |
-| `pagedown`   | `pagedown`   | All                     | Navigate down by one page                                   |
-| `gotofirst`  | `gotofirst`  | All                     | Navigate to the first item                                  |
-| `gotolast`   | `gotolast`   | All                     | Navigate to the last item                                   |
-| `searchnext` | `searchnext` | Article List, Feed List | Jump to the next item matching the current search query     |
-| `searchprev` | `searchprev` | Article List, Feed List | Jump to the previous item matching the current search query |
+| Command      | Syntax            | Context                 | Description                                                 |
+| ---------    | --------          | ---------               | -------------                                               |
+| `up`         | `up [<amount>]`   | All                     | Navigate up in the current context (by amount, default 1)   |
+| `down`       | `down [<amount>]` | All                     | Navigate down in the current context (by amount, default 1) |
+| `left`       | `left`            | All                     | Navigate left in the current context                        |
+| `right`      | `right`           | All                     | Navigate right in the current context                       |
+| `pageup`     | `pageup`          | All                     | Navigate up by one page                                     |
+| `pagedown`   | `pagedown`        | All                     | Navigate down by one page                                   |
+| `gotofirst`  | `gotofirst`       | All                     | Navigate to the first item                                  |
+| `gotolast`   | `gotolast`        | All                     | Navigate to the last item                                   |
+| `searchnext` | `searchnext`      | Article List, Feed List | Jump to the next item matching the current search query     |
+| `searchprev` | `searchprev`      | Article List, Feed List | Jump to the previous item matching the current search query |
 
 
 ## Input-Related Commands

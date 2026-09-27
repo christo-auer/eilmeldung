@@ -14,6 +14,9 @@ pub enum CommandParseError {
     #[error("expecting command name: {0}")]
     CommandNameExpected(#[from] strum::ParseError),
 
+    #[error("amount expected")]
+    AmountExpected,
+
     #[error("expecting tag")]
     TagExpected,
 
@@ -158,6 +161,18 @@ impl Command {
                 };
 
                 C::In(panel, Box::new(Command::parse(&args, eager)?))
+            }
+
+            navigate @ (C::NavigateUp(_) | C::NavigateDown(_)) => {
+                let amount = args
+                    .map(|args| args.parse::<u16>().map_err(|_| E::AmountExpected))
+                    .transpose()?;
+
+                match navigate {
+                    C::NavigateDown(_) => C::NavigateDown(amount),
+                    C::NavigateUp(_) => C::NavigateUp(amount),
+                    _ => unreachable!(),
+                }
             }
 
             C::PanelFocus(_) => {

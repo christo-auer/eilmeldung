@@ -78,12 +78,12 @@ impl<'a> HelpPopup<'a> {
         use Command as C;
 
         match command {
-            C::NavigateUp => {
-                state.scroll_offset_y = (state.scroll_offset_y.saturating_sub(1))
+            C::NavigateUp(amount) => {
+                state.scroll_offset_y = (state.scroll_offset_y.saturating_sub(amount.unwrap_or(1)))
                     .clamp(0, state.contents.height() as u16)
             }
-            C::NavigateDown => {
-                state.scroll_offset_y = (state.scroll_offset_y.saturating_add(1))
+            C::NavigateDown(amount) => {
+                state.scroll_offset_y = (state.scroll_offset_y.saturating_add(amount.unwrap_or(1)))
                     .clamp(0, state.contents.height() as u16)
             }
             C::NavigatePageUp => {

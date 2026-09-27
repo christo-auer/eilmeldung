@@ -724,12 +724,16 @@ impl MessageReceiver for FeedList {
             };
 
             match command {
-                C::NavigateUp if handle_command => {
-                    self.view_data.tree_state_mut().key_up();
+                C::NavigateUp(amount) if handle_command => {
+                    for _ in 0..amount.unwrap_or(1) {
+                        self.view_data.tree_state_mut().key_up();
+                    }
                     selection_changed = true;
                 }
-                C::NavigateDown if handle_command => {
-                    self.view_data.tree_state_mut().key_down();
+                C::NavigateDown(amount) if handle_command => {
+                    for _ in 0..amount.unwrap_or(1) {
+                        self.view_data.tree_state_mut().key_down();
+                    }
                     selection_changed = true;
                 }
                 C::NavigateRight if handle_command => {

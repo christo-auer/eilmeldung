@@ -549,12 +549,16 @@ impl crate::messages::MessageReceiver for ArticlesList {
             };
 
             match command {
-                C::NavigateUp if handle_command => {
-                    self.view_data.get_table_state_mut().select_previous();
+                C::NavigateUp(amount) if handle_command => {
+                    for _ in 0..amount.unwrap_or(1) {
+                        self.view_data.get_table_state_mut().select_previous();
+                    }
                     self.select_index_and_send_message(None)?;
                 }
-                C::NavigateDown if handle_command => {
-                    self.view_data.get_table_state_mut().select_next();
+                C::NavigateDown(amount) if handle_command => {
+                    for _ in 0..amount.unwrap_or(1) {
+                        self.view_data.get_table_state_mut().select_next();
+                    }
                     self.select_index_and_send_message(None)?;
                 }
                 C::NavigatePageUp if handle_command => {

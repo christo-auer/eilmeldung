@@ -326,11 +326,11 @@ impl crate::messages::MessageReceiver for ArticleContent {
             };
 
             match command {
-                C::NavigateDown if handle_command => {
-                    self.view_data.scroll_down();
+                C::NavigateDown(amount) if handle_command => {
+                    self.view_data.scroll_down(amount.unwrap_or(1));
                 }
-                C::NavigateUp if handle_command => {
-                    self.view_data.scroll_up();
+                C::NavigateUp(amount) if handle_command => {
+                    self.view_data.scroll_up(amount.unwrap_or(1));
                 }
                 C::NavigatePageUp if handle_command => {
                     self.view_data
