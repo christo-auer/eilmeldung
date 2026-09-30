@@ -7,6 +7,7 @@ mod login;
 mod messages;
 mod newsflash_utils;
 mod query;
+mod table;
 mod ui;
 mod undo;
 mod utils;
