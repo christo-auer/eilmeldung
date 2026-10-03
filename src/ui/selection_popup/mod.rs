@@ -146,12 +146,12 @@ impl<'a, T, M: SelectionPopupMapper<Item = T>> TermEventHandler for SelectionPop
             .match_single_key_to_single_command(&Key::from(*key_event))
         {
             Some(Command::NavigateUp(amount)) => {
-                for _ in 0..amount.unwrap_or_default() {
+                for _ in 0..amount.unwrap_or(1) {
                     self.list_state.select_previous();
                 }
             }
             Some(Command::NavigateDown(amount)) => {
-                for _ in 0..amount.unwrap_or_default() {
+                for _ in 0..amount.unwrap_or(1) {
                     self.list_state.select_next();
                 }
             }
