@@ -345,15 +345,15 @@ impl<'a> ArticleListViewData<'a> {
                         }
                         .into(),
                         "{read}" => if article.unread == Read::Read {
-                            format!("{}", read_icon)
+                            read_icon.to_string()
                         } else {
-                            format!("{}", unread_icon)
+                            unread_icon.to_string()
                         }
                         .into(),
                         "{marked}" => if article.marked == Marked::Marked {
-                            format!("{}", marked_icon)
+                            marked_icon.to_string()
                         } else {
-                            format!("{}", unmarked_icon)
+                            unmarked_icon.to_string()
                         }
                         .into(),
                         "{url}" => article
@@ -365,7 +365,7 @@ impl<'a> ArticleListViewData<'a> {
                         "{flagged}" => if model_data.flagged_articles().is_empty() {
                             "".to_string()
                         } else if model_data.flagged_articles().contains(&article.article_id) {
-                            format!("{}", config.icon_set.flagged_icon())
+                            config.icon_set.flagged_icon().to_string()
                         } else {
                             "  ".to_string()
                         }
