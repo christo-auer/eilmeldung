@@ -345,15 +345,15 @@ impl<'a> ArticleListViewData<'a> {
                         }
                         .into(),
                         "{read}" => if article.unread == Read::Read {
-                            format!(" {}", read_icon)
+                            format!("{}", read_icon)
                         } else {
-                            format!(" {}", unread_icon)
+                            format!("{}", unread_icon)
                         }
                         .into(),
                         "{marked}" => if article.marked == Marked::Marked {
-                            format!(" {}", marked_icon)
+                            format!("{}", marked_icon)
                         } else {
-                            format!(" {}", unmarked_icon)
+                            format!("{}", unmarked_icon)
                         }
                         .into(),
                         "{url}" => article
@@ -365,7 +365,7 @@ impl<'a> ArticleListViewData<'a> {
                         "{flagged}" => if model_data.flagged_articles().is_empty() {
                             "".to_string()
                         } else if model_data.flagged_articles().contains(&article.article_id) {
-                            format!(" {}", config.icon_set.flagged_icon())
+                            format!("{}", config.icon_set.flagged_icon())
                         } else {
                             "  ".to_string()
                         }
@@ -413,7 +413,7 @@ impl<'a> ArticleListViewData<'a> {
                 || placeholder == "{marked}"
                 || (placeholder == "{flagged}" && !model_data.flagged_articles().is_empty())
             {
-                Constraint::Length(2)
+                Constraint::Length(1)
             } else if placeholder == "{flagged}" {
                 Constraint::Length(0)
             } else if placeholder == "{age}" {
