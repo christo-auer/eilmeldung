@@ -20,7 +20,6 @@ pkgs.mkShell {
   # Libraries needed for building
   buildInputs = with pkgs; [
     openssl
-    libxml2
     sqlite
   ];
 }

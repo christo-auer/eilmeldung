@@ -104,7 +104,8 @@ async fn sync(
             "{}",
             config
                 .cli_sync_stats_format
-                .gen_output(news_flash, &new_articles)?
+                .gen_output(news_flash, &new_articles)
+                .await?
         );
     }
 
@@ -155,7 +156,7 @@ pub async fn import_opml(
 
 pub async fn logout(
     cli_args: &CliArgs,
-    news_flash: &NewsFlash,
+    news_flash: &mut NewsFlash,
     client: &Client,
 ) -> color_eyre::Result<bool> {
     if !cli_args.action.logout {
@@ -175,7 +176,7 @@ pub async fn logout(
 pub async fn execute_cli_actions(
     config: &Config,
     cli_args: &CliArgs,
-    news_flash: &NewsFlash,
+    news_flash: &mut NewsFlash,
     client: &Client,
 ) -> color_eyre::Result<bool> {
     // print login data

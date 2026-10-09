@@ -8,7 +8,7 @@ use crate::{
 use chrono::DateTime;
 use log::trace;
 use logos::Logos;
-use news_flash::models::{ArticleFilter, Marked, Read};
+use news_flash::models::{ArticleBound, ArticleFilter, Marked, Read};
 use parse_datetime::parse_datetime;
 
 impl FromStr for ArticleQuery {
@@ -464,10 +464,17 @@ fn parse_query(
                 match time_key {
                     T::KeyNewer => match article_filter.as_mut() {
                         Some(article_filter) => {
-                            article_filter.newer_than = match article_filter.newer_than {
-                                Some(other_time) => Some(other_time.max(time)),
-                                None => Some(time),
-                            };
+                            article_filter.newer_than =
+                                Some(match article_filter.newer_than.as_ref() {
+                                    Some(other_time) => ArticleBound {
+                                        date: other_time.date.max(time),
+                                        article_id: None,
+                                    },
+                                    None => ArticleBound {
+                                        date: time,
+                                        article_id: None,
+                                    },
+                                });
                             None
                         }
                         None => Some(QueryAtom::Newer(time)),
@@ -475,10 +482,17 @@ fn parse_query(
 
                     T::KeyOlder => match article_filter.as_mut() {
                         Some(article_filter) => {
-                            article_filter.older_than = match article_filter.older_than {
-                                Some(other_time) => Some(other_time.min(time)),
-                                None => Some(time),
-                            };
+                            article_filter.older_than =
+                                Some(match article_filter.older_than.as_ref() {
+                                    Some(other_time) => ArticleBound {
+                                        date: other_time.date.max(time),
+                                        article_id: None,
+                                    },
+                                    None => ArticleBound {
+                                        date: time,
+                                        article_id: None,
+                                    },
+                                });
                             None
                         }
                         None => Some(QueryAtom::Older(time)),

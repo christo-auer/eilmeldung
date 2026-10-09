@@ -88,14 +88,15 @@ impl ArticleContentModelData {
             Some(article_id) => {
                 let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
-                self.article = match news_flash.get_article(article_id) {
+                self.article = match news_flash.get_article(article_id).await {
                     Ok(article) => {
                         self.feed = news_flash
-                            .get_feeds()?
+                            .get_feeds()
+                            .await?
                             .0
                             .into_iter()
                             .find(|feed| feed.feed_id == article.feed_id);
-                        self.enclosures = Some(news_flash.get_enclosures(article_id)?);
+                        self.enclosures = Some(news_flash.get_enclosures(article_id).await?);
 
                         Some(article)
                     }
@@ -117,16 +118,7 @@ impl ArticleContentModelData {
     pub(super) async fn update_article_tags(&mut self) -> color_eyre::Result<()> {
         if let Some(article_id) = self.article.as_ref().map(|article| &article.article_id) {
             let news_flash = self.news_flash_utils.news_flash_lock.read().await;
-            let (_, tag_for_tag_id, tagging_for_tag_id) = NewsFlashUtils::get_tags(&news_flash)?;
-            self.tags = NewsFlashUtils::get_tags_for_article(&tagging_for_tag_id)
-                .get(article_id)
-                .map(|tag_ids| {
-                    tag_ids
-                        .iter()
-                        .filter_map(|tag_id| tag_for_tag_id.get(tag_id))
-                        .cloned()
-                        .collect()
-                });
+            self.tags = Some(news_flash.get_tags_of_article(&article_id).await?);
         }
         Ok(())
     }

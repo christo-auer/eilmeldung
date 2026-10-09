@@ -4,15 +4,18 @@ use std::{
     sync::Arc, time::Duration,
 };
 
+use futures::future::join_all;
 use htmd::HtmlToMarkdown;
 use news_flash::{
     NewsFlash,
     error::NewsFlashError,
-    models::{
-        ArticleFilter, ArticleID, Category, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping,
-        LoginData, Marked, Read, Tag, TagID, Tagging, Url,
-    },
 };
+use news_flash::models::{
+        ArticleFilter, CategoryID, CategoryMapping, Feed, FeedID,
+        FeedMapping, LoginData, Marked, Read, Tag, TagID, Url,
+    };
+use news_flash::models::Category;
+use news_flash::models::ArticleID;
 
 use log::{debug, error, info};
 use ratatui::{
@@ -34,11 +37,7 @@ type GetFeedsResult = (
     std::collections::HashMap<news_flash::models::FeedID, news_flash::models::FeedMapping>,
 );
 
-type GetTagsResult = (
-    Vec<Tag>,
-    std::collections::HashMap<TagID, Tag>,
-    std::collections::HashMap<TagID, news_flash::models::Tagging>,
-);
+type GetTagsResult = (Vec<Tag>, std::collections::HashMap<TagID, Tag>);
 
 #[derive(Clone)]
 pub struct NewsFlashUtils {
@@ -105,7 +104,6 @@ pub fn build_client(timeout: Duration) -> color_eyre::Result<Client> {
     );
     let builder = ClientBuilder::new()
         .user_agent(user_agent.as_str())
-        .hickory_dns(false)
         .gzip(true)
         .brotli(true)
         .timeout(timeout);
@@ -140,7 +138,7 @@ impl NewsFlashUtils {
 
     /// Attempt to re-login using stored credentials. Returns true if successful.
     pub async fn relogin(&self) -> bool {
-        let news_flash = self.news_flash_lock.read().await;
+        let mut news_flash = self.news_flash_lock.write().await;
         let client = self.client_lock.read().await;
         
         if let Some(login_data) = news_flash.get_login_data().await {
@@ -343,7 +341,7 @@ impl NewsFlashUtils {
         start_event: Event::AsyncFeedSetRead,
         operation: {
             let article_ids: Vec<ArticleID> = news_flash.get_articles(
-                        ArticleFilter::all_unread())?.into_iter().map(|article| article.article_id).collect();
+                        ArticleFilter::all_unread()).await?.into_iter().map(|article| article.article_id).collect();
             news_flash.set_all_read(&client).await?;
             if !article_ids.is_empty() {
               undo_stack.push(UndoOperation::ChangeRead(article_ids, Read::Read));
@@ -362,7 +360,7 @@ impl NewsFlashUtils {
         operation: {
             let feed_id = [feed_id];
             let article_ids: Vec<ArticleID> = news_flash.get_articles(
-                        ArticleFilter::feed_unread(&feed_id[0]))?
+                        ArticleFilter::feed_unread(&feed_id[0])).await?
                 .into_iter().map(|article| article.article_id).collect();
             news_flash.set_feed_read(&feed_id, &client).await?;
             if !article_ids.is_empty() {
@@ -383,7 +381,7 @@ impl NewsFlashUtils {
         operation: {
             let category_id = [category_id];
             let article_ids: Vec<ArticleID> = news_flash.get_articles(
-                        ArticleFilter::category_unread(&category_id[0]))?.into_iter().map(|article| article.article_id).collect();
+                        ArticleFilter::category_unread(&category_id[0])).await?.into_iter().map(|article| article.article_id).collect();
             news_flash.set_category_read(&category_id, &client).await?;
             if !article_ids.is_empty() {
                 undo_stack.push(UndoOperation::ChangeRead(
@@ -405,7 +403,7 @@ impl NewsFlashUtils {
 
             let tag_id = [tag_id];
             let article_ids: Vec<ArticleID> = news_flash.get_articles(
-                        ArticleFilter::tag_unread(&tag_id[0]))?.into_iter().map(|article| article.article_id).collect();
+                        ArticleFilter::tag_unread(&tag_id[0])).await?.into_iter().map(|article| article.article_id).collect();
             news_flash.set_tag_read(&tag_id, &client).await?;
 
             if !article_ids.is_empty() {
@@ -555,16 +553,35 @@ impl NewsFlashUtils {
         success_event: Event::AsyncImportOpmlFinished,
     }
 
-    gen_async_call! {
-        method_name: logout,
-        params: (),
-        news_flash_var: news_flash,
-        client_var: client,
-        undo_stack_var: _undo_stack,
-        start_event: Event::AsyncLogout,
-        operation: news_flash.logout(&client).await?,
-        success_event: Event::AsyncLogoutFinished,
+    pub fn logout(&self) {
+        let news_flash_lock = self.news_flash_lock.clone();
+        let client_lock = self.client_lock.clone();
+        let command_sender = self.command_sender.clone();
+        let async_operation_mutex = self.async_operation_mutex.clone();
+
+        tokio::spawn(async move {
+            let _lock = async_operation_mutex.lock().await;
+
+            if let Err(e) = async {
+                command_sender.send(Message::Event(Event::AsyncLogout)).map_err(|send_error|
+                    color_eyre::eyre::eyre!(send_error))?;
+
+                let mut news_flash = news_flash_lock.write().await;
+                let client = client_lock.read().await;
+
+                news_flash.logout(&client).await?;
+
+                command_sender.send(Message::Event(Event::AsyncLogoutFinished)).map_err(|send_error|
+                    color_eyre::eyre::eyre!(send_error))?;
+                Ok::<(), AsyncOperationError>(())
+            }.await{
+                error!("Async call logout failed: {}", e,);
+                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed( e,
+                            Box::new(Event::AsyncLogout),)));
+            }
+        });
     }
+
 
     pub fn pipe(&self, article: news_flash::models::Article, fat_article: Option<news_flash::models::FatArticle>, in_target: PipeTarget, out_target: PipeTarget, command: String)  {
         let news_flash_lock = self.news_flash_lock.clone();
@@ -787,20 +804,24 @@ impl NewsFlashUtils {
             NewsFlashError::Unknown => {
                 "An unknown error occurred.".to_string()
             }
+
+            NewsFlashError::NoSecretStore => {
+                "There is no secret store configured.".to_string()
+            }
         }
     }
 
-    pub fn get_feeds(news_flash: &NewsFlash) -> color_eyre::Result<GetFeedsResult> {
-        let (feeds, feed_mapping) = news_flash.get_feeds()?;
+    pub async fn get_feeds(news_flash: &NewsFlash) -> color_eyre::Result<GetFeedsResult> {
+        let (feeds, feed_mapping) = news_flash.get_feeds().await?;
         let feed_for_feed_id = NewsFlashUtils::generate_id_map(&feeds, |feed| feed.feed_id.to_owned());
         let feed_mapping_for_feed_id =
             NewsFlashUtils::generate_id_map(&feed_mapping, |mapping| mapping.feed_id.to_owned());
         Ok((feeds, feed_for_feed_id, feed_mapping_for_feed_id))
     }
 
-    pub fn get_categories(news_flash: &NewsFlash,) -> color_eyre::Result<GetCategoriesResult>
+    pub async fn get_categories(news_flash: &NewsFlash,) -> color_eyre::Result<GetCategoriesResult>
     {
-        let (categories, category_mapping) = news_flash.get_categories()?;
+        let (categories, category_mapping) = news_flash.get_categories().await?;
         let category_for_category_id =
             NewsFlashUtils::generate_id_map(&categories, |category| category.category_id.to_owned());
         let category_mapping_for_category_id =
@@ -814,12 +835,10 @@ impl NewsFlashUtils {
         ))
     }
 
-    pub fn get_tags(news_flash: &NewsFlash,) -> color_eyre::Result<GetTagsResult> {
-        let (tags, tagging) = news_flash.get_tags()?;
+    pub async fn get_tags(news_flash: &NewsFlash,) -> color_eyre::Result<GetTagsResult> {
+        let tags = news_flash.get_tags().await?;
         let tag_for_tag_id = NewsFlashUtils::generate_id_map(&tags, |tag| tag.tag_id.to_owned());
-        let tagging_for_tag_id =
-            NewsFlashUtils::generate_id_map(&tagging, |tagging| tagging.tag_id.to_owned());
-        Ok((tags, tag_for_tag_id, tagging_for_tag_id))
+        Ok((tags, tag_for_tag_id))
     }
 
     pub fn sort_feeds_and_categories(
@@ -894,15 +913,34 @@ impl NewsFlashUtils {
         .collect::<HashMap<CategoryID, CategoryID>>()
     }
 
-    pub fn get_tags_for_article(tagging_for_tag_id: &HashMap<TagID, Tagging>) -> HashMap<ArticleID, Vec<TagID>> {
-        NewsFlashUtils::generate_one_to_many(&tagging_for_tag_id.values().collect::<Vec<&Tagging>>(), |a|
-            a.article_id.clone(), |t| t.tag_id.clone())
+    pub async fn get_tags_for_all_articles(news_flash: &NewsFlash) -> color_eyre::Result<HashMap<ArticleID, Vec<TagID>>> {
+
+        let article_ids = news_flash.get_article_ids(Default::default()).await?;
+        Ok(NewsFlashUtils::get_tags_for_article(news_flash, &article_ids).await?)
     }
 
-    pub fn get_articles_for_tag_id(tagging_for_tag_id: &HashMap<TagID, Tagging>) -> HashMap<TagID, Vec<ArticleID>> {
-        NewsFlashUtils::generate_one_to_many(&tagging_for_tag_id.values().collect::<Vec<&Tagging>>(),  
-            |t| t.tag_id.clone(), 
-            |a| a.article_id.clone(),)
+    pub async fn get_tags_for_article(news_flash: &NewsFlash, article_ids: &[ArticleID]) -> color_eyre::Result<HashMap<ArticleID, Vec<TagID>>> {
+        Ok(
+            join_all(
+                article_ids.iter()
+                .map(
+                    async |article_id| {
+                        news_flash
+                            .get_tags_of_article(&article_id).await
+                            .map(|tags| (article_id.to_owned(), tags.into_iter().map(|tag| tag.tag_id).collect()))
+                    }
+                )).await.into_iter()
+            .collect::<Result<HashMap<ArticleID, Vec<TagID>>,_>>()?)
+    }
+
+    pub async fn get_articles_for_tag_id(news_flash: &NewsFlash, tag_ids: &[TagID]) -> color_eyre::Result<HashMap<TagID, Vec<ArticleID>>> {
+        Ok(
+
+            join_all(
+        tag_ids.iter()
+            .map(async |tag_id|
+                news_flash.get_article_ids(ArticleFilter { tags: Some(vec![tag_id.to_owned()]), ..Default::default() }).await.map(|article_ids| (tag_id.to_owned(), article_ids)))
+            ).await.into_iter().collect::<Result<HashMap<TagID, Vec<ArticleID>>,_>>()?)
     }
 }
 
@@ -929,10 +967,11 @@ pub async fn login_news_flash(
     let news_flash_attempt = NewsFlash::builder()
         .config_dir(news_flash_config_dir)
         .data_dir(state_dir)
-        .try_load();
+        .try_load()
+        .await;
 
     Ok(match news_flash_attempt {
-        Ok(news_flash) => {
+        Ok(mut news_flash) => {
             // Re-login to refresh session token
             if let Some(login_data) = news_flash.get_login_data().await {
                 info!("Re-logging in to refresh session");
@@ -969,11 +1008,12 @@ pub async fn login_news_flash(
                         .data_dir(state_dir)
                         .config_dir(news_flash_config_dir)
                         .plugin(login_data.as_ref().unwrap().id())
-                        .create()?,
+                        .create()
+                        .await?,
                 );
                 logged_in = login_setup
                     .login_and_initial_sync(
-                        news_flash.as_ref().unwrap(),
+                        news_flash.as_mut().unwrap(),
                         login_data.as_ref().unwrap(),
                         client,
                     )

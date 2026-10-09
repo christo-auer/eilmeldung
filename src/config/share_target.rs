@@ -9,7 +9,6 @@ use arboard::Clipboard;
 use log::info;
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use strum::EnumMessage;
-use url::Url;
 
 const REDDIT_URL_TEMPLATE: &str = "http://www.reddit.com/submit?url={url}&title={title}";
 const INSTAPAPER_URL_TEMPLATE: &str = "http://www.instapaper.com/hello2?url={url}&title={title}";
@@ -116,8 +115,8 @@ impl FromStr for ShareTarget {
 }
 
 impl ShareTarget {
-    fn to_url(&self, title: &str, url: &Url) -> Result<Url, ConfigError> {
-        let url_escaped = utf8_percent_encode(url.as_ref(), NON_ALPHANUMERIC).to_string();
+    fn to_url(&self, title: &str, url: &str) -> Result<String, ConfigError> {
+        let url_escaped = utf8_percent_encode(url, NON_ALPHANUMERIC).to_string();
         let title_escaped = utf8_percent_encode(title, NON_ALPHANUMERIC).to_string();
 
         use ShareTarget as T;
@@ -135,10 +134,10 @@ impl ShareTarget {
             .to_owned()
             .replace("{url}", &url_escaped)
             .replace("{title}", &title_escaped);
-        Ok(Url::parse(&url_str)?)
+        Ok(url_str)
     }
 
-    pub fn share(&self, title: &str, url: &Url) -> color_eyre::Result<()> {
+    pub fn share(&self, title: &str, url: &str) -> color_eyre::Result<()> {
         match self {
             ShareTarget::Clipboard => {
                 let mut clipboard = Clipboard::new()?;
@@ -150,7 +149,7 @@ impl ShareTarget {
 
             _ => {
                 let share_url = self.to_url(title, url)?;
-                webbrowser::open(share_url.to_string().as_str())?;
+                webbrowser::open(&share_url)?;
                 Ok(())
             }
         }
@@ -159,7 +158,7 @@ impl ShareTarget {
     fn to_command(
         command_args: &[String],
         title: &str,
-        url: &Url,
+        url: &str,
     ) -> color_eyre::Result<(Command, Vec<String>)> {
         let Some((cmd, args)) = command_args.split_first() else {
             return Err(color_eyre::eyre::eyre!("command is empty"));
@@ -167,10 +166,7 @@ impl ShareTarget {
 
         let filled_in_args = args
             .iter()
-            .map(|arg| {
-                arg.replace("{url}", url.as_ref())
-                    .replace("{title}", title.as_ref())
-            })
+            .map(|arg| arg.replace("{url}", url).replace("{title}", title.as_ref()))
             .collect::<Vec<String>>();
 
         info!("executing command {} {:?}", cmd, filled_in_args);
@@ -180,7 +176,7 @@ impl ShareTarget {
     fn execute_as_command(
         command_args: &[String],
         title: &str,
-        url: &Url,
+        url: &str,
     ) -> color_eyre::Result<()> {
         let (mut cmd, filled_in_args) = Self::to_command(command_args, title, url)?;
 
@@ -244,8 +240,7 @@ mod tests {
                 .map(|s| s.to_owned())
                 .collect::<Vec<String>>();
 
-            let (_command, replaced_args) =
-                ShareTarget::to_command(&args, $title, &Url::from_str($url).unwrap()).unwrap();
+            let (_command, replaced_args) = ShareTarget::to_command(&args, $title, $url).unwrap();
 
             assert_eq!(replaced_args, $replaced,);
         }};
@@ -306,16 +301,12 @@ mod tests {
     fn test_to_url() {
         // pub fn to_url(&self, title: &str, url: &Url) -> Result<Url, ConfigError> {
         use ShareTarget as T;
-        let url = T::Mastodon.to_url(
-            "Title",
-            &Url::from_str("http://www.newssite.com/article?id=123").unwrap(),
-        );
-        assert_matches!(url, Ok(Url { .. }));
+        let url = T::Mastodon.to_url("Title", "http://www.newssite.com/article?id=123");
+        assert_matches!(url, Ok(_));
 
         assert_eq!(
             url.unwrap(),
-            Url::from_str("https://sharetomastodon.github.io/?title=Title&url=http%3A%2F%2Fwww%2Enewssite%2Ecom%2Farticle%3Fid%3D123")
-            .unwrap()
+            "https://sharetomastodon.github.io/?title=Title&url=http%3A%2F%2Fwww%2Enewssite%2Ecom%2Farticle%3Fid%3D123"
         )
     }
 

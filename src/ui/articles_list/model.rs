@@ -51,21 +51,20 @@ impl ArticleListModelData {
 
         // fill model data
         let (_feeds, feed_for_feed_id, feed_mapping_for_feed_id) =
-            NewsFlashUtils::get_feeds(&news_flash)?;
+            NewsFlashUtils::get_feeds(&news_flash).await?;
 
         self.feed_for_feed_id = feed_for_feed_id;
 
         let (_categories, category_for_category_id, _category_mapping_for_category_id) =
-            NewsFlashUtils::get_categories(&news_flash)?;
+            NewsFlashUtils::get_categories(&news_flash).await?;
 
         self.parent_category_for_feed_id = NewsFlashUtils::get_parent_category_id_for_feed_id(
             &category_for_category_id,
             &feed_mapping_for_feed_id,
         );
 
-        let (tags, tag_for_tag_id, tagging_for_tag_id) = NewsFlashUtils::get_tags(&news_flash)?;
+        let (tags, tag_for_tag_id) = NewsFlashUtils::get_tags(&news_flash).await?;
         self.tag_for_tag_id = tag_for_tag_id;
-        self.tags_for_article_id = NewsFlashUtils::get_tags_for_article(&tagging_for_tag_id);
 
         let position_for_tag = tags
             .iter()
@@ -87,7 +86,20 @@ impl ArticleListModelData {
         drop(news_flash);
 
         // apply the current filter
-        self.filter_articles(config, filter_state).await
+        self.filter_articles(config, filter_state).await?;
+
+        // get tags for articles
+        self.tags_for_article_id = NewsFlashUtils::get_tags_for_article(
+            &*self.news_flash_utils.news_flash_lock.read().await,
+            &self
+                .articles
+                .iter()
+                .map(|article| article.article_id.to_owned())
+                .collect::<Vec<ArticleID>>(),
+        )
+        .await?;
+
+        Ok(())
     }
 
     pub(super) fn effectively_flagged_articles(&self) -> Vec<ArticleID> {
@@ -117,10 +129,10 @@ impl ArticleListModelData {
 
         let news_flash = self.news_flash_utils.news_flash_lock.read().await;
 
-        article_filter.order_by = Some(news_flash::models::OrderBy::Published);
-        article_filter.order = Some(news_flash::models::ArticleOrder::NewestFirst);
+        article_filter.order_by = news_flash::models::OrderBy::Published;
+        article_filter.order = news_flash::models::ArticleOrder::NewestFirst;
 
-        self.articles = news_flash.get_articles(article_filter.clone())?;
+        self.articles = news_flash.get_articles(article_filter.clone()).await?;
 
         if augmented_article_filter.is_augmented() {
             self.articles = self.get_queried_articles(&augmented_article_filter.article_query);

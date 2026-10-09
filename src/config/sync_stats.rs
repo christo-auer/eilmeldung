@@ -35,7 +35,7 @@ impl SyncStatsOutputFormat {
         }
     }
 
-    pub fn gen_output(
+    pub async fn gen_output(
         &self,
         news_flash: &news_flash::NewsFlash,
         new_articles: &HashMap<FeedID, Vec<ArticleID>>,
@@ -45,10 +45,10 @@ impl SyncStatsOutputFormat {
         let all_unread: usize = new_articles.values().map(Vec::len).sum();
 
         let (mut feeds, feed_for_feed_id, feed_mapping_for_feed_id) =
-            NewsFlashUtils::get_feeds(news_flash)?;
+            NewsFlashUtils::get_feeds(news_flash).await?;
 
         let (mut categories, category_for_category_id, category_mapping_for_category_id) =
-            NewsFlashUtils::get_categories(news_flash)?;
+            NewsFlashUtils::get_categories(news_flash).await?;
 
         NewsFlashUtils::sort_feeds_and_categories(
             &mut feeds,
