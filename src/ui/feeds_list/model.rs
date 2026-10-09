@@ -82,14 +82,14 @@ impl FeedListModelData {
 
         // feeds
         (self.feeds, self.feed_map, self.feed_mapping_for_feed_id) =
-            NewsFlashUtils::get_feeds(&news_flash)?;
+            NewsFlashUtils::get_feeds(&news_flash).await?;
 
         // categories
         (
             self.categories,
             self.category_for_category_id,
             self.category_mapping_for_category_id,
-        ) = NewsFlashUtils::get_categories(&news_flash)?;
+        ) = NewsFlashUtils::get_categories(&news_flash).await?;
 
         let parent_category_for_feed_id = NewsFlashUtils::get_parent_category_id_for_feed_id(
             &self.category_for_category_id,
@@ -103,11 +103,17 @@ impl FeedListModelData {
             );
 
         // tags
-        let (tags, tag_for_tag_id, tagging_for_tag_id) = NewsFlashUtils::get_tags(&news_flash)?;
+        let (tags, tag_for_tag_id) = NewsFlashUtils::get_tags(&news_flash).await?;
         self.tags = tags;
-        self.articles_for_tag_id = NewsFlashUtils::get_articles_for_tag_id(&tagging_for_tag_id);
+        let tag_ids = self
+            .tags
+            .iter()
+            .map(|tag| tag.tag_id.to_owned())
+            .collect::<Vec<TagID>>();
+        self.articles_for_tag_id =
+            NewsFlashUtils::get_articles_for_tag_id(&news_flash, &tag_ids).await?;
 
-        self.unread_count_for_tag = self.update_unread_count_for_tags(&news_flash)?;
+        self.unread_count_for_tag = self.update_unread_count_for_tags(&news_flash).await?;
 
         // build category/feed tree
         self.category_tree.clear();
@@ -191,14 +197,16 @@ impl FeedListModelData {
         self.roots.append(&mut feed_roots);
 
         // no we can build the tree structure
-        self.unread_count_all = news_flash.unread_count_all()?;
+        self.unread_count_all = news_flash.unread_count_all().await?;
         let mut unread_count_for_feed_or_category = news_flash
-            .unread_count_feed_map(true)?
+            .unread_count_feed_map(true)
+            .await?
             .into_iter()
             .map(|(feed_id, unread)| (feed_id.into(), unread))
             .collect();
         let mut marked_count_for_feed_or_category = news_flash
-            .marked_count_feed_map()?
+            .marked_count_feed_map()
+            .await?
             .into_iter()
             .map(|(feed_id, marked)| (feed_id.into(), marked))
             .collect();
@@ -234,14 +242,26 @@ impl FeedListModelData {
                 if let FeedListContentIdentifier::Query(labeled_query) = query {
                     let filter = AugmentedArticleFilter::from_str(&labeled_query.query)?;
 
+                    let articles = news_flash
+                        .get_articles(filter.article_filter.to_owned())
+                        .await?;
+                    let article_ids = articles
+                        .iter()
+                        .map(|article| article.article_id.to_owned())
+                        .collect::<Vec<ArticleID>>();
+
                     let articles = filter.article_query.filter(
-                        &news_flash.get_articles(filter.article_filter.to_owned())?,
+                        &news_flash
+                            .get_articles(filter.article_filter.to_owned())
+                            .await?,
                         &ArticleQueryContext {
                             feed_for_feed_id: &self.feed_map,
                             parent_category_for_feed_id: &parent_category_for_feed_id,
                             tags_for_article_id: &NewsFlashUtils::get_tags_for_article(
-                                &tagging_for_tag_id,
-                            ),
+                                &news_flash,
+                                &article_ids,
+                            )
+                            .await?,
                             tag_for_tag_id: &tag_for_tag_id,
                             last_sync: &news_flash.last_sync().await,
                             flagged: &Default::default(),
@@ -264,7 +284,7 @@ impl FeedListModelData {
         Ok(())
     }
 
-    fn update_unread_count_for_tags(
+    async fn update_unread_count_for_tags(
         &self,
         news_flash: &NewsFlash,
     ) -> color_eyre::Result<HashMap<TagID, i64>> {
@@ -274,7 +294,7 @@ impl FeedListModelData {
             let filter = ArticleFilter::tag_unread(&tag.tag_id);
             unread_count_for_tag.insert(
                 tag.tag_id.clone(),
-                news_flash.get_articles(filter)?.len() as i64,
+                news_flash.get_articles(filter).await?.len() as i64,
             );
         }
 

@@ -686,6 +686,17 @@ impl FeedList {
             return Ok(());
         };
 
+        let parsed_url = Url::parse(url);
+
+        let Ok(url) = parsed_url else {
+            tooltip(
+                &self.message_sender,
+                "invalid URL: {url}",
+                TooltipFlavor::Error,
+            )?;
+            return Ok(());
+        };
+
         tooltip(
             &self.message_sender,
             &*format!(
@@ -696,7 +707,7 @@ impl FeedList {
         )?;
 
         self.model_data
-            .add_feed(url.to_owned(), label, self.maybe_selected_category())?;
+            .add_feed(url, label, self.maybe_selected_category())?;
 
         Ok(())
     }

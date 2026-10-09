@@ -392,7 +392,8 @@ impl App {
         let output = self
             .config
             .notify_after_sync_stats_format
-            .gen_output(&news_flash, new_articles)?;
+            .gen_output(&news_flash, new_articles)
+            .await?;
 
         let Some((summary, body)) = output.split_once("\n") else {
             tooltip(

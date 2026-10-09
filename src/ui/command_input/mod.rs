@@ -280,9 +280,9 @@ impl CommandInput {
         &mut self,
         current_part: &str,
     ) -> color_eyre::Result<()> {
-        let (tags, _) = {
+        let tags = {
             let news_flash = self.news_flash_utils.news_flash_lock.read().await;
-            news_flash.get_tags()?
+            news_flash.get_tags().await?
         };
 
         self.completion_targets = Some(tags.iter().map(|tag| tag.label.to_owned()).collect());

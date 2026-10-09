@@ -174,11 +174,11 @@ impl LoginSetup {
         };
 
         let type_to_string = |service_type: &ServiceType| {
-            use ServiceType::*;
+            use ServiceType as T;
             match service_type {
-                Local => "local",
-                Remote { self_hosted } if *self_hosted => "self-hosted",
-                Remote { self_hosted } if !*self_hosted => "cloud",
+                T::Local { .. } => "local",
+                T::Remote { self_hosted } if *self_hosted => "self-hosted",
+                T::Remote { self_hosted } if !*self_hosted => "cloud",
                 _ => unreachable!(),
             }
         };
@@ -189,16 +189,26 @@ impl LoginSetup {
             .collect::<Vec<PluginInfoDisplayWrapper>>();
 
         plugin_infos.sort_by(|pi_a, pi_b| {
-            if pi_a.plugin_info.service_type == ServiceType::Local
-                && pi_b.plugin_info.service_type != ServiceType::Local
-            {
-                return Ordering::Less;
-            } else if pi_b.plugin_info.service_type == ServiceType::Local
-                && pi_a.plugin_info.service_type != ServiceType::Local
-            {
-                return Ordering::Greater;
-            };
-            pi_a.plugin_info.name.cmp(&pi_b.plugin_info.name)
+            use ServiceType as T;
+            match (
+                &pi_a.plugin_info.service_type,
+                &pi_b.plugin_info.service_type,
+            ) {
+                (T::Local { .. }, T::Remote { .. }) => Ordering::Less,
+                (T::Remote { .. }, T::Local { .. }) => Ordering::Greater,
+                (T::Local { synced: synced_a }, T::Local { synced: synced_b }) => {
+                    synced_a.cmp(&synced_b)
+                }
+                (
+                    T::Remote {
+                        self_hosted: self_hosted_a,
+                    },
+                    T::Remote {
+                        self_hosted: self_hosted_b,
+                    },
+                ) => self_hosted_a.cmp(&self_hosted_b),
+            }
+            .then_with(|| pi_a.plugin_info.name.cmp(&pi_b.plugin_info.name))
         });
 
         // print the providers with infos
@@ -596,7 +606,7 @@ Create a new *Application* under your account *Settings* with the following conf
 
     pub async fn login_and_initial_sync(
         &self,
-        news_flash: &NewsFlash,
+        news_flash: &mut NewsFlash,
         login_data: &LoginData,
         client: &Client,
     ) -> color_eyre::eyre::Result<bool> {

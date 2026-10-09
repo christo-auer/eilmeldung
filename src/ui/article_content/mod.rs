@@ -93,7 +93,7 @@ impl ArticleContent {
         Ok(())
     }
 
-    fn share_url(&self, target_str: &str, title: &str, url: &Url) -> color_eyre::Result<()> {
+    fn share_url(&self, target_str: &str, title: &str, url: &str) -> color_eyre::Result<()> {
         let Some(target) = self
             .config
             .share_targets
@@ -265,7 +265,7 @@ impl ArticleContent {
 
         let url_result = Url::parse(url);
 
-        let Ok(url) = url_result else {
+        let Ok(_parsed_url) = url_result else {
             tooltip(
                 &self.message_sender,
                 &*format!("cannot open invalid URL: {}", url_result.unwrap_err()),
