@@ -118,7 +118,7 @@ impl ArticleContentModelData {
     pub(super) async fn update_article_tags(&mut self) -> color_eyre::Result<()> {
         if let Some(article_id) = self.article.as_ref().map(|article| &article.article_id) {
             let news_flash = self.news_flash_utils.news_flash_lock.read().await;
-            self.tags = Some(news_flash.get_tags_of_article(&article_id).await?);
+            self.tags = Some(news_flash.get_tags_of_article(article_id).await?);
         }
         Ok(())
     }
@@ -319,14 +319,7 @@ impl ArticleContentModelData {
                     .to_string(),
             )
             .replace("{title}", article.title.as_deref().unwrap_or_default())
-            .replace(
-                "{url}",
-                article
-                    .url
-                    .as_ref()
-                    .map(|url| url.as_str())
-                    .unwrap_or_default(),
-            )
+            .replace("{url}", article.url.as_deref().unwrap_or_default())
             .replace("{author}", article.author.as_deref().unwrap_or_default())
             .replace(
                 "{feed}",

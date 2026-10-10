@@ -6,16 +6,13 @@ use std::{
 
 use futures::future::join_all;
 use htmd::HtmlToMarkdown;
-use news_flash::{
-    NewsFlash,
-    error::NewsFlashError,
-};
-use news_flash::models::{
-        ArticleFilter, CategoryID, CategoryMapping, Feed, FeedID,
-        FeedMapping, LoginData, Marked, Read, Tag, TagID, Url,
-    };
-use news_flash::models::Category;
 use news_flash::models::ArticleID;
+use news_flash::models::Category;
+use news_flash::models::{
+    ArticleFilter, CategoryID, CategoryMapping, Feed, FeedID, FeedMapping, LoginData, Marked, Read,
+    Tag, TagID, Url,
+};
+use news_flash::{NewsFlash, error::NewsFlashError};
 
 use log::{debug, error, info};
 use ratatui::{
@@ -553,6 +550,7 @@ impl NewsFlashUtils {
         success_event: Event::AsyncImportOpmlFinished,
     }
 
+    #[rustfmt::skip]        
     pub fn logout(&self) {
         let news_flash_lock = self.news_flash_lock.clone();
         let client_lock = self.client_lock.clone();
@@ -916,7 +914,7 @@ impl NewsFlashUtils {
     pub async fn get_tags_for_all_articles(news_flash: &NewsFlash) -> color_eyre::Result<HashMap<ArticleID, Vec<TagID>>> {
 
         let article_ids = news_flash.get_article_ids(Default::default()).await?;
-        Ok(NewsFlashUtils::get_tags_for_article(news_flash, &article_ids).await?)
+        NewsFlashUtils::get_tags_for_article(news_flash, &article_ids).await
     }
 
     pub async fn get_tags_for_article(news_flash: &NewsFlash, article_ids: &[ArticleID]) -> color_eyre::Result<HashMap<ArticleID, Vec<TagID>>> {
@@ -926,7 +924,7 @@ impl NewsFlashUtils {
                 .map(
                     async |article_id| {
                         news_flash
-                            .get_tags_of_article(&article_id).await
+                            .get_tags_of_article(article_id).await
                             .map(|tags| (article_id.to_owned(), tags.into_iter().map(|tag| tag.tag_id).collect()))
                     }
                 )).await.into_iter()

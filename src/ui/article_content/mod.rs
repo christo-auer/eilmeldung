@@ -293,7 +293,7 @@ impl ArticleContent {
                 }
             }
             Command::ContentShareHint(target_str, ..) => {
-                self.share_url(target_str, &title, &url)?;
+                self.share_url(target_str, &title, url)?;
             }
             _ => {}
         }
