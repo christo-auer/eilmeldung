@@ -197,7 +197,7 @@ impl LoginSetup {
                 (T::Local { .. }, T::Remote { .. }) => Ordering::Less,
                 (T::Remote { .. }, T::Local { .. }) => Ordering::Greater,
                 (T::Local { synced: synced_a }, T::Local { synced: synced_b }) => {
-                    synced_a.cmp(&synced_b)
+                    synced_a.cmp(synced_b)
                 }
                 (
                     T::Remote {
@@ -206,7 +206,7 @@ impl LoginSetup {
                     T::Remote {
                         self_hosted: self_hosted_b,
                     },
-                ) => self_hosted_a.cmp(&self_hosted_b),
+                ) => self_hosted_a.cmp(self_hosted_b),
             }
             .then_with(|| pi_a.plugin_info.name.cmp(&pi_b.plugin_info.name))
         });
