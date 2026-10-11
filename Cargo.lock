@@ -1688,6 +1688,7 @@ name = "eilmeldung"
 version = "1.9.0"
 dependencies = [
  "arboard",
+ "async-trait",
  "chrono",
  "claims",
  "clap",
