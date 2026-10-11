@@ -25,12 +25,12 @@ pub struct LoginConfiguration {
     pub token: Option<Secret>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub oauth_client_id: Option<String>,
+    pub oauth_client_id: Option<Secret>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub oauth_client_secret: Option<Secret>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub basic_auth_user: Option<String>,
+    pub basic_auth_user: Option<Secret>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub basic_auth_password: Option<Secret>,
 }
@@ -216,7 +216,7 @@ impl LoginConfiguration {
         ) {
             (None, None) => None,
             (Some(client_id), Some(client_secret)) => Some(ApiSecret {
-                client_id: client_id.to_owned(),
+                client_id: client_id.get_secret()?,
                 client_secret: client_secret.get_secret()?,
             }),
 
@@ -241,12 +241,10 @@ impl LoginConfiguration {
     }
 
     fn to_basic_auth(&self) -> Result<Option<BasicAuth>, ConfigError> {
+        let user = Secret::get_secret_option(self.basic_auth_user.as_ref())?;
         let password = Secret::get_secret_option(self.basic_auth_password.as_ref())?;
 
-        Ok(self.basic_auth_user.as_ref().map(|user| BasicAuth {
-            user: user.to_owned(),
-            password,
-        }))
+        Ok(user.map(|user| BasicAuth { user, password }))
     }
 
     fn from_none(plugin_id: PluginID) -> Self {
@@ -275,8 +273,7 @@ impl LoginConfiguration {
     fn with_basic_auth(self, basic_auth: Option<&BasicAuth>) -> Self {
         Self {
             basic_auth_user: basic_auth
-                .map(|basic_auth| basic_auth.user.to_owned())
-                .clone(),
+                .map(|basic_auth| Secret::Verbatim(basic_auth.user.to_owned())),
             basic_auth_password: basic_auth
                 .and_then(|basic_auth| basic_auth.password.to_owned())
                 .map(Secret::Verbatim),
@@ -306,7 +303,7 @@ impl LoginConfiguration {
             oauth_client_id: oauth_data
                 .custom_api_secret
                 .as_ref()
-                .map(|api_secret| api_secret.client_id.to_owned()),
+                .map(|api_secret| Secret::Verbatim(api_secret.client_id.to_owned())),
             oauth_client_secret: oauth_data
                 .custom_api_secret
                 .as_ref()
