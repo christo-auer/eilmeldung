@@ -964,9 +964,9 @@ pub async fn login_news_flash(
 
     let news_flash_attempt = NewsFlash::builder()
         .config_dir(news_flash_config_dir)
-        .secret_store(Box::new(ConfiguredSecretStore::new(
-            config.login_setup.clone(),
-        )))
+        // .secret_store(Box::new(ConfiguredSecretStore::new(
+        //     config.login_setup.clone(),
+        // )))
         .data_dir(state_dir)
         .try_load()
         .await;
