@@ -3,9 +3,6 @@
 , pkg-config
 , cmake
 , perl
-, openssl
-, libxml2
-, sqlite
 }:
 
 { src, version }:
@@ -23,12 +20,6 @@ rustPlatform.buildRustPackage {
     pkg-config
     cmake
     perl
-  ];
-
-  buildInputs = [
-    openssl
-    libxml2
-    sqlite
   ];
 
   meta = {

@@ -17,9 +17,4 @@ pkgs.mkShell {
     perl
   ];
 
-  # Libraries needed for building
-  buildInputs = with pkgs; [
-    openssl
-    sqlite
-  ];
 }
