@@ -10,11 +10,6 @@ pkgs.mkShell {
     clippy
     rustfmt
     rustPlatform.bindgenHook
-
-    # Build tools
-    pkg-config
-    cmake
-    perl
   ];
 
 }

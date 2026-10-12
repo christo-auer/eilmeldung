@@ -7,12 +7,7 @@ class Eilmeldung < Formula
   head "https://github.com/christo-auer/eilmeldung.git", branch: "main"
   version "1.9.1"
 
-  depends_on "pkg-config" => :build
   depends_on "rust" => :build
-
-  depends_on "libxml2"
-  depends_on "openssl@3"
-  depends_on "sqlite"
 
   on_linux do
     depends_on "llvm" => :build
