@@ -3,10 +3,12 @@ use news_flash::feed_api::{SecretError, SecretKey, SecretKind, SecretStore};
 
 use crate::prelude::*;
 
+#[allow(dead_code)]
 pub struct ConfiguredSecretStore {
     login_setup: Option<LoginConfiguration>,
 }
 
+#[allow(dead_code)]
 impl ConfiguredSecretStore {
     pub fn new(login_setup: Option<LoginConfiguration>) -> Self {
         Self { login_setup }
