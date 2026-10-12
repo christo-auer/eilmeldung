@@ -35,9 +35,9 @@ impl SecretStore for ConfiguredSecretStore {
         Ok(match key.kind {
             K::Password => login_setup.password.as_ref(),
             K::HttpPassword => login_setup.basic_auth_password.as_ref(),
-            K::AccessToken => login_setup.token.as_ref(),
+            K::ApiKey => login_setup.token.as_ref(),
             K::RefreshToken => login_setup.oauth_client_id.as_ref(),
-            K::ApiKey => login_setup.oauth_client_secret.as_ref(),
+            K::AccessToken => login_setup.oauth_client_secret.as_ref(),
         }
         .map(|secret| {
             secret
