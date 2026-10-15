@@ -319,7 +319,7 @@ impl Default for Config {
             #[cfg(target_os = "macos")]
             enclosure_command: "open {url}".into(),
 
-            #[cfg(any(target_os = "linux", target_os = "netbsd"))]
+            #[cfg(any(target_os = "linux", target_os = "netbsd", target_os = "openbsd"))]
             enclosure_command: "xdg-open {url}".into(),
 
             #[cfg(target_os = "windows")]
