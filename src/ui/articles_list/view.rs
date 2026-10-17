@@ -1,4 +1,6 @@
 use crate::prelude::*;
+use crate::table::Row;
+use crate::table::{Table, TableState};
 use crate::ui::articles_list::model::ArticleListModelData;
 
 use getset::{Getters, MutGetters};
@@ -7,8 +9,7 @@ use ratatui::layout::Constraint;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
-    Block, Borders, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table,
-    TableState, Widget,
+    Block, Borders, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget,
 };
 use strum::IntoEnumIterator;
 
