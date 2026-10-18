@@ -154,9 +154,11 @@ impl App {
             .news_flash_lock
             .read()
             .await
-            .set_keep_articles_duration(Some(TimeDelta::days(
-                self.config.keep_articles_days as i64,
-            )))
+            .set_keep_articles_duration(if self.config.keep_articles_days == 0 {
+                None
+            } else {
+                Some(TimeDelta::days(self.config.keep_articles_days as i64))
+            })
             .await?;
 
         debug!("Sending ApplicationStarted command");

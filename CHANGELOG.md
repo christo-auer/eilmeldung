@@ -1,6 +1,5 @@
 # Unreleased
 
-- deps updated
 - columns for marked/read/flag columns are now narrower
 - commands `up` and `down` now accept (optional) amount to navigate up/down
   - use this for faster navigation, e.g., `input_config.mappings.">" = ["down 2"]`
@@ -8,6 +7,8 @@
 - enhanced feed list labels:
   - `tag_label` and `query_label` no accept `{count}` for the total number of articles
   - labels are now more configurable, e.g., `{(unread_count)}` is displayed as `(34)` and `{(unread_count):-}` is displayed as `-` if there are no unread articles (see more in `docs/configuration.md`)
+- option to *never* remove old articles by setting `keep_articles_days = 0`
+- deps updated
 
 # 1.9.0 - 2026-09-23
 
