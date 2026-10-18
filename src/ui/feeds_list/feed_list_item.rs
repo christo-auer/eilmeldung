@@ -35,22 +35,58 @@ impl Debug for FeedListItem {
     }
 }
 
-#[derive(Clone, Debug, logos::Logos)]
+#[derive(Clone, Copy, Debug, logos::Logos)]
 enum LabelToken {
-    #[token("{unread_count}", priority = 100)]
+    #[regex(r#"\{[^}]*?unread_count[^}]*?\}"#, priority = 120)]
     UnreadCount,
 
-    #[token("{marked_count}", priority = 100)]
+    #[regex(r#"\{[^}]*?marked_count[^}]*?\}"#, priority = 110)]
     MarkedCount,
 
-    #[token("{icon}", priority = 100)]
+    #[regex(r#"\{[^}]*?count[^}]*?\}"#, priority = 100)]
+    Count,
+
+    #[regex(r#"\{[^}]*?icon[^}]*?\}"#, priority = 90)]
     Icon,
 
-    #[token("{label}", priority = 100)]
+    #[regex(r#"\{[^}]*?label[^}]*?\}"#, priority = 80)]
     Label,
 
     #[regex(r#"[^{]+"#, priority = 0)]
     Fill,
+}
+
+impl LabelToken {
+    fn replace(self, token: &str, value: Option<&str>) -> String {
+        log::trace!("token: {token}");
+        let Some(id) = self.id() else {
+            return token.into();
+        };
+
+        let mut inner = token.to_string();
+        inner.remove(0);
+        inner.remove(inner.len() - 1);
+
+        let (label, default) = match inner.split_once(":") {
+            Some((left, right)) => (left, right),
+            None => (&*inner, ""),
+        };
+
+        value
+            .map(|value| label.replace(id, value))
+            .unwrap_or_else(|| default.to_owned())
+    }
+
+    fn id(self) -> Option<&'static str> {
+        Some(match self {
+            Self::UnreadCount => "unread_count",
+            Self::MarkedCount => "marked_count",
+            Self::Count => "count",
+            Self::Icon => "icon",
+            Self::Label => "label",
+            Self::Fill => return None,
+        })
+    }
 }
 
 impl FeedListItem {
@@ -59,16 +95,13 @@ impl FeedListItem {
         config: &Config,
         unread_count: Option<i64>,
         marked_count: Option<i64>,
+        count: Option<i64>,
     ) -> Text<'a> {
         use FeedListItem::*;
 
-        let unread_count_str = unread_count
-            .map(|c| if c > 0 { c.to_string() } else { "".to_owned() })
-            .unwrap_or_default();
-
-        let marked_count_str = marked_count
-            .map(|c| if c > 0 { c.to_string() } else { "".to_owned() })
-            .unwrap_or_default();
+        let unread_count_str = unread_count.filter(|c| *c > 0).as_ref().map(i64::to_string);
+        let marked_count_str = marked_count.filter(|c| *c > 0).as_ref().map(i64::to_string);
+        let count_str = count.filter(|c| *c > 0).as_ref().map(i64::to_string);
 
         let (label, icon, label_template, mut style): (&str, char, String, Style) = match self {
             Feeds => (
@@ -138,16 +171,21 @@ impl FeedListItem {
 
         while let Some(token) = lexer.next() {
             use LabelToken as T;
+
             match token {
                 Ok(T::Fill) => text.push_span(Span::styled(lexer.slice().to_owned(), style)),
                 Ok(T::Icon) => text.push_span(Span::styled(icon.to_string(), style)),
                 Ok(T::UnreadCount) => text.push_span(Span::styled(
-                    unread_count_str.to_owned(),
+                    T::UnreadCount.replace(lexer.slice(), unread_count_str.as_deref()),
                     style.patch(config.theme.unread_count()),
                 )),
                 Ok(T::MarkedCount) => text.push_span(Span::styled(
-                    marked_count_str.to_owned(),
+                    T::MarkedCount.replace(lexer.slice(), marked_count_str.as_deref()),
                     style.patch(config.theme.marked_count()),
+                )),
+                Ok(T::Count) => text.push_span(Span::styled(
+                    T::Count.replace(lexer.slice(), count_str.as_deref()),
+                    style.patch(config.theme.count()),
                 )),
                 Ok(T::Label) => text.push_span(Span::styled(label.to_owned(), style)),
 

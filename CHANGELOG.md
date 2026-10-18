@@ -5,6 +5,9 @@
 - commands `up` and `down` now accept (optional) amount to navigate up/down
   - use this for faster navigation, e.g., `input_config.mappings.">" = ["down 2"]`
   - use this for faster mouse scrolling, e.g., `mouse_config.content_mappings.scroll_down = ["in content down 2"]`
+- enhanced feed list labels:
+  - `tag_label` and `query_label` no accept `{count}` for the total number of articles
+  - labels are now more configurable, e.g., `{(unread_count)}` is displayed as `(34)` and `{(unread_count):-}` is displayed as `-` if there are no unread articles (see more in `docs/configuration.md`)
 
 # 1.9.0 - 2026-09-23
 

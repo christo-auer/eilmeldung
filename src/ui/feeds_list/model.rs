@@ -37,8 +37,13 @@ pub struct FeedListModelData {
 
     unread_count_all: i64,
     unread_count_for_feed_or_category: HashMap<FeedOrCategory, i64>,
+
     unread_count_for_tag: HashMap<TagID, i64>,
+    count_for_tag: HashMap<TagID, i64>,
+
     unread_count_for_query: HashMap<LabeledQuery, i64>,
+    count_for_query: HashMap<LabeledQuery, i64>,
+
     marked_count_for_feed_or_category: HashMap<FeedOrCategory, i64>,
 
     tags: Vec<Tag>,
@@ -67,11 +72,13 @@ impl FeedListModelData {
             articles_for_tag_id: HashMap::default(),
             tags: Vec::default(),
             unread_count_all: 0,
-            unread_count_for_feed_or_category: HashMap::default(),
-            unread_count_for_tag: HashMap::default(),
-            unread_count_for_query: HashMap::default(),
-            marked_count_for_feed_or_category: HashMap::default(),
-            category_tree: HashMap::default(),
+            unread_count_for_feed_or_category: Default::default(),
+            unread_count_for_tag: Default::default(),
+            unread_count_for_query: Default::default(),
+            marked_count_for_feed_or_category: Default::default(),
+            count_for_tag: Default::default(),
+            count_for_query: Default::default(),
+            category_tree: Default::default(),
             roots: Vec::default(),
             category_mapping_for_category_id: HashMap::default(),
             feed_mapping_for_feed_id: HashMap::default(),
@@ -108,7 +115,8 @@ impl FeedListModelData {
         self.tags = tags;
         self.articles_for_tag_id = NewsFlashUtils::get_articles_for_tag_id(&tagging_for_tag_id);
 
-        self.unread_count_for_tag = self.update_unread_count_for_tags(&news_flash)?;
+        (self.unread_count_for_tag, self.count_for_tag) =
+            self.update_count_for_tags(&news_flash)?;
 
         // build category/feed tree
         self.category_tree.clear();
@@ -254,6 +262,9 @@ impl FeedListModelData {
                         .filter(|article| matches!(article.unread, Read::Unread))
                         .count() as i64;
 
+                    self.count_for_query
+                        .insert(labeled_query.to_owned(), articles.len() as i64);
+
                     self.unread_count_for_query
                         .insert(labeled_query.to_owned(), unread_count);
                 };
@@ -265,21 +276,32 @@ impl FeedListModelData {
         Ok(())
     }
 
-    fn update_unread_count_for_tags(
+    fn update_count_for_tags(
         &self,
         news_flash: &NewsFlash,
-    ) -> color_eyre::Result<HashMap<TagID, i64>> {
+    ) -> color_eyre::Result<(HashMap<TagID, i64>, HashMap<TagID, i64>)> {
         let mut unread_count_for_tag = HashMap::new();
+        let mut count_for_tag = HashMap::new();
 
         for tag in self.tags.iter() {
-            let filter = ArticleFilter::tag_unread(&tag.tag_id);
+            let filter = ArticleFilter {
+                tags: Some(vec![tag.tag_id.to_owned()]),
+                ..Default::default()
+            };
+            let articles_with_tag = news_flash.get_articles(filter)?;
+
+            count_for_tag.insert(tag.tag_id.clone(), articles_with_tag.len() as i64);
+
             unread_count_for_tag.insert(
                 tag.tag_id.clone(),
-                news_flash.get_articles(filter)?.len() as i64,
+                articles_with_tag
+                    .into_iter()
+                    .filter(|article| matches!(article.unread, Read::Unread))
+                    .count() as i64,
             );
         }
 
-        Ok(unread_count_for_tag)
+        Ok((unread_count_for_tag, count_for_tag))
     }
 
     fn count_recursive(

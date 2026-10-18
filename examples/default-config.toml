@@ -339,6 +339,7 @@ highlighted = { fg = "highlight", mods = ["italic"] }
 flagged = { fg = "flagged" }
 unread_count = { mods = ["italic"] }
 marked_count = { mods = ["italic"] }
+count = { mods = ["italic"] }
 
 [theme.base16_dark]
 background = "base00"

@@ -164,6 +164,7 @@ impl FeedListViewData {
                 .get(labeled_query)
                 .copied(),
             None,
+            model_data.count_for_query().get(labeled_query).copied(),
         );
 
         if let Some(search_term) = search_term.as_ref()
@@ -244,7 +245,7 @@ impl FeedListViewData {
         match item_type {
             FeedListItemType::Tree => {
                 let categories_item = FeedListItem::Categories;
-                let mut categories_text = categories_item.to_text(config, None, None);
+                let mut categories_text = categories_item.to_text(config, None, None, None);
                 if let Some(search_term) = search_term.as_ref()
                     && search_term.test_text(&categories_text)
                 {
@@ -294,13 +295,11 @@ impl FeedListViewData {
                 .map(|tag| self.gen_tag_item(config, model_data, tag, search_term))
                 .collect::<Vec<TreeItem<_>>>();
 
-            // let children =
-
             match item_type {
                 FeedListItemType::List => self.tree_items.append(&mut children),
                 FeedListItemType::Tree => {
                     let tags_item = FeedListItem::Tags;
-                    let mut tag_item_text = tags_item.to_text(config, None, None);
+                    let mut tag_item_text = tags_item.to_text(config, None, None, None);
                     if let Some(search_term) = search_term.as_ref()
                         && search_term.test_text(&tag_item_text)
                     {
@@ -345,7 +344,12 @@ impl FeedListViewData {
             FeedListItemType::List => self.tree_items.append(&mut children),
             FeedListItemType::Tree => self.tree_items.push(TreeItem::new(
                 FeedListItem::Feeds,
-                FeedListItem::Feeds.to_text(config, Some(*model_data.unread_count_all()), None),
+                FeedListItem::Feeds.to_text(
+                    config,
+                    Some(*model_data.unread_count_all()),
+                    None,
+                    None,
+                ),
                 children,
             )?),
         }
@@ -376,6 +380,7 @@ impl FeedListViewData {
                     .copied()
                     .unwrap_or(0),
             ),
+            None,
         );
 
         if let Some(UnifiedMapping::Feed(feed_mapping)) = self.yanked_unified_mapping()
@@ -446,7 +451,8 @@ impl FeedListViewData {
             .marked_count_for_feed_or_category()
             .get(&category.category_id.clone().into())
             .copied();
-        let mut identifier_text = identifier.to_text(config, unread_category, marked_category);
+        let mut identifier_text =
+            identifier.to_text(config, unread_category, marked_category, None);
 
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&identifier_text)
@@ -474,13 +480,10 @@ impl FeedListViewData {
         tag: news_flash::models::Tag,
         search_term: &Option<SearchTerm>,
     ) -> TreeItem<'static, FeedListItem> {
-        let count = model_data
-            .unread_count_for_tag()
-            .get(&tag.tag_id)
-            .copied()
-            .unwrap_or(0);
+        let unread_count = model_data.unread_count_for_tag().get(&tag.tag_id).copied();
+        let count = model_data.count_for_tag().get(&tag.tag_id).copied();
         let tag_item = FeedListItem::Tag(Box::new(tag));
-        let mut tag_item_text = tag_item.to_text(config, Some(count), None);
+        let mut tag_item_text = tag_item.to_text(config, unread_count, None, count);
         if let Some(search_term) = search_term.as_ref()
             && search_term.test_text(&tag_item_text)
         {
