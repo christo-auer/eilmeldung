@@ -68,8 +68,14 @@ impl FeedList {
 
     fn generate_articles_selected_command(&self) -> color_eyre::Result<()> {
         if let Some(selected) = self.selected() {
-            match selected.try_into() {
-                Ok(article_filter) => {
+            match TryInto::<AugmentedArticleFilter>::try_into(selected.clone()) {
+                Ok(mut article_filter) => {
+                    if matches!(selected, FeedListItem::Tag(..))
+                        && let Some(tag_scope) = self.config.tag_force_scope
+                    {
+                        article_filter.force_scope(tag_scope);
+                    }
+
                     self.message_sender
                         .send(Message::Event(Event::ArticlesSelected(article_filter)))?;
                 }

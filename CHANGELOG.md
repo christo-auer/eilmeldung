@@ -1,12 +1,14 @@
 # Unreleased
 
-- columns for marked/read/flag columns are now narrower
 - commands `up` and `down` now accept (optional) amount to navigate up/down
   - use this for faster navigation, e.g., `input_config.mappings.">" = ["down 2"]`
   - use this for faster mouse scrolling, e.g., `mouse_config.content_mappings.scroll_down = ["in content down 2"]`
 - enhanced feed list labels:
   - `tag_label` and `query_label` no accept `{count}` for the total number of articles
   - labels are now more configurable, e.g., `{(unread_count)}` is displayed as `(34)` and `{(unread_count):-}` is displayed as `-` if there are no unread articles (see more in `docs/configuration.md`)
+- new option `tag_force_scope` to force either `all`, `unread` or `marked` to be displayed when selecting a tag in the feed list; if not set (default), the user can choose the scope/what is displayed
+- columns for marked/read/flag columns are now narrower
+- queries are now allowing selecting the scope (`all`, `unread`, `marked`) unless a scope is forced by the query itself (e.g., by `*` for `all`, `unread` or `marked`)
 - option to *never* remove old articles by setting `keep_articles_days = 0`
 - deps updated
 

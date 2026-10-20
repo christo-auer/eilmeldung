@@ -284,8 +284,22 @@ impl AugmentedArticleFilter {
     }
 
     pub fn defines_scope(&self) -> bool {
-        self.is_augmented()
+        self.article_query
+            .query
+            .iter()
+            .any(|clause| matches!(clause, QueryClause::Id(QueryAtom::True)))
             || self.article_filter.unread.is_some()
             || self.article_filter.marked.is_some()
+    }
+
+    pub fn force_scope(&mut self, scope: ArticleScope) {
+        match scope {
+            ArticleScope::All => self
+                .article_query
+                .query
+                .push(QueryClause::Id(QueryAtom::True)),
+            ArticleScope::Unread => self.article_filter.unread = Some(Read::Unread),
+            ArticleScope::Marked => self.article_filter.marked = Some(Marked::Marked),
+        }
     }
 }

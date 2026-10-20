@@ -68,6 +68,7 @@ feed_list = [
   "tags",
 ]
 feed_list_query_compute_unread = true
+# tag_force_scope is not set by default
 
 # Enclosures
 enclosure_command = "xdg-open {url}"
