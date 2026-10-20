@@ -1,5 +1,11 @@
 # Unreleased
 
+- when *eilmeldung* detects multiple feed sources when adding a feed, it shows a selection popup
+- update to `news-flash 4.0.1` 
+  - with many thanks and cheers to @jangernert for all the work he puts into maintaining news-flash, which makes *eilmeldung* possible
+  - and because of @jangernert's great work, *eilmeldung* now has **no** external dependencies anymore!🎉 just pure rust 🦀 (except for `libc` of course 😉)
+
+
 # 1.9.1 - 2026-10-20
 
 - commands `up` and `down` now accept (optional) amount to navigate up/down

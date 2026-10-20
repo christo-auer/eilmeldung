@@ -18,8 +18,6 @@ impl ConfiguredSecretStore {
 #[async_trait]
 impl SecretStore for ConfiguredSecretStore {
     async fn get(&self, key: &SecretKey) -> Result<Option<String>, SecretError> {
-        log::trace!("get {key:?}");
-
         let Some(login_setup) = self.login_setup.as_ref() else {
             return Err(SecretError::Backend(
                 "config option `login_setup` not set: no login configuration available".to_owned(),
@@ -34,18 +32,22 @@ impl SecretStore for ConfiguredSecretStore {
         }
 
         use SecretKind as K;
-        Ok(match key.kind {
-            K::Password => login_setup.password.as_ref(),
-            K::HttpPassword => login_setup.basic_auth_password.as_ref(),
-            K::ApiKey => login_setup.token.as_ref(),
-            K::RefreshToken => login_setup.oauth_client_id.as_ref(),
-            K::AccessToken => login_setup.oauth_client_secret.as_ref(),
-        }
-        .map(|secret| {
-            secret
-                .get_secret()
-                .map_err(|error| SecretError::Backend(error.to_string()))
-        })
+        Ok(<Option<&Secret>>::map(
+            match key.kind {
+                K::Password => login_setup.password.as_ref(),
+                K::HttpPassword => login_setup.basic_auth_password.as_ref(),
+                K::ApiKey => todo!(),
+                K::RefreshToken => todo!(),
+                K::AccessToken => todo!(),
+                K::ClientSecret => todo!(),
+                K::Session => todo!(),
+            },
+            |secret| {
+                secret
+                    .get_secret()
+                    .map_err(|error| SecretError::Backend(error.to_string()))
+            },
+        )
         .transpose()?)
     }
 

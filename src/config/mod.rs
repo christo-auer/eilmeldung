@@ -38,6 +38,7 @@ pub mod prelude {
     pub use super::icon_set::IconSet;
     pub use super::input_config::InputConfig;
     pub use super::login_configuration::LoginConfiguration;
+    pub use super::login_configuration::Secret;
     pub use super::mouse::MouseConfig;
     pub use super::paths::{CONFIG_FILE, PROJECT_DIRS};
     pub use super::share_target::ShareTarget;
