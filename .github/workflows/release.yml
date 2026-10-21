@@ -16,15 +16,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7.0.1
-        with:
-          submodules: true
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            llvm \
-            clang
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -68,15 +59,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7.0.1
-        with:
-          submodules: true
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            llvm \
-            clang
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -125,8 +107,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7.0.1
-        with:
-          submodules: true
+
       - name: Build
         run: |
           cargo build --release
@@ -166,21 +147,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7.0.1
-        with:
-          submodules: true
-
-      - name: Install system dependencies (Ubuntu Linux)
-        if: ${{ runner.os == 'Linux' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            llvm \
-            clang
-
-      - name: Install system dependencies (macOS)
-        if: ${{ runner.os == 'macOS' }}
-        run: |
-          brew install libxml2
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -213,10 +179,6 @@ jobs:
 
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target  }}
-        env:
-          PKG_CONFIG_PATH: ${{ matrix.target == 'x86_64-apple-darwin' && '/usr/local/opt/libxml2/lib/pkgconfig:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/pkgconfig' || (runner.os == 'macOS' && '/opt/homebrew/opt/libxml2/lib/pkgconfig' || '') }}
-          PKG_CONFIG_ALLOW_CROSS: ${{ runner.os == 'macOS' && '1' || '' }}
-          XML2_CONFIG: ${{ matrix.target == 'x86_64-apple-darwin' && '/Library/Developer/CommandLineTools/usr/bin/xml2-config' || '' }}
 
       - name: Extract tag name
         id: tag
@@ -247,12 +209,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7.0.1
-        with:
-          submodules: true
-
-      - name: Install vcpkg dependencies
-        run: vcpkg install libxml2:x64-windows-static
-        shell: pwsh
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -282,11 +238,6 @@ jobs:
         run: cargo build --release --target x86_64-pc-windows-msvc
         env:
           RUSTFLAGS: "-C target-feature=+crt-static"
-          VCPKG_ROOT: C:\vcpkg
-          VCPKGRS_DYNAMIC: "0"
-          PKG_CONFIG_PATH: C:\vcpkg\installed\x64-windows-static\lib\pkgconfig
-          CMAKE_TOOLCHAIN_FILE: C:\vcpkg\scripts\buildsystems\vcpkg.cmake
-          VCPKG_TARGET_TRIPLET: x64-windows-static
 
       - name: Create package directory
         run: |
@@ -315,15 +266,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
-        with:
-          submodules: true
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            llvm \
-            clang
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -342,8 +284,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7.0.1
-        with:
-          submodules: true
 
       - name: Extract tag name
         id: tag
@@ -390,7 +330,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7.0.1
         with:
-          submodules: true
           persist-credentials: true            
           ref: "main"
           ssh-key: ${{ secrets.GIT_DEPLOY_KEY }}
