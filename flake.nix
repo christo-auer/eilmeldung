@@ -18,7 +18,7 @@
       };
 
       mkEilmeldung = pkgs: src: ver:
-        (pkgs.callPackage ./nix/package.nix { }) { inherit src; version = ver; };
+        (pkgs.callPackage (import ./nix/package.nix { inherit src; version = ver; }) { });
 
       deprecationWarning = ''
       eilmeldung has moved into nixpkgs unstable (pkgs.eilmeldung) and the
