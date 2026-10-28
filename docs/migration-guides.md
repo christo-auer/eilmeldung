@@ -5,6 +5,10 @@ Here you can find migration guides for breaking changes.
 
 **IMPORTANT**: Don't copy `example/default-config.toml`. Start with an **empty** `config.toml` and just add the settings you want to be **different** from the `default-config.toml`! `default-config.toml` is for **reference purposes** only and is prone to break if used directly.
 
+## With 1.10.0
+
+- *eilmeldung* now has no external dependencies anymore, i.e., it can be compiled with the standard rust toolchain without `libxml`, `sqlite3`, `openssl` dependencies or any build dependencies like `llvm` or `perl`
+
 ## With 1.9.0
 - with complete rewrite of mouse support, setting `mouse_support` is now deprecated, use `mouse_config.enable` instead (default is `true`)
 - the settings `scrollbar_begin_symbol`, `scrollbar_end_symbol, `scrollbar_track_symbol`, `scrollbar_thumb_symbol` have been removed 
