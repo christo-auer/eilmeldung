@@ -14,8 +14,8 @@ Follow any of the installation methods below, then run *eilmeldung*. It will gui
 - [NixOS and Home Manager](#nix-flake-and-home-manager)
 - [Void Linux](#void-linux)
 - [Windows via Scoop](#windows-via-scoop)
-- [Windows — Install latest from GitHub](#windows--install-latest-from-github)
-- [Windows — Build from source](#windows--build-from-source)
+- [Windows: Install latest from GitHub](#windows--install-latest-from-github)
+- [Windows: Build from source](#windows--build-from-source)
 - [NetBSD](#netbsd)
 
 ---
@@ -179,7 +179,11 @@ echo "repository=https://raw.githubusercontent.com/Event-Horizon-VL/blackhole-vl
 
 ---
 
-## Windows via Scoop
+## Windows 
+
+Recommended terminal is [Windows Terminal](https://github.com/microsoft/terminal) with a NerdFont-patched font.
+
+### Scoop
 
 Install [scoop](https://scoop.sh/) and then
 
@@ -187,54 +191,42 @@ Install [scoop](https://scoop.sh/) and then
   scoop install eilmeldung
 ```
 
-Recommended terminal is [Windows Terminal](https://github.com/microsoft/terminal) with a NerdFont-patched font.
 
 ---
 
-## Windows — Install latest from GitHub
+### Manual Installation
 
-For power users who want the latest unreleased code from `main` without cloning the repo. Download and run `install-windows.ps1` directly:
-
-```pwsh
-irm https://raw.githubusercontent.com/christo-auer/eilmeldung/main/scripts/install-windows.ps1 -OutFile install-eilmeldung.ps1
-.\install-eilmeldung.ps1
-```
-
-This script is fully self-contained — it automatically installs all required dependencies (Perl, LLVM, vcpkg, libxml2) and runs `cargo install` from GitHub.
-
-> **Note:** The first run downloads and compiles dependencies from source — expect 20–30 minutes. Subsequent runs are much faster.
+Download the latest release bundle for Windows from [releases](https://github.com/christo-auer/eilmeldung/releases), extract it and execute the `eilmeldung.exe`.
 
 ---
 
-## Windows — Build from source
+## Cargo
 
-For contributors who want to build local changes. Requires cloning the repo first.
+#### Build Dependencies
 
-**Step 1 — Install the Rust toolchain**
+- Install rust toolchain via PowerShell:
 
+  ```pwsh
+  winget install Rustlang.Rustup
+  rustup default stable
+  rustup target add x86_64-pc-windows-msvc
+  ```
+- Install Visual Studio Build Tools with the C++ workload, e.g., with:
+  ```pwsh
+    winget install Microsoft.VisualStudio.2022.BuildTools --override "--passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+  ```
+
+#### Build via Cargo
+
+Either pull the latest release from `crates.io`:
 ```pwsh
-winget install Rustlang.Rustup
-rustup default stable
-rustup target add x86_64-pc-windows-msvc
+cargo install --locked eilmeldung --target x86_64-pc-windows-msvc
 ```
-
-**Step 2 — Build**
-
-The helper script automatically installs all remaining dependencies (Perl, LLVM, vcpkg, libxml2):
-
+Or pull the version from github:
 ```pwsh
-.\scripts\build-windows.ps1
+cargo install --locked --git https://github.com/christo-auer/eilmeldung --target x86_64-pc-windows-msvc
 ```
-
-Override any paths if needed:
-
-```pwsh
-.\scripts\build-windows.ps1 -VcpkgRoot "D:\my-vcpkg" -PerlPath "C:\Strawberry\perl\bin\perl.exe" -LlvmBinPath "C:\Program Files\LLVM\bin"
-```
-
-The binary will be at `target\x86_64-pc-windows-msvc\release\eilmeldung.exe`.
-
-> **Note:** The first build downloads and compiles dependencies from source — expect 20–30 minutes. Subsequent builds are much faster.
+If you want to have a dev environment, clone the repo and run `cargo build --target x86_64-pc-windows-msvc` (add `--release` for a release build).
 
 ---
 
