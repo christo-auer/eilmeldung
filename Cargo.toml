@@ -55,12 +55,12 @@ termimad = "0.34.1"
 the-other-tui-markdown = "0.2.0"
 thiserror = "2.0.21"
 throbber-widgets-tui = "0.11.1"
-tokio = { version = "1.54.0", features = ["macros", "tokio-macros", "time", "process", "io-util", "rt-multi-thread" ] }
+tokio = { version = "1.54.1", features = ["macros", "tokio-macros", "time", "process", "io-util", "rt-multi-thread" ] }
 toml = "1.1.8"
 tui-logger = { version = "0.18.3", features = ["crossterm"] }
 tui-tree-widget = "0.24.1"
 url = "2.5.8"
-webbrowser = "1.2.4"
+webbrowser = "1.2.5"
 shellexpand = "3.1.2"
 include_dir = { version = "0.7.4" }
 serde_yaml = "0.9.34"
