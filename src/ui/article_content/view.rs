@@ -8,14 +8,19 @@ use std::{
 };
 
 use getset::{Getters, MutGetters};
-use image::ImageReader;
-use log::info;
+use image::{DynamicImage, ImageReader};
+use limner::{
+    MarkdownStyle, RenderResult, SpanFormatter,
+    render_image::{
+        ImagePlacement, ImageViewport, SlicedImage, SlicedProtocol, compute_image_signed_positions,
+    },
+    render_markdown,
+};
 use news_flash::models::Enclosure;
 use ratatui::layout::Flex;
 use ratatui_image::{
     FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
 };
-use the_other_tui_markdown::RendererBuilder;
 use throbber_widgets_tui::{Throbber, ThrobberState, WhichUse};
 
 const NO_THUMB_PLACEHOLDER: &[u8] =
@@ -36,6 +41,12 @@ pub struct ArticleContentViewData {
     image: Option<StatefulProtocol>,
     placeholder_image: StatefulProtocol,
     picker: Picker,
+
+    // article images
+    markdown_rendering: Option<RenderResult>,
+    sliced_protocol_cache: HashMap<String, SlicedProtocol>,
+    image_placements: Vec<ImagePlacement>,
+    image_cache: HashMap<String, DynamicImage>,
 
     // Throbber state for loading animations
     thumbnail_fetching_throbber: ThrobberState,
@@ -65,12 +76,17 @@ impl Default for ArticleContentViewData {
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
             url_for_hint: Default::default(),
+            sliced_protocol_cache: Default::default(),
+            image_placements: Default::default(),
+            image_cache: Default::default(),
+            markdown_rendering: None,
         }
     }
 }
 
 impl ArticleContentViewData {
     pub(super) fn update(&mut self, model_data: &ArticleContentModelData, _config: Arc<Config>) {
+        self.markdown_rendering = None;
         if model_data.article().is_some() && self.vertical_scroll > self.max_scroll {
             self.vertical_scroll = 0;
         }
@@ -436,42 +452,28 @@ impl ArticleContentViewData {
             .areas(content_area);
 
         // prefer filtered content
-        let text: Text<'_> = if let Some(filtered_markdown_content) =
-            model_data.filtered_markdown_content().as_deref()
-        {
-            self.markdown_to_text(filtered_markdown_content, config)
-        } else if config.content_preferred_type == ArticleContentType::Markdown
-            && let Some(html) = model_data
-                .fat_article()
-                .as_ref()
-                .and_then(|fat_article| fat_article.scraped_content.as_deref())
-        {
-            // Use the cached markdown content from model
-            if let Some(markdown) = model_data.markdown_content() {
-                info!("markdown available");
-                self.markdown_to_text(markdown, config)
+        let markdown = model_data
+            .filtered_markdown_content()
+            .as_deref()
+            .or(model_data.markdown_content().as_deref())
+            .unwrap_or_default();
 
-                // tui_markdown::from_str(markdown)
-            } else {
-                info!("no markdown available, falling back to html2text");
-                // Fallback - convert to plain text instead of markdown to avoid lifetime issues
-                let plain_text = news_flash::util::html2text::html2text(html);
-                Text::from(plain_text)
-            }
-        } else if let Some(plain_text) = model_data
-            .fat_article()
-            .as_ref()
-            .and_then(|fat_article| fat_article.plain_text.as_deref())
-        {
-            info!("rendering plain text content");
-            Text::from(plain_text)
-        } else {
-            info!("no content available");
-            Text::from("no content available")
-        };
+        let mut markdown_rendering = self
+            .markdown_rendering
+            .take()
+            .unwrap_or_else(|| self.markdown_to_text(markdown, config));
 
-        // Calculate the total number of lines the content would take when wrapped
-        let content_lines = Self::calculate_wrapped_lines(&text, paragraph_area.width);
+        self.image_placements = limner::render_image::prepare_inline_images(
+            &mut markdown_rendering.lines,
+            &markdown_rendering.images,
+            &mut self.image_cache,
+            &mut self.sliced_protocol_cache,
+            &self.picker,
+            &self.picker.font_size(),
+            inner_area.width / 4,
+            inner_area.height / 4,
+        );
+        let content_lines = markdown_rendering.lines.len() as u16;
 
         // Calculate maximum scroll (ensure it doesn't go negative)
         let max_scroll = content_lines.saturating_sub(paragraph_area.height);
@@ -479,17 +481,37 @@ impl ArticleContentViewData {
         // Ensure current scroll doesn't exceed maximum
         let vertical_scroll = vertical_scroll.min(max_scroll);
 
-        let content = Paragraph::new(text)
-            .wrap(Wrap { trim: true })
+        self.max_scroll = max_scroll;
+        self.vertical_scroll = vertical_scroll;
+
+        let viewport = ImageViewport {
+            content: inner_area,
+            scroll: self.vertical_scroll,
+        };
+
+        let render_positions = compute_image_signed_positions(
+            &self.image_placements,
+            &markdown_rendering.lines,
+            &viewport,
+        );
+
+        let content = Paragraph::new(markdown_rendering.lines.clone())
+            .wrap(Wrap { trim: false })
             .scroll((vertical_scroll, 0));
 
         content.render(paragraph_area, buf);
 
-        self.max_scroll = max_scroll;
-        self.vertical_scroll = vertical_scroll;
+        for render_position in &render_positions {
+            if let Some(sliced_protocol) = self.sliced_protocol_cache.get(&render_position.url) {
+                let sliced_image = SlicedImage::new(sliced_protocol, render_position.position);
+                sliced_image.render(paragraph_area, buf);
+            }
+        }
+
+        self.markdown_rendering = Some(markdown_rendering);
     }
 
-    fn markdown_to_text(&mut self, markdown: &str, config: &Config) -> Text<'static> {
+    fn markdown_to_text(&mut self, markdown: &str, config: &Config) -> RenderResult {
         let url_for_hint = Arc::new(Mutex::new(HashMap::<String, String>::new()));
         // unwrap is safe here: at least one symbol passed save here
         let iterator = config.hint_type.iter();
@@ -517,79 +539,171 @@ impl ArticleContentViewData {
         let image_icon = config.icon_set.image_icon();
         let url_icon = config.icon_set.url_icon();
 
-        let text = {
-            let renderer = RendererBuilder::new()
-                .with_link(move |alt, url| {
-                    let mut url_for_hint = inner_link_url_for_hint.lock().unwrap(); // unwrap is save here: locking with sync calls
-                    let hint = inner_link_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
+        let link_formatter = SpanFormatter::new(move |element| {
+            let mut url_for_hint = inner_link_url_for_hint.lock().unwrap(); // unwrap is save here: locking with sync calls
+            let hint = inner_link_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
 
-                    url_for_hint
-                        .entry(hint.to_owned())
-                        .or_insert(url.to_owned());
-                    let mut spans = vec![
-                        Span::styled(format!("{hint}{url_icon}"), link_hint_style),
-                        Span::styled(alt.to_owned(), link_alt_text_style),
-                    ];
-                    if show_url {
-                        spans.push(Span::styled(format!("({url})"), link_url_text_style));
-                    }
+            url_for_hint
+                .entry(hint.to_owned())
+                .or_insert(element.url.to_owned());
+            let mut spans = vec![
+                Span::styled(format!("{hint}{url_icon}"), link_hint_style),
+                Span::styled(element.text.to_owned(), link_alt_text_style),
+            ];
+            if show_url {
+                spans.push(Span::styled(
+                    format!("({})", element.url),
+                    link_url_text_style,
+                ));
+            }
 
-                    spans
-                })
-                .with_image(move |alt, url| {
-                    let mut url_for_hint = inner_image_url_for_hint.lock().unwrap();
-                    let hint = inner_image_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
-                    url_for_hint
-                        .entry(hint.to_owned())
-                        .or_insert(url.to_owned());
-                    let mut spans = vec![
-                        Span::styled(format!("{hint}{image_icon}"), image_hint_style),
-                        Span::styled(alt.to_owned(), image_alt_text_style),
-                    ];
+            spans
+        });
 
-                    if show_url {
-                        spans.push(Span::styled(format!("({url})"), image_url_text_style));
-                    }
-                    spans
-                })
-                .build();
+        let image_formatter = SpanFormatter::new(move |element| {
+            let mut url_for_hint = inner_image_url_for_hint.lock().unwrap();
+            let hint = inner_image_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
+            url_for_hint
+                .entry(hint.to_owned())
+                .or_insert(element.url.to_owned());
+            let mut spans = vec![
+                Span::styled(format!("{hint}{image_icon}"), image_hint_style),
+                Span::styled(element.text.to_owned(), image_alt_text_style),
+            ];
 
-            the_other_tui_markdown::into_text_with_renderer(markdown, &renderer).to_owned()
+            if show_url {
+                spans.push(Span::styled(
+                    format!("({})", element.url),
+                    image_url_text_style,
+                ));
+            }
+
+            spans
+        });
+
+        let style = MarkdownStyle {
+            link_formatter: Some(link_formatter),
+            image_formatter: Some(image_formatter),
+            link_prefix: "",
+            image_prefix: "",
+            paragraph: config.theme.paragraph(),
+            heading_1: config.theme.header(),
+            heading_2: config.theme.header(),
+            heading_3: config.theme.header(),
+            code_block: config.theme.paragraph(),
+            code_block_border_style: config.theme.paragraph(),
+
+            ..Default::default()
         };
+
+        let rendered = render_markdown(markdown, &style, config.text_max_width);
+
+        for image_info in rendered.images.iter() {
+            if self.image_cache.contains_key(&image_info.url)
+                || self.sliced_protocol_cache.contains_key(&image_info.url)
+            {
+                continue;
+            }
+            let Ok(raw) = Self::fetch_blocking(&image_info.url) else {
+                continue;
+            };
+
+            let Ok(image) = ImageReader::new(Cursor::new(raw))
+                .with_guessed_format()
+                .unwrap()
+                .decode()
+            else {
+                continue;
+            };
+
+            self.image_cache
+                .entry(image_info.url.to_owned())
+                .or_insert(image);
+        }
 
         self.url_for_hint = url_for_hint.lock().unwrap().to_owned();
 
-        text
+        rendered
+
+        // self.sliced_protocol_cache.clear();
+        // self.image_placements.clear();
+
+        // let text = {
+        //     let renderer = RendererBuilder::new()
+        //         .with_link(move |alt, url| {
+        //             let mut url_for_hint = inner_link_url_for_hint.lock().unwrap(); // unwrap is save here: locking with sync calls
+        //             let hint = inner_link_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
+        //
+        //             url_for_hint
+        //                 .entry(hint.to_owned())
+        //                 .or_insert(url.to_owned());
+        //             let mut spans = vec![
+        //                 Span::styled(format!("{hint}{url_icon}"), link_hint_style),
+        //                 Span::styled(alt.to_owned(), link_alt_text_style),
+        //             ];
+        //             if show_url {
+        //                 spans.push(Span::styled(format!("({url})"), link_url_text_style));
+        //             }
+        //
+        //             spans
+        //         })
+        //         .with_image(move |alt, url| {
+        //             let mut url_for_hint = inner_image_url_for_hint.lock().unwrap();
+        //             let hint = inner_image_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
+        //             url_for_hint
+        //                 .entry(hint.to_owned())
+        //                 .or_insert(url.to_owned());
+        //             let mut spans = vec![
+        //                 Span::styled(format!("{hint}{image_icon}"), image_hint_style),
+        //                 Span::styled(alt.to_owned(), image_alt_text_style),
+        //             ];
+        //
+        //             if show_url {
+        //                 spans.push(Span::styled(format!("({url})"), image_url_text_style));
+        //             }
+        //             spans
+        //         })
+        //         .build();
+        //
+        //     the_other_tui_markdown::into_text_with_renderer(markdown, &renderer).to_owned()
+        // };
+
+        // rendered.lines
     }
-
-    fn calculate_wrapped_lines(text: &ratatui::text::Text, width: u16) -> u16 {
-        let mut total_lines = 0u16;
-
-        for line in text.lines.iter() {
-            if line.spans.is_empty() {
-                total_lines += 1;
-                continue;
-            }
-
-            let line_content: String = line
-                .spans
-                .iter()
-                .map(|span| span.content.as_ref())
-                .collect();
-
-            if line_content.is_empty() {
-                total_lines += 1;
-            } else {
-                // Calculate how many lines this content will take when wrapped
-                let line_width = line_content.chars().count() as u16;
-                let wrapped_lines = (line_width + width - 1) / width.max(1); // Ceiling division
-                total_lines += wrapped_lines.max(1);
-            }
-        }
-
-        total_lines
+    fn fetch_blocking(url: &str) -> Result<bytes::Bytes, reqwest::Error> {
+        tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current()
+                .block_on(async { reqwest::get(url).await?.bytes().await })
+        })
     }
-
+    // fn calculate_wrapped_lines(text: &ratatui::text::Text, width: u16) -> u16 {
+    //     let mut total_lines = 0u16;
+    //
+    //     for line in text.lines.iter() {
+    //         if line.spans.is_empty() {
+    //             total_lines += 1;
+    //             continue;
+    //         }
+    //
+    //         let line_content: String = line
+    //             .spans
+    //             .iter()
+    //             .map(|span| span.content.as_ref())
+    //             .collect();
+    //
+    //         if line_content.is_empty() {
+    //             total_lines += 1;
+    //         } else {
+    //             // Calculate how many lines this content will take when wrapped
+    //             let line_width = line_content.chars().count() as u16;
+    //             let wrapped_lines = (line_width + width - 1) / width.max(1); // Ceiling division
+    //             total_lines += wrapped_lines.max(1);
+    //         }
+    //     }
+    //
+    //     total_lines
+    // }
+    //
     pub fn picker_updated(&mut self, picker: &Picker) -> color_eyre::Result<()> {
         self.picker = picker.to_owned();
         let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
