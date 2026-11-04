@@ -665,6 +665,11 @@ impl MessageReceiver for App {
                             if self.news_flash_utils.relogin().await {
                                 // Re-login succeeded, retry parameterless operations automatically
                                 let retried = match starting_event.as_ref() {
+                                    Event::AsyncSyncAll => {
+                                        info!("Retrying sync all after re-login");
+                                        self.news_flash_utils.initial_sync();
+                                        true
+                                    }
                                     Event::AsyncSync => {
                                         info!("Retrying sync after re-login");
                                         self.news_flash_utils.sync();

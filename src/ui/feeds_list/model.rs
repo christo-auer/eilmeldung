@@ -438,6 +438,11 @@ impl FeedListModelData {
         Ok(())
     }
 
+    pub(super) fn sync_all(&self) -> color_eyre::Result<()> {
+        self.news_flash_utils.initial_sync();
+        Ok(())
+    }
+
     pub(super) fn add_feed(
         &self,
         url: Url,
