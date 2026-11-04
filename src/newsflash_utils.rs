@@ -184,6 +184,17 @@ impl NewsFlashUtils {
     }
 
     gen_async_call! {
+        method_name: initial_sync,
+        params: (),
+        news_flash_var: news_flash,
+        client_var: client,
+        undo_stack_var: _undo_stack,
+        start_event: Event::AsyncSyncAll,
+        operation: let new_articles = news_flash.initial_sync(&client, Default::default()).await?,
+        success_event: Event::AsyncSyncAllFinished(new_articles),
+    }
+
+    gen_async_call! {
         method_name: fetch_thumbnail,
         params: (article_id: ArticleID),
         news_flash_var: news_flash,

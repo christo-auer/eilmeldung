@@ -377,9 +377,17 @@ pub enum Command {
     #[strum(
         serialize = "sync",
         message = "sync",
-        detailed_message = "sync all feeds (feed list)"
+        detailed_message = "sync new/unread articles (feed list)"
     )]
     FeedListSync,
+
+    #[strum(
+        serialize = "syncall",
+        message = "syncall",
+        detailed_message = "sync all articles (feed list)"
+    )]
+    FeedListSyncAll,
+
     #[strum(
         serialize = "categoryadd",
         message = "categoryadd <category name>",
@@ -923,7 +931,9 @@ impl Display for Command {
             ContentFollowHint(hint) => write!(f, "open URL behind {hint}"),
             ContentShareHint(target, hint) => write!(f, "share URL behind {hint} to {target}"),
 
-            FeedListSync => write!(f, "sync all"),
+            FeedListSync => write!(f, "sync new articles"),
+            FeedListSyncAll => write!(f, "sync all articles"),
+
             ActionSetRead(action_scope) => {
                 write!(f, "mark {action_scope} as read",)
             }

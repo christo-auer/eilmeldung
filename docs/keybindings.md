@@ -53,7 +53,11 @@ This document provides a comprehensive reference of all default key bindings in 
 
 | Key | Action |
 |-----|--------|
-| `s` | Sync all feeds with your RSS provider |
+| `s` | Sync all new articles  |
+| `C-s` | Sync all feeds with your RSS provider |
+
+
+**Note**: Depending on the provider, `sync` may not sync articles which are already marked as read on the provider side. To really sync all articles, use `syncall`.
 
 ---
 

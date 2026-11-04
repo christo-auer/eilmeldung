@@ -1,5 +1,7 @@
 # Unreleased
 
+- new command `syncall` (shortcut `C-s`) which sync not just new articles but all articles from the provider
+
 # 1.10.0 - 2026-10-28
 
  *eilmeldung* has now been over one year in development! 🎂 Thanks for all your trust, contributions and feedback!

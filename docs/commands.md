@@ -77,7 +77,7 @@ Here are some common command examples to get you started:
 
 ```
 :quit                                    # Quit the application
-:sync                                    # Sync all feeds
+:sync                                    # Sync new articles
 :read                                    # Mark current article as read
 :read %                                  # Mark all articles as read
 :read unread today                       # Mark all unread articles from today as read
@@ -140,26 +140,27 @@ Here are some common command examples to get you started:
 
 ## Feed List Management
 
-| Command            | Syntax                     | Context   | Description                                                                                                                                      |
-| ---------          | --------                   | --------- | -------------                                                                                                                                    |
-| `sync`             | `sync`                     | Feed List | Sync all feeds                                                                                                                                   |
-| `feedadd`          | `feedadd <URL> [<name>]`   | Feed List | Add a new feed. Examples: `:feedadd https://example.com/feed.xml`, `:feedadd https://news.site/rss "News Site"`                                  |
-| `categoryadd`      | `categoryadd <name>`       | Feed List | Add a new category. Example: `:categoryadd Technology`                                                                                           |
+| Command            | Syntax                     | Context   | Description                                                                                                                                               |
+| ---------          | --------                   | --------- | -------------                                                                                                                                             |
+| `sync`             | `sync`                     | Feed List | Sync new articles feeds                                                                                                                                   |
+| `syncall`          | `syncall`                  | Feed List | Sync **all** articles including read and old articles  feeds                                                                                              |
+| `feedadd`          | `feedadd <URL> [<name>]`   | Feed List | Add a new feed. Examples: `:feedadd https://example.com/feed.xml`, `:feedadd https://news.site/rss "News Site"`                                           |
+| `categoryadd`      | `categoryadd <name>`       | Feed List | Add a new category. Example: `:categoryadd Technology`                                                                                                    |
 | `tagadd`           | `tagadd <name> [<color>]`  | Feed List | Add a new tag with optional color (e.g., `red`, `#ff0000`). Press TAB for suggestions. Examples: `:tagadd important red`, `:tagadd tech #0088ff` |
-| `rename`           | `rename <new name>`        | Feed List | Rename the selected feed, category, or tag. Example: `:rename Tech News`                                                                         |
-| `remove`           | `remove`                   | Feed List | Remove the selected item (only works for childless items)                                                                                        |
-| `removeall`        | `removeall`                | Feed List | Remove the selected item with all its children                                                                                                   |
-| `feedchangeurl`    | `feedchangeurl <URL>`      | Feed List | Change the URL of the selected feed. Example: `:feedchangeurl https://newurl.com/feed.xml`                                                       |
-| `tagchangecolor`   | `tagchangecolor <color>`   | Feed List | Change color of selected tag (e.g., `blue`, `#0000ff`). Press TAB for suggestions. Examples: `:tagchangecolor green`, `:tagchangecolor #ff5500`  |
-| `toggle`           | `toggle`                   | Feed List | Toggle selected item in the tree                                                                                                                 |
-| `expand`           | `expand`                   | Feed List | Expands the current item in the tree                                                                                                             |
-| `expandcategories` | `expandcategories <scope>` | Feed List | Expand categories with articles in scope, i.e., `all`, `unread` or `marked` articles                                                             |
-| `collapse`         | `collapse`                 | Feed List | Collapses the current item in the tree                                                                                                           |
-| `collapseall`      | `collapseall`              | Feed List | Collapses all items in the tree                                                                                                                  |
-| `yank`             | `yank`                     | Feed List | Yank (copy) the selected feed or category for moving                                                                                             |
-| `paste`            | `paste <position>`         | Feed List | Paste the yanked item. Position: `before` or `after`. Examples: `:paste after`, `:paste before`                                                  |
-| `search`           | `search <searchterm>`      | Feed List | Search item in feed list; search term can be single word, quoted string or regular expression (see [Article Queries](queries.md))                | 
-| `sortfeeds`        | `sortfeeds`                | Feed List | Sort feed list alphabetically (cannot be undone)                                                                                                 |
+| `rename`           | `rename <new name>`        | Feed List | Rename the selected feed, category, or tag. Example: `:rename Tech News`                                                                                  |
+| `remove`           | `remove`                   | Feed List | Remove the selected item (only works for childless items)                                                                                                 |
+| `removeall`        | `removeall`                | Feed List | Remove the selected item with all its children                                                                                                            |
+| `feedchangeurl`    | `feedchangeurl <URL>`      | Feed List | Change the URL of the selected feed. Example: `:feedchangeurl https://newurl.com/feed.xml`                                                                |
+| `tagchangecolor`   | `tagchangecolor <color>`   | Feed List | Change color of selected tag (e.g., `blue`, `#0000ff`). Press TAB for suggestions. Examples: `:tagchangecolor green`, `:tagchangecolor #ff5500`      |
+| `toggle`           | `toggle`                   | Feed List | Toggle selected item in the tree                                                                                                                          |
+| `expand`           | `expand`                   | Feed List | Expands the current item in the tree                                                                                                                      |
+| `expandcategories` | `expandcategories <scope>` | Feed List | Expand categories with articles in scope, i.e., `all`, `unread` or `marked` articles                                                                      |
+| `collapse`         | `collapse`                 | Feed List | Collapses the current item in the tree                                                                                                                    |
+| `collapseall`      | `collapseall`              | Feed List | Collapses all items in the tree                                                                                                                           |
+| `yank`             | `yank`                     | Feed List | Yank (copy) the selected feed or category for moving                                                                                                      |
+| `paste`            | `paste <position>`         | Feed List | Paste the yanked item. Position: `before` or `after`. Examples: `:paste after`, `:paste before`                                                           |
+| `search`           | `search <searchterm>`      | Feed List | Search item in feed list; search term can be single word, quoted string or regular expression (see [Article Queries](queries.md))                  | 
+| `sortfeeds`        | `sortfeeds`                | Feed List | Sort feed list alphabetically (cannot be undone)                                                                                                          |
 
 ## Article List
 

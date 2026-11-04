@@ -198,6 +198,7 @@ timeout_millis = 5000
 "o"         = ["open", "in articles read", "in articles nextunread"]
 "O"         = ["open unread", "confirm in articles read %"]
 "s"         = ["sync"]
+"C-s"       = ["syncall"]
 "r"         = ["read", "nextunread"]
 "t"         = ["cmd tag"]
 "T"         = ["cmd untag"]
