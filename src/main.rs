@@ -40,6 +40,7 @@ async fn main() -> color_eyre::Result<()> {
 
     info!("Initializing NewsFlash");
     let client = build_client(Duration::from_secs(config.network_timeout_seconds))?;
+    let client_with_cache = build_client_with_cache(&config)?;
 
     let mut news_flash = login_news_flash(&client, &cli_args, &config).await?;
 
@@ -58,6 +59,7 @@ async fn main() -> color_eyre::Result<()> {
     let news_flash_utils = Arc::new(NewsFlashUtils::new(
         news_flash,
         client,
+        client_with_cache,
         message_sender.clone(),
     ));
     let connectivity_monitor =

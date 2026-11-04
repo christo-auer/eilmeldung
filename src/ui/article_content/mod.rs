@@ -1,3 +1,4 @@
+mod markdown_to_text;
 mod model;
 mod view;
 
@@ -37,7 +38,7 @@ impl ArticleContent {
     ) -> Self {
         Self {
             config,
-            view_data: ArticleContentViewData::default(),
+            view_data: ArticleContentViewData::new(Arc::clone(&news_flash_utils)),
             model_data: ArticleContentModelData::new(news_flash_utils),
             message_sender,
             is_focused: false,
@@ -50,10 +51,13 @@ impl ArticleContent {
         article_id: Option<&ArticleID>,
     ) -> color_eyre::Result<bool> {
         let article_changed = self.model_data.on_article_selected(article_id).await?;
-        self.view_data.clear_image();
-        self.view_data.scroll_to_top();
-        self.view_data.update(&self.model_data, self.config.clone());
-        self.update_thumbnail_fetching_state()?;
+
+        if article_changed {
+            self.view_data.clear();
+            self.view_data.update(&self.model_data, self.config.clone());
+            self.update_thumbnail_fetching_state()?;
+        }
+
         Ok(article_changed)
     }
 
@@ -77,7 +81,7 @@ impl ArticleContent {
     }
 
     fn update_thumbnail_fetching_state(&mut self) -> color_eyre::Result<bool> {
-        self.view_data.tick_throbber();
+        self.view_data.tick_throbbers();
         if self.model_data.update_should_fetch_thumbnail(&self.config) {
             self.fetch_thumbnail()?;
         }
@@ -409,6 +413,22 @@ impl crate::messages::MessageReceiver for ArticleContent {
                             self.model_data.on_thumbnail_fetch_failed();
                         }
                     }
+                    view_needs_update = true;
+                }
+
+                AsyncImageFetchFailed(url, async_operation_error) => {
+                    self.view_data.on_image_fetch_failed(url);
+                    tooltip(
+                        &self.message_sender,
+                        &*format!("unable to fetch image: {async_operation_error}"),
+                        TooltipFlavor::Error,
+                    )?;
+                    view_needs_update = true;
+                }
+
+                AsyncImageFetchFinished(url, image) => {
+                    self.view_data
+                        .on_image_fetch_finished(url, image.to_owned());
                     view_needs_update = true;
                 }
 

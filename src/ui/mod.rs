@@ -733,6 +733,7 @@ impl MessageReceiver for App {
                             TooltipFlavor::Error,
                         )?;
                     }
+                    AsyncOperationError::ReqwestOrMiddlewareError(_) => {}
                 }
             }
 
@@ -777,7 +778,9 @@ impl MessageReceiver for App {
                         "Trying to get online...",
                         TooltipFlavor::Info,
                     )?;
-                    self.news_flash_utils.rebuild_client(&self.config).await?;
+                    self.news_flash_utils
+                        .rebuild_client(Duration::from_secs(self.config.network_timeout_seconds))
+                        .await?;
                     self.news_flash_utils.set_offline(false);
                 }
             }

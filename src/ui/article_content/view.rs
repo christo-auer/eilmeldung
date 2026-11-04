@@ -1,26 +1,17 @@
 use super::model::ArticleContentModelData;
 use crate::prelude::*;
 
-use std::{
-    collections::HashMap,
-    io::Cursor,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, io::Cursor, sync::Arc};
 
 use getset::{Getters, MutGetters};
 use image::{DynamicImage, ImageReader};
-use limner::{
-    MarkdownStyle, RenderResult, SpanFormatter,
-    render_image::{
-        ImagePlacement, ImageViewport, SlicedImage, SlicedProtocol, compute_image_signed_positions,
-    },
-    render_markdown,
-};
+use limner::{RenderResult, render_image::ImageStore};
 use news_flash::models::Enclosure;
 use ratatui::layout::Flex;
 use ratatui_image::{
     FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
 };
+
 use throbber_widgets_tui::{Throbber, ThrobberState, WhichUse};
 
 const NO_THUMB_PLACEHOLDER: &[u8] =
@@ -44,19 +35,19 @@ pub struct ArticleContentViewData {
 
     // article images
     markdown_rendering: Option<RenderResult>,
-    sliced_protocol_cache: HashMap<String, SlicedProtocol>,
-    image_placements: Vec<ImagePlacement>,
-    image_cache: HashMap<String, DynamicImage>,
+    pub(super) image_store: ImageStore,
 
     // Throbber state for loading animations
     thumbnail_fetching_throbber: ThrobberState,
 
-    #[getset(get = "pub(super)")]
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     url_for_hint: HashMap<String, String>,
+    // needed to fetch article images
+    news_flash_utils: Arc<NewsFlashUtils>,
 }
 
-impl Default for ArticleContentViewData {
-    fn default() -> Self {
+impl ArticleContentViewData {
+    pub fn new(news_flash_utils: Arc<NewsFlashUtils>) -> Self {
         let picker = Picker::from_query_stdio().unwrap();
         let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
         let placeholder_image = picker.new_resize_protocol(
@@ -72,21 +63,24 @@ impl Default for ArticleContentViewData {
             max_scroll: 0,
             image: None,
             placeholder_image,
-            picker, // TODO gracefully handle errors
+            picker: picker.clone(),
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
             url_for_hint: Default::default(),
-            sliced_protocol_cache: Default::default(),
-            image_placements: Default::default(),
-            image_cache: Default::default(),
+            image_store: Self::create_image_store(picker),
             markdown_rendering: None,
+            news_flash_utils,
         }
     }
-}
 
-impl ArticleContentViewData {
+    fn create_image_store(picker: Picker) -> ImageStore {
+        ImageStore::new(picker)
+            .with_loading_line(|_pending_image| Line::from("[ Loading Image]"),)
+            .with_failed_line(|_pending_image| Line::from("[ Loading Image failed]"))
+            .keep_placeholders()
+    }
+
     pub(super) fn update(&mut self, model_data: &ArticleContentModelData, _config: Arc<Config>) {
-        self.markdown_rendering = None;
         if model_data.article().is_some() && self.vertical_scroll > self.max_scroll {
             self.vertical_scroll = 0;
         }
@@ -98,6 +92,13 @@ impl ArticleContentViewData {
 
     pub(super) fn clear_image(&mut self) {
         self.image = None;
+    }
+
+    pub(super) fn clear(&mut self) {
+        self.image = None;
+        self.image_store.clear();
+        self.vertical_scroll = 0;
+        self.markdown_rendering = None;
     }
 
     pub(super) fn reset_thumbnail_throbber(&mut self) {
@@ -113,7 +114,7 @@ impl ArticleContentViewData {
         &self.image
     }
 
-    pub(super) fn tick_throbber(&mut self) {
+    pub(super) fn tick_throbbers(&mut self) {
         self.thumbnail_fetching_throbber.calc_next();
     }
 
@@ -141,6 +142,14 @@ impl ArticleContentViewData {
         self.vertical_scroll = self.max_scroll;
     }
 
+    pub(super) fn on_image_fetch_finished(&mut self, url: &str, image: DynamicImage) {
+        self.image_store.finish(url, Some(image));
+    }
+
+    pub(super) fn on_image_fetch_failed(&mut self, url: &str) {
+        self.image_store.finish(url, None);
+    }
+
     pub(super) fn render_block(
         &mut self,
         area: Rect,
@@ -160,7 +169,10 @@ impl ArticleContentViewData {
             .title_bottom(
                 if self.max_scroll > 0 && config.content_show_position {
                     Line::styled(
-                        format!(" {}% ", (self.vertical_scroll * 100) / self.max_scroll),
+                        format!(
+                            " {}% ",
+                            ((self.vertical_scroll as f64 / self.max_scroll as f64) * 100.0) as u16
+                        ),
                         config.theme.header(),
                     )
                 } else {
@@ -458,255 +470,64 @@ impl ArticleContentViewData {
             .or(model_data.markdown_content().as_deref())
             .unwrap_or_default();
 
-        let mut markdown_rendering = self
+        let markdown_rendering = self
             .markdown_rendering
             .take()
             .unwrap_or_else(|| self.markdown_to_text(markdown, config));
 
-        self.image_placements = limner::render_image::prepare_inline_images(
-            &mut markdown_rendering.lines,
+        let mut lines = markdown_rendering.lines.clone();
+
+        let image_columns = paragraph_area.width;
+        let image_rows = paragraph_area.height / 3;
+
+        let render_positions = self.image_store.prepare(
+            &mut lines,
             &markdown_rendering.images,
-            &mut self.image_cache,
-            &mut self.sliced_protocol_cache,
-            &self.picker,
-            &self.picker.font_size(),
-            inner_area.width / 4,
-            inner_area.height / 4,
-        );
-        let content_lines = markdown_rendering.lines.len() as u16;
-
-        // Calculate maximum scroll (ensure it doesn't go negative)
-        let max_scroll = content_lines.saturating_sub(paragraph_area.height);
-
-        // Ensure current scroll doesn't exceed maximum
-        let vertical_scroll = vertical_scroll.min(max_scroll);
-
-        self.max_scroll = max_scroll;
-        self.vertical_scroll = vertical_scroll;
-
-        let viewport = ImageViewport {
-            content: inner_area,
-            scroll: self.vertical_scroll,
-        };
-
-        let render_positions = compute_image_signed_positions(
-            &self.image_placements,
-            &markdown_rendering.lines,
-            &viewport,
+            image_columns,
+            image_rows,
         );
 
-        let content = Paragraph::new(markdown_rendering.lines.clone())
+        let content_lines = lines.len() as u16;
+        self.max_scroll = content_lines.saturating_sub(paragraph_area.height);
+        self.vertical_scroll = vertical_scroll.min(self.max_scroll);
+        let images_heights_upper_bound = render_positions.len() as u16 * image_rows;
+
+        // find visible or nearly visible images which are not yet downloaded
+        for image_info in &markdown_rendering.images {
+            if image_info.line_index as u16
+                >= self
+                    .vertical_scroll
+                    .saturating_sub(images_heights_upper_bound)
+                && image_info.line_index as u16
+                    <= self.vertical_scroll + 2 * paragraph_area.height + images_heights_upper_bound
+                && self.image_store.start(&image_info.url)
+            {
+                let max_width = u32::from(image_columns * self.picker.font_size().width);
+                let max_height = u32::from(image_rows * self.picker.font_size().height);
+                self.news_flash_utils.fetch_image_with_cache(
+                    &image_info.url,
+                    max_width,
+                    max_height,
+                );
+            }
+        }
+
+        let content = Paragraph::new(lines)
             .wrap(Wrap { trim: false })
-            .scroll((vertical_scroll, 0));
+            .scroll((self.vertical_scroll, 0));
 
         content.render(paragraph_area, buf);
 
-        for render_position in &render_positions {
-            if let Some(sliced_protocol) = self.sliced_protocol_cache.get(&render_position.url) {
-                let sliced_image = SlicedImage::new(sliced_protocol, render_position.position);
-                sliced_image.render(paragraph_area, buf);
-            }
-        }
+        self.image_store
+            .render(buf, paragraph_area, &render_positions, self.vertical_scroll);
 
-        self.markdown_rendering = Some(markdown_rendering);
+        self.markdown_rendering.replace(markdown_rendering);
     }
 
-    fn markdown_to_text(&mut self, markdown: &str, config: &Config) -> RenderResult {
-        let url_for_hint = Arc::new(Mutex::new(HashMap::<String, String>::new()));
-        // unwrap is safe here: at least one symbol passed save here
-        let iterator = config.hint_type.iter();
-        let hint_iterator = Arc::new(Mutex::new(iterator));
-        let show_url = config.content_show_urls;
-
-        let inner_link_url_for_hint = url_for_hint.clone();
-        let inner_link_hint_iterator = hint_iterator.clone();
-        let link_alt_text_style = Style::new()
-            .fg(*config.theme.color_palette().accent_primary())
-            .add_modifier(Modifier::UNDERLINED);
-        let link_url_text_style = Style::new().fg(*config.theme.color_palette().foreground());
-        let link_hint_style = Style::new()
-            .fg(*config.theme.color_palette().highlight())
-            .add_modifier(Modifier::BOLD);
-
-        let inner_image_url_for_hint = url_for_hint.clone();
-        let inner_image_hint_iterator = hint_iterator.clone();
-        let image_alt_text_style = Style::new()
-            .fg(*config.theme.color_palette().accent_primary())
-            .add_modifier(Modifier::UNDERLINED);
-        let image_url_text_style = Style::new().fg(*config.theme.color_palette().foreground());
-        let image_hint_style = link_hint_style;
-
-        let image_icon = config.icon_set.image_icon();
-        let url_icon = config.icon_set.url_icon();
-
-        let link_formatter = SpanFormatter::new(move |element| {
-            let mut url_for_hint = inner_link_url_for_hint.lock().unwrap(); // unwrap is save here: locking with sync calls
-            let hint = inner_link_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
-
-            url_for_hint
-                .entry(hint.to_owned())
-                .or_insert(element.url.to_owned());
-            let mut spans = vec![
-                Span::styled(format!("{hint}{url_icon}"), link_hint_style),
-                Span::styled(element.text.to_owned(), link_alt_text_style),
-            ];
-            if show_url {
-                spans.push(Span::styled(
-                    format!("({})", element.url),
-                    link_url_text_style,
-                ));
-            }
-
-            spans
-        });
-
-        let image_formatter = SpanFormatter::new(move |element| {
-            let mut url_for_hint = inner_image_url_for_hint.lock().unwrap();
-            let hint = inner_image_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
-            url_for_hint
-                .entry(hint.to_owned())
-                .or_insert(element.url.to_owned());
-            let mut spans = vec![
-                Span::styled(format!("{hint}{image_icon}"), image_hint_style),
-                Span::styled(element.text.to_owned(), image_alt_text_style),
-            ];
-
-            if show_url {
-                spans.push(Span::styled(
-                    format!("({})", element.url),
-                    image_url_text_style,
-                ));
-            }
-
-            spans
-        });
-
-        let style = MarkdownStyle {
-            link_formatter: Some(link_formatter),
-            image_formatter: Some(image_formatter),
-            link_prefix: "",
-            image_prefix: "",
-            paragraph: config.theme.paragraph(),
-            heading_1: config.theme.header(),
-            heading_2: config.theme.header(),
-            heading_3: config.theme.header(),
-            code_block: config.theme.paragraph(),
-            code_block_border_style: config.theme.paragraph(),
-
-            ..Default::default()
-        };
-
-        let rendered = render_markdown(markdown, &style, config.text_max_width);
-
-        for image_info in rendered.images.iter() {
-            if self.image_cache.contains_key(&image_info.url)
-                || self.sliced_protocol_cache.contains_key(&image_info.url)
-            {
-                continue;
-            }
-            let Ok(raw) = Self::fetch_blocking(&image_info.url) else {
-                continue;
-            };
-
-            let Ok(image) = ImageReader::new(Cursor::new(raw))
-                .with_guessed_format()
-                .unwrap()
-                .decode()
-            else {
-                continue;
-            };
-
-            self.image_cache
-                .entry(image_info.url.to_owned())
-                .or_insert(image);
-        }
-
-        self.url_for_hint = url_for_hint.lock().unwrap().to_owned();
-
-        rendered
-
-        // self.sliced_protocol_cache.clear();
-        // self.image_placements.clear();
-
-        // let text = {
-        //     let renderer = RendererBuilder::new()
-        //         .with_link(move |alt, url| {
-        //             let mut url_for_hint = inner_link_url_for_hint.lock().unwrap(); // unwrap is save here: locking with sync calls
-        //             let hint = inner_link_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
-        //
-        //             url_for_hint
-        //                 .entry(hint.to_owned())
-        //                 .or_insert(url.to_owned());
-        //             let mut spans = vec![
-        //                 Span::styled(format!("{hint}{url_icon}"), link_hint_style),
-        //                 Span::styled(alt.to_owned(), link_alt_text_style),
-        //             ];
-        //             if show_url {
-        //                 spans.push(Span::styled(format!("({url})"), link_url_text_style));
-        //             }
-        //
-        //             spans
-        //         })
-        //         .with_image(move |alt, url| {
-        //             let mut url_for_hint = inner_image_url_for_hint.lock().unwrap();
-        //             let hint = inner_image_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
-        //             url_for_hint
-        //                 .entry(hint.to_owned())
-        //                 .or_insert(url.to_owned());
-        //             let mut spans = vec![
-        //                 Span::styled(format!("{hint}{image_icon}"), image_hint_style),
-        //                 Span::styled(alt.to_owned(), image_alt_text_style),
-        //             ];
-        //
-        //             if show_url {
-        //                 spans.push(Span::styled(format!("({url})"), image_url_text_style));
-        //             }
-        //             spans
-        //         })
-        //         .build();
-        //
-        //     the_other_tui_markdown::into_text_with_renderer(markdown, &renderer).to_owned()
-        // };
-
-        // rendered.lines
-    }
-    fn fetch_blocking(url: &str) -> Result<bytes::Bytes, reqwest::Error> {
-        tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current()
-                .block_on(async { reqwest::get(url).await?.bytes().await })
-        })
-    }
-    // fn calculate_wrapped_lines(text: &ratatui::text::Text, width: u16) -> u16 {
-    //     let mut total_lines = 0u16;
-    //
-    //     for line in text.lines.iter() {
-    //         if line.spans.is_empty() {
-    //             total_lines += 1;
-    //             continue;
-    //         }
-    //
-    //         let line_content: String = line
-    //             .spans
-    //             .iter()
-    //             .map(|span| span.content.as_ref())
-    //             .collect();
-    //
-    //         if line_content.is_empty() {
-    //             total_lines += 1;
-    //         } else {
-    //             // Calculate how many lines this content will take when wrapped
-    //             let line_width = line_content.chars().count() as u16;
-    //             let wrapped_lines = (line_width + width - 1) / width.max(1); // Ceiling division
-    //             total_lines += wrapped_lines.max(1);
-    //         }
-    //     }
-    //
-    //     total_lines
-    // }
-    //
     pub fn picker_updated(&mut self, picker: &Picker) -> color_eyre::Result<()> {
         self.picker = picker.to_owned();
         let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
+        self.image_store = Self::create_image_store(picker.to_owned());
         self.placeholder_image = self.picker.new_resize_protocol(
             ImageReader::new(cursor)
                 .with_guessed_format()

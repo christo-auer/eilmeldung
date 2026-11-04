@@ -13,7 +13,7 @@ mod share_target;
 mod sync_stats;
 mod theme;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::prelude::*;
 
@@ -23,6 +23,7 @@ macro_rules! toml_mappings {
         vec![$(($key_seq.into(), [$(Command::parse($command_seq, false).unwrap()),*].into()),)*].into_iter().collect()
     };
 }
+use bytesize::ByteSize;
 pub(crate) use toml_mappings;
 
 pub mod prelude {
@@ -40,7 +41,7 @@ pub mod prelude {
     pub use super::login_configuration::LoginConfiguration;
     pub use super::login_configuration::Secret;
     pub use super::mouse::MouseConfig;
-    pub use super::paths::{CONFIG_FILE, PROJECT_DIRS};
+    pub use super::paths::{CONFIG_FILE, HTTP_CACHE_FILE, PROJECT_DIRS};
     pub use super::share_target::ShareTarget;
     pub use super::sync_stats::SyncStatsOutputFormat;
     pub use super::theme::Theme;
@@ -170,6 +171,11 @@ pub struct Config {
 
     pub auto_reload_config: bool,
 
+    pub cache_dir: PathBuf,
+    pub state_dir: PathBuf,
+
+    pub cache_size: ByteSize,
+
     pub feeds_label: String,
     pub last_synced_label: String,
     pub feed_label: String,
@@ -277,6 +283,14 @@ impl Default for Config {
             cli_sync_stats_format: SyncStatsOutputFormat::cli_default(),
 
             auto_reload_config: true,
+
+            cache_dir: PROJECT_DIRS.cache_dir().to_path_buf(),
+            state_dir: PROJECT_DIRS
+                .state_dir()
+                .unwrap_or_else(|| PROJECT_DIRS.data_local_dir())
+                .to_path_buf(),
+
+            cache_size: ByteSize::gib(1),
 
             feeds_label: "{icon} All {unread_count}".into(),
             feed_label: "{icon} {label} {unread_count}".into(),
