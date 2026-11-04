@@ -949,9 +949,9 @@ impl MessageReceiver for FeedList {
                     self.model_data.sync()?;
                 }
 
-                C::FeedListSyncAll => {
-                    tooltip(&self.message_sender, "syncing all", TooltipFlavor::Info)?;
-                    self.model_data.sync_all()?;
+                C::FeedListSyncUnread => {
+                    tooltip(&self.message_sender, "syncing unread", TooltipFlavor::Info)?;
+                    self.model_data.sync_unread()?;
                 }
 
                 C::FeedListRenameEntity(name) => {

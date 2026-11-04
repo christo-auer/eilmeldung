@@ -142,10 +142,10 @@ Here are some common command examples to get you started:
 
 | Command            | Syntax                     | Context   | Description                                                                                                                                               |
 | ---------          | --------                   | --------- | -------------                                                                                                                                             |
-| `sync`             | `sync`                     | Feed List | Sync new articles feeds                                                                                                                                   |
-| `syncall`          | `syncall`                  | Feed List | Sync **all** articles including read and old articles  feeds                                                                                              |
-| `feedadd`          | `feedadd <URL> [<name>]`   | Feed List | Add a new feed. Examples: `:feedadd https://example.com/feed.xml`, `:feedadd https://news.site/rss "News Site"`                                           |
-| `categoryadd`      | `categoryadd <name>`       | Feed List | Add a new category. Example: `:categoryadd Technology`                                                                                                    |
+| `sync`             | `sync`                     | Feed List | Sync new articles feeds                                                                                                                          |
+| `syncunread`       | `syncunread`               | Feed List | Sync **all** unread articles                                                                                                                     |
+| `feedadd`          | `feedadd <URL> [<name>]`   | Feed List | Add a new feed. Examples: `:feedadd https://example.com/feed.xml`, `:feedadd https://news.site/rss "News Site"`                                  |
+| `categoryadd`      | `categoryadd <name>`       | Feed List | Add a new category. Example: `:categoryadd Technology`                                                                                           |
 | `tagadd`           | `tagadd <name> [<color>]`  | Feed List | Add a new tag with optional color (e.g., `red`, `#ff0000`). Press TAB for suggestions. Examples: `:tagadd important red`, `:tagadd tech #0088ff` |
 | `rename`           | `rename <new name>`        | Feed List | Rename the selected feed, category, or tag. Example: `:rename Tech News`                                                                                  |
 | `remove`           | `remove`                   | Feed List | Remove the selected item (only works for childless items)                                                                                                 |

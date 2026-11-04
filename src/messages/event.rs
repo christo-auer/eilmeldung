@@ -29,8 +29,8 @@ pub enum Event {
     AsyncSync,
     AsyncSyncFinished(HashMap<FeedID, Vec<ArticleID>>),
 
-    AsyncSyncAll,
-    AsyncSyncAllFinished(HashMap<FeedID, Vec<ArticleID>>),
+    AsyncSyncUnread,
+    AsyncSyncUnreadFinished(HashMap<FeedID, Vec<ArticleID>>),
 
     AsyncArticleThumbnailFetch,
     AsyncArticleThumbnailFetchFinished(Option<Thumbnail>),

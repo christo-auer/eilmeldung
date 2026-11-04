@@ -438,7 +438,7 @@ impl FeedListModelData {
         Ok(())
     }
 
-    pub(super) fn sync_all(&self) -> color_eyre::Result<()> {
+    pub(super) fn sync_unread(&self) -> color_eyre::Result<()> {
         self.news_flash_utils.initial_sync();
         Ok(())
     }
