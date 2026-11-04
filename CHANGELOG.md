@@ -1,6 +1,6 @@
 # Unreleased
 
-- new command `syncall` (shortcut `C-s`) which sync not just new articles but all articles from the provider
+- new command `syncunread` (shortcut `C-s`) which sync not just new articles but all unread articles from the provider
 
 # 1.10.0 - 2026-10-28
 

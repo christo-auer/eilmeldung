@@ -189,9 +189,9 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         undo_stack_var: _undo_stack,
-        start_event: Event::AsyncSyncAll,
+        start_event: Event::AsyncSyncUnread,
         operation: let new_articles = news_flash.initial_sync(&client, Default::default()).await?,
-        success_event: Event::AsyncSyncAllFinished(new_articles),
+        success_event: Event::AsyncSyncUnreadFinished(new_articles),
     }
 
     gen_async_call! {
