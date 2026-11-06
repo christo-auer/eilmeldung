@@ -31,17 +31,18 @@ pub struct ArticleContentViewData {
     // Image rendering state
     image: Option<StatefulProtocol>,
     placeholder_image: StatefulProtocol,
-    picker: Picker,
+    pub(super) picker: Picker,
 
     // article images
-    markdown_rendering: Option<RenderResult>,
-    pub(super) image_store: ImageStore,
+    pub(super) markdown_rendering: Option<RenderResult>,
+    pub(super) image_store: Option<ImageStore>,
+    load_visible_images: bool,
 
     // Throbber state for loading animations
     thumbnail_fetching_throbber: ThrobberState,
 
     #[getset(get = "pub(super)", get_mut = "pub(super)")]
-    url_for_hint: HashMap<String, String>,
+    pub(super) url_for_hint: HashMap<String, String>,
     // needed to fetch article images
     news_flash_utils: Arc<NewsFlashUtils>,
 }
@@ -67,17 +68,11 @@ impl ArticleContentViewData {
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
             url_for_hint: Default::default(),
-            image_store: Self::create_image_store(picker),
+            image_store: None,
+            load_visible_images: false,
             markdown_rendering: None,
             news_flash_utils,
         }
-    }
-
-    fn create_image_store(picker: Picker) -> ImageStore {
-        ImageStore::new(picker)
-            .with_loading_line(|_pending_image| Line::from("[ Loading Image]"),)
-            .with_failed_line(|_pending_image| Line::from("[ Loading Image failed]"))
-            .keep_placeholders()
     }
 
     pub(super) fn update(&mut self, model_data: &ArticleContentModelData, _config: Arc<Config>) {
@@ -96,7 +91,9 @@ impl ArticleContentViewData {
 
     pub(super) fn clear(&mut self) {
         self.image = None;
-        self.image_store.clear();
+        if let Some(image_store) = self.image_store.as_mut() {
+            image_store.clear();
+        }
         self.vertical_scroll = 0;
         self.markdown_rendering = None;
     }
@@ -143,11 +140,15 @@ impl ArticleContentViewData {
     }
 
     pub(super) fn on_image_fetch_finished(&mut self, url: &str, image: DynamicImage) {
-        self.image_store.finish(url, Some(image));
+        if let Some(image_store) = self.image_store.as_mut() {
+            image_store.finish(url, Some(image));
+        }
     }
 
     pub(super) fn on_image_fetch_failed(&mut self, url: &str) {
-        self.image_store.finish(url, None);
+        if let Some(image_store) = self.image_store.as_mut() {
+            image_store.finish(url, None);
+        }
     }
 
     pub(super) fn render_block(
@@ -477,39 +478,37 @@ impl ArticleContentViewData {
 
         let mut lines = markdown_rendering.lines.clone();
 
-        let image_columns = paragraph_area.width;
+        let image_columns = paragraph_area.height / 3;
         let image_rows = paragraph_area.height / 3;
 
-        let render_positions = self.image_store.prepare(
+        let Some(image_store) = self.image_store.as_mut() else {
+            unreachable!();
+        };
+
+        let render_positions = image_store.prepare(
             &mut lines,
             &markdown_rendering.images,
             image_columns,
             image_rows,
         );
 
-        let content_lines = lines.len() as u16;
-        self.max_scroll = content_lines.saturating_sub(paragraph_area.height);
+        self.max_scroll = (image_store.total_rows() as u16).saturating_sub(paragraph_area.height);
         self.vertical_scroll = vertical_scroll.min(self.max_scroll);
-        let images_heights_upper_bound = render_positions.len() as u16 * image_rows;
 
-        // find visible or nearly visible images which are not yet downloaded
-        for image_info in &markdown_rendering.images {
-            if image_info.line_index as u16
-                >= self
-                    .vertical_scroll
-                    .saturating_sub(images_heights_upper_bound)
-                && image_info.line_index as u16
-                    <= self.vertical_scroll + 2 * paragraph_area.height + images_heights_upper_bound
-                && self.image_store.start(&image_info.url)
-            {
-                let max_width = u32::from(image_columns * self.picker.font_size().width);
-                let max_height = u32::from(image_rows * self.picker.font_size().height);
-                self.news_flash_utils.fetch_image_with_cache(
-                    &image_info.url,
-                    max_width,
-                    max_height,
-                );
+        if self.load_visible_images || config.auto_load_article_images {
+            // find visible or nearly visible images which are not yet downloaded
+            for url in image_store.start_visible(
+                self.vertical_scroll,
+                paragraph_area.height,
+                if config.auto_load_article_images {
+                    paragraph_area.height
+                } else {
+                    0
+                },
+            ) {
+                self.news_flash_utils.fetch_image_with_cache(&url);
             }
+            self.load_visible_images = false;
         }
 
         let content = Paragraph::new(lines)
@@ -518,16 +517,15 @@ impl ArticleContentViewData {
 
         content.render(paragraph_area, buf);
 
-        self.image_store
-            .render(buf, paragraph_area, &render_positions, self.vertical_scroll);
+        image_store.render(buf, paragraph_area, &render_positions, self.vertical_scroll);
 
         self.markdown_rendering.replace(markdown_rendering);
     }
 
-    pub fn picker_updated(&mut self, picker: &Picker) -> color_eyre::Result<()> {
+    pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> color_eyre::Result<()> {
         self.picker = picker.to_owned();
         let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
-        self.image_store = Self::create_image_store(picker.to_owned());
+        self.create_image_store(config);
         self.placeholder_image = self.picker.new_resize_protocol(
             ImageReader::new(cursor)
                 .with_guessed_format()
@@ -537,6 +535,18 @@ impl ArticleContentViewData {
         );
 
         Ok(())
+    }
+
+    pub(crate) fn load_image(&mut self, url: &str) {
+        if let Some(image_store) = self.image_store.as_mut()
+            && image_store.start(url)
+        {
+            self.news_flash_utils.fetch_image_with_cache(url);
+        }
+    }
+
+    pub(crate) fn load_visible_images(&mut self) {
+        self.load_visible_images = true;
     }
 }
 

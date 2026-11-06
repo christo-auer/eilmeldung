@@ -9,7 +9,7 @@ use std::{
 use futures::future::join_all;
 use htmd::HtmlToMarkdown;
 use http_cache_reqwest::RedbManager;
-use image::{ImageReader, imageops};
+use image::ImageReader;
 use news_flash::models::ArticleID;
 use news_flash::models::Category;
 use news_flash::models::{
@@ -27,7 +27,6 @@ use reqwest::{Client, ClientBuilder};
 use reqwest_middleware::ClientWithMiddleware;
 use tokio::sync::Semaphore;
 use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
-use tokio::time::Instant;
 
 type GetCategoriesResult = (
     Vec<Category>,
@@ -737,7 +736,7 @@ impl NewsFlashUtils {
         last_operation
     }
 
-    pub fn fetch_image_with_cache(&self, url: &str, max_width: u32, max_height: u32) {
+    pub fn fetch_image_with_cache(&self, url: &str) {
         let client = Arc::clone(&self.client_with_cache);
         let url = url.to_string();
         let message_sender = self.message_sender.clone();
@@ -762,20 +761,13 @@ impl NewsFlashUtils {
                 })?);
 
                 // try to read into a image
-                let start = Instant::now();
-                let mut image = ImageReader::new(bytes)
+                let image = ImageReader::new(bytes)
                     .with_guessed_format()
                     .map_err(|error| {
                         color_eyre::eyre::eyre!("unable to guess image format: {error}")
                     })?
                     .decode()
                     .map_err(|error| color_eyre::eyre::eyre!("unable to decode image: {error}"))?;
-
-                if image.width() > max_width || image.height() > max_height {
-                    image = image.resize(max_width, max_height, imageops::FilterType::Nearest);
-                }
-
-                log::trace!("TIME: {} {}", Instant::now().duration_since(start).as_millis(), url.clone().split_once('/').unwrap().1);
 
                 message_sender
                     .send(Message::Event(Event::AsyncImageFetchFinished(url.to_owned(), image)))

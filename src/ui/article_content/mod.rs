@@ -251,23 +251,25 @@ impl ArticleContent {
         Ok(())
     }
 
-    fn open_hint(&self, command: &Command) -> color_eyre::Result<()> {
+    fn open_hint(&mut self, command: &Command) -> color_eyre::Result<()> {
         let hint = match command {
             Command::ContentFollowHint(hint) => &hint.to_owned(),
             Command::ContentShareHint(_, hint) => &hint.to_owned(),
+            Command::ContentImageLoad(hint) => &hint.to_owned(),
             _ => unreachable!(),
         };
 
-        let Some(url) = self.view_data.url_for_hint().get(&hint.to_uppercase()) else {
-            tooltip(
-                &self.message_sender,
-                "unknown hint number",
-                TooltipFlavor::Error,
-            )?;
+        let Some(url) = self
+            .view_data
+            .url_for_hint()
+            .get(&hint.to_uppercase())
+            .cloned()
+        else {
+            tooltip(&self.message_sender, "unknown hint", TooltipFlavor::Error)?;
             return Ok(());
         };
 
-        let url_result = Url::parse(url);
+        let url_result = Url::parse(&url);
 
         let Ok(_parsed_url) = url_result else {
             tooltip(
@@ -297,7 +299,10 @@ impl ArticleContent {
                 }
             }
             Command::ContentShareHint(target_str, ..) => {
-                self.share_url(target_str, &title, url)?;
+                self.share_url(target_str, &title, &url)?;
+            }
+            Command::ContentImageLoad(..) => {
+                self.view_data.load_image(&url);
             }
             _ => {}
         }
@@ -371,8 +376,14 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.open_enclosure(enclosure_type).await?;
                 }
 
-                hint_command @ (C::ContentFollowHint(..) | C::ContentShareHint(..)) => {
+                hint_command @ (C::ContentFollowHint(..)
+                | C::ContentShareHint(..)
+                | C::ContentImageLoad(..)) => {
                     self.open_hint(&hint_command)?;
+                }
+
+                C::ContentImageLoadVisible => {
+                    self.view_data.load_visible_images();
                 }
 
                 set_read_command @ C::ActionSetRead(_) if handle_command => {
@@ -418,11 +429,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
 
                 AsyncImageFetchFailed(url, async_operation_error) => {
                     self.view_data.on_image_fetch_failed(url);
-                    tooltip(
-                        &self.message_sender,
-                        &*format!("unable to fetch image: {async_operation_error}"),
-                        TooltipFlavor::Error,
-                    )?;
+                    log::error!("{async_operation_error}");
                     view_needs_update = true;
                 }
 
@@ -480,7 +487,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     log::trace!("image protocol picker updated");
                     // force redraw of whole terminal
                     self.message_sender.send(Message::Command(Command::Clear))?;
-                    self.view_data.picker_updated(picker)?;
+                    self.view_data.picker_updated(picker, &self.config)?;
                     self.update_thumbnail()?;
                 }
 

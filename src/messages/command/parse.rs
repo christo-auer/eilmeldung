@@ -367,6 +367,8 @@ impl Command {
 
             C::ContentFollowHint(..) => C::ContentFollowHint(expect_word(&mut args, "URL hint")?),
 
+            C::ContentImageLoad(..) => C::ContentImageLoad(expect_word(&mut args, "URL hint")?),
+
             C::ContentShareHint(..) => {
                 let share_target = expect_word(&mut args, "expecting share target")
                     .map_err(|_| E::ShareTargetExpected)?;

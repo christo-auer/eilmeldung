@@ -664,6 +664,20 @@ pub enum Command {
     ContentFollowHint(String),
 
     #[strum(
+        serialize = "imageload",
+        message = "imageload <url hint>",
+        detailed_message = "loads the image of the given hint (article content)"
+    )]
+    ContentImageLoad(String),
+
+    #[strum(
+        serialize = "imageloadvisible",
+        message = "imageloadvisible",
+        detailed_message = "loads all images which are currently visible (article content)"
+    )]
+    ContentImageLoadVisible,
+
+    #[strum(
         serialize = "hintshare",
         message = "hintshare <share> <url hint>",
         detailed_message = "shares the URL of the given hint (article content)"
@@ -930,6 +944,8 @@ impl Display for Command {
             ArticleListSortClear => write!(f, "clear current sort order"),
             ContentFollowHint(hint) => write!(f, "open URL behind {hint}"),
             ContentShareHint(target, hint) => write!(f, "share URL behind {hint} to {target}"),
+            ContentImageLoad(hint) => write!(f, "load image of {hint}"),
+            ContentImageLoadVisible => write!(f, "load visibles images"),
 
             FeedListSync => write!(f, "sync new articles"),
             FeedListSyncUnread => write!(f, "sync unread articles"),

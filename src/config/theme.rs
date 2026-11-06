@@ -183,6 +183,10 @@ pub struct StyleSet {
     command_input: ComponentStyle,
     inactive: ComponentStyle,
 
+    link_hint_style: ComponentStyle,
+    link_text_style: ComponentStyle,
+    link_url_style: ComponentStyle,
+
     tooltip_info: ComponentStyle,
     tooltip_warning: ComponentStyle,
     tooltip_error: ComponentStyle,
@@ -220,6 +224,12 @@ impl Default for StyleSet {
                 .mods(&[M::Reversed]),
             command_input: ComponentStyle::default().fg(C::Foreground).bg(C::Muted),
             inactive: ComponentStyle::default().fg(C::Muted),
+
+            link_hint_style: ComponentStyle::default().fg(C::Highlight).mods(&[M::Bold]),
+            link_text_style: ComponentStyle::default()
+                .fg(C::AccentPrimary)
+                .mods(&[M::Underlined]),
+            link_url_style: ComponentStyle::default().fg(C::Foreground),
 
             tooltip_info: ComponentStyle::default().fg(C::Info).mods(&[M::Reversed]),
             tooltip_warning: ComponentStyle::default()
@@ -399,6 +409,9 @@ impl Theme {
       tooltip_error,
       unread_count,
       marked_count,
-      count
+      count,
+      link_hint_style,
+      link_text_style,
+      link_url_style
     }
 }

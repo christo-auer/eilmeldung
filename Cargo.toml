@@ -64,7 +64,8 @@ shellexpand = "3.1.2"
 include_dir = { version = "0.7.4" }
 serde_yaml = "0.9.34"
 async-trait = "0.1.92"
-limner = { version = "0.9.0", features = ["image-protocol", "syntax-highlighting"] }
+limner = { version = "0.10.0", features = ["image-protocol", "syntax-highlighting"] }
+# limner = { path = "../limner", features = ["image-protocol", "syntax-highlighting"] }
 bytes = "1.12.1"
 http-cache-reqwest = "1.0.0-alpha.10"
 reqwest-middleware = "0.5.2"
