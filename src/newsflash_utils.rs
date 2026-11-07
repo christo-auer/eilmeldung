@@ -9,7 +9,7 @@ use std::{
 use futures::future::join_all;
 use htmd::HtmlToMarkdown;
 use http_cache_reqwest::RedbManager;
-use image::ImageReader;
+use image::{ImageReader, imageops};
 use news_flash::models::ArticleID;
 use news_flash::models::Category;
 use news_flash::models::{
@@ -27,6 +27,7 @@ use reqwest::{Client, ClientBuilder};
 use reqwest_middleware::ClientWithMiddleware;
 use tokio::sync::Semaphore;
 use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
+use tokio::task::spawn_blocking;
 
 type GetCategoriesResult = (
     Vec<Category>,
@@ -118,31 +119,35 @@ pub fn build_client(timeout_duration: Duration) -> color_eyre::Result<Client> {
 }
 
 pub fn build_client_with_cache(config: &Config) -> color_eyre::Result<ClientWithMiddleware> {
-    let cache_path = config.cache_dir.join(HTTP_CACHE_FILE);
 
-    create_dir_all(&config.cache_dir).map_err(|error| {
-        color_eyre::eyre::eyre!("unable to create cache directory: {error}; disable cache for now")
-    })?;
+    let mut client_builder = reqwest_middleware::ClientBuilder::new(build_client(
+        Duration::from_secs(config.network_timeout_seconds),
+    )?);
 
-    let cache_db = redb::Builder::new()
-        .set_cache_size(config.cache_size.as_u64().try_into()?)
-        .create(cache_path)?;
-    let redb_manager = RedbManager::from_database(Arc::new(cache_db))
-        .map_err(|error| color_eyre::eyre::eyre!("unable to open cache file: {error}"))?;
+    if config.cache_size.as_u64() > 0 {
+        let cache_path = config.cache_dir.join(HTTP_CACHE_FILE);
 
-    let cache_middleware = http_cache_reqwest::Cache(http_cache_reqwest::HttpCache {
-        mode: http_cache_reqwest::CacheMode::Default,
-        manager: redb_manager,
-        options: http_cache_reqwest::HttpCacheOptions::default(),
-    });
+        create_dir_all(&config.cache_dir).map_err(|error| {
+            color_eyre::eyre::eyre!(
+                "unable to create cache directory: {error}; disable cache by setting `cache_size = \"0\"`"
+            )
+        })?;
+        let cache_db = redb::Builder::new()
+            .set_cache_size(config.cache_size.as_u64().try_into()?)
+            .create(cache_path)?;
+        let redb_manager = RedbManager::from_database(Arc::new(cache_db))
+            .map_err(|error| color_eyre::eyre::eyre!("unable to open cache file: {error}"))?;
 
-    let client = reqwest_middleware::ClientBuilder::new(build_client(Duration::from_secs(
-        config.network_timeout_seconds,
-    ))?)
-    .with(cache_middleware)
-    .build();
+        let cache_middleware = http_cache_reqwest::Cache(http_cache_reqwest::HttpCache {
+            mode: http_cache_reqwest::CacheMode::Default,
+            manager: redb_manager,
+            options: http_cache_reqwest::HttpCacheOptions::default(),
+        });
 
-    Ok(client)
+        client_builder = client_builder.with(cache_middleware);
+    }
+
+    Ok(client_builder.build())
 }
 
 #[rustfmt::skip]        
@@ -736,7 +741,7 @@ impl NewsFlashUtils {
         last_operation
     }
 
-    pub fn fetch_image_with_cache(&self, url: &str) {
+    pub fn fetch_image_with_cache(&self, url: &str, max_width: u32, max_height: u32, border_radius: u32) {
         let client = Arc::clone(&self.client_with_cache);
         let url = url.to_string();
         let message_sender = self.message_sender.clone();
@@ -761,13 +766,26 @@ impl NewsFlashUtils {
                 })?);
 
                 // try to read into a image
-                let image = ImageReader::new(bytes)
+                let mut image = ImageReader::new(bytes)
                     .with_guessed_format()
                     .map_err(|error| {
                         color_eyre::eyre::eyre!("unable to guess image format: {error}")
                     })?
                     .decode()
                     .map_err(|error| color_eyre::eyre::eyre!("unable to decode image: {error}"))?;
+
+                    if image.width() > max_width || image.height() > max_height {
+                        image = spawn_blocking(move ||{
+                            image.resize(max_width, max_height, imageops::FilterType::Nearest)
+
+                        }).await.map_err(|error| color_eyre::eyre::eyre!("unable to resize image: {error}"))?;
+                }
+
+                let image = spawn_blocking(move || {
+                    let mut image = image.to_rgba8();
+                    round_corners(&mut image, border_radius);
+                    image::DynamicImage::ImageRgba8(image)
+                }).await.map_err(|error| color_eyre::eyre::eyre!("unable to add border to image: {error}"))?;
 
                 message_sender
                     .send(Message::Event(Event::AsyncImageFetchFinished(url.to_owned(), image)))

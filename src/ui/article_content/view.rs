@@ -37,6 +37,7 @@ pub struct ArticleContentViewData {
     pub(super) markdown_rendering: Option<RenderResult>,
     pub(super) image_store: Option<ImageStore>,
     load_visible_images: bool,
+    load_image_hint: Option<String>,
 
     // Throbber state for loading animations
     thumbnail_fetching_throbber: ThrobberState,
@@ -70,6 +71,7 @@ impl ArticleContentViewData {
             url_for_hint: Default::default(),
             image_store: None,
             load_visible_images: false,
+            load_image_hint: None,
             markdown_rendering: None,
             news_flash_utils,
         }
@@ -474,12 +476,14 @@ impl ArticleContentViewData {
         let markdown_rendering = self
             .markdown_rendering
             .take()
-            .unwrap_or_else(|| self.markdown_to_text(markdown, config));
+            .unwrap_or_else(|| self.markdown_to_text(markdown, paragraph_area.width, config));
 
         let mut lines = markdown_rendering.lines.clone();
 
-        let image_columns = paragraph_area.height / 3;
-        let image_rows = paragraph_area.height / 3;
+        let image_rows = config
+            .article_image_height
+            .into_length(inner_area.height)
+            .raw_value();
 
         let Some(image_store) = self.image_store.as_mut() else {
             unreachable!();
@@ -488,12 +492,19 @@ impl ArticleContentViewData {
         let render_positions = image_store.prepare(
             &mut lines,
             &markdown_rendering.images,
-            image_columns,
+            paragraph_area.width,
             image_rows,
         );
 
         self.max_scroll = (image_store.total_rows() as u16).saturating_sub(paragraph_area.height);
         self.vertical_scroll = vertical_scroll.min(self.max_scroll);
+        let image_max_width = u32::from(self.picker.font_size().width * 2 * paragraph_area.width);
+        let image_rows = u32::from(self.picker.font_size().height * 2 * image_rows);
+        let corner_radius = if config.article_image_rounded_corners {
+            (self.picker.font_size().width) as u32
+        } else {
+            0
+        };
 
         if self.load_visible_images || config.auto_load_article_images {
             // find visible or nearly visible images which are not yet downloaded
@@ -506,9 +517,26 @@ impl ArticleContentViewData {
                     0
                 },
             ) {
-                self.news_flash_utils.fetch_image_with_cache(&url);
+                self.news_flash_utils.fetch_image_with_cache(
+                    &url,
+                    image_max_width,
+                    image_rows,
+                    corner_radius,
+                );
             }
             self.load_visible_images = false;
+        }
+
+        // load image if requested via hint
+        if let Some(hint) = self.load_image_hint.take()
+            && let Some(url) = self.url_for_hint.get(&hint)
+        {
+            self.news_flash_utils.fetch_image_with_cache(
+                url,
+                image_max_width,
+                image_rows,
+                corner_radius,
+            );
         }
 
         let content = Paragraph::new(lines)
@@ -538,11 +566,7 @@ impl ArticleContentViewData {
     }
 
     pub(crate) fn load_image(&mut self, url: &str) {
-        if let Some(image_store) = self.image_store.as_mut()
-            && image_store.start(url)
-        {
-            self.news_flash_utils.fetch_image_with_cache(url);
-        }
+        self.load_image_hint = Some(url.to_owned());
     }
 
     pub(crate) fn load_visible_images(&mut self) {

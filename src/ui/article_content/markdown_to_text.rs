@@ -28,7 +28,12 @@ impl ArticleContentViewData {
         spans
     }
 
-    pub(super) fn markdown_to_text(&mut self, markdown: &str, config: &Config) -> RenderResult {
+    pub(super) fn markdown_to_text(
+        &mut self,
+        markdown: &str,
+        width: u16,
+        config: &Config,
+    ) -> RenderResult {
         let url_for_hint = Arc::new(Mutex::new(HashMap::<String, String>::new()));
         let iterator = config.hint_type.iter();
         let hint_iterator = Arc::new(Mutex::new(iterator));
@@ -103,7 +108,7 @@ impl ArticleContentViewData {
             ..Default::default()
         };
 
-        let rendered = render_markdown(markdown, &style, config.text_max_width);
+        let rendered = render_markdown(markdown, &style, width);
 
         self.url_for_hint = url_for_hint.lock().unwrap().to_owned();
         self.create_image_store(config);

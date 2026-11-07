@@ -62,15 +62,20 @@ impl ArticleContent {
     }
 
     fn prepare_thumbnail(&mut self, thumbnail: &Thumbnail) -> color_eyre::Result<()> {
-        let image = self
-            .model_data
-            .prepare_thumbnail(thumbnail, self.view_data.picker())?;
+        let image = self.model_data.prepare_thumbnail(
+            thumbnail,
+            self.view_data.picker(),
+            self.config.article_image_rounded_corners,
+        )?;
         self.view_data.set_image(image);
         Ok(())
     }
 
     fn update_thumbnail(&mut self) -> color_eyre::Result<()> {
-        let image = self.model_data.update_thumbnail(self.view_data.picker())?;
+        let image = self.model_data.update_thumbnail(
+            self.view_data.picker(),
+            self.config.article_image_rounded_corners,
+        )?;
         self.view_data.set_image(image);
         Ok(())
     }
@@ -392,6 +397,11 @@ impl crate::messages::MessageReceiver for ArticleContent {
                         Panel::ArticleList,
                         Box::new(set_read_command),
                     )))?;
+                }
+
+                C::ChangeTheme(_) => {
+                    self.view_data.clear();
+                    view_needs_update = true;
                 }
 
                 _ => {

@@ -64,6 +64,9 @@ pub struct App {
     async_operation_throbber: ThrobberState,
     batch_processor: BatchProcessor,
 
+    feeds_override_width: Option<Dimension>,
+    articles_height_override: Option<Dimension>,
+
     is_offline: bool,
 
     is_running: bool,
@@ -127,6 +130,10 @@ impl App {
                 crate::ui::tooltip::TooltipFlavor::Info,
             ),
             async_operation_throbber: ThrobberState::default(),
+
+            feeds_override_width: None,
+            articles_height_override: None,
+
             is_offline: false,
         };
 
@@ -561,6 +568,16 @@ impl App {
 
         Ok(())
     }
+
+    async fn resize_panel(
+        &self,
+        _panel: Option<Panel>,
+        _resize_arg: ResizeArg,
+    ) -> color_eyre::Result<()> {
+        // let panel = panel.unwrap_or(self.state.into());
+
+        Ok(())
+    }
 }
 
 impl MessageReceiver for App {
@@ -755,6 +772,18 @@ impl MessageReceiver for App {
 
             Message::Command(PanelFocusPreviousCyclic) => {
                 self.switch_state(self.state.previous_cyclic())?;
+            }
+
+            Message::Command(Command::PanelResize(resize_arg)) => {
+                self.resize_panel(None, *resize_arg).await?;
+            }
+
+            Message::Command(Command::In(panel, boxed_command))
+                if matches!(boxed_command.as_ref(), Command::PanelResize(_)) =>
+            {
+                if let Command::PanelResize(resize_arg) = boxed_command.as_ref() {
+                    self.resize_panel(Some(*panel), *resize_arg).await?;
+                }
             }
 
             Message::Command(ReloadConfig) => {

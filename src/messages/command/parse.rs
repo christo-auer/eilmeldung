@@ -71,6 +71,9 @@ pub enum CommandParseError {
     #[error("Valid theme name expected")]
     ThemeNameExpected,
 
+    #[error("Resize argument expected")]
+    ResizeArgExpected,
+
     #[error("expecting a word")]
     WordExpected(String),
 
@@ -179,6 +182,13 @@ impl Command {
                 let panel: Panel =
                     expect_from_next_word(&mut args, "expecting panel: feeds, articles, content")?;
                 C::PanelFocus(panel)
+            }
+
+            C::PanelResize(_) => {
+                let resize_arg =
+                    expect_from_next_word::<ResizeArg>(&mut args, "expecting resiz arg")?;
+                expect_nothing(args)?;
+                C::PanelResize(resize_arg)
             }
 
             C::ActionSetRead(..) => {

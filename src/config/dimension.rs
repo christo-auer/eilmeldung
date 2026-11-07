@@ -1,9 +1,9 @@
 use crate::prelude::*;
 use logos::Logos;
 use ratatui::layout::Constraint;
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Dimension {
     Length(u16),
     Percentage(u16),
@@ -15,7 +15,7 @@ enum DimensionToken {
     #[token("%")]
     UnitPercent,
 
-    #[regex("length")]
+    #[regex("length|units")]
     UnitLength,
 
     #[regex("[0-9]+")]
@@ -81,6 +81,49 @@ impl Dimension {
             D::Percentage(percent) => Constraint::Percentage(100u16.saturating_sub(*percent)),
         }
     }
+
+    pub fn into_percent(self, max: u16) -> Dimension {
+        match self {
+            Dimension::Length(length) => Dimension::Percentage((100u16 * length) / max),
+            percent => percent,
+        }
+    }
+
+    pub fn into_length(self, max: u16) -> Dimension {
+        match self {
+            Dimension::Percentage(percent) => Dimension::Length((max * percent) / 100u16),
+            length => length,
+        }
+    }
+
+    pub fn raw_value(self) -> u16 {
+        match self {
+            Dimension::Percentage(percent) => percent,
+            Dimension::Length(length) => length,
+        }
+    }
+
+    pub fn add(self, other: Dimension, max: u16) -> Dimension {
+        use Dimension as D;
+        match self {
+            D::Length(length) => Dimension::Length(length + other.into_length(max).raw_value()),
+            D::Percentage(percent) => {
+                Dimension::Percentage((percent + other.into_percent(max).raw_value()).clamp(0, 100))
+            }
+        }
+    }
+
+    pub fn subtract(self, other: Dimension, max: u16) -> Dimension {
+        use Dimension as D;
+        match self {
+            D::Length(length) => {
+                Dimension::Length((length - other.into_length(max).raw_value()).max(0))
+            }
+            D::Percentage(percent) => {
+                Dimension::Percentage((percent - other.into_percent(max).raw_value()).clamp(0, 100))
+            }
+        }
+    }
 }
 
 impl<'de> serde::Deserialize<'de> for Dimension {
@@ -90,6 +133,15 @@ impl<'de> serde::Deserialize<'de> for Dimension {
     {
         let s = String::deserialize(deserializer)?;
         Dimension::from_str(&s).map_err(|err| serde::de::Error::custom(err.to_string()))
+    }
+}
+
+impl Display for Dimension {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Dimension::Length(units) => write!(f, "{units} units"),
+            Dimension::Percentage(percent) => write!(f, "{percent}%"),
+        }
     }
 }
 
@@ -122,6 +174,7 @@ mod tests {
 
         no_space_length: "10length" => Ok(Dimension::Length(10)),
         space_length: "4 length" => Ok(Dimension::Length(4)),
+        space_units: "4 units" => Ok(Dimension::Length(4)),
         multiple_spaces_length: "  19 \t length  \t" => Ok(Dimension::Length(19)),
         leading_zeros_length: "  00019 \t length  \t" => Ok(Dimension::Length(19)),
         zero_length: "0 length" => Ok(Dimension::Length(0)),

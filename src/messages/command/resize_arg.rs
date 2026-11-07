@@ -15,9 +15,9 @@ impl ResizeArg {
         use ResizeArg as A;
 
         match self {
-            A::Increase(increase) => dimension.add(other, max),
-            A::Decrease(decrease) => dimension.subtract(other, max),
-            A::Absolute(absolute) => dimension,
+            A::Increase(increase) => dimension.add(increase, max),
+            A::Decrease(decrease) => dimension.subtract(decrease, max),
+            A::Absolute(absolute) => absolute,
             A::Default => default,
         }
     }

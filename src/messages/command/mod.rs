@@ -1,234 +1,29 @@
+mod action_scope;
+mod command_sequence;
+mod enclosure_type;
+mod panel;
 mod parse;
+mod paste_position;
+mod pipe_target;
+mod resize_arg;
 
+use news_flash::models::Url;
 use ratatui::style::Color;
 use std::fmt::Display;
-use std::str::FromStr;
-use strum::EnumMessage;
-
-use news_flash::models::{Enclosure, Url};
 
 pub mod prelude {
+    pub use super::Command;
+    pub use super::action_scope::ActionScope;
+    pub use super::command_sequence::CommandSequence;
+    pub use super::enclosure_type::EnclosureType;
+    pub use super::panel::Panel;
     pub use super::parse::CommandParseError;
-    pub use super::{
-        ActionScope, Command, CommandSequence, EnclosureType, Panel, PastePosition, PipeTarget,
-    };
+    pub use super::paste_position::PastePosition;
+    pub use super::pipe_target::PipeTarget;
+    pub use super::resize_arg::ResizeArg;
 }
 
 use crate::prelude::*;
-
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    strum::EnumString,
-    strum::EnumMessage,
-    strum::EnumIter,
-    strum::AsRefStr,
-)]
-#[strum(
-    parse_err_fn = CommandParseError::panel_expected,
-    parse_err_ty = CommandParseError)]
-pub enum Panel {
-    #[default]
-    #[strum(serialize = "feeds")]
-    #[strum(
-        message = "feeds",
-        detailed_message = "panel with tree of feeds, categories, tags, etc."
-    )]
-    FeedList,
-
-    #[strum(serialize = "articles")]
-    #[strum(
-        message = "article list",
-        detailed_message = "panel with the list of articles"
-    )]
-    ArticleList,
-
-    #[strum(serialize = "content")]
-    #[strum(
-        message = "article content",
-        detailed_message = "content of the selected article"
-    )]
-    ArticleContent,
-}
-impl Display for Panel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.get_message().unwrap().fmt(f) // <- if this fails, it must fail hard
-    }
-}
-
-impl CommandParseError {
-    fn panel_expected(_: &str) -> CommandParseError {
-        CommandParseError::PanelExpected
-    }
-}
-
-#[derive(Clone, Debug, Default, strum::EnumIter, strum::EnumMessage, strum::AsRefStr)]
-pub enum ActionScope {
-    #[default]
-    #[strum(
-        serialize = "current",
-        message = "current",
-        detailed_message = "currently selected item"
-    )]
-    Current,
-
-    #[strum(
-        serialize = "above",
-        message = "above",
-        detailed_message = "currently selected item and all above"
-    )]
-    Above,
-
-    #[strum(
-        serialize = "below",
-        message = "below",
-        detailed_message = "currently selected item and all below"
-    )]
-    Below,
-
-    #[strum(serialize = "all", message = "all", detailed_message = "all items")]
-    All,
-    #[strum(
-        message = "query",
-        detailed_message = "all articles defined by a query"
-    )]
-    Query(ArticleQuery),
-}
-
-impl FromStr for ActionScope {
-    type Err = CommandParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use ActionScope as S;
-        match s {
-            "." | "current" => Ok(S::Current),
-            "%" | "all" => Ok(S::All),
-            "above" => Ok(S::Above),
-            "below" => Ok(S::Below),
-            _ => Ok(S::Query(ArticleQuery::from_str(s)?)),
-        }
-    }
-}
-
-impl ActionScope {
-    fn from_option_string(s: Option<&str>) -> Result<ActionScope, CommandParseError> {
-        match s {
-            Some(s) => Ok(ActionScope::from_str(s)?),
-            None => Ok(ActionScope::Current),
-        }
-    }
-}
-
-impl Display for ActionScope {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use ActionScope as S;
-        match self {
-            S::Current => write!(f, "current article")?,
-            S::All => write!(f, "all articles")?,
-            S::Below => write!(f, "current article and all below")?,
-            S::Above => write!(f, "current article and all above")?,
-            S::Query(query) => write!(f, "all articles matching {}", query.query_string())?,
-        };
-        Ok(())
-    }
-}
-
-#[derive(
-    Debug,
-    Default,
-    Clone,
-    Copy,
-    serde::Deserialize,
-    strum::EnumString,
-    strum::EnumIter,
-    strum::EnumMessage,
-    strum::AsRefStr,
-)]
-#[serde(rename_all = "snake_case")]
-pub enum PipeTarget {
-    #[strum(serialize = "null", message = "null", detailed_message = "null")]
-    #[default]
-    Null,
-
-    #[strum(serialize = "html", message = "html", detailed_message = "HTML")]
-    Html,
-
-    #[strum(serialize = "md", message = "md", detailed_message = "markdown")]
-    Markdown,
-}
-
-impl Display for PipeTarget {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.get_message().unwrap().fmt(f)
-    }
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    strum::EnumString,
-    strum::EnumIter,
-    strum::EnumMessage,
-    strum::AsRefStr,
-    PartialEq,
-    Eq,
-)]
-#[strum(serialize_all = "lowercase")]
-pub enum EnclosureType {
-    #[strum(message = "audio", detailed_message = "audio enclosure")]
-    Audio,
-
-    #[strum(message = "video", detailed_message = "video enclosure")]
-    Video,
-
-    #[strum(message = "image", detailed_message = "image enclosure")]
-    Image,
-}
-
-impl Display for EnclosureType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.get_message().unwrap().fmt(f) // <- if this fails, it must fail hard
-    }
-}
-
-impl From<&Enclosure> for EnclosureType {
-    fn from(enclosure: &Enclosure) -> Self {
-        if enclosure.is_video() {
-            EnclosureType::Video
-        } else if enclosure.is_audio() {
-            EnclosureType::Audio
-        } else {
-            EnclosureType::Image
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Default, strum::EnumString, strum::EnumIter, strum::EnumMessage)]
-#[strum(serialize_all = "lowercase")]
-pub enum PastePosition {
-    #[default]
-    #[strum(
-        message = "after",
-        detailed_message = "position after the current element"
-    )]
-    After,
-    #[strum(
-        message = "before",
-        detailed_message = "position before the current element"
-    )]
-    Before,
-}
-
-impl Display for PastePosition {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.get_message().unwrap().fmt(f) // <- if this fails, it must fail hard
-    }
-}
 
 #[derive(
     Clone, Debug, Default, strum::AsRefStr, strum::EnumString, strum::EnumIter, strum::EnumMessage,
@@ -372,6 +167,13 @@ pub enum Command {
         detailed_message = "toggle distraction-free mode (article content)"
     )]
     ToggleDistractionFreeMode,
+
+    #[strum(
+        serialize = "resize",
+        message = "resize [<resize-value>]",
+        detailed_message = "resize panel by absolute or relative amount; no arg restores default"
+    )]
+    PanelResize(ResizeArg),
 
     // feed list
     #[strum(
@@ -856,6 +658,14 @@ impl Display for Command {
             PanelFocusPrevious => write!(f, "focus previous"),
             PanelFocusNextCyclic => write!(f, "focus previous (wrapping)"),
             PanelFocusPreviousCyclic => write!(f, "focus next (wrapping)"),
+            PanelResize(ResizeArg::Increase(amount)) => {
+                write!(f, "increase size of panel by {amount}")
+            }
+            PanelResize(ResizeArg::Decrease(amount)) => {
+                write!(f, "decrease size of panel by {amount}")
+            }
+            PanelResize(ResizeArg::Absolute(amount)) => write!(f, "set size of panel to {amount}"),
+            PanelResize(ResizeArg::Default) => write!(f, "restore default size of panel"),
             ToggleDistractionFreeMode => write!(f, "distraction free mode"),
             FeedListToggleExpand => write!(f, "toggle selected node"),
             FeedListExpand => write!(f, "expand the selected node"),
@@ -1005,63 +815,5 @@ impl Command {
             C::In(_, command) => command.is_async(),
             _ => false,
         }
-    }
-}
-
-#[derive(Clone, Debug, serde::Deserialize, Default)]
-#[serde(transparent)]
-pub struct CommandSequence {
-    pub commands: Vec<Command>,
-}
-
-impl From<Command> for CommandSequence {
-    fn from(single_command: Command) -> Self {
-        Self {
-            commands: vec![single_command],
-        }
-    }
-}
-
-impl From<Vec<Command>> for CommandSequence {
-    fn from(commands: Vec<Command>) -> Self {
-        Self { commands }
-    }
-}
-
-impl<const N: usize> From<[Command; N]> for CommandSequence {
-    fn from(value: [Command; N]) -> Self {
-        value.into_iter().collect::<Vec<Command>>().into()
-    }
-}
-
-impl<const N: usize> From<[&str; N]> for CommandSequence {
-    fn from(value: [&str; N]) -> Self {
-        value
-            .iter()
-            .map(|s| Command::from_str(s).unwrap()) // <- if this fails it should fail hard
-            .collect::<Vec<Command>>()
-            .into()
-    }
-}
-
-impl From<&str> for CommandSequence {
-    fn from(value: &str) -> Self {
-        Command::from_str(value).unwrap().into() // <- if this fails it should fail hard
-    }
-}
-
-impl Display for CommandSequence {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut first = true;
-        for command in self.commands.iter() {
-            if !first {
-                f.write_str(",")?;
-            }
-            command.fmt(f)?;
-
-            first = false;
-        }
-
-        Ok(())
     }
 }

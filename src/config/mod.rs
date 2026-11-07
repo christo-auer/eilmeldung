@@ -172,8 +172,8 @@ pub struct Config {
     pub auto_reload_config: bool,
 
     pub auto_load_article_images: bool,
-    pub article_image_width: Dimension,
     pub article_image_height: Dimension,
+    pub article_image_rounded_corners: bool,
 
     pub cache_dir: PathBuf,
     pub state_dir: PathBuf,
@@ -289,8 +289,8 @@ impl Default for Config {
             auto_reload_config: true,
 
             auto_load_article_images: true,
-            article_image_width: Dimension::Percentage(60),
             article_image_height: Dimension::Percentage(30),
+            article_image_rounded_corners: true,
 
             cache_dir: PROJECT_DIRS.cache_dir().to_path_buf(),
             state_dir: PROJECT_DIRS
