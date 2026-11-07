@@ -236,6 +236,8 @@ Have a look at [docs/configuration.md#theme-configuration] for more information 
 # Credits
 ## Mentions
 
+- [This Week in Rust 674 (21 OCT 2026)](https://this-week-in-rust.org/blog/2026/10/21/this-week-in-rust-674/) features  *eilmeldung* as *crate of the week*
+
 - [Orhun's Blog: 800 rust projects in 3 years](https://blog.orhun.dev/800-rust-projects/) (placed 21 based on a Mastodon analysis; very hondered to be on the same list as other such great and impressive rust projects!)
 - Pick on [Linux Unplugged Episode 647 (2025-12-28)](https://linuxunplugged.com/647) (1:28:35) had some very kind things to say about *eilmeldung* shortly after the initial release:
 > "[eilmeldung] is [...] beautiful. It's strange to say about a TUI [...] but it is actually very beautiful."
