@@ -127,18 +127,14 @@ impl ArticleContentModelData {
         &mut self,
         thumbnail: &Thumbnail,
         picker: &Picker,
-        rounded_corners: bool,
+        config: &Config,
     ) -> color_eyre::Result<Option<StatefulProtocol>> {
         if let Some(article) = self.article.as_ref()
             && article.article_id == thumbnail.article_id
             && let Some(data) = thumbnail.data.as_ref()
         {
             self.thumbnail = Some(thumbnail.to_owned());
-            Ok(Some(Self::gen_stateful_protocol(
-                data,
-                picker,
-                rounded_corners,
-            )?))
+            Ok(Some(Self::gen_stateful_protocol(data, picker, config)?))
         } else {
             Ok(None)
         }
@@ -147,16 +143,12 @@ impl ArticleContentModelData {
     pub(super) fn update_thumbnail(
         &self,
         picker: &Picker,
-        rounded_corners: bool,
+        config: &Config,
     ) -> color_eyre::Result<Option<StatefulProtocol>> {
         if let Some(thumbnail) = self.thumbnail.as_ref()
             && let Some(data) = thumbnail.data.as_ref()
         {
-            Ok(Some(Self::gen_stateful_protocol(
-                data,
-                picker,
-                rounded_corners,
-            )?))
+            Ok(Some(Self::gen_stateful_protocol(data, picker, config)?))
         } else {
             Ok(None)
         }
@@ -165,19 +157,14 @@ impl ArticleContentModelData {
     fn gen_stateful_protocol(
         data: &[u8],
         picker: &Picker,
-        rounded_corners: bool,
+        config: &Config,
     ) -> color_eyre::Result<StatefulProtocol> {
         let cursor = Cursor::new(data);
-        let mut image = ImageReader::new(cursor)
-            .with_guessed_format()?
-            .decode()?
-            .to_rgba8();
+        let mut image = ImageReader::new(cursor).with_guessed_format()?.decode()?;
 
-        if rounded_corners {
-            round_corners(&mut image, (picker.font_size().width / 2) as u32);
-        }
+        image = apply_image_enhancements(image, picker, config);
 
-        Ok(picker.new_resize_protocol(image::DynamicImage::ImageRgba8(image)))
+        Ok(picker.new_resize_protocol(image))
     }
 
     pub(super) fn scrape_article(&mut self) -> color_eyre::Result<()> {

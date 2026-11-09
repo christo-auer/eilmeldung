@@ -10,7 +10,9 @@ use crate::prelude::*;
 pub mod prelude {
     pub use super::StderrRedirect;
     pub use super::html_sanitize;
-    pub use super::image::round_corners;
+    pub use super::image::{
+        add_drop_shadow, apply_image_enhancements, to_corner_radius, to_drop_shadow_width,
+    };
     pub use super::lex_ordering;
     pub use super::patch_text_style;
     pub use super::prepare_command;

@@ -49,22 +49,13 @@ pub struct ArticleContentViewData {
 }
 
 impl ArticleContentViewData {
-    pub fn new(news_flash_utils: Arc<NewsFlashUtils>) -> Self {
+    pub fn new(news_flash_utils: Arc<NewsFlashUtils>, config: &Config) -> Self {
         let picker = Picker::from_query_stdio().unwrap();
-        let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
-        let placeholder_image = picker.new_resize_protocol(
-            ImageReader::new(cursor)
-                .with_guessed_format()
-                .unwrap() // OK as content is checked
-                .decode()
-                .unwrap(), // OK as content is checked
-        );
-
         Self {
             vertical_scroll: 0,
             max_scroll: 0,
             image: None,
-            placeholder_image,
+            placeholder_image: Self::prepare_placeholder_image(&picker, config),
             picker: picker.clone(),
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
@@ -91,11 +82,12 @@ impl ArticleContentViewData {
         self.image = None;
     }
 
-    pub(super) fn clear(&mut self) {
+    pub(super) fn clear(&mut self, config: &Config) {
         self.image = None;
         if let Some(image_store) = self.image_store.as_mut() {
             image_store.clear();
         }
+        self.placeholder_image = Self::prepare_placeholder_image(&self.picker, config);
         self.vertical_scroll = 0;
         self.markdown_rendering = None;
     }
@@ -498,14 +490,8 @@ impl ArticleContentViewData {
 
         self.max_scroll = (image_store.total_rows() as u16).saturating_sub(paragraph_area.height);
         self.vertical_scroll = vertical_scroll.min(self.max_scroll);
-        let image_max_width = u32::from(self.picker.font_size().width * 2 * paragraph_area.width);
-        let image_rows = u32::from(self.picker.font_size().height * 2 * image_rows);
-        let corner_radius = if config.article_image_rounded_corners {
-            (self.picker.font_size().width) as u32
-        } else {
-            0
-        };
-
+        let image_max_width = u32::from(self.picker.font_size().width * paragraph_area.width);
+        let image_rows = u32::from(self.picker.font_size().height * image_rows);
         if self.load_visible_images || config.auto_load_article_images {
             // find visible or nearly visible images which are not yet downloaded
             for url in image_store.start_visible(
@@ -521,7 +507,9 @@ impl ArticleContentViewData {
                     &url,
                     image_max_width,
                     image_rows,
-                    corner_radius,
+                    to_corner_radius(config, &self.picker),
+                    config.theme.color_palette().image_drop_shadow,
+                    to_drop_shadow_width(config, &self.picker),
                 );
             }
             self.load_visible_images = false;
@@ -535,7 +523,9 @@ impl ArticleContentViewData {
                 url,
                 image_max_width,
                 image_rows,
-                corner_radius,
+                to_corner_radius(config, &self.picker),
+                config.theme.color_palette().image_drop_shadow,
+                to_drop_shadow_width(config, &self.picker),
             );
         }
 
@@ -552,17 +542,28 @@ impl ArticleContentViewData {
 
     pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> color_eyre::Result<()> {
         self.picker = picker.to_owned();
-        let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
         self.create_image_store(config);
-        self.placeholder_image = self.picker.new_resize_protocol(
-            ImageReader::new(cursor)
-                .with_guessed_format()
-                .unwrap() // OK as content is checked
-                .decode()
-                .unwrap(), // OK as content is checked
-        );
+        self.placeholder_image = Self::prepare_placeholder_image(picker, config);
 
         Ok(())
+    }
+
+    fn prepare_placeholder_image(picker: &Picker, config: &Config) -> StatefulProtocol {
+        let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
+        let mut image = ImageReader::new(cursor)
+            .with_guessed_format()
+            .unwrap() // OK as content is checked
+            .decode()
+            .unwrap(); // OK as content is checked
+
+        image = add_drop_shadow(
+            image,
+            config.theme.color_palette().image_drop_shadow,
+            0,
+            to_corner_radius(config, picker),
+        );
+
+        picker.new_resize_protocol(image)
     }
 
     pub(crate) fn load_image(&mut self, url: &str) {

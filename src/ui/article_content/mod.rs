@@ -37,8 +37,8 @@ impl ArticleContent {
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {
+            view_data: ArticleContentViewData::new(Arc::clone(&news_flash_utils), &config),
             config,
-            view_data: ArticleContentViewData::new(Arc::clone(&news_flash_utils)),
             model_data: ArticleContentModelData::new(news_flash_utils),
             message_sender,
             is_focused: false,
@@ -53,7 +53,7 @@ impl ArticleContent {
         let article_changed = self.model_data.on_article_selected(article_id).await?;
 
         if article_changed {
-            self.view_data.clear();
+            self.view_data.clear(&self.config);
             self.view_data.update(&self.model_data, self.config.clone());
             self.update_thumbnail_fetching_state()?;
         }
@@ -62,20 +62,17 @@ impl ArticleContent {
     }
 
     fn prepare_thumbnail(&mut self, thumbnail: &Thumbnail) -> color_eyre::Result<()> {
-        let image = self.model_data.prepare_thumbnail(
-            thumbnail,
-            self.view_data.picker(),
-            self.config.article_image_rounded_corners,
-        )?;
+        let image =
+            self.model_data
+                .prepare_thumbnail(thumbnail, self.view_data.picker(), &self.config)?;
         self.view_data.set_image(image);
         Ok(())
     }
 
     fn update_thumbnail(&mut self) -> color_eyre::Result<()> {
-        let image = self.model_data.update_thumbnail(
-            self.view_data.picker(),
-            self.config.article_image_rounded_corners,
-        )?;
+        let image = self
+            .model_data
+            .update_thumbnail(self.view_data.picker(), &self.config)?;
         self.view_data.set_image(image);
         Ok(())
     }
@@ -399,11 +396,6 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     )))?;
                 }
 
-                C::ChangeTheme(_) => {
-                    self.view_data.clear();
-                    view_needs_update = true;
-                }
-
                 _ => {
                     view_needs_update = false;
                 }
@@ -502,6 +494,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 }
 
                 ConfigReloaded(config) => {
+                    self.view_data.clear(&self.config);
                     self.config = Arc::clone(config);
                     view_needs_update = true;
                 }

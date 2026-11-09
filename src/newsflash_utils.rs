@@ -741,7 +741,7 @@ impl NewsFlashUtils {
         last_operation
     }
 
-    pub fn fetch_image_with_cache(&self, url: &str, max_width: u32, max_height: u32, border_radius: u32) {
+    pub fn fetch_image_with_cache(&self, url: &str, max_width: u32, max_height: u32, border_radius: u32, shadow_color: Color, shadow_width: u32) {
         let client = Arc::clone(&self.client_with_cache);
         let url = url.to_string();
         let message_sender = self.message_sender.clone();
@@ -774,17 +774,15 @@ impl NewsFlashUtils {
                     .decode()
                     .map_err(|error| color_eyre::eyre::eyre!("unable to decode image: {error}"))?;
 
-                    if image.width() > max_width || image.height() > max_height {
+                    if image.width()+shadow_width > max_width || image.height()+shadow_width > max_height {
                         image = spawn_blocking(move ||{
-                            image.resize(max_width, max_height, imageops::FilterType::Nearest)
+                            image.resize(max_width.saturating_sub(shadow_width), max_height.saturating_sub(shadow_width), imageops::FilterType::Nearest)
 
                         }).await.map_err(|error| color_eyre::eyre::eyre!("unable to resize image: {error}"))?;
                 }
 
                 let image = spawn_blocking(move || {
-                    let mut image = image.to_rgba8();
-                    round_corners(&mut image, border_radius);
-                    image::DynamicImage::ImageRgba8(image)
+                    add_drop_shadow(image, shadow_color, shadow_width, border_radius)
                 }).await.map_err(|error| color_eyre::eyre::eyre!("unable to add border to image: {error}"))?;
 
                 message_sender

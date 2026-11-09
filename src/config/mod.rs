@@ -174,6 +174,7 @@ pub struct Config {
     pub auto_load_article_images: bool,
     pub article_image_height: Dimension,
     pub article_image_rounded_corners: bool,
+    pub article_image_drop_shadow: bool,
 
     pub cache_dir: PathBuf,
     pub state_dir: PathBuf,
@@ -291,6 +292,7 @@ impl Default for Config {
             auto_load_article_images: true,
             article_image_height: Dimension::Percentage(30),
             article_image_rounded_corners: true,
+            article_image_drop_shadow: true,
 
             cache_dir: PROJECT_DIRS.cache_dir().to_path_buf(),
             state_dir: PROJECT_DIRS

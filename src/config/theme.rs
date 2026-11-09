@@ -21,6 +21,8 @@ pub struct ColorPalette {
     pub(crate) info: Color,
     pub(crate) warning: Color,
     pub(crate) error: Color,
+
+    pub(crate) image_drop_shadow: Color,
 }
 
 impl Default for ColorPalette {
@@ -40,6 +42,8 @@ impl Default for ColorPalette {
             info: C::Magenta,
             warning: C::Yellow,
             error: C::Red,
+
+            image_drop_shadow: C::Magenta,
         }
     }
 }
