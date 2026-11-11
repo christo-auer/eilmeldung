@@ -1,6 +1,7 @@
 # Unreleased
 
 - new command `syncunread` (shortcut `C-s`) which sync not just new articles but all unread articles from the provider
+- bugfix: crash when displaying markdown with linebreaks in links
 
 # 1.10.0 - 2026-10-28
 

@@ -52,7 +52,7 @@ shell-words = "1.1.1"
 string_manipulation_utf8 = "0.3.0"
 strum = { version = "0.28.0", features = ["derive", "strum_macros"] }
 termimad = "0.34.1"
-the-other-tui-markdown = "0.2.0"
+the-other-tui-markdown = "0.2.1"
 thiserror = "2.0.21"
 throbber-widgets-tui = "0.11.1"
 tokio = { version = "1.54.1", features = ["macros", "tokio-macros", "time", "process", "io-util", "rt-multi-thread" ] }
