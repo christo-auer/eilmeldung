@@ -7,7 +7,6 @@ use std::{
 };
 
 use futures::future::join_all;
-use htmd::HtmlToMarkdown;
 use http_cache_reqwest::RedbManager;
 use image::{ImageReader, imageops};
 use news_flash::models::ArticleID;
@@ -670,7 +669,10 @@ impl NewsFlashUtils {
                              if matches!(target, PipeTarget::Html) {
                                  html
                              } else {
-                                 htmd::HtmlToMarkdown::builder().build().convert(&html).map_err(|e| AsyncOperationError::Report(color_eyre::eyre::eyre!("Unable to convert HTML to Markdown: {e}")))?
+                                 html_to_markdown_rs::convert(&html,
+                                     <html_to_markdown_rs::ConversionOptions as Default>::default()).map_err(|e|
+                                     AsyncOperationError::Report(color_eyre::eyre::eyre!("Unable to convert HTML to Markdown: {e}")))?
+                                     .content.ok_or(color_eyre::eyre::eyre!("unable to HTML to Markdown"))?
                              }
                          },
                      };
@@ -704,7 +706,12 @@ impl NewsFlashUtils {
 
                      let markdown = match out_target {
                          PipeTarget::Null => None,
-                         PipeTarget::Html => Some(HtmlToMarkdown::new().convert(&output).map_err(|conversion_error| color_eyre::eyre::eyre!(conversion_error))?),
+                         PipeTarget::Html => {
+                                 Some(html_to_markdown_rs::convert(&output,
+                                     <html_to_markdown_rs::ConversionOptions as Default>::default()).map_err(|e|
+                                     AsyncOperationError::Report(color_eyre::eyre::eyre!("Unable to convert HTML to Markdown: {e}")))?
+                                     .content.ok_or(color_eyre::eyre::eyre!("unable to HTML to Markdown"))?)
+                         }
                          PipeTarget::Markdown => Some(output),
                      };
                 

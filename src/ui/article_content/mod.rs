@@ -388,6 +388,10 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.view_data.load_visible_images();
                 }
 
+                C::Clear => {
+                    self.view_data.clear(&self.config);
+                }
+
                 set_read_command @ C::ActionSetRead(_) if handle_command => {
                     // don't know what to do with this -> re-route to article list
                     self.message_sender.send(Message::Command(C::In(
@@ -494,8 +498,8 @@ impl crate::messages::MessageReceiver for ArticleContent {
                 }
 
                 ConfigReloaded(config) => {
-                    self.view_data.clear(&self.config);
                     self.config = Arc::clone(config);
+                    self.view_data.clear(&self.config);
                     view_needs_update = true;
                 }
 

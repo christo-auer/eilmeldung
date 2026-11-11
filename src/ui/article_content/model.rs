@@ -8,7 +8,7 @@ use std::{
 };
 
 use getset::Getters;
-use htmd::HtmlToMarkdown;
+use html_to_markdown_rs::ConversionOptions;
 use image::ImageReader;
 use news_flash::models::{Article, ArticleID, Enclosure, FatArticle, Feed, Tag, Thumbnail};
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
@@ -195,9 +195,16 @@ impl ArticleContentModelData {
             && let Some(html) = fat_article.scraped_content.as_deref()
         {
             // create html to markdown converter
-            let html2markdown = HtmlToMarkdown::builder().build();
+            // let options = htmd::options::Options {
+            //     preformatted_code: true,
+            //
+            //     ..Default::default()
+            // };
+            // let html2markdown = HtmlToMarkdown::builder().options(options).build();
+            let markdown =
+                html_to_markdown_rs::convert(html, ConversionOptions::default()).unwrap();
 
-            self.markdown_content = Some(html2markdown.convert(html)?);
+            self.markdown_content = Some(markdown.content.unwrap());
         }
         Ok(())
     }

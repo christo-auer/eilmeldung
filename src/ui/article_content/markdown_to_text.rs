@@ -102,8 +102,10 @@ impl ArticleContentViewData {
             heading_1: config.theme.header(),
             heading_2: config.theme.header(),
             heading_3: config.theme.header(),
+            code_block_bg: config.theme.color_palette().background,
             code_block: config.theme.paragraph(),
-            code_block_border_style: config.theme.paragraph(),
+            code_block_border_style: config.theme.header(),
+            code_block_border: Some(config.border_theme.unfocused.to_border_set().to_owned()),
 
             ..Default::default()
         };

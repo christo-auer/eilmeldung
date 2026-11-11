@@ -25,7 +25,6 @@ directories = "6.0.0"
 futures = "0.3.34"
 fuzzy-matcher = "0.3.7"
 getset = "0.1.7"
-htmd = "0.5.6"
 htmlescape = "0.3.1"
 if-watch = { version = "3.2.2", features = ["tokio"] }
 image = "0.25.10"
@@ -71,6 +70,7 @@ http-cache-reqwest = "1.0.0-alpha.10"
 reqwest-middleware = "0.5.2"
 redb = "4.4.0"
 bytesize = { version = "2.7.0", features = ["serde"] }
+html-to-markdown-rs = "3.19.1"
 
 [dev-dependencies]
 claims = "0.8.0"
