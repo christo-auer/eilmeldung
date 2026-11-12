@@ -169,19 +169,3 @@ pub fn to_corner_radius(config: &Config, picker: &ratatui_image::picker::Picker)
         0
     }
 }
-
-// pub fn colorize(img: GrayImage, color_1: Color, color_2: Color) -> RgbImage {
-//     let color_1 = color_to_rgb(color_1);
-//     let color_2 = color_to_rgb(color_2);
-//
-//     let lut = std::array::from_fn::<Rgb<u8>; 256>(
-//         |index| {
-//             color_1.invert
-//         }
-//
-//         )
-//
-//
-//
-//
-// }
