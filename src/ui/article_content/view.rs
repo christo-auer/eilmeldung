@@ -516,11 +516,9 @@ impl ArticleContentViewData {
         }
 
         // load image if requested via hint
-        if let Some(hint) = self.load_image_hint.take()
-            && let Some(url) = self.url_for_hint.get(&hint)
-        {
+        if let Some(url) = self.load_image_hint.take() {
             self.news_flash_utils.fetch_image_with_cache(
-                url,
+                &url,
                 image_max_width,
                 image_rows,
                 to_corner_radius(config, &self.picker),

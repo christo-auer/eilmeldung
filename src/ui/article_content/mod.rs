@@ -257,7 +257,7 @@ impl ArticleContent {
         let hint = match command {
             Command::ContentFollowHint(hint) => &hint.to_owned(),
             Command::ContentShareHint(_, hint) => &hint.to_owned(),
-            Command::ContentImageLoad(hint) => &hint.to_owned(),
+            Command::ContentImageLoad(ImageLoadArg::Hint(hint)) => &hint.to_owned(),
             _ => unreachable!(),
         };
 
@@ -380,11 +380,11 @@ impl crate::messages::MessageReceiver for ArticleContent {
 
                 hint_command @ (C::ContentFollowHint(..)
                 | C::ContentShareHint(..)
-                | C::ContentImageLoad(..)) => {
+                | C::ContentImageLoad(ImageLoadArg::Hint(_))) => {
                     self.open_hint(&hint_command)?;
                 }
 
-                C::ContentImageLoadVisible => {
+                C::ContentImageLoad(ImageLoadArg::Visible) => {
                     self.view_data.load_visible_images();
                 }
 

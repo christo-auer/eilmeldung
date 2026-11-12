@@ -74,6 +74,9 @@ pub enum CommandParseError {
     #[error("Resize argument expected")]
     ResizeArgExpected,
 
+    #[error("visible or hint <URL-hint> expected: {0}")]
+    LoadImageArgExpected(String),
+
     #[error("expecting a word")]
     WordExpected(String),
 
@@ -125,6 +128,13 @@ where
 {
     let word = expect_word(s, to_expect);
     T::from_str(word.as_deref().unwrap_or_default()).map_err(|e| e.into())
+}
+
+fn expect_from_rest<T: FromStr>(s: &mut Option<String>) -> Result<T, CommandParseError>
+where
+    T::Err: Into<CommandParseError>,
+{
+    T::from_str(s.as_deref().unwrap_or_default()).map_err(|e| e.into())
 }
 
 fn expect_nothing(s: Option<String>) -> Result<(), CommandParseError> {
@@ -377,7 +387,7 @@ impl Command {
 
             C::ContentFollowHint(..) => C::ContentFollowHint(expect_word(&mut args, "URL hint")?),
 
-            C::ContentImageLoad(..) => C::ContentImageLoad(expect_word(&mut args, "URL hint")?),
+            C::ContentImageLoad(..) => C::ContentImageLoad(expect_from_rest(&mut args)?),
 
             C::ContentShareHint(..) => {
                 let share_target = expect_word(&mut args, "expecting share target")

@@ -1,6 +1,7 @@
 mod action_scope;
 mod command_sequence;
 mod enclosure_type;
+mod image_load_arg;
 mod panel;
 mod parse;
 mod paste_position;
@@ -16,6 +17,7 @@ pub mod prelude {
     pub use super::action_scope::ActionScope;
     pub use super::command_sequence::CommandSequence;
     pub use super::enclosure_type::EnclosureType;
+    pub use super::image_load_arg::ImageLoadArg;
     pub use super::panel::Panel;
     pub use super::parse::CommandParseError;
     pub use super::paste_position::PastePosition;
@@ -23,7 +25,7 @@ pub mod prelude {
     pub use super::resize_arg::ResizeArg;
 }
 
-use crate::prelude::*;
+use crate::{messages::command::image_load_arg::ImageLoadArg, prelude::*};
 
 #[derive(
     Clone, Debug, Default, strum::AsRefStr, strum::EnumString, strum::EnumIter, strum::EnumMessage,
@@ -467,17 +469,10 @@ pub enum Command {
 
     #[strum(
         serialize = "imageload",
-        message = "imageload <url hint>",
-        detailed_message = "loads the image of the given hint (article content)"
+        message = "imageload <image load arg>",
+        detailed_message = "load `visible` images or image for `hint <url hint>` (article content)"
     )]
-    ContentImageLoad(String),
-
-    #[strum(
-        serialize = "imageloadvisible",
-        message = "imageloadvisible",
-        detailed_message = "loads all images which are currently visible (article content)"
-    )]
-    ContentImageLoadVisible,
+    ContentImageLoad(ImageLoadArg),
 
     #[strum(
         serialize = "hintshare",
@@ -754,8 +749,8 @@ impl Display for Command {
             ArticleListSortClear => write!(f, "clear current sort order"),
             ContentFollowHint(hint) => write!(f, "open URL behind {hint}"),
             ContentShareHint(target, hint) => write!(f, "share URL behind {hint} to {target}"),
-            ContentImageLoad(hint) => write!(f, "load image of {hint}"),
-            ContentImageLoadVisible => write!(f, "load visibles images"),
+            ContentImageLoad(ImageLoadArg::Visible) => write!(f, "load visible images"),
+            ContentImageLoad(ImageLoadArg::Hint(hint)) => write!(f, "load image at {hint}"),
 
             FeedListSync => write!(f, "sync new articles"),
             FeedListSyncUnread => write!(f, "sync unread articles"),
