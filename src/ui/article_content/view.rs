@@ -490,7 +490,7 @@ impl ArticleContentViewData {
         let mut lines = markdown_rendering.lines.clone();
 
         let image_rows = config
-            .article_image_height
+            .article_images_height
             .into_length(inner_area.height)
             .raw_value();
 
@@ -509,12 +509,12 @@ impl ArticleContentViewData {
         self.vertical_scroll = vertical_scroll.min(self.max_scroll);
         let image_max_width = u32::from(self.picker.font_size().width * paragraph_area.width);
         let image_rows = u32::from(self.picker.font_size().height * image_rows);
-        if self.load_visible_images || config.article_image_auto_load {
+        if self.load_visible_images || config.article_images_auto_load {
             // find visible or nearly visible images which are not yet downloaded
             for url in image_store.start_visible(
                 self.vertical_scroll,
                 paragraph_area.height,
-                if config.article_image_auto_load {
+                if config.article_images_auto_load {
                     paragraph_area.height
                 } else {
                     0

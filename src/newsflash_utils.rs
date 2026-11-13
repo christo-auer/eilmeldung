@@ -131,7 +131,7 @@ impl NewsFlashUtils {
             client_get_request_semaphore: Arc::new(Semaphore::new(5)),
             image_cache: Arc::new(RwLock::new(
                     mini_moka::sync::CacheBuilder::new(
-                        config.article_image_cache_size.as_u64())
+                        config.article_images_cache_size.as_u64())
                     .weigher(|_:&String, dynamic_image: &Arc<DynamicImage>| dynamic_image.width()*dynamic_image.height())
                     .build())),
             undo_stack_lock: Default::default(),

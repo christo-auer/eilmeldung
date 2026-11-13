@@ -171,12 +171,12 @@ pub struct Config {
 
     pub auto_reload_config: bool,
 
-    pub article_image_auto_load: bool,
-    pub article_image_height: Dimension,
-    pub article_image_rounded_corners: bool,
+    pub article_images_auto_load: bool,
+    pub article_images_height: Dimension,
+    pub article_images_rounded_corners: bool,
     pub article_image_drop_shadow: bool,
 
-    pub article_image_cache_size: ByteSize,
+    pub article_images_cache_size: ByteSize,
 
     pub feeds_label: String,
     pub last_synced_label: String,
@@ -286,11 +286,11 @@ impl Default for Config {
 
             auto_reload_config: true,
 
-            article_image_auto_load: true,
-            article_image_height: Dimension::Percentage(30),
-            article_image_rounded_corners: true,
+            article_images_auto_load: true,
+            article_images_height: Dimension::Percentage(30),
+            article_images_rounded_corners: true,
             article_image_drop_shadow: true,
-            article_image_cache_size: ByteSize::mib(512),
+            article_images_cache_size: ByteSize::mib(512),
 
             feeds_label: "{icon} All {unread_count}".into(),
             feed_label: "{icon} {label} {unread_count}".into(),

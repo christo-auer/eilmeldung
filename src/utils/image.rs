@@ -146,7 +146,7 @@ pub fn apply_image_enhancements<'a>(
     picker: &ratatui_image::picker::Picker,
     config: &Config,
 ) -> Cow<'a, DynamicImage> {
-    if config.article_image_drop_shadow || config.article_image_rounded_corners {
+    if config.article_image_drop_shadow || config.article_images_rounded_corners {
         Cow::Owned(add_drop_shadow(
             &img,
             config.theme.color_palette().image_drop_shadow,
@@ -167,7 +167,7 @@ pub fn to_drop_shadow_width(config: &Config, picker: &ratatui_image::picker::Pic
 }
 
 pub fn to_corner_radius(config: &Config, picker: &ratatui_image::picker::Picker) -> u32 {
-    if config.article_image_rounded_corners {
+    if config.article_images_rounded_corners {
         (picker.font_size().width / 3) as u32
     } else {
         0
