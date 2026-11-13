@@ -136,7 +136,7 @@ pub fn add_drop_shadow(
 
     round_corners(&mut rgba_image, border_radius);
 
-    image::imageops::overlay(&mut background, &mut rgba_image, 0, 0);
+    image::imageops::overlay(&mut background, &rgba_image, 0, 0);
 
     DynamicImage::ImageRgba8(background)
 }
@@ -148,7 +148,7 @@ pub fn apply_image_enhancements<'a>(
 ) -> Cow<'a, DynamicImage> {
     if config.article_image_drop_shadow || config.article_images_rounded_corners {
         Cow::Owned(add_drop_shadow(
-            &img,
+            img,
             config.theme.color_palette().image_drop_shadow,
             to_drop_shadow_width(config, picker),
             to_corner_radius(config, picker),
