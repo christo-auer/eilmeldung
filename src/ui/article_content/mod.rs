@@ -1,3 +1,4 @@
+mod markdown_to_text;
 mod model;
 mod view;
 
@@ -36,8 +37,8 @@ impl ArticleContent {
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         Self {
+            view_data: ArticleContentViewData::new(Arc::clone(&news_flash_utils), &config),
             config,
-            view_data: ArticleContentViewData::default(),
             model_data: ArticleContentModelData::new(news_flash_utils),
             message_sender,
             is_focused: false,
@@ -50,23 +51,28 @@ impl ArticleContent {
         article_id: Option<&ArticleID>,
     ) -> color_eyre::Result<bool> {
         let article_changed = self.model_data.on_article_selected(article_id).await?;
-        self.view_data.clear_image();
-        self.view_data.scroll_to_top();
-        self.view_data.update(&self.model_data, self.config.clone());
-        self.update_thumbnail_fetching_state()?;
+
+        if article_changed {
+            self.view_data.clear(&self.config);
+            self.view_data.update(&self.model_data, self.config.clone());
+            self.update_thumbnail_fetching_state()?;
+        }
+
         Ok(article_changed)
     }
 
     fn prepare_thumbnail(&mut self, thumbnail: &Thumbnail) -> color_eyre::Result<()> {
-        let image = self
-            .model_data
-            .prepare_thumbnail(thumbnail, self.view_data.picker())?;
+        let image =
+            self.model_data
+                .prepare_thumbnail(thumbnail, self.view_data.picker(), &self.config)?;
         self.view_data.set_image(image);
         Ok(())
     }
 
     fn update_thumbnail(&mut self) -> color_eyre::Result<()> {
-        let image = self.model_data.update_thumbnail(self.view_data.picker())?;
+        let image = self
+            .model_data
+            .update_thumbnail(self.view_data.picker(), &self.config)?;
         self.view_data.set_image(image);
         Ok(())
     }
@@ -77,7 +83,7 @@ impl ArticleContent {
     }
 
     fn update_thumbnail_fetching_state(&mut self) -> color_eyre::Result<bool> {
-        self.view_data.tick_throbber();
+        self.view_data.tick_throbbers();
         if self.model_data.update_should_fetch_thumbnail(&self.config) {
             self.fetch_thumbnail()?;
         }
@@ -247,23 +253,25 @@ impl ArticleContent {
         Ok(())
     }
 
-    fn open_hint(&self, command: &Command) -> color_eyre::Result<()> {
+    fn open_hint(&mut self, command: &Command) -> color_eyre::Result<()> {
         let hint = match command {
             Command::ContentFollowHint(hint) => &hint.to_owned(),
             Command::ContentShareHint(_, hint) => &hint.to_owned(),
+            Command::ContentImageLoad(ImageLoadArg::Hint(hint)) => &hint.to_owned(),
             _ => unreachable!(),
         };
 
-        let Some(url) = self.view_data.url_for_hint().get(&hint.to_uppercase()) else {
-            tooltip(
-                &self.message_sender,
-                "unknown hint number",
-                TooltipFlavor::Error,
-            )?;
+        let Some(url) = self
+            .view_data
+            .url_for_hint()
+            .get(&hint.to_uppercase())
+            .cloned()
+        else {
+            tooltip(&self.message_sender, "unknown hint", TooltipFlavor::Error)?;
             return Ok(());
         };
 
-        let url_result = Url::parse(url);
+        let url_result = Url::parse(&url);
 
         let Ok(_parsed_url) = url_result else {
             tooltip(
@@ -293,7 +301,10 @@ impl ArticleContent {
                 }
             }
             Command::ContentShareHint(target_str, ..) => {
-                self.share_url(target_str, &title, url)?;
+                self.share_url(target_str, &title, &url)?;
+            }
+            Command::ContentImageLoad(..) => {
+                self.view_data.load_image(&url);
             }
             _ => {}
         }
@@ -367,8 +378,18 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.open_enclosure(enclosure_type).await?;
                 }
 
-                hint_command @ (C::ContentFollowHint(..) | C::ContentShareHint(..)) => {
+                hint_command @ (C::ContentFollowHint(..)
+                | C::ContentShareHint(..)
+                | C::ContentImageLoad(ImageLoadArg::Hint(_))) => {
                     self.open_hint(&hint_command)?;
+                }
+
+                C::ContentImageLoad(ImageLoadArg::Visible) => {
+                    self.view_data.load_visible_images();
+                }
+
+                C::Clear => {
+                    self.view_data.clear(&self.config);
                 }
 
                 set_read_command @ C::ActionSetRead(_) if handle_command => {
@@ -409,6 +430,18 @@ impl crate::messages::MessageReceiver for ArticleContent {
                             self.model_data.on_thumbnail_fetch_failed();
                         }
                     }
+                    view_needs_update = true;
+                }
+
+                AsyncImageFetchFailed(url, async_operation_error) => {
+                    self.view_data.on_image_fetch_failed(url);
+                    log::error!("{async_operation_error}");
+                    view_needs_update = true;
+                }
+
+                AsyncImageFetchFinished(url, image) => {
+                    self.view_data
+                        .on_image_fetch_finished(url, image.to_owned());
                     view_needs_update = true;
                 }
 
@@ -460,12 +493,13 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     log::trace!("image protocol picker updated");
                     // force redraw of whole terminal
                     self.message_sender.send(Message::Command(Command::Clear))?;
-                    self.view_data.picker_updated(picker)?;
+                    self.view_data.picker_updated(picker, &self.config)?;
                     self.update_thumbnail()?;
                 }
 
                 ConfigReloaded(config) => {
                     self.config = Arc::clone(config);
+                    self.view_data.clear(&self.config);
                     view_needs_update = true;
                 }
 

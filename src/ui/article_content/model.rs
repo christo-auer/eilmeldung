@@ -8,7 +8,7 @@ use std::{
 };
 
 use getset::Getters;
-use htmd::HtmlToMarkdown;
+use html_to_markdown_rs::ConversionOptions;
 use image::ImageReader;
 use news_flash::models::{Article, ArticleID, Enclosure, FatArticle, Feed, Tag, Thumbnail};
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
@@ -127,13 +127,14 @@ impl ArticleContentModelData {
         &mut self,
         thumbnail: &Thumbnail,
         picker: &Picker,
+        config: &Config,
     ) -> color_eyre::Result<Option<StatefulProtocol>> {
         if let Some(article) = self.article.as_ref()
             && article.article_id == thumbnail.article_id
             && let Some(data) = thumbnail.data.as_ref()
         {
             self.thumbnail = Some(thumbnail.to_owned());
-            Ok(Some(Self::gen_stateful_protocol(data, picker)?))
+            Ok(Some(Self::gen_stateful_protocol(data, picker, config)?))
         } else {
             Ok(None)
         }
@@ -142,19 +143,27 @@ impl ArticleContentModelData {
     pub(super) fn update_thumbnail(
         &self,
         picker: &Picker,
+        config: &Config,
     ) -> color_eyre::Result<Option<StatefulProtocol>> {
         if let Some(thumbnail) = self.thumbnail.as_ref()
             && let Some(data) = thumbnail.data.as_ref()
         {
-            Ok(Some(Self::gen_stateful_protocol(data, picker)?))
+            Ok(Some(Self::gen_stateful_protocol(data, picker, config)?))
         } else {
             Ok(None)
         }
     }
 
-    fn gen_stateful_protocol(data: &[u8], picker: &Picker) -> color_eyre::Result<StatefulProtocol> {
+    fn gen_stateful_protocol(
+        data: &[u8],
+        picker: &Picker,
+        config: &Config,
+    ) -> color_eyre::Result<StatefulProtocol> {
         let cursor = Cursor::new(data);
-        let image = ImageReader::new(cursor).with_guessed_format()?.decode()?;
+        let mut image = ImageReader::new(cursor).with_guessed_format()?.decode()?;
+
+        image = apply_image_enhancements(image, picker, config);
+
         Ok(picker.new_resize_protocol(image))
     }
 
@@ -186,9 +195,16 @@ impl ArticleContentModelData {
             && let Some(html) = fat_article.scraped_content.as_deref()
         {
             // create html to markdown converter
-            let html2markdown = HtmlToMarkdown::builder().build();
+            // let options = htmd::options::Options {
+            //     preformatted_code: true,
+            //
+            //     ..Default::default()
+            // };
+            // let html2markdown = HtmlToMarkdown::builder().options(options).build();
+            let markdown =
+                html_to_markdown_rs::convert(html, ConversionOptions::default()).unwrap();
 
-            self.markdown_content = Some(html2markdown.convert(html)?);
+            self.markdown_content = Some(markdown.content.unwrap());
         }
         Ok(())
     }

@@ -25,7 +25,6 @@ directories = "6.0.0"
 futures = "0.3.34"
 fuzzy-matcher = "0.3.7"
 getset = "0.1.7"
-htmd = "0.5.6"
 htmlescape = "0.3.1"
 if-watch = { version = "3.2.2", features = ["tokio"] }
 image = "0.25.10"
@@ -51,7 +50,6 @@ shell-words = "1.1.1"
 string_manipulation_utf8 = "0.3.0"
 strum = { version = "0.28.0", features = ["derive", "strum_macros"] }
 termimad = "0.34.1"
-the-other-tui-markdown = "0.2.1"
 thiserror = "2.0.21"
 throbber-widgets-tui = "0.11.1"
 tokio = { version = "1.54.1", features = ["macros", "tokio-macros", "time", "process", "io-util", "rt-multi-thread" ] }
@@ -64,6 +62,11 @@ shellexpand = "3.1.2"
 include_dir = { version = "0.7.4" }
 serde_yaml = "0.9.34"
 async-trait = "0.1.92"
+limner = { version = "0.10.0", features = ["image-protocol", "syntax-highlighting"] }
+bytes = "1.12.1"
+bytesize = { version = "2.7.0", features = ["serde"] }
+html-to-markdown-rs = "3.19.1"
+mini-moka = "0.10.3"
 
 [dev-dependencies]
 claims = "0.8.0"

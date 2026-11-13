@@ -65,9 +65,6 @@ pub struct MouseInputHandler {
 
     drag_resize_active: bool,
 
-    #[getset(get = "pub")]
-    articles_height_override: Option<u16>,
-
     state: AppState,
 
     #[getset(get_mut = "pub")]
@@ -84,7 +81,6 @@ impl MouseInputHandler {
             config,
             panel_areas: Default::default(),
             drag_resize_active: false,
-            articles_height_override: None,
             state: Default::default(),
             last_scroll_event: Instant::now(),
         }
@@ -105,31 +101,31 @@ impl MouseInputHandler {
                 self.drag_resize_active = true;
                 Ok(Some(TermEventForwarding::Consumed))
             }
-            MouseEventKind::Drag(MouseButton::Left) if self.drag_resize_active => {
-                // Calculate the new articles list height based on drag position
-                let articles_top = self.panel_areas.articles_list().y;
-                let content_bottom = self.panel_areas.article_content().y
-                    + self.panel_areas.article_content().height;
-                let total_height = content_bottom.saturating_sub(articles_top);
-                // Clamp: minimum 3 rows for each panel
-                let new_articles_height = row
-                    .saturating_sub(articles_top)
-                    .clamp(3, total_height.saturating_sub(3));
-
-                let old_articles_height =
-                    self.articles_height_override.replace(new_articles_height);
-
-                // only redraw if height has changed
-                if let Some(old_articles_height) = old_articles_height
-                    && old_articles_height != new_articles_height
-                {
-                    log::trace!("dragging border: {new_articles_height}");
-                    self.message_sender
-                        .send(Message::Command(Command::Redraw))?;
-                }
-
-                Ok(Some(TermEventForwarding::Consumed))
-            }
+            // MouseEventKind::Drag(MouseButton::Left) if self.drag_resize_active => {
+            //     // Calculate the new articles list height based on drag position
+            //     let articles_top = self.panel_areas.articles_list().y;
+            //     let content_bottom = self.panel_areas.article_content().y
+            //         + self.panel_areas.article_content().height;
+            //     let total_height = content_bottom.saturating_sub(articles_top);
+            //     // Clamp: minimum 3 rows for each panel
+            //     let new_articles_height = row
+            //         .saturating_sub(articles_top)
+            //         .clamp(3, total_height.saturating_sub(3));
+            //
+            //     let old_articles_height =
+            //         self.articles_height_override.replace(new_articles_height);
+            //
+            //     // only redraw if height has changed
+            //     if let Some(old_articles_height) = old_articles_height
+            //         && old_articles_height != new_articles_height
+            //     {
+            //         log::trace!("dragging border: {new_articles_height}");
+            //         self.message_sender
+            //             .send(Message::Command(Command::Redraw))?;
+            //     }
+            //
+            //     Ok(Some(TermEventForwarding::Consumed))
+            // }
             MouseEventKind::Up(MouseButton::Left) if self.drag_resize_active => {
                 log::trace!("dragging stopped");
                 self.drag_resize_active = false;

@@ -1,3 +1,5 @@
+mod image;
+
 use ratatui::{
     style::Style,
     text::{Line, Span, Text},
@@ -8,6 +10,9 @@ use crate::prelude::*;
 pub mod prelude {
     pub use super::StderrRedirect;
     pub use super::html_sanitize;
+    pub use super::image::{
+        add_drop_shadow, apply_image_enhancements, to_corner_radius, to_drop_shadow_width,
+    };
     pub use super::lex_ordering;
     pub use super::patch_text_style;
     pub use super::prepare_command;
@@ -26,9 +31,17 @@ pub fn html_sanitize(html_escaped_string: &str) -> String {
 }
 
 pub fn to_bubble<'a>(span: Span<'a>, config: &Config) -> Line<'a> {
+    to_bubble_no_config(
+        span,
+        config.icon_set.big_icon_left_icon(),
+        config.icon_set.big_icon_right_icon(),
+    )
+}
+
+pub fn to_bubble_no_config<'a>(span: Span<'a>, left: char, right: char) -> Line<'a> {
     let style = span.style;
-    let left_icon = config.icon_set.big_icon_left_icon();
-    let right_icon = config.icon_set.big_icon_right_icon();
+    let left_icon = left;
+    let right_icon = right;
 
     Line::from(vec![
         Span::styled(

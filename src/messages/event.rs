@@ -1,5 +1,6 @@
 use std::{collections::HashMap, process::ExitStatus, sync::Arc};
 
+use image::DynamicImage;
 use news_flash::{
     DiscoverResult,
     error::NewsFlashError,
@@ -11,14 +12,17 @@ use crate::prelude::*;
 
 #[derive(thiserror::Error, Debug)]
 pub enum AsyncOperationError {
-    #[error("news flash error: #1")]
+    #[error("news flash error: {0}")]
     NewsFlashError(#[from] NewsFlashError),
 
-    #[error("error report")]
+    #[error("error report: {0}")]
     Report(#[from] color_eyre::Report),
 
-    #[error("feed parse error: #1")]
+    #[error("feed parse error: {0}")]
     FeedParseError(#[from] news_flash::error::FeedParserError),
+
+    #[error("reqwest or middleware error: {0}")]
+    ReqwestError(#[from] reqwest::Error),
 }
 
 #[derive(Debug)]
@@ -34,6 +38,9 @@ pub enum Event {
 
     AsyncArticleThumbnailFetch,
     AsyncArticleThumbnailFetchFinished(Option<Thumbnail>),
+
+    AsyncImageFetchFinished(String, DynamicImage),
+    AsyncImageFetchFailed(String, AsyncOperationError),
 
     AsyncArticleFatFetch,
     AsyncArticleFatFetchFinished(FatArticle),

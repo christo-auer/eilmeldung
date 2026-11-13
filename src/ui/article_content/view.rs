@@ -1,21 +1,17 @@
 use super::model::ArticleContentModelData;
 use crate::prelude::*;
 
-use std::{
-    collections::HashMap,
-    io::Cursor,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, io::Cursor, sync::Arc};
 
 use getset::{Getters, MutGetters};
-use image::ImageReader;
-use log::info;
+use image::{DynamicImage, ImageReader};
+use limner::{RenderResult, render_image::ImageStore};
 use news_flash::models::Enclosure;
 use ratatui::layout::Flex;
 use ratatui_image::{
     FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
 };
-use the_other_tui_markdown::RendererBuilder;
+
 use throbber_widgets_tui::{Throbber, ThrobberState, WhichUse};
 
 const NO_THUMB_PLACEHOLDER: &[u8] =
@@ -35,41 +31,45 @@ pub struct ArticleContentViewData {
     // Image rendering state
     image: Option<StatefulProtocol>,
     placeholder_image: StatefulProtocol,
-    picker: Picker,
+    pub(super) picker: Picker,
+
+    // article images
+    pub(super) markdown_rendering: Option<RenderResult>,
+    pub(super) markdown_rendering_width: Option<u16>,
+    pub(super) image_store: Option<ImageStore>,
+    load_visible_images: bool,
+    load_image_hint: Option<String>,
 
     // Throbber state for loading animations
     thumbnail_fetching_throbber: ThrobberState,
 
-    #[getset(get = "pub(super)")]
-    url_for_hint: HashMap<String, String>,
+    #[getset(get = "pub(super)", get_mut = "pub(super)")]
+    pub(super) url_for_hint: HashMap<String, String>,
+    // needed to fetch article images
+    news_flash_utils: Arc<NewsFlashUtils>,
 }
 
-impl Default for ArticleContentViewData {
-    fn default() -> Self {
+impl ArticleContentViewData {
+    pub fn new(news_flash_utils: Arc<NewsFlashUtils>, config: &Config) -> Self {
         let picker = Picker::from_query_stdio().unwrap();
-        let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
-        let placeholder_image = picker.new_resize_protocol(
-            ImageReader::new(cursor)
-                .with_guessed_format()
-                .unwrap() // OK as content is checked
-                .decode()
-                .unwrap(), // OK as content is checked
-        );
-
         Self {
             vertical_scroll: 0,
             max_scroll: 0,
             image: None,
-            placeholder_image,
-            picker, // TODO gracefully handle errors
+            placeholder_image: Self::prepare_placeholder_image(&picker, config),
+            picker: picker.clone(),
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
             url_for_hint: Default::default(),
+            image_store: None,
+            load_visible_images: false,
+            load_image_hint: None,
+            markdown_rendering: None,
+            markdown_rendering_width: None,
+            news_flash_utils,
         }
     }
-}
 
-impl ArticleContentViewData {
     pub(super) fn update(&mut self, model_data: &ArticleContentModelData, _config: Arc<Config>) {
         if model_data.article().is_some() && self.vertical_scroll > self.max_scroll {
             self.vertical_scroll = 0;
@@ -82,6 +82,17 @@ impl ArticleContentViewData {
 
     pub(super) fn clear_image(&mut self) {
         self.image = None;
+    }
+
+    pub(super) fn clear(&mut self, config: &Config) {
+        self.image = None;
+        if let Some(image_store) = self.image_store.as_mut() {
+            image_store.clear();
+        }
+        self.placeholder_image = Self::prepare_placeholder_image(&self.picker, config);
+        self.vertical_scroll = 0;
+        self.markdown_rendering = None;
+        self.markdown_rendering_width = None;
     }
 
     pub(super) fn reset_thumbnail_throbber(&mut self) {
@@ -97,7 +108,7 @@ impl ArticleContentViewData {
         &self.image
     }
 
-    pub(super) fn tick_throbber(&mut self) {
+    pub(super) fn tick_throbbers(&mut self) {
         self.thumbnail_fetching_throbber.calc_next();
     }
 
@@ -125,6 +136,18 @@ impl ArticleContentViewData {
         self.vertical_scroll = self.max_scroll;
     }
 
+    pub(super) fn on_image_fetch_finished(&mut self, url: &str, image: DynamicImage) {
+        if let Some(image_store) = self.image_store.as_mut() {
+            image_store.finish(url, Some(image));
+        }
+    }
+
+    pub(super) fn on_image_fetch_failed(&mut self, url: &str) {
+        if let Some(image_store) = self.image_store.as_mut() {
+            image_store.finish(url, None);
+        }
+    }
+
     pub(super) fn render_block(
         &mut self,
         area: Rect,
@@ -144,7 +167,10 @@ impl ArticleContentViewData {
             .title_bottom(
                 if self.max_scroll > 0 && config.content_show_position {
                     Line::styled(
-                        format!(" {}% ", (self.vertical_scroll * 100) / self.max_scroll),
+                        format!(
+                            " {}% ",
+                            ((self.vertical_scroll as f64 / self.max_scroll as f64) * 100.0) as u16
+                        ),
                         config.theme.header(),
                     )
                 } else {
@@ -436,172 +462,133 @@ impl ArticleContentViewData {
             .areas(content_area);
 
         // prefer filtered content
-        let text: Text<'_> = if let Some(filtered_markdown_content) =
-            model_data.filtered_markdown_content().as_deref()
-        {
-            self.markdown_to_text(filtered_markdown_content, config)
-        } else if config.content_preferred_type == ArticleContentType::Markdown
-            && let Some(html) = model_data
-                .fat_article()
-                .as_ref()
-                .and_then(|fat_article| fat_article.scraped_content.as_deref())
-        {
-            // Use the cached markdown content from model
-            if let Some(markdown) = model_data.markdown_content() {
-                info!("markdown available");
-                self.markdown_to_text(markdown, config)
+        let markdown = model_data
+            .filtered_markdown_content()
+            .as_deref()
+            .or(model_data.markdown_content().as_deref())
+            .unwrap_or_default();
 
-                // tui_markdown::from_str(markdown)
-            } else {
-                info!("no markdown available, falling back to html2text");
-                // Fallback - convert to plain text instead of markdown to avoid lifetime issues
-                let plain_text = news_flash::util::html2text::html2text(html);
-                Text::from(plain_text)
-            }
-        } else if let Some(plain_text) = model_data
-            .fat_article()
-            .as_ref()
-            .and_then(|fat_article| fat_article.plain_text.as_deref())
-        {
-            info!("rendering plain text content");
-            Text::from(plain_text)
-        } else {
-            info!("no content available");
-            Text::from("no content available")
-        };
+        let mut markdown_rendering_width = self
+            .markdown_rendering_width
+            .take()
+            .unwrap_or(paragraph_area.width);
 
-        // Calculate the total number of lines the content would take when wrapped
-        let content_lines = Self::calculate_wrapped_lines(&text, paragraph_area.width);
-
-        // Calculate maximum scroll (ensure it doesn't go negative)
-        let max_scroll = content_lines.saturating_sub(paragraph_area.height);
-
-        // Ensure current scroll doesn't exceed maximum
-        let vertical_scroll = vertical_scroll.min(max_scroll);
-
-        let content = Paragraph::new(text)
-            .wrap(Wrap { trim: true })
-            .scroll((vertical_scroll, 0));
-
-        content.render(paragraph_area, buf);
-
-        self.max_scroll = max_scroll;
-        self.vertical_scroll = vertical_scroll;
-    }
-
-    fn markdown_to_text(&mut self, markdown: &str, config: &Config) -> Text<'static> {
-        let url_for_hint = Arc::new(Mutex::new(HashMap::<String, String>::new()));
-        // unwrap is safe here: at least one symbol passed save here
-        let iterator = config.hint_type.iter();
-        let hint_iterator = Arc::new(Mutex::new(iterator));
-        let show_url = config.content_show_urls;
-
-        let inner_link_url_for_hint = url_for_hint.clone();
-        let inner_link_hint_iterator = hint_iterator.clone();
-        let link_alt_text_style = Style::new()
-            .fg(*config.theme.color_palette().accent_primary())
-            .add_modifier(Modifier::UNDERLINED);
-        let link_url_text_style = Style::new().fg(*config.theme.color_palette().foreground());
-        let link_hint_style = Style::new()
-            .fg(*config.theme.color_palette().highlight())
-            .add_modifier(Modifier::BOLD);
-
-        let inner_image_url_for_hint = url_for_hint.clone();
-        let inner_image_hint_iterator = hint_iterator.clone();
-        let image_alt_text_style = Style::new()
-            .fg(*config.theme.color_palette().accent_primary())
-            .add_modifier(Modifier::UNDERLINED);
-        let image_url_text_style = Style::new().fg(*config.theme.color_palette().foreground());
-        let image_hint_style = link_hint_style;
-
-        let image_icon = config.icon_set.image_icon();
-        let url_icon = config.icon_set.url_icon();
-
-        let text = {
-            let renderer = RendererBuilder::new()
-                .with_link(move |alt, url| {
-                    let mut url_for_hint = inner_link_url_for_hint.lock().unwrap(); // unwrap is save here: locking with sync calls
-                    let hint = inner_link_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
-
-                    url_for_hint
-                        .entry(hint.to_owned())
-                        .or_insert(url.to_owned());
-                    let mut spans = vec![
-                        Span::styled(format!("{hint}{url_icon}"), link_hint_style),
-                        Span::styled(alt.to_owned(), link_alt_text_style),
-                    ];
-                    if show_url {
-                        spans.push(Span::styled(format!("({url})"), link_url_text_style));
-                    }
-
-                    spans
-                })
-                .with_image(move |alt, url| {
-                    let mut url_for_hint = inner_image_url_for_hint.lock().unwrap();
-                    let hint = inner_image_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
-                    url_for_hint
-                        .entry(hint.to_owned())
-                        .or_insert(url.to_owned());
-                    let mut spans = vec![
-                        Span::styled(format!("{hint}{image_icon}"), image_hint_style),
-                        Span::styled(alt.to_owned(), image_alt_text_style),
-                    ];
-
-                    if show_url {
-                        spans.push(Span::styled(format!("({url})"), image_url_text_style));
-                    }
-                    spans
-                })
-                .build();
-
-            the_other_tui_markdown::into_text_with_renderer(markdown, &renderer).to_owned()
-        };
-
-        self.url_for_hint = url_for_hint.lock().unwrap().to_owned();
-
-        text
-    }
-
-    fn calculate_wrapped_lines(text: &ratatui::text::Text, width: u16) -> u16 {
-        let mut total_lines = 0u16;
-
-        for line in text.lines.iter() {
-            if line.spans.is_empty() {
-                total_lines += 1;
-                continue;
-            }
-
-            let line_content: String = line
-                .spans
-                .iter()
-                .map(|span| span.content.as_ref())
-                .collect();
-
-            if line_content.is_empty() {
-                total_lines += 1;
-            } else {
-                // Calculate how many lines this content will take when wrapped
-                let line_width = line_content.chars().count() as u16;
-                let wrapped_lines = (line_width + width - 1) / width.max(1); // Ceiling division
-                total_lines += wrapped_lines.max(1);
+        if markdown_rendering_width != paragraph_area.width {
+            self.markdown_rendering.take();
+            self.markdown_rendering_width.replace(paragraph_area.width);
+            markdown_rendering_width = paragraph_area.width;
+            if let Some(image_store) = self.image_store.as_mut() {
+                image_store.clear();
             }
         }
 
-        total_lines
-    }
+        let markdown_rendering = self
+            .markdown_rendering
+            .take()
+            .unwrap_or_else(|| self.markdown_to_text(markdown, markdown_rendering_width, config));
 
-    pub fn picker_updated(&mut self, picker: &Picker) -> color_eyre::Result<()> {
-        self.picker = picker.to_owned();
-        let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
-        self.placeholder_image = self.picker.new_resize_protocol(
-            ImageReader::new(cursor)
-                .with_guessed_format()
-                .unwrap() // OK as content is checked
-                .decode()
-                .unwrap(), // OK as content is checked
+        let mut lines = markdown_rendering.lines.clone();
+
+        let image_rows = config
+            .article_images_height
+            .into_length(inner_area.height)
+            .raw_value();
+
+        let Some(image_store) = self.image_store.as_mut() else {
+            unreachable!();
+        };
+
+        let render_positions = image_store.prepare(
+            &mut lines,
+            &markdown_rendering.images,
+            markdown_rendering_width,
+            image_rows,
         );
 
+        self.max_scroll = (image_store.total_rows() as u16).saturating_sub(paragraph_area.height);
+        self.vertical_scroll = vertical_scroll.min(self.max_scroll);
+        let image_max_width = u32::from(self.picker.font_size().width * paragraph_area.width);
+        let image_rows = u32::from(self.picker.font_size().height * image_rows);
+        if self.load_visible_images || config.article_images_auto_load {
+            // find visible or nearly visible images which are not yet downloaded
+            for url in image_store.start_visible(
+                self.vertical_scroll,
+                paragraph_area.height,
+                if config.article_images_auto_load {
+                    paragraph_area.height
+                } else {
+                    0
+                },
+            ) {
+                self.news_flash_utils.fetch_image_with_cache(
+                    &url,
+                    image_max_width,
+                    image_rows,
+                    to_corner_radius(config, &self.picker),
+                    config.theme.color_palette().image_drop_shadow,
+                    to_drop_shadow_width(config, &self.picker),
+                );
+            }
+            self.load_visible_images = false;
+        }
+
+        // load image if requested via hint
+        if let Some(url) = self.load_image_hint.take() {
+            self.news_flash_utils.fetch_image_with_cache(
+                &url,
+                image_max_width,
+                image_rows,
+                to_corner_radius(config, &self.picker),
+                config.theme.color_palette().image_drop_shadow,
+                to_drop_shadow_width(config, &self.picker),
+            );
+        }
+
+        let content = Paragraph::new(lines)
+            .wrap(Wrap { trim: false })
+            .scroll((self.vertical_scroll, 0));
+
+        content.render(paragraph_area, buf);
+
+        image_store.render(buf, paragraph_area, &render_positions, self.vertical_scroll);
+
+        self.markdown_rendering_width
+            .replace(markdown_rendering_width);
+        self.markdown_rendering.replace(markdown_rendering);
+    }
+
+    pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> color_eyre::Result<()> {
+        self.picker = picker.to_owned();
+        self.create_image_store(config);
+        self.placeholder_image = Self::prepare_placeholder_image(picker, config);
+
         Ok(())
+    }
+
+    fn prepare_placeholder_image(picker: &Picker, config: &Config) -> StatefulProtocol {
+        let cursor = Cursor::new(NO_THUMB_PLACEHOLDER);
+        let mut image = ImageReader::new(cursor)
+            .with_guessed_format()
+            .unwrap() // OK as content is checked
+            .decode()
+            .unwrap(); // OK as content is checked
+
+        image = add_drop_shadow(
+            &image,
+            config.theme.color_palette().image_drop_shadow,
+            0,
+            to_corner_radius(config, picker),
+        );
+
+        picker.new_resize_protocol(image)
+    }
+
+    pub(crate) fn load_image(&mut self, url: &str) {
+        self.load_image_hint = Some(url.to_owned());
+    }
+
+    pub(crate) fn load_visible_images(&mut self) {
+        self.load_visible_images = true;
     }
 }
 

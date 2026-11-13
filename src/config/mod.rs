@@ -23,6 +23,7 @@ macro_rules! toml_mappings {
         vec![$(($key_seq.into(), [$(Command::parse($command_seq, false).unwrap()),*].into()),)*].into_iter().collect()
     };
 }
+use bytesize::ByteSize;
 pub(crate) use toml_mappings;
 
 pub mod prelude {
@@ -168,6 +169,13 @@ pub struct Config {
 
     pub auto_reload_config: bool,
 
+    pub article_images_auto_load: bool,
+    pub article_images_height: Dimension,
+    pub article_images_rounded_corners: bool,
+    pub article_image_drop_shadow: bool,
+
+    pub article_images_cache_size: ByteSize,
+
     pub feeds_label: String,
     pub last_synced_label: String,
     pub feed_label: String,
@@ -275,6 +283,12 @@ impl Default for Config {
             cli_sync_stats_format: SyncStatsOutputFormat::cli_default(),
 
             auto_reload_config: true,
+
+            article_images_auto_load: true,
+            article_images_height: Dimension::Percentage(30),
+            article_images_rounded_corners: true,
+            article_image_drop_shadow: true,
+            article_images_cache_size: ByteSize::mib(512),
 
             feeds_label: "{icon} All {unread_count}".into(),
             feed_label: "{icon} {label} {unread_count}".into(),

@@ -1,11 +1,12 @@
 use crate::{messages::event::AsyncOperationError, prelude::*};
+use std::io::Cursor;
 use std::{
     collections::HashMap, error::Error, hash::Hash, path::Path, process::Stdio, str::FromStr,
     sync::Arc, time::Duration,
 };
 
 use futures::future::join_all;
-use htmd::HtmlToMarkdown;
+use image::{DynamicImage, ImageReader, imageops};
 use news_flash::models::ArticleID;
 use news_flash::models::Category;
 use news_flash::models::{
@@ -20,7 +21,9 @@ use ratatui::{
     text::{Line, Span},
 };
 use reqwest::{Client, ClientBuilder};
+use tokio::sync::Semaphore;
 use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
+use tokio::task::spawn_blocking;
 
 type GetCategoriesResult = (
     Vec<Category>,
@@ -41,7 +44,10 @@ pub struct NewsFlashUtils {
     pub news_flash_lock: Arc<RwLock<NewsFlash>>,
     client_lock: Arc<RwLock<Client>>,
     undo_stack_lock: Arc<RwLock<Vec<UndoOperation>>>,
-    command_sender: UnboundedSender<Message>,
+    message_sender: UnboundedSender<Message>,
+    image_cache: Arc<RwLock<mini_moka::sync::Cache<String, Arc<image::DynamicImage>>>>,
+
+    client_get_request_semaphore: Arc<Semaphore>,
 
     async_operation_mutex: Arc<Mutex<()>>,
 }
@@ -62,14 +68,14 @@ macro_rules! gen_async_call {
             let news_flash_lock = self.news_flash_lock.clone();
             let client_lock = self.client_lock.clone();
             let undo_stack_lock = self.undo_stack_lock.clone();
-            let command_sender = self.command_sender.clone();
+            let message_sender = self.message_sender.clone();
             let async_operation_mutex = self.async_operation_mutex.clone();
 
             tokio::spawn(async move {
                 let _lock = async_operation_mutex.lock().await;
 
                 if let Err(e) = async {
-                    command_sender.send(Message::Event($start_event)).map_err(|send_error|
+                    message_sender.send(Message::Event($start_event)).map_err(|send_error|
                         color_eyre::eyre::eyre!(send_error))?;
 
                     let $news_flash_var = news_flash_lock.read().await;
@@ -78,12 +84,12 @@ macro_rules! gen_async_call {
 
                     $operation
 
-                    command_sender.send(Message::Event($success_event)).map_err(|send_error|
+                    message_sender.send(Message::Event($success_event)).map_err(|send_error|
                         color_eyre::eyre::eyre!(send_error))?;
                     Ok::<(), AsyncOperationError>(())
                 }.await{
                     error!("Async call {} failed: {}", stringify!(&method_name), e,);
-                    let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed( e,
+                    let _ = message_sender.send(Message::Event(Event::AsyncOperationFailed( e,
                                 Box::new($start_event),)));
                 }
             });
@@ -94,7 +100,7 @@ macro_rules! gen_async_call {
 
 }
 
-pub fn build_client(timeout: Duration) -> color_eyre::Result<Client> {
+pub fn build_client(timeout_duration: Duration) -> color_eyre::Result<Client> {
     let user_agent = format!(
         "eilmeldung/{} (RSS reader; +https://github.com/christo-auer/eilmeldung",
         env!("CARGO_PKG_VERSION")
@@ -103,33 +109,40 @@ pub fn build_client(timeout: Duration) -> color_eyre::Result<Client> {
         .user_agent(user_agent.as_str())
         .gzip(true)
         .brotli(true)
-        .timeout(timeout);
+        .timeout(timeout_duration);
 
     Ok(builder.build()?)
 }
 
-#[rustfmt::skip]        
+#[rustfmt::skip]
 impl NewsFlashUtils {
     pub fn new(
+        config: &Config,
         news_flash: NewsFlash,
         client: Client,
-        command_sender: UnboundedSender<Message>,
+        message_sender: UnboundedSender<Message>,
     ) -> Self {
         debug!("Creating NewsFlashUtils");
 
         Self {
             news_flash_lock: Arc::new(RwLock::new(news_flash)),
             client_lock: Arc::new(RwLock::new(client)),
-            command_sender,
+            message_sender,
+            client_get_request_semaphore: Arc::new(Semaphore::new(5)),
+            image_cache: Arc::new(RwLock::new(
+                    mini_moka::sync::CacheBuilder::new(
+                        config.article_images_cache_size.as_u64())
+                    .weigher(|_:&String, dynamic_image: &Arc<DynamicImage>| dynamic_image.width()*dynamic_image.height())
+                    .build())),
             undo_stack_lock: Default::default(),
             async_operation_mutex: Arc::new(Mutex::new(())),
         }
     }
 
-    pub async fn rebuild_client(&self, config: &Config) -> color_eyre::Result<()>{
+    pub async fn rebuild_client(&self, timeout_duration: Duration) -> color_eyre::Result<()>{
         info!("rebuilding reqwest client");
         let mut client = self.client_lock.write().await;
-        *client = build_client(Duration::from_secs(config.network_timeout_seconds))?;
+        *client = build_client(timeout_duration)?;
         Ok(())
     }
 
@@ -565,14 +578,14 @@ impl NewsFlashUtils {
     pub fn logout(&self) {
         let news_flash_lock = self.news_flash_lock.clone();
         let client_lock = self.client_lock.clone();
-        let command_sender = self.command_sender.clone();
+        let message_sender = self.message_sender.clone();
         let async_operation_mutex = self.async_operation_mutex.clone();
 
         tokio::spawn(async move {
             let _lock = async_operation_mutex.lock().await;
 
             if let Err(e) = async {
-                command_sender.send(Message::Event(Event::AsyncLogout)).map_err(|send_error|
+                message_sender.send(Message::Event(Event::AsyncLogout)).map_err(|send_error|
                     color_eyre::eyre::eyre!(send_error))?;
 
                 let mut news_flash = news_flash_lock.write().await;
@@ -580,12 +593,12 @@ impl NewsFlashUtils {
 
                 news_flash.logout(&client).await?;
 
-                command_sender.send(Message::Event(Event::AsyncLogoutFinished)).map_err(|send_error|
+                message_sender.send(Message::Event(Event::AsyncLogoutFinished)).map_err(|send_error|
                     color_eyre::eyre::eyre!(send_error))?;
                 Ok::<(), AsyncOperationError>(())
             }.await{
                 error!("Async call logout failed: {}", e,);
-                let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed( e,
+                let _ = message_sender.send(Message::Event(Event::AsyncOperationFailed( e,
                             Box::new(Event::AsyncLogout),)));
             }
         });
@@ -595,12 +608,12 @@ impl NewsFlashUtils {
     pub fn pipe(&self, article: news_flash::models::Article, fat_article: Option<news_flash::models::FatArticle>, in_target: PipeTarget, out_target: PipeTarget, command: String)  {
         let news_flash_lock = self.news_flash_lock.clone();
         let client_lock = self.client_lock.clone();
-        let command_sender = self.command_sender.clone();
+        let message_sender = self.message_sender.clone();
         let async_operation_mutex = self.async_operation_mutex.clone();
             tokio::spawn(async move {
                 let _lock = async_operation_mutex.lock().await;
                 if let Err(e) = async {
-                     command_sender.send(Message::Event(Event::AsyncPipeArticle)).map_err(|send_error|
+                     message_sender.send(Message::Event(Event::AsyncPipeArticle)).map_err(|send_error|
                          color_eyre::eyre::eyre!(send_error))?;
                 
                      let client = client_lock.read().await;
@@ -625,7 +638,10 @@ impl NewsFlashUtils {
                              if matches!(target, PipeTarget::Html) {
                                  html
                              } else {
-                                 htmd::HtmlToMarkdown::builder().build().convert(&html).map_err(|e| AsyncOperationError::Report(color_eyre::eyre::eyre!("Unable to convert HTML to Markdown: {e}")))?
+                                 html_to_markdown_rs::convert(&html,
+                                     <html_to_markdown_rs::ConversionOptions as Default>::default()).map_err(|e|
+                                     AsyncOperationError::Report(color_eyre::eyre::eyre!("Unable to convert HTML to Markdown: {e}")))?
+                                     .content.ok_or(color_eyre::eyre::eyre!("unable to HTML to Markdown"))?
                              }
                          },
                      };
@@ -659,15 +675,20 @@ impl NewsFlashUtils {
 
                      let markdown = match out_target {
                          PipeTarget::Null => None,
-                         PipeTarget::Html => Some(HtmlToMarkdown::new().convert(&output).map_err(|conversion_error| color_eyre::eyre::eyre!(conversion_error))?),
+                         PipeTarget::Html => {
+                                 Some(html_to_markdown_rs::convert(&output,
+                                     <html_to_markdown_rs::ConversionOptions as Default>::default()).map_err(|e|
+                                     AsyncOperationError::Report(color_eyre::eyre::eyre!("Unable to convert HTML to Markdown: {e}")))?
+                                     .content.ok_or(color_eyre::eyre::eyre!("unable to HTML to Markdown"))?)
+                         }
                          PipeTarget::Markdown => Some(output),
                      };
                 
-                     command_sender.send(Message::Event(Event::AsyncPipeArticleFinished(article.article_id, result.status, markdown, error))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
+                     message_sender.send(Message::Event(Event::AsyncPipeArticleFinished(article.article_id, result.status, markdown, error))).map_err(|send_error| color_eyre::eyre::eyre!(send_error))?;
                      Ok::<(), AsyncOperationError>(())
                 }.await{
                      error!("Async call pipe failed: {e}");
-                     let _ = command_sender.send(Message::Event(Event::AsyncOperationFailed( e,
+                     let _ = message_sender.send(Message::Event(Event::AsyncOperationFailed( e,
                                  Box::new(Event::AsyncPipeArticle),)));
                 }
             });
@@ -694,6 +715,85 @@ impl NewsFlashUtils {
         }
 
         last_operation
+    }
+
+    pub fn fetch_image_with_cache(&self, url: &str, max_width: u32, max_height: u32, border_radius: u32, shadow_color: Color, shadow_width: u32) {
+        let url = url.to_string();
+        let message_sender = self.message_sender.clone();
+        let count_semaphore = Arc::clone(&self.client_get_request_semaphore);
+        let client_lock = Arc::clone(&self.client_lock);
+        let image_cache_lock = Arc::clone(&self.image_cache);
+
+        tokio::spawn(async move {
+            if let Err(error) = async {
+
+
+                let image_cache = image_cache_lock.read().await;
+                let cached_image = image_cache.get(&url.to_owned());
+                drop(image_cache);
+
+                let image: Arc<DynamicImage> = {
+                    if let Some(image) = cached_image {
+                        image
+                    } else {
+                        let _permit = count_semaphore
+                            .acquire_owned()
+                            .await
+                            .map_err(|error| color_eyre::eyre::eyre!("unable to acquire lock: {error}"))?;
+                        let client = client_lock.read().await;
+
+                        let response = client.get(&url).send().await?;
+
+                        if !response.status().is_success() {
+                            Err(color_eyre::eyre::eyre!(response.status().to_string()))?
+                        }
+
+                        // now get the binary data
+                        let bytes = Cursor::new(response.bytes().await.map_err(|error| {
+                            color_eyre::eyre::eyre!("couldn't read image data from response: {error}")
+                        })?);
+
+                        // try to read into a image
+                        let mut image = ImageReader::new(bytes)
+                            .with_guessed_format()
+                            .map_err(|error| {
+                                color_eyre::eyre::eyre!("unable to guess image format: {error}")
+                            })?
+                        .decode()
+                            .map_err(|error| color_eyre::eyre::eyre!("unable to decode image: {error}"))?;
+
+                        if image.width()+shadow_width > max_width || image.height()+shadow_width > max_height {
+                            image = spawn_blocking(move ||{
+                                image.resize(max_width.saturating_sub(shadow_width), max_height.saturating_sub(shadow_width), imageops::FilterType::Nearest)
+
+                            }).await.map_err(|error| color_eyre::eyre::eyre!("unable to resize image: {error}"))?;
+
+                        }
+
+                        let image_arc = Arc::new(image);
+                        image_cache_lock.write().await.insert(url.to_owned(), Arc::clone(&image_arc));
+                        image_arc
+                    }
+                };
+
+                let image = spawn_blocking(move || {
+                    add_drop_shadow(&image, shadow_color, shadow_width, border_radius)
+                }).await.map_err(|error| color_eyre::eyre::eyre!("unable to add border to image: {error}"))?;
+
+                message_sender
+                    .send(Message::Event(Event::AsyncImageFetchFinished(url.to_owned(), image)))
+                    .map_err(|send_error| {
+                        color_eyre::eyre::eyre!("internal error: {send_error}")
+                    })?;
+
+                Ok::<(), AsyncOperationError>(())
+            }
+            .await
+            {
+                log::error!("failed to fetch image: {error}");
+                let _ = message_sender.send(Message::Event(Event::AsyncImageFetchFailed(url, error)));
+            }
+        });
     }
 
     pub fn generate_id_map<V, I: Hash + Eq + Clone>(

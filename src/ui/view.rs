@@ -138,25 +138,30 @@ impl App {
             return;
         }
 
-        let (feeds_constraint_width, articles_constraint_width) = match self.state {
-            AppState::FeedSelection => (
-                self.config.feed_list_focused_width.as_constraint(),
-                self.config
-                    .feed_list_focused_width
-                    .as_complementary_constraint(area.width),
-            ),
-            _ => (
-                self.config
-                    .article_list_focused_width
-                    .as_complementary_constraint(area.width),
-                self.config.article_list_focused_width.as_constraint(),
-            ),
+        let (feeds_constraint_width, articles_constraint_width) = {
+            if let Some(feeds_override_width) = self.feeds_override_width {
+                (feeds_override_width.as_constraint(), Constraint::Min(0))
+            } else {
+                match self.state {
+                    AppState::FeedSelection => (
+                        self.config.feed_list_focused_width.as_constraint(),
+                        self.config
+                            .feed_list_focused_width
+                            .as_complementary_constraint(area.width),
+                    ),
+                    _ => (
+                        self.config
+                            .article_list_focused_width
+                            .as_complementary_constraint(area.width),
+                        self.config.article_list_focused_width.as_constraint(),
+                    ),
+                }
+            }
         };
 
-        let (articles_constraint_height, article_content_constraint_height) =
-            if let Some(override_height) = self.mouse_input_handler.articles_height_override() {
-                // User is dragging the border — use absolute heights
-                (Constraint::Length(*override_height), Constraint::Min(0))
+        let (articles_constraint_height, article_content_constraint_height) = {
+            if let Some(articles_height_override) = self.articles_height_override {
+                (articles_height_override.as_constraint(), Constraint::Min(0))
             } else {
                 match self.state {
                     AppState::FeedSelection | AppState::ArticleSelection => (
@@ -172,7 +177,8 @@ impl App {
                         self.config.article_content_focused_height.as_constraint(),
                     ),
                 }
-            };
+            }
+        };
 
         let [feeds_list_chunk, articles_chunk] = Layout::default()
             .direction(Direction::Horizontal)
