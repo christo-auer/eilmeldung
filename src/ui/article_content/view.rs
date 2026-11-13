@@ -509,12 +509,12 @@ impl ArticleContentViewData {
         self.vertical_scroll = vertical_scroll.min(self.max_scroll);
         let image_max_width = u32::from(self.picker.font_size().width * paragraph_area.width);
         let image_rows = u32::from(self.picker.font_size().height * image_rows);
-        if self.load_visible_images || config.auto_load_article_images {
+        if self.load_visible_images || config.article_image_auto_load {
             // find visible or nearly visible images which are not yet downloaded
             for url in image_store.start_visible(
                 self.vertical_scroll,
                 paragraph_area.height,
-                if config.auto_load_article_images {
+                if config.article_image_auto_load {
                     paragraph_area.height
                 } else {
                     0

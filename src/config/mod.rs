@@ -171,7 +171,7 @@ pub struct Config {
 
     pub auto_reload_config: bool,
 
-    pub auto_load_article_images: bool,
+    pub article_image_auto_load: bool,
     pub article_image_height: Dimension,
     pub article_image_rounded_corners: bool,
     pub article_image_drop_shadow: bool,
@@ -286,7 +286,7 @@ impl Default for Config {
 
             auto_reload_config: true,
 
-            auto_load_article_images: true,
+            article_image_auto_load: true,
             article_image_height: Dimension::Percentage(30),
             article_image_rounded_corners: true,
             article_image_drop_shadow: true,
