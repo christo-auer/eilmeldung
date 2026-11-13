@@ -17,7 +17,7 @@ enum ImageLoadToken {
     #[token("hint")]
     HintToken,
 
-    #[regex(r#"[a-z0-9]+"#)]
+    #[regex(r#"[a-zA-Z0-9]+"#)]
     Hint,
 }
 
