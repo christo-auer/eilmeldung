@@ -1712,7 +1712,6 @@ dependencies = [
  "logos",
  "news-flash",
  "notify-rust",
- "once_cell",
  "parse_datetime",
  "paste",
  "percent-encoding",
