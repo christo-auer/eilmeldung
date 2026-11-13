@@ -101,7 +101,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "; y"       = ["cmd hintshare clipboard"]
         "; s"       = ["cmd hintshare"]
         "; p"       = ["cmd imageload hint"]
-        "p"         = ["imageload visible"]
+        "P"         = ["imageload visible"]
         "C-x"       = ["clear"]
         "C-z"       = ["undo"]
 
