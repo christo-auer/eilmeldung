@@ -1806,7 +1806,6 @@ dependencies = [
  "mini-moka",
  "news-flash",
  "notify-rust",
- "once_cell",
  "parse_datetime",
  "paste",
  "percent-encoding",
