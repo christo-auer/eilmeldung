@@ -117,7 +117,7 @@ impl Dimension {
         use Dimension as D;
         match self {
             D::Length(length) => {
-                Dimension::Length((length - other.into_length(max).raw_value()).max(0))
+                Dimension::Length(length - other.into_length(max).raw_value())
             }
             D::Percentage(percent) => {
                 Dimension::Percentage((percent - other.into_percent(max).raw_value()).clamp(0, 100))
