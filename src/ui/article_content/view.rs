@@ -35,6 +35,7 @@ pub struct ArticleContentViewData {
 
     // article images
     pub(super) markdown_rendering: Option<RenderResult>,
+    pub(super) markdown_rendering_width: Option<u16>,
     pub(super) image_store: Option<ImageStore>,
     load_visible_images: bool,
     load_image_hint: Option<String>,
@@ -64,6 +65,7 @@ impl ArticleContentViewData {
             load_visible_images: false,
             load_image_hint: None,
             markdown_rendering: None,
+            markdown_rendering_width: None,
             news_flash_utils,
         }
     }
@@ -90,6 +92,7 @@ impl ArticleContentViewData {
         self.placeholder_image = Self::prepare_placeholder_image(&self.picker, config);
         self.vertical_scroll = 0;
         self.markdown_rendering = None;
+        self.markdown_rendering_width = None;
     }
 
     pub(super) fn reset_thumbnail_throbber(&mut self) {
@@ -465,10 +468,24 @@ impl ArticleContentViewData {
             .or(model_data.markdown_content().as_deref())
             .unwrap_or_default();
 
+        let mut markdown_rendering_width = self
+            .markdown_rendering_width
+            .take()
+            .unwrap_or(paragraph_area.width);
+
+        if markdown_rendering_width != paragraph_area.width {
+            self.markdown_rendering.take();
+            self.markdown_rendering_width.replace(paragraph_area.width);
+            markdown_rendering_width = paragraph_area.width;
+            if let Some(image_store) = self.image_store.as_mut() {
+                image_store.clear();
+            }
+        }
+
         let markdown_rendering = self
             .markdown_rendering
             .take()
-            .unwrap_or_else(|| self.markdown_to_text(markdown, paragraph_area.width, config));
+            .unwrap_or_else(|| self.markdown_to_text(markdown, markdown_rendering_width, config));
 
         let mut lines = markdown_rendering.lines.clone();
 
@@ -484,7 +501,7 @@ impl ArticleContentViewData {
         let render_positions = image_store.prepare(
             &mut lines,
             &markdown_rendering.images,
-            paragraph_area.width,
+            markdown_rendering_width,
             image_rows,
         );
 
@@ -535,6 +552,8 @@ impl ArticleContentViewData {
 
         image_store.render(buf, paragraph_area, &render_positions, self.vertical_scroll);
 
+        self.markdown_rendering_width
+            .replace(markdown_rendering_width);
         self.markdown_rendering.replace(markdown_rendering);
     }
 
