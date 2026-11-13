@@ -41,7 +41,7 @@ pub mod prelude {
     pub use super::login_configuration::LoginConfiguration;
     pub use super::login_configuration::Secret;
     pub use super::mouse::MouseConfig;
-    pub use super::paths::{CONFIG_FILE, HTTP_CACHE_FILE, PROJECT_DIRS};
+    pub use super::paths::{CONFIG_FILE, PROJECT_DIRS};
     pub use super::share_target::ShareTarget;
     pub use super::sync_stats::SyncStatsOutputFormat;
     pub use super::theme::Theme;

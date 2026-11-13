@@ -1,5 +1,4 @@
 use crate::{messages::event::AsyncOperationError, prelude::*};
-use std::fs::create_dir_all;
 use std::io::Cursor;
 use std::{
     collections::HashMap, error::Error, hash::Hash, path::Path, process::Stdio, str::FromStr,
@@ -7,7 +6,7 @@ use std::{
 };
 
 use futures::future::join_all;
-use http_cache_reqwest::RedbManager;
+use http_cache_reqwest::{MokaCache, MokaManager};
 use image::{ImageReader, imageops};
 use news_flash::models::ArticleID;
 use news_flash::models::Category;
@@ -123,23 +122,25 @@ pub fn build_client_with_cache(config: &Config) -> color_eyre::Result<ClientWith
     )?);
 
     if config.cache_size.as_u64() > 0 {
-        let cache_path = config.cache_dir.join(HTTP_CACHE_FILE);
+        // let cache_path = config.cache_dir.join(HTTP_CACHE_FILE);
 
-        create_dir_all(&config.cache_dir).map_err(|error| {
-            color_eyre::eyre::eyre!(
-                "unable to create cache directory: {error}; disable cache by setting `cache_size = \"0\"`"
-            )
-        })?;
-        let cache_db = redb::Builder::new()
-            .set_cache_size(config.cache_size.as_u64().try_into()?)
-            .set_concurrency_mode(redb::ConcurrencyMode::MultiWriter)
-            .create(cache_path)?;
-        let redb_manager = RedbManager::from_database(Arc::new(cache_db))
-            .map_err(|error| color_eyre::eyre::eyre!("unable to open cache file: {error}"))?;
+        // create_dir_all(&config.cache_dir).map_err(|error| {
+        //     color_eyre::eyre::eyre!(
+        //         "unable to create cache directory: {error}; disable cache by setting `cache_size = \"0\"`"
+        //     )
+        // })?;
+        // let cache_db = redb::Builder::new()
+        //     .set_cache_size(config.cache_size.as_u64().try_into()?)
+        //     .set_concurrency_mode(redb::ConcurrencyMode::MultiWriter)
+        //     .create(cache_path)?;
+        // let redb_manager = RedbManager::from_database(Arc::new(cache_db))
+        //     .map_err(|error| color_eyre::eyre::eyre!("unable to open cache file: {error}"))?;
+
+        let moka_manager = MokaManager::new(MokaCache::new(config.cache_size.as_u64()));
 
         let cache_middleware = http_cache_reqwest::Cache(http_cache_reqwest::HttpCache {
             mode: http_cache_reqwest::CacheMode::Default,
-            manager: redb_manager,
+            manager: moka_manager,
             options: http_cache_reqwest::HttpCacheOptions::default(),
         });
 
