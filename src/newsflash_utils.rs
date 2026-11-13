@@ -118,7 +118,6 @@ pub fn build_client(timeout_duration: Duration) -> color_eyre::Result<Client> {
 }
 
 pub fn build_client_with_cache(config: &Config) -> color_eyre::Result<ClientWithMiddleware> {
-
     let mut client_builder = reqwest_middleware::ClientBuilder::new(build_client(
         Duration::from_secs(config.network_timeout_seconds),
     )?);

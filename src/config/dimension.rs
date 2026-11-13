@@ -116,9 +116,7 @@ impl Dimension {
     pub fn subtract(self, other: Dimension, max: u16) -> Dimension {
         use Dimension as D;
         match self {
-            D::Length(length) => {
-                Dimension::Length(length - other.into_length(max).raw_value())
-            }
+            D::Length(length) => Dimension::Length(length - other.into_length(max).raw_value()),
             D::Percentage(percent) => {
                 Dimension::Percentage((percent - other.into_percent(max).raw_value()).clamp(0, 100))
             }
