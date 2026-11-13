@@ -12,10 +12,6 @@ rustPlatform.buildRustPackage {
     lockFile = "${src}/Cargo.lock";
   };
 
-  nativeBuildInputs = [
-    rustPlatform.bindgenHook
-  ];
-
   meta = {
     description = "Feature-rich TUI RSS Reader based on the news-flash library";
     homepage = "https://github.com/christo-auer/eilmeldung";
