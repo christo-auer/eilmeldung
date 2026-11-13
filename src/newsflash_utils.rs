@@ -132,6 +132,7 @@ pub fn build_client_with_cache(config: &Config) -> color_eyre::Result<ClientWith
         })?;
         let cache_db = redb::Builder::new()
             .set_cache_size(config.cache_size.as_u64().try_into()?)
+            .set_concurrency_mode(redb::ConcurrencyMode::MultiWriter)
             .create(cache_path)?;
         let redb_manager = RedbManager::from_database(Arc::new(cache_db))
             .map_err(|error| color_eyre::eyre::eyre!("unable to open cache file: {error}"))?;
