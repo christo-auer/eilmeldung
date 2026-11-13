@@ -48,9 +48,6 @@ async fn main() -> color_eyre::Result<()> {
         return Ok(());
     }
 
-    // execute here to avoid locking the HTTP cache DB when carrying out CLI actions
-    let client_with_cache = build_client_with_cache(&config)?;
-
     info!("Initializing terminal");
     let terminal = ratatui::init();
 
@@ -59,11 +56,12 @@ async fn main() -> color_eyre::Result<()> {
 
     // setup of things we need in the app
     let news_flash_utils = Arc::new(NewsFlashUtils::new(
+        &config,
         news_flash,
         client,
-        client_with_cache,
         message_sender.clone(),
     ));
+
     let connectivity_monitor =
         ConnectivityMonitor::new(news_flash_utils.clone(), message_sender.clone());
 

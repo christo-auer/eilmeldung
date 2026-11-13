@@ -22,7 +22,7 @@ pub enum AsyncOperationError {
     FeedParseError(#[from] news_flash::error::FeedParserError),
 
     #[error("reqwest or middleware error: {0}")]
-    ReqwestOrMiddlewareError(#[from] reqwest_middleware::Error),
+    ReqwestError(#[from] reqwest::Error),
 }
 
 #[derive(Debug)]

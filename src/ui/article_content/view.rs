@@ -574,7 +574,7 @@ impl ArticleContentViewData {
             .unwrap(); // OK as content is checked
 
         image = add_drop_shadow(
-            image,
+            &image,
             config.theme.color_palette().image_drop_shadow,
             0,
             to_corner_radius(config, picker),

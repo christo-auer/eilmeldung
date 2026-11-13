@@ -750,7 +750,7 @@ impl MessageReceiver for App {
                             TooltipFlavor::Error,
                         )?;
                     }
-                    AsyncOperationError::ReqwestOrMiddlewareError(_) => {}
+                    AsyncOperationError::ReqwestError(_) => {}
                 }
             }
 

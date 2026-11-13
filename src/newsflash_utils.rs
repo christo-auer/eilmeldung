@@ -6,8 +6,7 @@ use std::{
 };
 
 use futures::future::join_all;
-use http_cache_reqwest::{MokaCache, MokaManager};
-use image::{ImageReader, imageops};
+use image::{DynamicImage, ImageReader, imageops};
 use news_flash::models::ArticleID;
 use news_flash::models::Category;
 use news_flash::models::{
@@ -22,7 +21,6 @@ use ratatui::{
     text::{Line, Span},
 };
 use reqwest::{Client, ClientBuilder};
-use reqwest_middleware::ClientWithMiddleware;
 use tokio::sync::Semaphore;
 use tokio::sync::{Mutex, RwLock, mpsc::UnboundedSender};
 use tokio::task::spawn_blocking;
@@ -47,9 +45,9 @@ pub struct NewsFlashUtils {
     client_lock: Arc<RwLock<Client>>,
     undo_stack_lock: Arc<RwLock<Vec<UndoOperation>>>,
     message_sender: UnboundedSender<Message>,
+    image_cache: Arc<RwLock<mini_moka::sync::Cache<String, Arc<image::DynamicImage>>>>,
 
-    client_with_cache: Arc<ClientWithMiddleware>,
-    client_with_cache_count_semaphore: Arc<Semaphore>,
+    client_get_request_semaphore: Arc<Semaphore>,
 
     async_operation_mutex: Arc<Mutex<()>>,
 }
@@ -116,46 +114,12 @@ pub fn build_client(timeout_duration: Duration) -> color_eyre::Result<Client> {
     Ok(builder.build()?)
 }
 
-pub fn build_client_with_cache(config: &Config) -> color_eyre::Result<ClientWithMiddleware> {
-    let mut client_builder = reqwest_middleware::ClientBuilder::new(build_client(
-        Duration::from_secs(config.network_timeout_seconds),
-    )?);
-
-    if config.cache_size.as_u64() > 0 {
-        // let cache_path = config.cache_dir.join(HTTP_CACHE_FILE);
-
-        // create_dir_all(&config.cache_dir).map_err(|error| {
-        //     color_eyre::eyre::eyre!(
-        //         "unable to create cache directory: {error}; disable cache by setting `cache_size = \"0\"`"
-        //     )
-        // })?;
-        // let cache_db = redb::Builder::new()
-        //     .set_cache_size(config.cache_size.as_u64().try_into()?)
-        //     .set_concurrency_mode(redb::ConcurrencyMode::MultiWriter)
-        //     .create(cache_path)?;
-        // let redb_manager = RedbManager::from_database(Arc::new(cache_db))
-        //     .map_err(|error| color_eyre::eyre::eyre!("unable to open cache file: {error}"))?;
-
-        let moka_manager = MokaManager::new(MokaCache::new(config.cache_size.as_u64()));
-
-        let cache_middleware = http_cache_reqwest::Cache(http_cache_reqwest::HttpCache {
-            mode: http_cache_reqwest::CacheMode::Default,
-            manager: moka_manager,
-            options: http_cache_reqwest::HttpCacheOptions::default(),
-        });
-
-        client_builder = client_builder.with(cache_middleware);
-    }
-
-    Ok(client_builder.build())
-}
-
 #[rustfmt::skip]
 impl NewsFlashUtils {
     pub fn new(
+        config: &Config,
         news_flash: NewsFlash,
         client: Client,
-        client_with_cache: ClientWithMiddleware,
         message_sender: UnboundedSender<Message>,
     ) -> Self {
         debug!("Creating NewsFlashUtils");
@@ -164,8 +128,12 @@ impl NewsFlashUtils {
             news_flash_lock: Arc::new(RwLock::new(news_flash)),
             client_lock: Arc::new(RwLock::new(client)),
             message_sender,
-            client_with_cache: Arc::new(client_with_cache),
-            client_with_cache_count_semaphore: Arc::new(Semaphore::new(5)),
+            client_get_request_semaphore: Arc::new(Semaphore::new(5)),
+            image_cache: Arc::new(RwLock::new(
+                    mini_moka::sync::CacheBuilder::new(
+                        config.article_image_cache_size.as_u64())
+                    .weigher(|_:&String, dynamic_image: &Arc<DynamicImage>| dynamic_image.width()*dynamic_image.height())
+                    .build())),
             undo_stack_lock: Default::default(),
             async_operation_mutex: Arc::new(Mutex::new(())),
         }
@@ -750,47 +718,66 @@ impl NewsFlashUtils {
     }
 
     pub fn fetch_image_with_cache(&self, url: &str, max_width: u32, max_height: u32, border_radius: u32, shadow_color: Color, shadow_width: u32) {
-        let client = Arc::clone(&self.client_with_cache);
         let url = url.to_string();
         let message_sender = self.message_sender.clone();
-        let count_semaphore = Arc::clone(&self.client_with_cache_count_semaphore);
+        let count_semaphore = Arc::clone(&self.client_get_request_semaphore);
+        let client_lock = Arc::clone(&self.client_lock);
+        let image_cache_lock = Arc::clone(&self.image_cache);
 
         tokio::spawn(async move {
             if let Err(error) = async {
-                let _permit = count_semaphore
-                    .acquire_owned()
-                    .await
-                    .map_err(|error| color_eyre::eyre::eyre!("unable to acquire lock: {error}"))?;
 
-                let response = client.get(&url).send().await?;
 
-                if !response.status().is_success() {
-                    Err(color_eyre::eyre::eyre!(response.status().to_string()))?
-                }
+                let image_cache = image_cache_lock.read().await;
+                let cached_image = image_cache.get(&url.to_owned());
+                drop(image_cache);
 
-                // now get the binary data
-                let bytes = Cursor::new(response.bytes().await.map_err(|error| {
-                    color_eyre::eyre::eyre!("couldn't read image data from response: {error}")
-                })?);
+                let image: Arc<DynamicImage> = {
+                    if let Some(image) = cached_image {
+                        image
+                    } else {
+                        let _permit = count_semaphore
+                            .acquire_owned()
+                            .await
+                            .map_err(|error| color_eyre::eyre::eyre!("unable to acquire lock: {error}"))?;
+                        let client = client_lock.read().await;
 
-                // try to read into a image
-                let mut image = ImageReader::new(bytes)
-                    .with_guessed_format()
-                    .map_err(|error| {
-                        color_eyre::eyre::eyre!("unable to guess image format: {error}")
-                    })?
-                    .decode()
-                    .map_err(|error| color_eyre::eyre::eyre!("unable to decode image: {error}"))?;
+                        let response = client.get(&url).send().await?;
 
-                    if image.width()+shadow_width > max_width || image.height()+shadow_width > max_height {
-                        image = spawn_blocking(move ||{
-                            image.resize(max_width.saturating_sub(shadow_width), max_height.saturating_sub(shadow_width), imageops::FilterType::Nearest)
+                        if !response.status().is_success() {
+                            Err(color_eyre::eyre::eyre!(response.status().to_string()))?
+                        }
 
-                        }).await.map_err(|error| color_eyre::eyre::eyre!("unable to resize image: {error}"))?;
-                }
+                        // now get the binary data
+                        let bytes = Cursor::new(response.bytes().await.map_err(|error| {
+                            color_eyre::eyre::eyre!("couldn't read image data from response: {error}")
+                        })?);
+
+                        // try to read into a image
+                        let mut image = ImageReader::new(bytes)
+                            .with_guessed_format()
+                            .map_err(|error| {
+                                color_eyre::eyre::eyre!("unable to guess image format: {error}")
+                            })?
+                        .decode()
+                            .map_err(|error| color_eyre::eyre::eyre!("unable to decode image: {error}"))?;
+
+                        if image.width()+shadow_width > max_width || image.height()+shadow_width > max_height {
+                            image = spawn_blocking(move ||{
+                                image.resize(max_width.saturating_sub(shadow_width), max_height.saturating_sub(shadow_width), imageops::FilterType::Nearest)
+
+                            }).await.map_err(|error| color_eyre::eyre::eyre!("unable to resize image: {error}"))?;
+
+                        }
+
+                        let image_arc = Arc::new(image);
+                        image_cache_lock.write().await.insert(url.to_owned(), Arc::clone(&image_arc));
+                        image_arc
+                    }
+                };
 
                 let image = spawn_blocking(move || {
-                    add_drop_shadow(image, shadow_color, shadow_width, border_radius)
+                    add_drop_shadow(&image, shadow_color, shadow_width, border_radius)
                 }).await.map_err(|error| color_eyre::eyre::eyre!("unable to add border to image: {error}"))?;
 
                 message_sender

@@ -13,7 +13,7 @@ mod share_target;
 mod sync_stats;
 mod theme;
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::prelude::*;
 
@@ -176,10 +176,7 @@ pub struct Config {
     pub article_image_rounded_corners: bool,
     pub article_image_drop_shadow: bool,
 
-    pub cache_dir: PathBuf,
-    pub state_dir: PathBuf,
-
-    pub cache_size: ByteSize,
+    pub article_image_cache_size: ByteSize,
 
     pub feeds_label: String,
     pub last_synced_label: String,
@@ -293,14 +290,7 @@ impl Default for Config {
             article_image_height: Dimension::Percentage(30),
             article_image_rounded_corners: true,
             article_image_drop_shadow: true,
-
-            cache_dir: PROJECT_DIRS.cache_dir().to_path_buf(),
-            state_dir: PROJECT_DIRS
-                .state_dir()
-                .unwrap_or_else(|| PROJECT_DIRS.data_local_dir())
-                .to_path_buf(),
-
-            cache_size: ByteSize::gib(1),
+            article_image_cache_size: ByteSize::mib(512),
 
             feeds_label: "{icon} All {unread_count}".into(),
             feed_label: "{icon} {label} {unread_count}".into(),

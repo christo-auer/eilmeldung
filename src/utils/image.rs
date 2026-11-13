@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 // use crate::prelude::*;
 use crate::prelude::*;
 use image::{DynamicImage, Pixel, Rgb, RgbaImage};
@@ -110,7 +112,7 @@ pub fn round_corners_with_shift(
 }
 
 pub fn add_drop_shadow(
-    img: DynamicImage,
+    img: &DynamicImage,
     color: Color,
     shadow_width: u32,
     border_radius: u32,
@@ -129,29 +131,31 @@ pub fn add_drop_shadow(
         img.height() as f32,
         border_radius as f32,
     );
-    let mut img = img.into_rgba8();
-    round_corners(&mut img, border_radius);
 
-    image::imageops::overlay(&mut background, &img, 0, 0);
+    let mut rgba_image = img.to_rgba8();
+
+    round_corners(&mut rgba_image, border_radius);
+
+    image::imageops::overlay(&mut background, &mut rgba_image, 0, 0);
 
     DynamicImage::ImageRgba8(background)
 }
 
-pub fn apply_image_enhancements(
-    mut img: DynamicImage,
+pub fn apply_image_enhancements<'a>(
+    img: &'a DynamicImage,
     picker: &ratatui_image::picker::Picker,
     config: &Config,
-) -> DynamicImage {
+) -> Cow<'a, DynamicImage> {
     if config.article_image_drop_shadow || config.article_image_rounded_corners {
-        img = add_drop_shadow(
-            img,
+        Cow::Owned(add_drop_shadow(
+            &img,
             config.theme.color_palette().image_drop_shadow,
             to_drop_shadow_width(config, picker),
             to_corner_radius(config, picker),
-        );
+        ))
+    } else {
+        Cow::Borrowed(img)
     }
-
-    img
 }
 
 pub fn to_drop_shadow_width(config: &Config, picker: &ratatui_image::picker::Picker) -> u32 {

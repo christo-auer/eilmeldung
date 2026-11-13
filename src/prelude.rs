@@ -9,9 +9,7 @@ pub use ratatui::widgets::*;
 pub use super::cli::{CliArgs, execute_cli_actions};
 
 pub use super::messages::prelude::*;
-pub use super::newsflash_utils::{
-    NewsFlashUtils, build_client, build_client_with_cache, login_news_flash,
-};
+pub use super::newsflash_utils::{NewsFlashUtils, build_client, login_news_flash};
 pub use super::query::prelude::*;
 
 pub use super::login::LoginSetup;
