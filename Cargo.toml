@@ -68,7 +68,7 @@ limner = { version = "0.10.0", features = ["image-protocol", "syntax-highlightin
 bytes = "1.12.1"
 http-cache-reqwest = "1.0.0-alpha.10"
 reqwest-middleware = "0.5.2"
-redb = "4.4.0"
+redb = "4.5.0"
 bytesize = { version = "2.7.0", features = ["serde"] }
 html-to-markdown-rs = "3.19.1"
 
