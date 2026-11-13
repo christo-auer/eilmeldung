@@ -13,7 +13,7 @@ mod share_target;
 mod sync_stats;
 mod theme;
 
-use std::path::Path;
+use std::{path::Path, sync::LazyLock};
 
 use crate::prelude::*;
 
@@ -47,11 +47,9 @@ pub mod prelude {
     pub use super::{ArticleContentType, ArticleScope, Config, ConfigError};
 }
 
-use once_cell::sync::Lazy;
-
-static HINT_CHARS: Lazy<Vec<char>> = Lazy::new(|| vec!['F', 'J', 'G', 'H', 'D', 'K']);
-static HINT_NUMBERS: Lazy<Vec<char>> =
-    Lazy::new(|| vec!['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+static HINT_CHARS: LazyLock<Vec<char>> = LazyLock::new(|| vec!['F', 'J', 'G', 'H', 'D', 'K']);
+static HINT_NUMBERS: LazyLock<Vec<char>> =
+    LazyLock::new(|| vec!['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 
 #[derive(thiserror::Error, Debug)]
 pub enum ConfigError {
