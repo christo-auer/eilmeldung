@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 // use crate::prelude::*;
 use crate::prelude::*;
 use image::{DynamicImage, Pixel, Rgb, RgbaImage};
@@ -141,20 +139,20 @@ pub fn add_drop_shadow(
     DynamicImage::ImageRgba8(background)
 }
 
-pub fn apply_image_enhancements<'a>(
-    img: &'a DynamicImage,
+pub fn apply_image_enhancements(
+    img: DynamicImage,
     picker: &ratatui_image::picker::Picker,
     config: &Config,
-) -> Cow<'a, DynamicImage> {
+) -> DynamicImage {
     if config.article_image_drop_shadow || config.article_images_rounded_corners {
-        Cow::Owned(add_drop_shadow(
-            img,
+        add_drop_shadow(
+            &img,
             config.theme.color_palette().image_drop_shadow,
             to_drop_shadow_width(config, picker),
             to_corner_radius(config, picker),
-        ))
+        )
     } else {
-        Cow::Borrowed(img)
+        img
     }
 }
 

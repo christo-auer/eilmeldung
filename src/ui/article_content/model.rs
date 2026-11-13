@@ -162,7 +162,7 @@ impl ArticleContentModelData {
         let cursor = Cursor::new(data);
         let mut image = ImageReader::new(cursor).with_guessed_format()?.decode()?;
 
-        image = apply_image_enhancements(&image, picker, config).into_owned();
+        image = apply_image_enhancements(image, picker, config);
 
         Ok(picker.new_resize_protocol(image))
     }
