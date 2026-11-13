@@ -40,7 +40,6 @@ async fn main() -> color_eyre::Result<()> {
 
     info!("Initializing NewsFlash");
     let client = build_client(Duration::from_secs(config.network_timeout_seconds))?;
-    let client_with_cache = build_client_with_cache(&config)?;
 
     let mut news_flash = login_news_flash(&client, &cli_args, &config).await?;
 
@@ -48,6 +47,9 @@ async fn main() -> color_eyre::Result<()> {
     if execute_cli_actions(&config, &cli_args, &mut news_flash, &client).await? {
         return Ok(());
     }
+
+    // execute here to avoid locking the HTTP cache DB when carrying out CLI actions
+    let client_with_cache = build_client_with_cache(&config)?;
 
     info!("Initializing terminal");
     let terminal = ratatui::init();
