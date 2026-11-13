@@ -3,7 +3,7 @@
 - *eilmeldung* now supports displaying images in the article! 
   - This was made possible by the awesome [limner crate](https://github.com/Sylviromi/limner) developed by @Sylviromi. Please also check out Sylviromi's terminal RSS reader [brochure](https://github.com/Sylviromi/brochure) and give it a star!
   - by default, images are loaded automatically as soon as they become visible when viewing the scraped content
-  - if you don't want this, set `auto_load_articles_images = false`. You can instead *lazy-load* images by the new command `imageload hint <url-hint>` (mapped to `; p`) of the given URL hint or call `imageload visible` to load all images which are currently visible or nearly visible (mapped to `P`)
+  - if you don't want this, set `auto_load_article_images = false`. You can instead *lazy-load* images by the new command `imageload hint <url-hint>` (mapped to `; p`) of the given URL hint or call `imageload visible` to load all images which are currently visible or nearly visible (mapped to `P`)
   - in order to better set off images from the rest of the content, each image is rendered with a small drop shadow and with rounded corners (of course, you can deactivate all this)
   - I went a bit overboard with the colors: the drop shadow's color changes with the theme and so is the new placeholder image. I hope that you appreciate all this attention to detail (made by hand and with love). BTW you change the color of the drop shadow by setting `theme.color_palette.image_drop_shadow`
   - please also checkout `docs/configuration.md` for all settings related to image displaying
