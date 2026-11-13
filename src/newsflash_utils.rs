@@ -149,7 +149,7 @@ pub fn build_client_with_cache(config: &Config) -> color_eyre::Result<ClientWith
     Ok(client_builder.build())
 }
 
-#[rustfmt::skip]        
+#[rustfmt::skip]
 impl NewsFlashUtils {
     pub fn new(
         news_flash: NewsFlash,
