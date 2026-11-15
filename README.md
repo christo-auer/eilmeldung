@@ -1,4 +1,4 @@
-# *eilmeldung* TUI RSS reader
+# *eilmeldung* hand-made terminal RSS/News Reader
 
 ![GitHub Release](https://img.shields.io/github/v/release/christo-auer/eilmeldung)
 ![Crates.io Version](https://img.shields.io/crates/v/eilmeldung)
