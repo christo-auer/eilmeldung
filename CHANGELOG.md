@@ -11,7 +11,7 @@
 - in order to make image fetching faster, *eilmeldung* uses an in-memory HTTP cache whose size you can set with `article_images_cache_size` (`512MiB` by default).
 - some more changes
   - dimensions now also allow the alias `units` for `length`
-  - changed to another http-to-markdown converter (`http-to-markdown-rs`)
+  - changed to another html-to-markdown converter (`html-to-markdown-rs`)
 
 
 # 1.10.1 - 2026-11-11

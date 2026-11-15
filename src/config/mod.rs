@@ -174,7 +174,7 @@ pub struct Config {
     pub article_images_auto_load: bool,
     pub article_images_height: Dimension,
     pub article_images_rounded_corners: bool,
-    pub article_image_drop_shadow: bool,
+    pub article_images_drop_shadow: bool,
 
     pub article_images_cache_size: ByteSize,
 
@@ -289,7 +289,7 @@ impl Default for Config {
             article_images_auto_load: true,
             article_images_height: Dimension::Percentage(30),
             article_images_rounded_corners: true,
-            article_image_drop_shadow: true,
+            article_images_drop_shadow: true,
             article_images_cache_size: ByteSize::mib(512),
 
             feeds_label: "{icon} All {unread_count}".into(),
