@@ -7,7 +7,7 @@
   - in order to better set off images from the rest of the content, each image is rendered with a small drop shadow and with rounded corners (of course, you can deactivate all this)
   - I went a bit overboard with the colors: the drop shadow's color changes with the theme and so is the new placeholder image. I hope that you appreciate all this attention to detail (made by hand and with love). BTW you change the color of the drop shadow by setting `theme.color_palette.image_drop_shadow`
   - please also checkout `docs/configuration.md` for all settings related to image displaying
-- You won't believe this but the display style of links, urls and hints in articles was not configurable! I made up for this by introducing new style settings `link`
+- You won't believe this but the display style of links, urls and hints in articles was not configurable! I made up for this by introducing new style settings `link_*`
 - in order to make image fetching faster, *eilmeldung* uses an in-memory HTTP cache whose size you can set with `article_images_cache_size` (`512MiB` by default).
 - some more changes
   - dimensions now also allow the alias `units` for `length`
