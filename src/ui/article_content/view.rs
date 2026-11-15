@@ -65,14 +65,13 @@ pub struct ArticleContentViewData {
 }
 
 impl ArticleContentViewData {
-    pub fn new(news_flash_utils: Arc<NewsFlashUtils>, config: &Config) -> Self {
-        let picker = Picker::from_query_stdio().unwrap();
+    pub fn new(news_flash_utils: Arc<NewsFlashUtils>, config: &Config, picker: Picker) -> Self {
         Self {
             vertical_scroll: 0,
             max_scroll: 0,
             image: None,
             placeholder_image: Self::prepare_placeholder_image(&picker, config),
-            picker: picker.clone(),
+            picker,
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
             url_for_hint: Default::default(),

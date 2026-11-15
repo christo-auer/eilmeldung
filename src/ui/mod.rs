@@ -37,6 +37,7 @@ use news_flash::models::ArticleID;
 use notify_rust::{Notification, Timeout};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::Event as TermEvent;
+use ratatui_image::picker::Picker;
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::{path::Path, sync::Arc, time::Duration};
@@ -78,6 +79,7 @@ impl App {
         config_file_manager: ConfigFileManager,
         news_flash_utils: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
+        picker: Picker,
     ) -> Self {
         debug!("Creating new App instance");
         let config_arc = Arc::new(config);
@@ -112,6 +114,7 @@ impl App {
                 Arc::clone(&config_arc),
                 news_flash_utils.clone(),
                 message_sender.clone(),
+                picker,
             ),
             command_input: CommandInput::new(
                 Arc::clone(&config_arc),
