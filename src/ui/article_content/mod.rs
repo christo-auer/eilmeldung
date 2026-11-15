@@ -11,7 +11,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use url::Url;
 use view::ArticleContentViewData;
 
-use crate::prelude::*;
+use crate::{prelude::*, ui::article_content::view::HintTarget};
 use std::sync::Arc;
 
 use news_flash::models::{ArticleID, Enclosure, Thumbnail};
@@ -261,7 +261,7 @@ impl ArticleContent {
             _ => unreachable!(),
         };
 
-        let Some(url) = self
+        let Some(hint_target) = self
             .view_data
             .url_for_hint()
             .get(&hint.to_uppercase())
@@ -271,7 +271,8 @@ impl ArticleContent {
             return Ok(());
         };
 
-        let url_result = Url::parse(&url);
+        let url = hint_target.url();
+        let url_result = Url::parse(url);
 
         let Ok(_parsed_url) = url_result else {
             tooltip(
@@ -292,7 +293,7 @@ impl ArticleContent {
 
         match command {
             Command::ContentFollowHint(..) => {
-                if let Err(err) = webbrowser::open(url.as_ref()) {
+                if let Err(err) = webbrowser::open(url) {
                     tooltip(
                         &self.message_sender,
                         &*format!("unable to open webbrowser: {err}"),
@@ -301,10 +302,18 @@ impl ArticleContent {
                 }
             }
             Command::ContentShareHint(target_str, ..) => {
-                self.share_url(target_str, &title, &url)?;
+                self.share_url(target_str, &title, url)?;
             }
             Command::ContentImageLoad(..) => {
-                self.view_data.load_image(&url);
+                if !matches!(hint_target, HintTarget::Image(..)) {
+                    tooltip(
+                        &self.message_sender,
+                        "this hint does not point to an image",
+                        TooltipFlavor::Error,
+                    )?;
+                } else {
+                    self.view_data.load_image(url);
+                }
             }
             _ => {}
         }

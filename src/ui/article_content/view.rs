@@ -17,6 +17,21 @@ use throbber_widgets_tui::{Throbber, ThrobberState, WhichUse};
 const NO_THUMB_PLACEHOLDER: &[u8] =
     include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/no-thumb.png"));
 
+#[derive(Clone, Hash, Eq, PartialEq)]
+pub(super) enum HintTarget {
+    Image(String),
+    Web(String),
+}
+
+impl HintTarget {
+    pub(super) fn url(&self) -> &str {
+        match self {
+            HintTarget::Image(url) => url,
+            HintTarget::Web(url) => url,
+        }
+    }
+}
+
 #[derive(Getters, MutGetters)]
 pub struct ArticleContentViewData {
     // Scroll state
@@ -44,7 +59,7 @@ pub struct ArticleContentViewData {
     thumbnail_fetching_throbber: ThrobberState,
 
     #[getset(get = "pub(super)", get_mut = "pub(super)")]
-    pub(super) url_for_hint: HashMap<String, String>,
+    pub(super) url_for_hint: HashMap<String, HintTarget>,
     // needed to fetch article images
     news_flash_utils: Arc<NewsFlashUtils>,
 }

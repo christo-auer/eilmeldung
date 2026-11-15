@@ -1,6 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::{prelude::*, ui::article_content::view::ArticleContentViewData};
+use crate::{
+    prelude::*,
+    ui::article_content::view::{ArticleContentViewData, HintTarget},
+};
 use limner::{
     MarkdownStyle, RenderResult, SpanFormatter, render_image::ImageStore, render_markdown,
 };
@@ -34,7 +37,7 @@ impl ArticleContentViewData {
         width: u16,
         config: &Config,
     ) -> RenderResult {
-        let url_for_hint = Arc::new(Mutex::new(HashMap::<String, String>::new()));
+        let url_for_hint = Arc::new(Mutex::new(HashMap::<String, HintTarget>::new()));
         let iterator = config.hint_type.iter();
         let hint_iterator = Arc::new(Mutex::new(iterator));
         let show_url = config.content_show_urls;
@@ -61,7 +64,7 @@ impl ArticleContentViewData {
             let hint = inner_link_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
             url_for_hint
                 .entry(hint.to_owned())
-                .or_insert(element.url.to_owned());
+                .or_insert(HintTarget::Web(element.url.to_owned()));
 
             Self::format_link(
                 url_icon,
@@ -80,7 +83,7 @@ impl ArticleContentViewData {
             let hint = inner_image_hint_iterator.lock().unwrap().next().unwrap(); // unwrap is save here: locking with sync calls
             url_for_hint
                 .entry(hint.to_owned())
-                .or_insert(element.url.to_owned());
+                .or_insert(HintTarget::Image(element.url.to_owned()));
             Self::format_link(
                 image_icon,
                 &hint,
@@ -129,7 +132,7 @@ impl ArticleContentViewData {
             self.url_for_hint
                 .iter()
                 .map(|(hint, url)| (url.to_owned(), hint.to_owned()))
-                .collect::<HashMap<String, String>>(),
+                .collect::<HashMap<HintTarget, String>>(),
         );
         let hint_for_url_failed = Arc::clone(&hint_for_url_loading);
         let alt_style = config.theme.link_text_style();
@@ -141,7 +144,7 @@ impl ArticleContentViewData {
             ImageStore::new(self.picker.clone())
                 .with_loading_line(move |pending_image| {
                     let hint = hint_for_url_loading
-                        .get(&pending_image.info.url)
+                        .get(&HintTarget::Image(pending_image.info.url.to_owned()))
                         .map(String::as_str)
                         .unwrap_or_default();
                     Self::format_link(
@@ -158,7 +161,7 @@ impl ArticleContentViewData {
                 })
                 .with_failed_line(move |pending_image| {
                     let hint = hint_for_url_failed
-                        .get(&pending_image.info.url)
+                        .get(&HintTarget::Image(pending_image.info.url.to_owned()))
                         .map(String::as_str)
                         .unwrap_or_default();
                     Self::format_link(
