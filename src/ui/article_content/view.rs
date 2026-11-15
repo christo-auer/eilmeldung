@@ -341,9 +341,49 @@ impl ArticleContentViewData {
         paragraph.render(header_chunk, buf);
     }
 
+    pub fn article_layout(
+        area: Rect,
+        distraction_free: bool,
+        config: &Config,
+    ) -> (Option<Rect>, Rect) {
+        let show_header = !distraction_free || config.zen_mode_show_header;
+
+        let text_constraint = if distraction_free {
+            Constraint::Max(config.text_max_width)
+        } else {
+            Constraint::Percentage(100)
+        };
+
+        let [header_area, content_area] = Layout::default()
+            .direction(Direction::Vertical)
+            .flex(Flex::Start)
+            .constraints([
+                Constraint::Length(if show_header { 5 } else { 0 }),
+                Constraint::Fill(1),
+            ])
+            .horizontal_margin(2)
+            .vertical_margin(1)
+            .spacing(1)
+            .areas::<2>(area);
+
+        let text_area = |available_area: Rect| {
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .flex(ratatui::layout::Flex::Center)
+                .constraints([text_constraint])
+                .areas::<1>(available_area)[0]
+        };
+
+        (
+            show_header.then(|| text_area(header_area)),
+            text_area(content_area),
+        )
+    }
+
     pub(super) fn render_summary(
         &mut self,
         model_data: &ArticleContentModelData,
+        distraction_free: bool,
         config: &Config,
         inner_area: Rect,
         buf: &mut Buffer,
@@ -352,22 +392,14 @@ impl ArticleContentViewData {
             return;
         };
 
-        let [header_chunk, summary_chunk] = Layout::default()
-            .direction(Direction::Vertical)
-            .flex(ratatui::layout::Flex::Start)
-            .constraints([
-                config.thumbnail_height.as_constraint(),
-                config
-                    .thumbnail_height
-                    .as_complementary_constraint(inner_area.width.saturating_sub(3)),
-            ])
-            .horizontal_margin(2)
-            .vertical_margin(1)
-            .spacing(1)
-            .areas::<2>(inner_area);
-
         self.scrollbar_state = ScrollbarState::default();
-        self.render_header(model_data, config, header_chunk, buf);
+
+        let (header_area, summary_chunk) =
+            Self::article_layout(inner_area, distraction_free, config);
+
+        if let Some(header_area) = header_area {
+            self.render_header(model_data, config, header_area, buf);
+        }
 
         let mut summary = article.summary.clone().unwrap_or("".into());
         summary = ArticleContentModelData::clean_string(&summary);
@@ -439,42 +471,14 @@ impl ArticleContentViewData {
         inner_area: Rect,
         buf: &mut Buffer,
     ) {
-        let show_header = !distraction_free || config.zen_mode_show_header;
-
         let vertical_scroll = self.vertical_scroll;
 
-        let [summary_area, content_area] = Layout::default()
-            .direction(Direction::Vertical)
-            .flex(Flex::Start)
-            .constraints([
-                Constraint::Length(if show_header { 5 } else { 0 }),
-                Constraint::Fill(1),
-            ])
-            .horizontal_margin(2)
-            .vertical_margin(1)
-            .spacing(1)
-            .areas::<2>(inner_area);
+        let (header_area, paragraph_area) =
+            Self::article_layout(inner_area, distraction_free, config);
 
-        let text_constraint = if distraction_free {
-            Constraint::Max(config.text_max_width)
-        } else {
-            Constraint::Percentage(100)
-        };
-
-        if show_header {
-            let [header_area] = Layout::default()
-                .direction(Direction::Horizontal)
-                .flex(ratatui::layout::Flex::Center)
-                .constraints([text_constraint])
-                .areas(summary_area);
+        if let Some(header_area) = header_area {
             self.render_header(model_data, config, header_area, buf);
         }
-
-        let [paragraph_area] = Layout::default()
-            .direction(Direction::Horizontal)
-            .flex(ratatui::layout::Flex::Center)
-            .constraints([text_constraint])
-            .areas(content_area);
 
         // prefer filtered content
         let markdown = model_data
@@ -649,8 +653,13 @@ impl Widget for &mut ArticleContent {
                 buf,
             );
         } else if self.model_data.article().is_some() {
-            self.view_data
-                .render_summary(&self.model_data, &self.config, inner_area, buf);
+            self.view_data.render_summary(
+                &self.model_data,
+                self.is_distraction_free,
+                &self.config,
+                inner_area,
+                buf,
+            );
         }
     }
 }
