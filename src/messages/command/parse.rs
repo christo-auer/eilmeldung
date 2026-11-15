@@ -237,6 +237,9 @@ impl Command {
             C::ActionFlagInvert(..) => {
                 C::ActionFlagInvert(ActionScope::from_option_string(args.as_deref())?)
             }
+            C::ActionScrape(..) => {
+                C::ActionScrape(ActionScope::from_option_string(args.as_deref())?)
+            }
             tag_command @ (C::ActionTagArticles(..) | C::ActionUntagArticles(..)) => {
                 let tag =
                     expect_word(&mut args, "expecting tag name").map_err(|_| E::TagExpected)?;

@@ -367,7 +367,7 @@ impl crate::messages::MessageReceiver for ArticleContent {
                     self.view_data.scroll_to_bottom();
                 }
 
-                C::ArticleCurrentScrape => {
+                C::ActionScrape(ActionScope::Current) if handle_command => {
                     self.scrape_article()?;
                 }
 

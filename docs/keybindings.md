@@ -97,7 +97,7 @@ This document provides a comprehensive reference of all default key bindings in 
 | `o` | Open article in browser, mark as read, and jump to next unread    |
 | `O` | Open all unread articles in browser and mark all as read          |
 | `y` | Copy article URL to clipboard                                     |
-| `x` | Scrape full article content from the web (for truncated articles) |
+| `x` | Scrape full article content from the web                          |
 | `S` | Share article (opens command line with share targets)             |
 | `e` | Open (default) enclosure                                          |
 | `E` | Open enclosure (opens command line with enclosure type)           |
@@ -165,6 +165,16 @@ You can flag (select) articles to execute bulk-operations like read, unread, mar
 After flagging article, you can bulk-execute any of the above commands on them (`r` for `read`, `m` for `mark`, `t` for `tag`, you get it).
 
 **Note**: To flag all articles *above* and including the current article, press `0 f`; for all articles after `$ f` etc. This also works for `d` and `i`.
+
+## Scraping Articles 
+
+| Key     | Action                                                                             |
+| -----   | --------                                                                           |
+| `x`     | Scrapes current article displayed in content                                       |
+| `Alt-x` | Open command line with `in articles scrape` for scraping articles based on a query |
+
+
+**Note**: To scrape all articles *above* and including the current article, press `0 x`; for all articles after `$ x` etc. 
 
 ---
 

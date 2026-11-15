@@ -12,6 +12,11 @@
 - some more changes
   - dimensions now also allow the alias `units` for `length`
   - changed to another html-to-markdown converter (`html-to-markdown-rs`)
+  - the `scrape` command now accepts an action scope just like `read`, `unread`, `tag`, etc.
+    - `scrape` (pressing `x`) executed in the content panel just scrapes the current article (as before)
+    - `scrape` (pressing `x`) executed in the articles list scrapes the currently selected articles or all flagged articles
+    - `scrape unread` downloads the content of all unread articles (in article list)
+    - you can also call `scrape` in `after_sync_commands` to automatically download of articles into the local database
 
 
 # 1.10.1 - 2026-11-11

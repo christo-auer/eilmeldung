@@ -45,6 +45,9 @@ pub enum Event {
     AsyncArticleFatFetch,
     AsyncArticleFatFetchFinished(FatArticle),
 
+    AsyncScrapeArticles,
+    AsyncScrapeArticlesFinished(Vec<ArticleID>),
+
     AsyncPipeArticle,
     AsyncPipeArticleFinished(ArticleID, ExitStatus, Option<String>, Option<String>),
 

@@ -239,6 +239,18 @@ impl NewsFlashUtils {
     }
 
     gen_async_call! {
+        method_name: scrape_articles,
+        params: (article_ids: Vec<ArticleID>),
+        news_flash_var: news_flash,
+        client_var: client,
+        undo_stack_var: _undo_stack,
+        start_event: Event::AsyncScrapeArticles,
+        operation: news_flash.scrap_content_articles(article_ids.to_owned(), &client).await?,
+        success_event: Event::AsyncScrapeArticlesFinished(article_ids),
+    }
+    
+
+    gen_async_call! {
         method_name: set_article_status,
         params: (article_ids: Vec<ArticleID>, read: Read, undoable: bool),
         news_flash_var: news_flash,

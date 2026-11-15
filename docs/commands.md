@@ -176,7 +176,6 @@ Here are some common command examples to get you started:
 | `sort` | `sort <sort order>` | Article List | Sort the article list by the specified sort order. Examples: `:sort date`, `:sort >date`, `:sort feed title`, `:sort <feed >date author` |
 | `sortreverse` | `sortreverse` | Article List | Reverse the current sort order (newest <-> oldest, A-Z <-> Z-A). Toggle between ascending and descending |
 | `sortclear` | `sortclear` | Article List | Clear the current sort order and restore the default sort order |
-| `scrape` | `scrape` | Article List, Article Content | Scrape the full article content from the web (for articles with truncated content) |
 
 ## Article Actions
 
@@ -202,10 +201,11 @@ These commands support a **scope parameter** to target specific articles:
 | `tag`           | `tag <tag name> [<scope>]`                   | Article List                  | Add tag to articles. Examples: `:tag important` (current), `:tag tech unread` (all unread), `:tag news %` (all articles)                                                                                            |
 | `untag`         | `untag <tag name> [<scope>]`                 | Article List                  | Remove tag from articles. Examples: `:untag important` (current), `:untag tech marked` (all marked)                                                                                                                 |
 | `share`         | `share <target>`                             | Article List, Article Content | Share article title and URL. Built-in targets: `clipboard`, `reddit`, `mastodon`, `telegram`, `instapaper`. Custom targets (URL and commands) can be defined in the configuration file. Example: `:share clipboard` |
+| `scrape`        | `scrape [<scope>]`                           | Article List, Article Content | Scrape full content of articles and save content into local database.                                                                                                                                               |
 | `hintfollow`    | `hintfollow <hint>`                          | Article Content               | Open the hint in the web browser. Example: `hintfollow f` opens the URL with hint `f`                                                                                                                               |
 | `hintshare`     | `hintshare <target> <hint>`                  | Article Content               | Shares the URL to which the hint points with the given target, e.g., `hintshare clipboard h` copies the URL with hint `h` to the clipboard                                                                          |
 | `pipe`          | `pipe <in> <out> <command>`                  | Article Content               | Pipes the content of the article (type defined by `in`) through the given shell command and displays the output (type defined by `out`); see also [here](pipe.md)                                                   |
-| `imageload`     | `imageload hint <hint>`, `imageload visible` | Article Content                | Loads the image of the given URL hint or all currently visible images (`visible`)                                                                                                                                   |
+| `imageload`     | `imageload hint <hint>`, `imageload visible` | Article Content               | Loads the image of the given URL hint or all currently visible images (`visible`)                                                                                                                                   |
 
 
 **Note:** By default, the commands `show`, `read` and `unread` are executed in the currently focused panel (feeds or articles). If you want to execute the command in a specific panel, use the `in` meta command, e.g., `in articles read %`, `in feeds show all`, etc.
