@@ -363,7 +363,7 @@ impl ArticleContentViewData {
             ])
             .horizontal_margin(2)
             .vertical_margin(1)
-            .spacing(1)
+            .spacing(if show_header { 1 } else { 0 })
             .areas::<2>(area);
 
         let text_area = |available_area: Rect| {
