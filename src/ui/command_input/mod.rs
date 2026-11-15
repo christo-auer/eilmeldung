@@ -167,6 +167,9 @@ impl CommandInput {
                 self.generate_help_content_enclosure_type(&current_part)?
             }
             Err(E::PipeTargetExpected) => self.generate_help_content_pipe_target(&current_part)?,
+            Err(E::LoadImageArgExpected(..)) => {
+                self.generate_help_content_image_load_arg(&current_part)?
+            }
 
             Err(E::ShareTargetExpected) => {
                 self.generate_help_content_share_target(&current_part)?
@@ -735,6 +738,19 @@ impl CommandInput {
             |panel| Some(panel.as_ref().to_owned()),
             |panel| panel.get_message().unwrap_or_default().to_owned(),
             |panel| panel.get_detailed_message().unwrap_or_default().to_owned(),
+        )
+    }
+
+    fn generate_help_content_image_load_arg(
+        &mut self,
+        current_part: &str,
+    ) -> color_eyre::Result<()> {
+        self.generate_help_content_enum::<ImageLoadArg>(
+            current_part,
+            "Image Load Argument",
+            |scope| Some(scope.as_ref().to_owned()),
+            |scope| scope.get_message().unwrap_or_default().to_owned(),
+            |scope| scope.get_detailed_message().unwrap_or_default().to_owned(),
         )
     }
 

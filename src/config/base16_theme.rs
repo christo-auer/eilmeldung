@@ -270,6 +270,8 @@ pub struct Base16ToColorPaletteMapping {
     pub(crate) info: Base16Index,
     pub(crate) warning: Base16Index,
     pub(crate) error: Base16Index,
+
+    pub(crate) image_drop_shadow: Base16Index,
 }
 
 impl Base16Palette {
@@ -288,6 +290,8 @@ impl Base16Palette {
             info: self[mapping.info()],
             warning: self[mapping.warning()],
             error: self[mapping.error()],
+
+            image_drop_shadow: self[mapping.image_drop_shadow()],
         }
     }
 }
@@ -318,6 +322,8 @@ impl Base16ToColorPaletteMapping {
                 info: I::Base0B,
                 warning: I::Base0A,
                 error: I::Base08,
+
+                image_drop_shadow: I::Base0B,
             },
             Base16ThemePolarity::Light => Self {
                 background: I::Base00,
@@ -333,6 +339,8 @@ impl Base16ToColorPaletteMapping {
                 info: I::Base0B,
                 warning: I::Base0A,
                 error: I::Base08,
+
+                image_drop_shadow: I::Base0B,
             },
         }
     }

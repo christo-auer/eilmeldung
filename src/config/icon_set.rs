@@ -24,6 +24,8 @@ pub struct IconSet {
     url: Option<char>,
     big_icon_left: Option<char>,
     big_icon_right: Option<char>,
+    loading: Option<char>,
+    image_failed: Option<char>,
 
     // Feed and List Labels
     feeds: Option<char>,
@@ -86,10 +88,15 @@ impl IconSet {
     icon_property!(enclosure_audio, '', 'A');
     icon_property!(enclosure_image, '', 'I');
     icon_property!(flagged, '', '*');
-    icon_property!(image, '', 'I');
-    icon_property!(url, '', 'L');
     icon_property!(big_icon_left, '', ' ');
     icon_property!(big_icon_right, '', ' ');
+
+    // Article content
+    icon_property!(image, '', 'I');
+    icon_property!(url, '', 'L');
+    icon_property!(loading, '', '»');
+    icon_property!(image_failed, '󰋮', '?');
+
     // Feed and List Labels
     icon_property!(feeds, '󱀂', 'A');
     icon_property!(last_synced, '', 'S');

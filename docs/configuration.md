@@ -218,6 +218,11 @@ Afterwards, auto-reloading should work.
 | `content_show_urls`               | boolean               | If `true`, URLs are shown for links/images when displaying the content of an article                                                                                  |
 | `hint_type`                       | string                | If `letters`, letters are used for link hints in the article content display. If `numbers`, numbers are used.                                                         |
 | `tag_force_scope`                 | string (optional)     | If set to `all`, `unread` or `marked`, article list will show either only `all`, `unread` or `marked` articles; if not set, the article scope is selected by the user |
+| `article_images_auto_load`        | boolean               | Automatically load and display images that becomes visible in the content panel                                                                                       |
+| `article_images_height`           | dimension             | Maximum height of the article images (either absolute or relative to the size of the content panel)                                                                   |
+| `article_images_rounded_corners`  | boolean               | Display article images with a rounded corner                                                                                                                          |
+| `article_images_drop_shadow`      | boolean               | Display article images with a drop shadow (color is defined by `image_drop_shadow`)                                                                                   |
+| `article_images_cache_size`       | string                | Artice images are cached in memory. This setting define the maximum size of the cache (given as a string, e.g., `"512 MiB"`)                                          |
 
 
 ### Feed List Label Placeholders 
@@ -558,19 +563,20 @@ Also set `programs.eilmeldung.settings.theme.base16_theme` to the theme you want
 
 The color palette defines the base colors used throughout the application. Colors can be specified as color names or hex codes (see [ratatui Color documentation](https://docs.rs/ratatui/latest/ratatui/style/enum.Color.html) for all options).
 
-| Option | Default (ANSI) | Description |
-|--------|----------------|-------------|
-| `background` | `"black"` | Background color |
-| `foreground` | `"white"` | Foreground/text color |
-| `muted` | `"dark_gray"` | Muted/inactive elements |
-| `highlight` | `"yellow"` | Highlighted elements |
-| `accent_primary` | `"magenta"` | Primary accent (feeds, borders) |
-| `accent_secondary` | `"blue"` | Secondary accent (categories) |
-| `accent_tertiary` | `"cyan"` | Tertiary accent (tags) |
-| `accent_quaternary` | `"yellow"` | Quaternary accent (queries) |
-| `info` | `"magenta"` | Info messages |
-| `warning` | `"yellow"` | Warning messages |
-| `error` | `"red"` | Error messages |
+| Option              | Default (ANSI)   | Description                     |
+| --------            | ---------------- | -------------                   |
+| `background`        | `"black"`        | Background color                |
+| `foreground`        | `"white"`        | Foreground/text color           |
+| `muted`             | `"dark_gray"`    | Muted/inactive elements         |
+| `highlight`         | `"yellow"`       | Highlighted elements            |
+| `accent_primary`    | `"magenta"`      | Primary accent (feeds, borders) |
+| `accent_secondary`  | `"blue"`         | Secondary accent (categories)   |
+| `accent_tertiary`   | `"cyan"`         | Tertiary accent (tags)          |
+| `accent_quaternary` | `"yellow"`       | Quaternary accent (queries)     |
+| `info`              | `"magenta"`      | Info messages                   |
+| `warning`           | `"yellow"`       | Warning messages                |
+| `error`             | `"red"`          | Error messages                  |
+| `image_drop_shadow` | `"magenta"`      | Drop shadow of images           |
 
 **Example:**
 ```toml
@@ -665,6 +671,8 @@ info = "base0B"
 warning = "base0A"
 error = "base08"
 
+image_drop_shadow = "base0B"
+
 [theme.base16_dark]
 background = "base00"
 foreground = "base07"
@@ -679,6 +687,8 @@ accent_quaternary = "base0E"
 info = "base0B"
 warning = "base0A"
 error = "base08"
+
+image_drop_shadow = "base0B"
 ```
 
 If you want to fine-tune the exact happing between your base16 theme and a color map, overwrite these settings.
@@ -781,11 +791,18 @@ All default values can be found in `examples/default-config.toml`
 | `enclosure_audio`     | Content: article contains audio enclosure                                              |
 | `enclosure_image`     | Content: article contains image enclosure                                              |
 | `flagged`             | Article list: flagged article                                                          |
-| `image`               | Content: link to image                                                                 |
-| `url`                 | Content: link to site                                                                  |
 | `big_icon_left`       | left delimiter for big icons (e.g., tags, enclosures); set to `' '` to make invisible  |
 | `big_icon_right`      | right delimiter for big icons (e.g., tags, enclosures); set to `' '` to make invisible |
 
+
+## Article Content 
+
+| Name           | Description                    |
+| ---            | ---                            |
+| `image`        | link to image                  |
+| `url`          | link to site                   |
+| `loading`      | Loading (e.g., Image)          |
+| `image_failed` | Image which couldn't be loaded |
   ## Feed and List Labels
 
 | Name          | Description                    |

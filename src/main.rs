@@ -56,10 +56,12 @@ async fn main() -> color_eyre::Result<()> {
 
     // setup of things we need in the app
     let news_flash_utils = Arc::new(NewsFlashUtils::new(
+        &config,
         news_flash,
         client,
         message_sender.clone(),
     ));
+
     let connectivity_monitor =
         ConnectivityMonitor::new(news_flash_utils.clone(), message_sender.clone());
 
