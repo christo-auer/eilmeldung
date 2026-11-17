@@ -7,7 +7,6 @@ pub mod prelude {
 }
 
 use model::ArticleContentModelData;
-use ratatui_image::picker::Picker;
 use tokio::sync::mpsc::UnboundedSender;
 use url::Url;
 use view::ArticleContentViewData;
@@ -36,10 +35,9 @@ impl ArticleContent {
         config: Arc<Config>,
         news_flash_utils: Arc<NewsFlashUtils>,
         message_sender: UnboundedSender<Message>,
-        picker: Picker,
     ) -> Self {
         Self {
-            view_data: ArticleContentViewData::new(Arc::clone(&news_flash_utils), &config, picker),
+            view_data: ArticleContentViewData::new(Arc::clone(&news_flash_utils), &config),
             config,
             model_data: ArticleContentModelData::new(news_flash_utils),
             message_sender,

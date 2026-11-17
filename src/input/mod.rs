@@ -12,12 +12,14 @@ use crate::prelude::*;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use color_eyre::eyre::bail;
 use log::{info, trace};
 use ratatui::crossterm::event::{self};
 use ratatui::text::{Line, Span, Text};
 use ratatui_image::picker::Picker;
 use throbber_widgets_tui::{Throbber, ThrobberState, VERTICAL_BLOCK};
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::error::TrySendError;
+use tokio::sync::mpsc::{Receiver, Sender, UnboundedSender};
 
 use ratatui::crossterm::event::Event as TermEvent;
 
@@ -84,12 +86,31 @@ impl MessageReceiver for InputCommandGenerator {
         }
     }
 }
+
+#[derive(Debug)]
+pub enum InputReaderCommand {
+    UpdatePicker,
+}
+
 pub fn input_reader(
     message_sender: UnboundedSender<Message>,
     input_event_sender: UnboundedSender<TermEvent>,
+    command_sender: Sender<InputReaderCommand>,
+    mut command_receiver: Receiver<InputReaderCommand>,
 ) -> color_eyre::Result<()> {
     info!("starting input reader loop");
     loop {
+        match command_receiver.try_recv() {
+            Ok(InputReaderCommand::UpdatePicker) => {
+                // silently ignore if querying picker fails
+                if let Ok(picker) = Picker::from_query_stdio() {
+                    message_sender
+                        .send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
+                }
+            }
+            _ => {}
+        }
+
         if !event::poll(Duration::from_millis(100))? {
             if input_event_sender.is_closed() {
                 return Ok(());
@@ -100,11 +121,12 @@ pub fn input_reader(
 
         // we have to handle this here as otherwise, input handling hangs
         if let TermEvent::Resize(width, height) = event {
-            // silently ignore if querying picker fails
-            if let Ok(picker) = Picker::from_query_stdio() {
-                message_sender.send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
+            match command_sender.try_send(InputReaderCommand::UpdatePicker) {
+                Err(TrySendError::Closed(_)) => {
+                    bail!("command_sender closed");
+                }
+                _ => {}
             }
-
             message_sender.send(Message::Event(Event::Resized(width, height)))?;
         }
 

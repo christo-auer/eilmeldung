@@ -46,7 +46,8 @@ pub struct ArticleContentViewData {
     // Image rendering state
     image: Option<StatefulProtocol>,
     placeholder_image: StatefulProtocol,
-    pub(super) picker: Picker,
+    pub(super) picker: Option<Picker>,
+    pub fallback_picker: Picker,
 
     // article images
     pub(super) markdown_rendering: Option<RenderResult>,
@@ -65,13 +66,14 @@ pub struct ArticleContentViewData {
 }
 
 impl ArticleContentViewData {
-    pub fn new(news_flash_utils: Arc<NewsFlashUtils>, config: &Config, picker: Picker) -> Self {
+    pub fn new(news_flash_utils: Arc<NewsFlashUtils>, config: &Config) -> Self {
         Self {
             vertical_scroll: 0,
             max_scroll: 0,
             image: None,
-            placeholder_image: Self::prepare_placeholder_image(&picker, config),
-            picker,
+            placeholder_image: Self::prepare_placeholder_image(&Picker::halfblocks(), config),
+            picker: None,
+            fallback_picker: Picker::halfblocks(),
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
             url_for_hint: Default::default(),
@@ -103,7 +105,7 @@ impl ArticleContentViewData {
         if let Some(image_store) = self.image_store.as_mut() {
             image_store.clear();
         }
-        self.placeholder_image = Self::prepare_placeholder_image(&self.picker, config);
+        self.placeholder_image = Self::prepare_placeholder_image(self.picker(), config);
         self.vertical_scroll = 0;
         self.markdown_rendering = None;
         self.markdown_rendering_width = None;
@@ -115,7 +117,7 @@ impl ArticleContentViewData {
 
     // Public accessors for private fields
     pub(super) fn picker(&self) -> &Picker {
-        &self.picker
+        &self.picker.as_ref().unwrap_or(&self.fallback_picker)
     }
 
     pub(super) fn image(&self) -> &Option<StatefulProtocol> {
@@ -523,10 +525,11 @@ impl ArticleContentViewData {
             image_rows,
         );
 
+        let picker = self.picker.as_ref().unwrap_or(&self.fallback_picker);
         self.max_scroll = (image_store.total_rows() as u16).saturating_sub(paragraph_area.height);
         self.vertical_scroll = vertical_scroll.min(self.max_scroll);
-        let image_max_width = u32::from(self.picker.font_size().width * paragraph_area.width);
-        let image_rows = u32::from(self.picker.font_size().height * image_rows);
+        let image_max_width = u32::from(picker.font_size().width * paragraph_area.width);
+        let image_rows = u32::from(picker.font_size().height * image_rows);
         if self.load_visible_images || config.article_images_auto_load {
             // find visible or nearly visible images which are not yet downloaded
             for url in image_store.start_visible(
@@ -542,9 +545,9 @@ impl ArticleContentViewData {
                     &url,
                     image_max_width,
                     image_rows,
-                    to_corner_radius(config, &self.picker),
+                    to_corner_radius(config, picker),
                     config.theme.color_palette().image_drop_shadow,
-                    to_drop_shadow_width(config, &self.picker),
+                    to_drop_shadow_width(config, picker),
                 );
             }
             self.load_visible_images = false;
@@ -556,9 +559,9 @@ impl ArticleContentViewData {
                 &url,
                 image_max_width,
                 image_rows,
-                to_corner_radius(config, &self.picker),
+                to_corner_radius(config, picker),
                 config.theme.color_palette().image_drop_shadow,
-                to_drop_shadow_width(config, &self.picker),
+                to_drop_shadow_width(config, picker),
             );
         }
 
@@ -576,7 +579,7 @@ impl ArticleContentViewData {
     }
 
     pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> color_eyre::Result<()> {
-        self.picker = picker.to_owned();
+        self.picker = Some(picker.to_owned());
         self.create_image_store(config);
         self.placeholder_image = Self::prepare_placeholder_image(picker, config);
 

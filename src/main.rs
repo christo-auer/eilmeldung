@@ -14,13 +14,16 @@ mod utils;
 use std::{sync::Arc, time::Duration};
 
 use clap::Parser;
+use color_eyre::eyre::bail;
 use log::{debug, error, info};
 use ratatui::crossterm::{event::DisableMouseCapture, execute};
-use ratatui_image::picker::Picker;
-use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
+use tokio::{
+    sync::mpsc::{channel, error::TrySendError, unbounded_channel},
+    task::spawn_blocking,
+};
 
 mod prelude;
-use crate::{connectivity::ConnectivityMonitor, prelude::*};
+use crate::{connectivity::ConnectivityMonitor, input::InputReaderCommand, prelude::*};
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
@@ -32,6 +35,8 @@ async fn main() -> color_eyre::Result<()> {
 
     // create channel
     let (message_sender, message_receiver) = unbounded_channel::<Message>();
+    let (input_reader_command_sender, input_reader_command_receiver) =
+        channel::<InputReaderCommand>(1);
     let (term_event_sender, term_event_receiver) =
         unbounded_channel::<ratatui::crossterm::event::Event>();
 
@@ -51,8 +56,6 @@ async fn main() -> color_eyre::Result<()> {
 
     info!("Initializing terminal");
     let terminal = ratatui::init();
-    // NOTE: The picker must be initialized after `ratatui::init()` and before spawning `input_reader()`.
-    let picker = Picker::from_query_stdio()?;
 
     // validate now
     config_file_manager.validate_config(&mut config).await?;
@@ -71,11 +74,27 @@ async fn main() -> color_eyre::Result<()> {
     // startup task which reads the crossterm events
     let input_reader_message_sender = message_sender.clone();
 
-    let _input_reader_handle = spawn_blocking(move || {
-        if let Err(err) = input_reader(input_reader_message_sender, term_event_sender) {
-            error!("input reader got an error: {err}");
+    let _input_reader_handle = spawn_blocking({
+        let input_reader_command_sender = input_reader_command_sender.clone();
+        move || {
+            if let Err(err) = input_reader(
+                input_reader_message_sender,
+                term_event_sender,
+                input_reader_command_sender,
+                input_reader_command_receiver,
+            ) {
+                error!("input reader got an error: {err}");
+            }
         }
     });
+
+    // initial request for a picker
+    match input_reader_command_sender.try_send(InputReaderCommand::UpdatePicker) {
+        Err(TrySendError::Closed(_)) => {
+            bail!("input_reader_command_sender unexpectedly closed")
+        }
+        _ => {}
+    }
 
     // create the main app
     let app = App::new(
@@ -83,7 +102,6 @@ async fn main() -> color_eyre::Result<()> {
         config_file_manager,
         news_flash_utils.clone(),
         message_sender,
-        picker,
     );
 
     // starting connectivity monitor
