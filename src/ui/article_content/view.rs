@@ -117,7 +117,7 @@ impl ArticleContentViewData {
 
     // Public accessors for private fields
     pub(super) fn picker(&self) -> &Picker {
-        &self.picker.as_ref().unwrap_or(&self.fallback_picker)
+        self.picker.as_ref().unwrap_or(&self.fallback_picker)
     }
 
     pub(super) fn image(&self) -> &Option<StatefulProtocol> {

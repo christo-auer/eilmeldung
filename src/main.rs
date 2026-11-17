@@ -89,11 +89,10 @@ async fn main() -> color_eyre::Result<()> {
     });
 
     // initial request for a picker
-    match input_reader_command_sender.try_send(InputReaderCommand::UpdatePicker) {
-        Err(TrySendError::Closed(_)) => {
-            bail!("input_reader_command_sender unexpectedly closed")
-        }
-        _ => {}
+    if let Err(TrySendError::Closed(_)) =
+        input_reader_command_sender.try_send(InputReaderCommand::UpdatePicker)
+    {
+        bail!("input_reader_command_sender unexpectedly closed")
     }
 
     // create the main app

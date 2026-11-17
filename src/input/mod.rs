@@ -100,15 +100,11 @@ pub fn input_reader(
 ) -> color_eyre::Result<()> {
     info!("starting input reader loop");
     loop {
-        match command_receiver.try_recv() {
-            Ok(InputReaderCommand::UpdatePicker) => {
-                // silently ignore if querying picker fails
-                if let Ok(picker) = Picker::from_query_stdio() {
-                    message_sender
-                        .send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
-                }
+        if let Ok(InputReaderCommand::UpdatePicker) = command_receiver.try_recv() {
+            // silently ignore if querying picker fails
+            if let Ok(picker) = Picker::from_query_stdio() {
+                message_sender.send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
             }
-            _ => {}
         }
 
         if !event::poll(Duration::from_millis(100))? {
@@ -121,11 +117,10 @@ pub fn input_reader(
 
         // we have to handle this here as otherwise, input handling hangs
         if let TermEvent::Resize(width, height) = event {
-            match command_sender.try_send(InputReaderCommand::UpdatePicker) {
-                Err(TrySendError::Closed(_)) => {
-                    bail!("command_sender closed");
-                }
-                _ => {}
+            if let Err(TrySendError::Closed(_)) =
+                command_sender.try_send(InputReaderCommand::UpdatePicker)
+            {
+                bail!("command_sender closed");
             }
             message_sender.send(Message::Event(Event::Resized(width, height)))?;
         }
