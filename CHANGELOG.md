@@ -9,6 +9,7 @@
   - please also checkout `docs/configuration.md` for all settings related to image displaying
 - You won't believe this but the display style of links, urls and hints in articles was not configurable! I made up for this by introducing new style settings `link_*`
 - in order to make image fetching faster, *eilmeldung* uses an in-memory HTTP cache whose size you can set with `article_images_cache_size` (`512MiB` by default).
+- bugfix: `Shift-Tab` (`backtab`) works again: focusing the previous panel and cycling backwards through completions in the command line (was reported as unknown key sequence `S-backtab`)
 - some more changes
   - dimensions now also allow the alias `units` for `length`
   - changed to another html-to-markdown converter (`html-to-markdown-rs`)
