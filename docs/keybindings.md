@@ -53,7 +53,11 @@ This document provides a comprehensive reference of all default key bindings in 
 
 | Key | Action |
 |-----|--------|
-| `s` | Sync all feeds with your RSS provider |
+| `s` | Sync all new articles  |
+| `C-s` | Sync all unread articles with your RSS provider |
+
+
+**Note**: Depending on the provider, `sync` may not sync articles which are already marked as read on the provider side. To really sync all articles, use `syncall`.
 
 ---
 
@@ -97,6 +101,7 @@ This document provides a comprehensive reference of all default key bindings in 
 | `S` | Share article (opens command line with share targets)             |
 | `e` | Open (default) enclosure                                          |
 | `E` | Open enclosure (opens command line with enclosure type)           |
+| `P` | Load and display all image which are currently visible            |
 
 ---
 
@@ -180,11 +185,12 @@ Eilmeldung shows *hints* for links/images in the article:
 The "codes" (letters in this case, see setting `hint_type`) before the icons are called *(link) hints*. The following default keybindings are defined for hints:
 
 
-| Key | Action |
-|-----|--------|
+| Key   | Action                                                                                   |
+| ----- | --------                                                                                 |
 | `; ;` | Open a hint in the webbrowser, by entering the hint (see also command `hintfollow`)      |
 | `; s` | Share URL of hint: enter a share target and then the hint (see also command `hintshare`) |
 | `; y` | Copy URL of hint to clipboard (see also command `hintshare`)                             |
+| `; p` | Load (and display) image of hint                                                         |
 
 ## Article Views
 

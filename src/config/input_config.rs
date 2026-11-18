@@ -74,6 +74,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "o"         = ["open", "in articles read", "in articles nextunread"]
         "O"         = ["open unread", "confirm in articles read %"]
         "s"         = ["sync"]
+        "C-s"       = ["syncunread"]
         "r"         = ["read", "nextunread"]
         "t"         = ["cmd tag"]
         "T"         = ["cmd untag"]
@@ -99,6 +100,8 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "; ;"       = ["cmd hintfollow"]
         "; y"       = ["cmd hintshare clipboard"]
         "; s"       = ["cmd hintshare"]
+        "; p"       = ["cmd imageload hint"]
+        "P"         = ["imageload visible"]
         "C-x"       = ["clear"]
         "C-z"       = ["undo"]
 

@@ -8,17 +8,17 @@
 
   outputs = { self, nixpkgs, flake-utils, ... }:
     let
-      version = "1.9.1";
+      version = "1.10.1";
 
       releaseSrc = pkgs: pkgs.fetchFromGitHub {
         owner = "christo-auer";
         repo = "eilmeldung";
         rev = version;
-        hash = "sha256-Hq+MEeyJpsDCAHOavT6RWBUMe0SsS0OC8FoEfkqIM7s=";
+        hash = "sha256-JaRw4yFkePxqxD9kvW92dza0k4AVMTgXjORHHZufGyI=";
       };
 
       mkEilmeldung = pkgs: src: ver:
-        (pkgs.callPackage ./nix/package.nix { }) { inherit src; version = ver; };
+        (pkgs.callPackage (import ./nix/package.nix { inherit src; version = ver; }) { });
 
       deprecationWarning = ''
       eilmeldung has moved into nixpkgs unstable (pkgs.eilmeldung) and the

@@ -20,17 +20,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            openssl \
-            pkg-config \
-            libxml2-dev \
-            libsqlite3-dev \
-            llvm \
-            clang
-
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:

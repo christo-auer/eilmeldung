@@ -1,10 +1,35 @@
 # Unreleased
 
-- when *eilmeldung* detects multiple feed sources when adding a feed, it shows a selection popup
-- update to `news-flash 4.0.1` 
+- *eilmeldung* now supports displaying images in the article! 
+  - This was made possible by the awesome [limner crate](https://github.com/Sylviromi/limner) developed by @Sylviromi. Please also check out Sylviromi's terminal RSS reader [brochure](https://github.com/Sylviromi/brochure) and give it a star!
+  - by default, images are loaded automatically as soon as they become visible when viewing the scraped content
+  - if you don't want this, set `article_images_auto_load = false`. You can instead *lazy-load* images by the new command `imageload hint <url-hint>` (mapped to `; p`) of the given URL hint or call `imageload visible` to load all images which are currently visible or nearly visible (mapped to `P`)
+  - in order to better set off images from the rest of the content, each image is rendered with a small drop shadow and with rounded corners (of course, you can deactivate all this)
+  - I went a bit overboard with the colors: the drop shadow's color changes with the theme and so is the new placeholder image. I hope that you appreciate all this attention to detail (made by hand and with love). BTW you change the color of the drop shadow by setting `theme.color_palette.image_drop_shadow`
+  - please also checkout `docs/configuration.md` for all settings related to image displaying
+- You won't believe this but the display style of links, urls and hints in articles was not configurable! I made up for this by introducing new style settings `link_*`
+- in order to make image fetching faster, *eilmeldung* uses an in-memory HTTP cache whose size you can set with `article_images_cache_size` (`512MiB` by default).
+- bugfix: `Shift-Tab` (`backtab`) works again: focusing the previous panel and cycling backwards through completions in the command line (was reported as unknown key sequence `S-backtab`)
+- some more changes
+  - dimensions now also allow the alias `units` for `length`
+  - changed to another html-to-markdown converter (`html-to-markdown-rs`)
+
+
+# 1.10.1 - 2026-11-11
+
+A small release containing a tiny new feature and a bugfix
+- new command `syncunread` (shortcut `C-s`) which sync not just new articles but all unread articles from the provider
+- bugfix: crash when displaying markdown with linebreaks in links
+
+# 1.10.0 - 2026-10-28
+
+ *eilmeldung* has now been over one year in development! 🎂 Thanks for all your trust, contributions and feedback!
+
+Here are some news:
+- *eilmeldung* has migrated to `news-flash 4.0.1`!
   - with many thanks and cheers to @jangernert for all the work he puts into maintaining news-flash, which makes *eilmeldung* possible
   - and because of @jangernert's great work, *eilmeldung* now has **no** external dependencies anymore!🎉 just pure rust 🦀 (except for `libc` of course 😉)
-
+- when *eilmeldung* detects multiple feed sources when adding a feed, it shows a selection popup
 
 # 1.9.1 - 2026-10-20
 

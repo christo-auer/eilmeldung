@@ -1,4 +1,4 @@
-# *eilmeldung* TUI RSS reader
+# *eilmeldung* hand-made terminal RSS/News Reader
 
 ![GitHub Release](https://img.shields.io/github/v/release/christo-auer/eilmeldung)
 ![Crates.io Version](https://img.shields.io/crates/v/eilmeldung)
@@ -65,7 +65,7 @@ This video demonstrates
 ```
   scoop install eilmeldung
   ```
-- **Cargo**: `cargo install eilmeldung --locked` (you need to install [build dependencies](docs/installation.md) first!)
+- **Cargo**: `cargo install eilmeldung --locked`
 
 **Important**: You need a [Nerd Font](https://github.com/ryanoasis/nerd-fonts)
 compatible font/terminal for icons to display correctly! There is a
@@ -158,7 +158,8 @@ Of course, there are many awesome alternatives to *eilmeldung*. Check them out!
 - [feedr](https://github.com/bahdotsh/feedr) is a feature-rich terminal-based RSS feed reader written in Rust
 - [russ](https://github.com/ckampfe/russ)  is a TUI RSS/Atom reader with vim-like controls and a local-first, offline-first focus.
 - [elfeed](https://github.com/skeeto/elfeed) provides RSS in emacs
-- [tuifeed](https://github.com/veeso/tuifeed), a terminal news feed reader with a fancy ui 
+- [tuifeed](https://github.com/veeso/tuifeed), a terminal news feed reader with a fancy ui
+- [brochure](https://github.com/Sylviromi/brochure), a terminal RSS reader: keyboard-driven, distraction-free.
 
 ---
 
@@ -234,6 +235,8 @@ Have a look at [docs/configuration.md#theme-configuration] for more information 
 
 # Credits
 ## Mentions
+
+- [This Week in Rust 674 (21 OCT 2026)](https://this-week-in-rust.org/blog/2026/10/21/this-week-in-rust-674/) features  *eilmeldung* as *crate of the week*
 
 - [Orhun's Blog: 800 rust projects in 3 years](https://blog.orhun.dev/800-rust-projects/) (placed 21 based on a Mastodon analysis; very hondered to be on the same list as other such great and impressive rust projects!)
 - Pick on [Linux Unplugged Episode 647 (2025-12-28)](https://linuxunplugged.com/647) (1:28:35) had some very kind things to say about *eilmeldung* shortly after the initial release:

@@ -91,6 +91,13 @@ share_targets = [
 notify_after_sync = true
 # notify_after_sync_cmd is not set (dbus is used instead)
 
+# Article Images
+article_images_auto_load = true
+article_images_height = "30%"
+article_images_rounded_corners = true
+article_images_drop_shadow = true
+article_images_cache_size = "512 MiB"
+
 [border_theme]
 focused = "rounded"
 unfocused = "rounded"
@@ -128,6 +135,12 @@ preset = "nerd"
 # tags is not set; nerd: "󰓻", ascii: "T"
 # query is not set; nerd: "", ascii: "Q"
 # piped is not set; nerd: "󰟥", ascii: "|"
+
+# Article Content 
+# image; nerd: "", ascii: "I";
+# url; nerd: "", ascii: "L";
+# loading; nerd: "", ascii: "»";
+# image_failed; nerd: "󰋮", ascii: "?";
 
 # Sorting and Filtering
 # sort_ascending is not set; nerd: "󰒼", ascii: "^"
@@ -198,6 +211,7 @@ timeout_millis = 5000
 "o"         = ["open", "in articles read", "in articles nextunread"]
 "O"         = ["open unread", "confirm in articles read %"]
 "s"         = ["sync"]
+"C-s"       = ["syncunread"]
 "r"         = ["read", "nextunread"]
 "t"         = ["cmd tag"]
 "T"         = ["cmd untag"]
@@ -238,6 +252,8 @@ timeout_millis = 5000
 "; ;"       = ["cmd hintfollow"]
 "; y"       = ["cmd hintshare clipboard"]
 "; s"       = ["cmd hintshare"]
+"; p"       = ["cmd imageload hint"]
+"P"         = ["imageload visible"]
 "1"         = ["show all"]
 "2"         = ["show unread"]
 "3"         = ["show marked"]
@@ -315,6 +331,7 @@ accent_quaternary = "yellow"
 info = "magenta"
 warning = "yellow"
 error = "red"
+image_drop_shadow = "magenta"
 
 [theme.style_set]
 header = { fg = "accent_primary" }
@@ -357,7 +374,7 @@ info = "base0B"
 warning = "base0A"
 error = "base08"
 
-[theme.base16_dark]
+[theme.base16_light]
 background = "base00"
 foreground = "base07"
 muted = "base03"
@@ -371,4 +388,6 @@ accent_quaternary = "base0E"
 info = "base0B"
 warning = "base0A"
 error = "base08"
+
+image_drop_shadow = "base0B"
 
