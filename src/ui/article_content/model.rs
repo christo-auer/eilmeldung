@@ -414,4 +414,10 @@ Process returned with error ({})
 
         self.filtered_markdown_content.replace(markdown_content);
     }
+
+    pub(super) fn comments_url(&self) -> Option<&str> {
+        self.article()
+            .as_ref()
+            .and_then(|a| a.comments_url.as_deref())
+    }
 }
