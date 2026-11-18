@@ -126,15 +126,10 @@ impl App {
     fn render_panels(&mut self, area: Rect, buf: &mut Buffer) {
         if self.state == AppState::ArticleContentDistractionFree {
             self.article_content.render(area, buf);
-            *self.mouse_input_handler.panel_areas_mut().feed_list_mut() = Rect::default(); // 0 0 0 0
-            *self
-                .mouse_input_handler
-                .panel_areas_mut()
-                .articles_list_mut() = Rect::default(); // 0 0 0 0
-            *self
-                .mouse_input_handler
-                .panel_areas_mut()
-                .article_content_mut() = area;
+            self.panel_areas = PanelAreas {
+                article_content: area,
+                ..Default::default()
+            };
             return;
         }
 
@@ -187,16 +182,11 @@ impl App {
             ])
             .areas::<2>(articles_chunk);
 
-        // store areas for mouse hit-testing
-        *self.mouse_input_handler.panel_areas_mut().feed_list_mut() = feeds_list_chunk;
-        *self
-            .mouse_input_handler
-            .panel_areas_mut()
-            .articles_list_mut() = articles_list_chunk;
-        *self
-            .mouse_input_handler
-            .panel_areas_mut()
-            .article_content_mut() = article_content_chunk;
+        self.panel_areas = PanelAreas {
+            feed_list: feeds_list_chunk,
+            articles_list: articles_list_chunk,
+            article_content: article_content_chunk,
+        };
 
         if !self.feed_list.is_focused() && feeds_list_chunk.area() > 0 {
             self.feed_list.render(feeds_list_chunk, buf);

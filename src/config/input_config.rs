@@ -69,7 +69,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "l"         = ["next"]
         "h"         = ["prev"]
         "tab"       = ["nextc"]
-        "backtab"   = ["prevc"]
+        "S-backtab" = ["prevc"]
         "y"         = ["share clipboard"]
         "o"         = ["open", "in articles read", "in articles nextunread"]
         "O"         = ["open unread", "confirm in articles read %"]

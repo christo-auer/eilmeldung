@@ -40,7 +40,7 @@ impl FromStr for Dimension {
         })?;
 
         let dimension = match lexer.next() {
-            Some(Ok(T::UnitLength)) => Ok(Dimension::Length(number)),
+            Some(Ok(T::UnitLength)) | None => Ok(Dimension::Length(number)),
             Some(Ok(T::UnitPercent)) => {
                 if number.clamp(0, 100) != number {
                     Err(ConfigError::DimensionParseError(
@@ -120,6 +120,8 @@ mod tests {
 
     dimension_tests! {
 
+        no_unit: "10" => Ok(Dimension::Length(10)),
+        no_unit_with_spaces: "   10   \t" => Ok(Dimension::Length(10)),
         no_space_length: "10length" => Ok(Dimension::Length(10)),
         space_length: "4 length" => Ok(Dimension::Length(4)),
         multiple_spaces_length: "  19 \t length  \t" => Ok(Dimension::Length(19)),

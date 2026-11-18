@@ -132,6 +132,9 @@ pub enum Event {
     ApplicationStarted,
     ApplicationStateChanged(AppState),
 
+    // panel areas changed
+    PanelAreasChanged(PanelAreas),
+
     // mouse click on article list at row offset from top of inner area
     MouseArticleSelect(u16),
 

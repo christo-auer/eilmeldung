@@ -181,6 +181,13 @@ impl Command {
                 C::PanelFocus(panel)
             }
 
+            C::PanelResize(_) => {
+                let resize_arg =
+                    expect_from_next_word::<ResizeArg>(&mut args, "expecting resize arg")?;
+                expect_nothing(args)?;
+                C::PanelResize(resize_arg)
+            }
+
             C::ActionSetRead(..) => {
                 let action_scope: ActionScope = match args {
                     None => {

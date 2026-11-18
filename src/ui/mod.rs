@@ -6,6 +6,7 @@ mod command_input;
 mod feeds_list;
 mod help_popup;
 mod mouse;
+mod panel_areas;
 mod popup_manager;
 mod selection_popup;
 mod state;
@@ -22,6 +23,7 @@ pub mod prelude {
     pub use super::feeds_list::prelude::*;
     pub use super::help_popup::HelpPopup;
     pub use super::mouse::MouseInputHandler;
+    pub use super::panel_areas::PanelAreas;
     pub use super::popup_manager::{PopupEvent, PopupManager};
     pub use super::selection_popup::{SelectionPopup, SelectionPopupMapper};
     pub use super::state::AppState;
@@ -45,6 +47,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 pub struct App {
     state: AppState,
+    panel_areas: PanelAreas,
 
     config: Arc<Config>,
     news_flash_utils: Arc<NewsFlashUtils>,
@@ -82,6 +85,7 @@ impl App {
         debug!("Initializing UI components");
         let app = Self {
             state: AppState::FeedSelection,
+            panel_areas: Default::default(),
             config: Arc::clone(&config_arc),
             news_flash_utils: news_flash_utils.clone(),
             is_running: true,
@@ -244,6 +248,7 @@ impl App {
                 _ = render_interval.tick() => {
                     self.message_sender.send(Message::Event(Event::Tick))?;
                     if redraw {
+                        let panel_areas_before = self.panel_areas.clone();
                         terminal.draw(|frame| {
                             frame.render_widget(
                                 ratatui::widgets::Block::default()
@@ -251,7 +256,11 @@ impl App {
                             );
 
                             frame.render_widget(&mut self, frame.area());
+
                         })?;
+                        if panel_areas_before != self.panel_areas {
+                            self.message_sender.send(Message::Event(Event::PanelAreasChanged(self.panel_areas)))?;
+                        }
                         redraw = false;
 
                     }
