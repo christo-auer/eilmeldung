@@ -141,7 +141,7 @@ impl ArticleContentViewData {
         let show_url = config.content_show_urls;
 
         self.image_store = Some(
-            ImageStore::new(self.picker.clone())
+            ImageStore::new(self.picker().clone())
                 .with_loading_line(move |pending_image| {
                     let hint = hint_for_url_loading
                         .get(&HintTarget::Image(pending_image.info.url.to_owned()))

@@ -16,7 +16,6 @@ use std::{sync::Arc, time::Duration};
 use clap::Parser;
 use log::{debug, error, info};
 use ratatui::crossterm::{event::DisableMouseCapture, execute};
-use ratatui_image::picker::Picker;
 use tokio::{sync::mpsc::unbounded_channel, task::spawn_blocking};
 
 mod prelude;
@@ -51,8 +50,6 @@ async fn main() -> color_eyre::Result<()> {
 
     info!("Initializing terminal");
     let terminal = ratatui::init();
-    // NOTE: The picker must be initialized after `ratatui::init()` and before spawning `input_reader()`.
-    let picker = Picker::from_query_stdio()?;
 
     // validate now
     config_file_manager.validate_config(&mut config).await?;
@@ -83,7 +80,6 @@ async fn main() -> color_eyre::Result<()> {
         config_file_manager,
         news_flash_utils.clone(),
         message_sender,
-        picker,
     );
 
     // starting connectivity monitor
