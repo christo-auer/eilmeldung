@@ -75,6 +75,7 @@ fn generate_default_input_commands() -> IndexMap<KeySequence, CommandSequence> {
         "S-backtab" = ["prevc"]
         "y"         = ["share clipboard"]
         "o"         = ["open", "in articles read", "in articles nextunread"]
+        "C-o"       = ["opencomments"]
         "O"         = ["open unread", "confirm in articles read %"]
         "s"         = ["sync"]
         "C-s"       = ["syncunread"]

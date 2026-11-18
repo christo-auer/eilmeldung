@@ -26,6 +26,7 @@ pub struct IconSet {
     big_icon_right: Option<char>,
     loading: Option<char>,
     image_failed: Option<char>,
+    comments: Option<char>,
 
     // Feed and List Labels
     feeds: Option<char>,
@@ -96,6 +97,7 @@ impl IconSet {
     icon_property!(url, '', 'L');
     icon_property!(loading, '', '»');
     icon_property!(image_failed, '󰋮', '?');
+    icon_property!(comments, '󰅺', 'c');
 
     // Feed and List Labels
     icon_property!(feeds, '󱀂', 'A');
