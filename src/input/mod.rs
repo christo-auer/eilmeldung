@@ -90,15 +90,15 @@ pub fn input_reader(
     input_event_sender: UnboundedSender<TermEvent>,
 ) -> color_eyre::Result<()> {
     info!("starting input reader loop");
-    let mut refresh_picker = true;
-    loop {
-        if std::mem::take(&mut refresh_picker) {
-            // silently ignore if querying picker fails
-            if let Ok(picker) = Picker::from_query_stdio() {
-                message_sender.send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
-            }
-        }
 
+    // obtain the initial picker and distribute it
+    if let Ok(picker) = Picker::from_query_stdio() {
+        message_sender.send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
+        // for initial drawing a simple redraw suffices
+        message_sender.send(Message::Command(Command::Redraw))?;
+    }
+
+    loop {
         if !event::poll(Duration::from_millis(100))? {
             if input_event_sender.is_closed() {
                 return Ok(());
@@ -109,8 +109,11 @@ pub fn input_reader(
 
         // we have to handle this here as otherwise, input handling hangs
         if let TermEvent::Resize(width, height) = event {
-            refresh_picker = true;
             message_sender.send(Message::Event(Event::Resized(width, height)))?;
+            if let Ok(picker) = Picker::from_query_stdio() {
+                message_sender.send(Message::Event(Event::ImageProtocolPickerUpdated(picker)))?;
+                message_sender.send(Message::Command(Command::Clear))?;
+            }
         }
 
         input_event_sender.send(event)?;
