@@ -181,8 +181,18 @@ impl ArticleContentModelData {
     }
 
     pub(super) fn set_fat_article(&mut self, fat_article: FatArticle) {
-        self.fat_article = Some(fat_article);
-        self.markdown_content = None; // Reset processed content
+        let article_id = self.article.as_ref().map(|a| &a.article_id);
+        let fat_article_id = Some(&fat_article.article_id);
+        if article_id == fat_article_id {
+            self.fat_article = Some(fat_article);
+            self.markdown_content = None; // Reset processed content
+        } else {
+            log::debug!(
+                "set_fat_article: article id {:?} does not match fat article id {:?}",
+                article_id,
+                fat_article_id
+            );
+        }
     }
 
     pub(super) fn get_or_create_markdown_content(
