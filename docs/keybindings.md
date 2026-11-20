@@ -12,6 +12,7 @@ This document provides a comprehensive reference of all default key bindings in 
 - [Quitting](#quitting)
 - [Syncing & Refreshing](#syncing--refreshing)
 - [Navigation](#navigation)
+- [Resizing Panels](#resizing-panels)
 - [Reading Articles](#reading-articles)
 - [Read/Unread Status](#readunread-status)
 - [Marking Articles](#marking-articles)
@@ -90,6 +91,41 @@ This document provides a comprehensive reference of all default key bindings in 
 
 ---
 
+## Resizing Panels
+
+| Key                   | Action                                                                              |
+| -----                 | --------                                                                            |
+`<` = decrease size of feeds by 5 columns
+`>` = increase size of feeds by 5 columns
+`\| <` | set size of feeds to 0%|
+`\| >` | set size of feeds to 100%|
+`\| 1` | set width of feeds to 10%|
+`\| 2` | set width of feeds to 20%|
+`\| 3` | set width of feeds to 30%|
+`\| 4` | set width of feeds to 40%|
+`\| 5` | set width of feeds to 50%|
+`\| 6` | set width of feeds to 60%|
+`\| 7` | set width of feeds to 70%|
+`\| 8` | set width of feeds to 80%|
+`\| 9` | set width of feeds to 90%|
+`\| 0` | set width of feeds to its default value|
+`[` = decrease size of article list by 1 row
+`]` = increase size of article list by 1 row
+`_ _` | set size of article list to 100%|
+`- -` | set size of article list to 0%|
+`- 1` | set height of article list to 10%|
+`- 2` | set height of article list to 20%|
+`- 3` | set height of article list to 30%|
+`- 4` | set height of article list to 40%|
+`- 5` | set height of article list to 50%|
+`- 6` | set height of article list to 60%|
+`- 7` | set height of article list to 70%|
+`- 8` | set height of article list to 80%|
+`- 9` | set height of article list to 90%|
+`- 0` | set height of article list its default value|
+
+
+---
 ## Reading Articles
 
 | Key | Action |
@@ -364,9 +400,11 @@ See the [default configuration](../examples/default-config.toml) for the complet
 - middle: scrape article (without focusing panel)
 - scrolling works as expected
 
-### Resize Content Panel
+### Resizing the Panels
 
-Click and drag the horizontal bar between article list and content to dynamically resize the conten/article panel.
+Click and drag
+- the vertical bar between feed list and the rest to resize it
+- horizontal bar between article list and content to resize it
 
 ### Customization
 
