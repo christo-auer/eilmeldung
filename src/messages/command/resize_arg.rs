@@ -1,3 +1,5 @@
+use strum::Display;
+
 use crate::prelude::*;
 use std::str::FromStr;
 
@@ -10,16 +12,45 @@ pub enum ResizeArg {
     Default,
 }
 
+#[derive(Debug, Display)]
+pub enum ResizeArgError {
+    ApplyError,
+    InversionError,
+}
+
 impl ResizeArg {
     pub fn apply(self, dimension: Dimension, default: Dimension, max: u16) -> Dimension {
         use ResizeArg as A;
 
         match self {
-            A::Increase(increase) => dimension.add(increase, max),
-            A::Decrease(decrease) => dimension.subtract(decrease, max),
-            A::Absolute(absolute) => absolute,
+            A::Increase(increase) => dimension.add(increase, max).clamp(max),
+            A::Decrease(decrease) => dimension.subtract(decrease, max).clamp(max),
+            A::Absolute(absolute) => absolute.clamp(max),
             A::Default => default,
         }
+    }
+    pub fn apply_no_default(
+        self,
+        dimension: Dimension,
+        max: u16,
+    ) -> Result<Dimension, ResizeArgError> {
+        use ResizeArg as A;
+
+        Ok(match self {
+            A::Increase(increase) => dimension.add(increase, max).clamp(max),
+            A::Decrease(decrease) => dimension.subtract(decrease, max).clamp(max),
+            A::Absolute(absolute) => absolute.clamp(max),
+            A::Default => return Err(ResizeArgError::ApplyError),
+        })
+    }
+
+    pub fn invert(self, max: u16) -> Result<ResizeArg, ResizeArgError> {
+        Ok(match self {
+            Self::Increase(value) => Self::Decrease(value),
+            Self::Decrease(value) => Self::Increase(value),
+            Self::Absolute(value) => Self::Absolute(value.invert(max).clamp(max)),
+            Self::Default => return Err(ResizeArgError::InversionError),
+        })
     }
 }
 

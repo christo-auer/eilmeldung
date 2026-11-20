@@ -14,7 +14,7 @@ pub struct MouseInputHandler {
     state: AppState,
     panel_areas: PanelAreas,
 
-    drag_resize_active: bool,
+    active_drag_resize: Option<Panel>,
 
     #[getset(get_mut = "pub")]
     enabled: bool,
@@ -29,7 +29,7 @@ impl MouseInputHandler {
             message_sender,
             config,
             panel_areas: Default::default(),
-            drag_resize_active: false,
+            active_drag_resize: None,
             state: Default::default(),
             last_scroll_event: Instant::now(),
         }
@@ -42,28 +42,33 @@ impl MouseInputHandler {
         mouse_event: &ratatui::crossterm::event::MouseEvent,
     ) -> color_eyre::Result<Option<TermEventForwarding>> {
         match mouse_event.kind {
-            MouseEventKind::Down(MouseButton::Left)
-                if !matches!(self.state, AppState::ArticleContentDistractionFree)
-                    && self.panel_areas.is_on_horizontal_border(col, row) =>
-            {
-                log::trace!("start dragging border");
-                self.drag_resize_active = true;
-                Ok(Some(TermEventForwarding::Consumed))
+            MouseEventKind::Down(MouseButton::Left) if self.active_drag_resize.is_none() => {
+                if matches!(self.state, AppState::ArticleContentDistractionFree) {
+                    return Ok(None);
+                }
+
+                if self.panel_areas.is_on_article_list_border(col, row) {
+                    log::trace!("start dragging border article list");
+                    self.active_drag_resize = Some(Panel::ArticleList);
+                    Ok(Some(TermEventForwarding::Consumed))
+                } else if self.panel_areas.is_on_feed_list_border(col, row) {
+                    log::trace!("start dragging border feed list");
+                    self.active_drag_resize = Some(Panel::FeedList);
+                    Ok(Some(TermEventForwarding::Consumed))
+                } else {
+                    Ok(None)
+                }
             }
-            MouseEventKind::Drag(MouseButton::Left) if self.drag_resize_active => {
+            MouseEventKind::Drag(MouseButton::Left)
+                if matches!(self.active_drag_resize, Some(Panel::ArticleList)) =>
+            {
                 // Calculate the new articles list height based on drag position
                 let articles_top = self.panel_areas.articles_list().y;
-                let content_bottom = self.panel_areas.article_content().y
-                    + self.panel_areas.article_content().height;
-                let total_height = content_bottom.saturating_sub(articles_top);
-                // Clamp: minimum 3 rows for each panel
-                let new_articles_height = row
-                    .saturating_sub(articles_top)
-                    .clamp(3, total_height.saturating_sub(3));
+                let new_articles_height = row.saturating_sub(articles_top);
 
                 // only redraw if height has changed
                 if self.panel_areas.articles_list.height != new_articles_height {
-                    log::trace!("dragging border: {new_articles_height}");
+                    log::trace!("dragging border of article list: {new_articles_height}");
                     self.message_sender.send(Message::Command(Command::In(
                         Panel::ArticleList,
                         Box::new(Command::PanelResize(ResizeArg::Absolute(
@@ -74,9 +79,31 @@ impl MouseInputHandler {
 
                 Ok(Some(TermEventForwarding::Consumed))
             }
-            MouseEventKind::Up(MouseButton::Left) if self.drag_resize_active => {
+
+            MouseEventKind::Drag(MouseButton::Left)
+                if matches!(self.active_drag_resize, Some(Panel::FeedList)) =>
+            {
+                // Calculate the new articles list height based on drag position
+                let feeds_left = self.panel_areas.feed_list.x;
+                let new_feeds_width = col.saturating_sub(feeds_left);
+
+                // only redraw if height has changed
+                if self.panel_areas.feed_list.width != new_feeds_width {
+                    log::trace!("dragging border of feeds: {new_feeds_width}");
+                    self.message_sender.send(Message::Command(Command::In(
+                        Panel::FeedList,
+                        Box::new(Command::PanelResize(ResizeArg::Absolute(
+                            Dimension::Length(new_feeds_width),
+                        ))),
+                    )))?;
+                }
+
+                Ok(Some(TermEventForwarding::Consumed))
+            }
+
+            MouseEventKind::Up(MouseButton::Left) if self.active_drag_resize.is_some() => {
                 log::trace!("dragging stopped");
-                self.drag_resize_active = false;
+                self.active_drag_resize.take();
                 Ok(Some(TermEventForwarding::Consumed))
             }
 

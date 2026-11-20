@@ -113,13 +113,33 @@ impl Dimension {
         }
     }
 
+    pub fn clamp(self, max: u16) -> Dimension {
+        use Dimension as D;
+
+        match self {
+            D::Length(length) => D::Length(length.clamp(0, max)),
+            D::Percentage(percent) => D::Percentage(percent.clamp(0, 100)),
+        }
+    }
+
     pub fn subtract(self, other: Dimension, max: u16) -> Dimension {
         use Dimension as D;
         match self {
-            D::Length(length) => Dimension::Length(length - other.into_length(max).raw_value()),
-            D::Percentage(percent) => {
-                Dimension::Percentage((percent - other.into_percent(max).raw_value()).clamp(0, 100))
+            D::Length(length) => {
+                Dimension::Length(length.saturating_sub(other.into_length(max).raw_value()))
             }
+            D::Percentage(percent) => Dimension::Percentage(
+                percent
+                    .saturating_sub(other.into_percent(max).raw_value())
+                    .clamp(0, 100),
+            ),
+        }
+    }
+
+    pub fn invert(self, max: u16) -> Dimension {
+        match self {
+            Self::Length(length) => Self::Length(max.saturating_sub(length)),
+            Self::Percentage(percentage) => Self::Percentage(100u16.saturating_sub(percentage)),
         }
     }
 }

@@ -36,11 +36,45 @@ impl PanelAreas {
     }
 
     /// Returns true if the row is on the horizontal border between the articles list and article content.
-    pub(super) fn is_on_horizontal_border(&self, col: u16, row: u16) -> bool {
+    pub(super) fn is_on_article_list_border(&self, col: u16, row: u16) -> bool {
         // The border is at the bottom edge of articles_list / top edge of article_content
         let border_row = self.articles_list.y + self.articles_list.height;
         let in_column_range =
             col >= self.articles_list.x && col < self.articles_list.x + self.articles_list.width;
         row == border_row && in_column_range
     }
+
+    pub(super) fn is_on_feed_list_border(&self, col: u16, row: u16) -> bool {
+        // The border is at the bottom edge of articles_list / top edge of article_content
+        let border_column = self.feed_list.y + self.feed_list.width;
+        let in_row_range =
+            row >= self.feed_list.y && row < self.feed_list.y + self.feed_list.height;
+        col == border_column && in_row_range
+    }
+
+    // pub(super) fn apply_resize(&mut self, panel: Panel, default: Dimension, resize_arg: ResizeArg) {
+    //     match panel {
+    //         Panel::FeedList => {
+    //             let max = self.feed_list.width + self.articles_list.width;
+    //             self.feed_list.width = resize_arg
+    //                 .apply(Dimension::Length(self.feed_list.width), default, max)
+    //                 .into_length(max)
+    //                 .raw_value();
+    //         }
+    //         Panel::ArticleList => {
+    //             let max = self.articles_list.height + self.article_content.height;
+    //             self.articles_list.height = resize_arg
+    //                 .apply(Dimension::Length(self.articles_list.height), default, max)
+    //                 .into_length(max)
+    //                 .raw_value();
+    //         }
+    //         Panel::ArticleContent => {
+    //             let max = self.articles_list.height + self.article_content.height;
+    //             self.article_content.height = resize_arg
+    //                 .apply(Dimension::Length(self.article_content.height), default, max)
+    //                 .into_length(max)
+    //                 .raw_value();
+    //         }
+    //     }
+    // }
 }

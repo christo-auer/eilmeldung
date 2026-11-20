@@ -135,7 +135,7 @@ impl App {
 
         let (feeds_constraint_width, articles_constraint_width) = {
             if let Some(feeds_override_width) = self.feeds_override_width {
-                (feeds_override_width.as_constraint(), Constraint::Min(0))
+                (feeds_override_width.as_constraint(), Constraint::Min(1))
             } else {
                 match self.state {
                     AppState::FeedSelection => (
@@ -156,7 +156,7 @@ impl App {
 
         let (articles_constraint_height, article_content_constraint_height) = {
             if let Some(articles_height_override) = self.articles_height_override {
-                (articles_height_override.as_constraint(), Constraint::Min(0))
+                (articles_height_override.as_constraint(), Constraint::Min(1))
             } else {
                 match self.state {
                     AppState::FeedSelection | AppState::ArticleSelection => (

@@ -255,7 +255,7 @@ impl App {
                 _ = render_interval.tick() => {
                     self.message_sender.send(Message::Event(Event::Tick))?;
                     if redraw {
-                        let panel_areas_before = self.panel_areas.clone();
+                        let panel_areas_before = self.panel_areas;
                         terminal.draw(|frame| {
                             frame.render_widget(
                                 ratatui::widgets::Block::default()
@@ -579,11 +579,56 @@ impl App {
     }
 
     async fn resize_panel(
-        &self,
-        _panel: Option<Panel>,
-        _resize_arg: ResizeArg,
+        &mut self,
+        panel: Option<Panel>,
+        resize_arg: ResizeArg,
     ) -> color_eyre::Result<()> {
         // let panel = panel.unwrap_or(self.state.into());
+
+        let panel = panel.unwrap_or(self.state.into());
+
+        let current = match panel {
+            Panel::FeedList => self
+                .feeds_override_width
+                .unwrap_or(Dimension::Length(self.panel_areas.feed_list.width)),
+            Panel::ArticleList | Panel::ArticleContent => self
+                .articles_height_override
+                .unwrap_or(Dimension::Length(self.panel_areas.articles_list.height)),
+        };
+
+        let size_override = match panel {
+            Panel::FeedList => &mut self.feeds_override_width,
+            Panel::ArticleList | Panel::ArticleContent => &mut self.articles_height_override,
+        };
+
+        if matches!(resize_arg, ResizeArg::Default) {
+            size_override.take();
+            return Ok(());
+        }
+
+        let max = match panel {
+            Panel::FeedList => {
+                self.panel_areas.articles_list.width + self.panel_areas.feed_list.width
+            }
+            Panel::ArticleList | Panel::ArticleContent => {
+                self.panel_areas.articles_list.height + self.panel_areas.article_content.height
+            }
+        }
+        .saturating_sub(2);
+
+        let resize_arg = if matches!(panel, Panel::ArticleContent) {
+            resize_arg
+                .invert(max)
+                .map_err(|inversion_error| color_eyre::eyre::eyre!("{inversion_error}"))?
+        } else {
+            resize_arg
+        };
+
+        size_override.replace(
+            resize_arg
+                .apply_no_default(current, max)
+                .map_err(|resize_arg_error| color_eyre::eyre::eyre!("{resize_arg_error}"))?,
+        );
 
         Ok(())
     }
@@ -785,6 +830,7 @@ impl MessageReceiver for App {
 
             Message::Command(Command::PanelResize(resize_arg)) => {
                 self.resize_panel(None, *resize_arg).await?;
+                needs_redraw = true;
             }
 
             Message::Command(Command::In(panel, boxed_command))
@@ -792,6 +838,7 @@ impl MessageReceiver for App {
             {
                 if let Command::PanelResize(resize_arg) = boxed_command.as_ref() {
                     self.resize_panel(Some(*panel), *resize_arg).await?;
+                    needs_redraw = true;
                 }
             }
 
