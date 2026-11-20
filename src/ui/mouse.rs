@@ -2,70 +2,19 @@ use std::{sync::Arc, time::Duration};
 
 use crate::prelude::*;
 
-use getset::{Getters, MutGetters};
-use ratatui::{
-    crossterm::event::{MouseButton, MouseEventKind},
-    prelude::Rect,
-};
+use ratatui::crossterm::event::{MouseButton, MouseEventKind};
 
 use ratatui::crossterm::event::Event as TermEvent;
 use tokio::{sync::mpsc::UnboundedSender, time::Instant};
 
-/// Stores the last rendered areas of the three main panels for mouse hit-testing.
-#[derive(Default, Clone, Copy, Getters, MutGetters)]
-#[getset(get = "pub", get_mut = "pub")]
-pub struct PanelAreas {
-    feed_list: Rect,
-    articles_list: Rect,
-    article_content: Rect,
-}
-
-impl PanelAreas {
-    pub(super) fn panel_at(&self, col: u16, row: u16) -> Option<Panel> {
-        if self.feed_list.contains((col, row).into()) {
-            Some(Panel::FeedList)
-        } else if self.articles_list.contains((col, row).into()) {
-            Some(Panel::ArticleList)
-        } else if self.article_content.contains((col, row).into()) {
-            Some(Panel::ArticleContent)
-        } else {
-            None
-        }
-    }
-
-    /// Returns the row offset relative to the inner area of the articles panel (excluding border).
-    pub(super) fn article_row_offset(&self, row: u16) -> Option<u16> {
-        let area = self.articles_list;
-        // Account for the border (1 row top)
-        let inner_top = area.y + 1;
-        let inner_bottom = area.y + area.height.saturating_sub(1);
-        if row >= inner_top && row <= inner_bottom {
-            Some(row - inner_top)
-        } else {
-            None
-        }
-    }
-
-    /// Returns true if the row is on the horizontal border between the articles list and article content.
-    pub(super) fn is_on_horizontal_border(&self, col: u16, row: u16) -> bool {
-        // The border is at the bottom edge of articles_list / top edge of article_content
-        let border_row = self.articles_list.y + self.articles_list.height;
-        let in_column_range =
-            col >= self.articles_list.x && col < self.articles_list.x + self.articles_list.width;
-        row == border_row && in_column_range
-    }
-}
-
-#[derive(getset::MutGetters, getset::Getters)]
+#[derive(getset::MutGetters)]
 pub struct MouseInputHandler {
     message_sender: UnboundedSender<Message>,
     config: Arc<Config>,
-    #[getset(get_mut = "pub")]
+    state: AppState,
     panel_areas: PanelAreas,
 
-    drag_resize_active: bool,
-
-    state: AppState,
+    active_drag_resize: Option<Panel>,
 
     #[getset(get_mut = "pub")]
     enabled: bool,
@@ -80,7 +29,7 @@ impl MouseInputHandler {
             message_sender,
             config,
             panel_areas: Default::default(),
-            drag_resize_active: false,
+            active_drag_resize: None,
             state: Default::default(),
             last_scroll_event: Instant::now(),
         }
@@ -93,42 +42,68 @@ impl MouseInputHandler {
         mouse_event: &ratatui::crossterm::event::MouseEvent,
     ) -> color_eyre::Result<Option<TermEventForwarding>> {
         match mouse_event.kind {
-            MouseEventKind::Down(MouseButton::Left)
-                if !matches!(self.state, AppState::ArticleContentDistractionFree)
-                    && self.panel_areas.is_on_horizontal_border(col, row) =>
+            MouseEventKind::Down(MouseButton::Left) if self.active_drag_resize.is_none() => {
+                if matches!(self.state, AppState::ArticleContentDistractionFree) {
+                    return Ok(None);
+                }
+
+                if self.panel_areas.is_on_article_list_border(col, row) {
+                    log::trace!("start dragging border article list");
+                    self.active_drag_resize = Some(Panel::ArticleList);
+                    Ok(Some(TermEventForwarding::Consumed))
+                } else if self.panel_areas.is_on_feed_list_border(col, row) {
+                    log::trace!("start dragging border feed list");
+                    self.active_drag_resize = Some(Panel::FeedList);
+                    Ok(Some(TermEventForwarding::Consumed))
+                } else {
+                    Ok(None)
+                }
+            }
+            MouseEventKind::Drag(MouseButton::Left)
+                if matches!(self.active_drag_resize, Some(Panel::ArticleList)) =>
             {
-                log::trace!("start dragging border");
-                self.drag_resize_active = true;
+                // Calculate the new articles list height based on drag position
+                let articles_top = self.panel_areas.articles_list().y;
+                let new_articles_height = row.saturating_sub(articles_top);
+
+                // only redraw if height has changed
+                if self.panel_areas.articles_list.height != new_articles_height {
+                    log::trace!("dragging border of article list: {new_articles_height}");
+                    self.message_sender.send(Message::Command(Command::In(
+                        Panel::ArticleList,
+                        Box::new(Command::PanelResize(ResizeArg::Absolute(
+                            Dimension::Length(new_articles_height),
+                        ))),
+                    )))?;
+                }
+
                 Ok(Some(TermEventForwarding::Consumed))
             }
-            // MouseEventKind::Drag(MouseButton::Left) if self.drag_resize_active => {
-            //     // Calculate the new articles list height based on drag position
-            //     let articles_top = self.panel_areas.articles_list().y;
-            //     let content_bottom = self.panel_areas.article_content().y
-            //         + self.panel_areas.article_content().height;
-            //     let total_height = content_bottom.saturating_sub(articles_top);
-            //     // Clamp: minimum 3 rows for each panel
-            //     let new_articles_height = row
-            //         .saturating_sub(articles_top)
-            //         .clamp(3, total_height.saturating_sub(3));
-            //
-            //     let old_articles_height =
-            //         self.articles_height_override.replace(new_articles_height);
-            //
-            //     // only redraw if height has changed
-            //     if let Some(old_articles_height) = old_articles_height
-            //         && old_articles_height != new_articles_height
-            //     {
-            //         log::trace!("dragging border: {new_articles_height}");
-            //         self.message_sender
-            //             .send(Message::Command(Command::Redraw))?;
-            //     }
-            //
-            //     Ok(Some(TermEventForwarding::Consumed))
-            // }
-            MouseEventKind::Up(MouseButton::Left) if self.drag_resize_active => {
+
+            MouseEventKind::Drag(MouseButton::Left)
+                if matches!(self.active_drag_resize, Some(Panel::FeedList)) =>
+            {
+                // Calculate the new articles list height based on drag position
+                let feeds_left = self.panel_areas.feed_list.x;
+                let new_feeds_width = col.saturating_sub(feeds_left);
+
+                // only redraw if height has changed
+                if self.panel_areas.feed_list.width != new_feeds_width {
+                    log::trace!("dragging border of feeds: {new_feeds_width}");
+                    self.message_sender.send(Message::Command(Command::In(
+                        Panel::FeedList,
+                        Box::new(Command::PanelResize(ResizeArg::Absolute(
+                            Dimension::Length(new_feeds_width),
+                        ))),
+                    )))?;
+                }
+
+                Ok(Some(TermEventForwarding::Consumed))
+            }
+
+            MouseEventKind::Up(MouseButton::Left) if self.active_drag_resize.is_some() => {
                 log::trace!("dragging stopped");
-                self.drag_resize_active = false;
+                self.active_drag_resize.take();
                 Ok(Some(TermEventForwarding::Consumed))
             }
 
@@ -221,8 +196,12 @@ impl TermEventHandler for MouseInputHandler {
 
 impl MessageReceiver for MouseInputHandler {
     async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
-        if let Message::Event(Event::ApplicationStateChanged(new_state)) = message {
-            self.state = *new_state;
+        match message {
+            Message::Event(Event::PanelAreasChanged(panel_areas)) => {
+                self.panel_areas = *panel_areas
+            }
+            Message::Event(Event::ApplicationStateChanged(state)) => self.state = *state,
+            _ => {}
         }
 
         Ok(())

@@ -7,11 +7,20 @@
   - in order to better set off images from the rest of the content, each image is rendered with a small drop shadow and with rounded corners (of course, you can deactivate all this)
   - I went a bit overboard with the colors: the drop shadow's color changes with the theme and so is the new placeholder image. I hope that you appreciate all this attention to detail (made by hand and with love). BTW you change the color of the drop shadow by setting `theme.color_palette.image_drop_shadow`
   - please also checkout `docs/configuration.md` for all settings related to image displaying
+- resizing of panels got a *super-boost*
+  - both the feed list and the article list/content can now be resized either by the new `resize` command or by clicking and dragging their borders with the mouse
+  - the command `resize` can be used to resize the current panel by absolute or relative sizes (`+2`, `-1`, `20`, `+10%`, `-30%`, `30%`)
+  - there are many new key bindings for dyanmic resizing. Here are some examples:
+    - `<` and `>` change the width of the feedlist, `[` and `]` to the change height of the article list/content
+    - the key bindings starting with `|` change the width of the feed list, e.g., `| 3` sets its width to 30%
+    - and for `-` you get the key bindings for the height of the article list
+    - of course you can define your own keybindings for your favorite layout configurations, e.g., `"your keybinding here" = ["in feeds resize 5", "in articles resize 3"]` and with `"..." = ["in feeds resize", "in artciles resize"]` to go back to the default settings
+    - check out `docs/keybindings.md` *Resizing Panels* for more information
 - You won't believe this but the display style of links, urls and hints in articles was not configurable! I made up for this by introducing new style settings `link_*`
 - in order to make image fetching faster, *eilmeldung* uses an in-memory HTTP cache whose size you can set with `article_images_cache_size` (`512MiB` by default).
 - bugfix: `Shift-Tab` (`backtab`) works again: focusing the previous panel and cycling backwards through completions in the command line (was reported as unknown key sequence `S-backtab`)
 - some more changes
-  - dimensions now also allow the alias `units` for `length`
+  - dimensions now also allow the alias `units` or no suffix for `length`
   - changed to another html-to-markdown converter (`html-to-markdown-rs`)
 
 
@@ -30,7 +39,6 @@ Here are some news:
   - with many thanks and cheers to @jangernert for all the work he puts into maintaining news-flash, which makes *eilmeldung* possible
   - and because of @jangernert's great work, *eilmeldung* now has **no** external dependencies anymore!🎉 just pure rust 🦀 (except for `libc` of course 😉)
 - when *eilmeldung* detects multiple feed sources when adding a feed, it shows a selection popup
-
 
 # 1.9.1 - 2026-10-20
 
