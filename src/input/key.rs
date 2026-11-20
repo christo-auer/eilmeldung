@@ -211,7 +211,9 @@ impl From<KeyEvent> for Key {
             KeyModifiers::ALT => Key::Alt(key_event.code),
             KeyModifiers::CONTROL => Key::Ctrl(key_event.code),
             KeyModifiers::SHIFT => match key_event.code {
-                code @ KeyCode::Char(_) => Key::Just(code),
+                // shift is already part of these key codes: `A` is shift + `a` and
+                // crossterm reports shift + tab as `BackTab` *with* the shift modifier
+                code @ (KeyCode::Char(_) | KeyCode::BackTab) => Key::Just(code),
                 code => Key::Shift(code),
             },
             _ => Key::Unknown,
@@ -255,5 +257,43 @@ impl<'de> serde::de::Deserialize<'de> for KeySequence {
         let s = String::deserialize(deserializer)?;
 
         KeySequence::from_str(&s).map_err(|err| serde::de::Error::custom(err.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn key(code: KeyCode, modifiers: KeyModifiers) -> Key {
+        Key::from(KeyEvent::new(code, modifiers))
+    }
+
+    #[test]
+    fn shift_tab_matches_backtab_mapping() {
+        // this is how crossterm reports shift + tab
+        let shift_tab = key(KeyCode::BackTab, KeyModifiers::SHIFT);
+
+        assert_eq!(shift_tab, Key::Just(KeyCode::BackTab));
+        assert_eq!(shift_tab, Key::from_str("backtab").unwrap());
+    }
+
+    #[test]
+    fn shifted_chars_have_no_shift_modifier() {
+        assert_eq!(
+            key(KeyCode::Char('A'), KeyModifiers::SHIFT),
+            Key::Just(KeyCode::Char('A'))
+        );
+    }
+
+    #[test]
+    fn other_shifted_keys_keep_shift_modifier() {
+        assert_eq!(
+            key(KeyCode::F(1), KeyModifiers::SHIFT),
+            Key::from_str("S-f1").unwrap()
+        );
+        assert_eq!(
+            key(KeyCode::Down, KeyModifiers::SHIFT),
+            Key::Shift(KeyCode::Down)
+        );
     }
 }

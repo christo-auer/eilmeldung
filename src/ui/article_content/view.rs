@@ -46,7 +46,8 @@ pub struct ArticleContentViewData {
     // Image rendering state
     image: Option<StatefulProtocol>,
     placeholder_image: StatefulProtocol,
-    pub(super) picker: Picker,
+    pub(super) picker: Option<Picker>,
+    pub fallback_picker: Picker,
 
     // article images
     pub(super) markdown_rendering: Option<RenderResult>,
@@ -66,13 +67,13 @@ pub struct ArticleContentViewData {
 
 impl ArticleContentViewData {
     pub fn new(news_flash_utils: Arc<NewsFlashUtils>, config: &Config) -> Self {
-        let picker = Picker::from_query_stdio().unwrap();
         Self {
             vertical_scroll: 0,
             max_scroll: 0,
             image: None,
-            placeholder_image: Self::prepare_placeholder_image(&picker, config),
-            picker: picker.clone(),
+            placeholder_image: Self::prepare_placeholder_image(&Picker::halfblocks(), config),
+            picker: None,
+            fallback_picker: Picker::halfblocks(),
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
             url_for_hint: Default::default(),
@@ -104,7 +105,7 @@ impl ArticleContentViewData {
         if let Some(image_store) = self.image_store.as_mut() {
             image_store.clear();
         }
-        self.placeholder_image = Self::prepare_placeholder_image(&self.picker, config);
+        self.placeholder_image = Self::prepare_placeholder_image(self.picker(), config);
         self.vertical_scroll = 0;
         self.markdown_rendering = None;
         self.markdown_rendering_width = None;
@@ -116,7 +117,7 @@ impl ArticleContentViewData {
 
     // Public accessors for private fields
     pub(super) fn picker(&self) -> &Picker {
-        &self.picker
+        self.picker.as_ref().unwrap_or(&self.fallback_picker)
     }
 
     pub(super) fn image(&self) -> &Option<StatefulProtocol> {
@@ -341,9 +342,49 @@ impl ArticleContentViewData {
         paragraph.render(header_chunk, buf);
     }
 
+    pub fn article_layout(
+        area: Rect,
+        distraction_free: bool,
+        config: &Config,
+    ) -> (Option<Rect>, Rect) {
+        let show_header = !distraction_free || config.zen_mode_show_header;
+
+        let text_constraint = if distraction_free {
+            Constraint::Max(config.text_max_width)
+        } else {
+            Constraint::Percentage(100)
+        };
+
+        let [header_area, content_area] = Layout::default()
+            .direction(Direction::Vertical)
+            .flex(Flex::Start)
+            .constraints([
+                Constraint::Length(if show_header { 5 } else { 0 }),
+                Constraint::Fill(1),
+            ])
+            .horizontal_margin(2)
+            .vertical_margin(1)
+            .spacing(if show_header { 1 } else { 0 })
+            .areas::<2>(area);
+
+        let text_area = |available_area: Rect| {
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .flex(ratatui::layout::Flex::Center)
+                .constraints([text_constraint])
+                .areas::<1>(available_area)[0]
+        };
+
+        (
+            show_header.then(|| text_area(header_area)),
+            text_area(content_area),
+        )
+    }
+
     pub(super) fn render_summary(
         &mut self,
         model_data: &ArticleContentModelData,
+        distraction_free: bool,
         config: &Config,
         inner_area: Rect,
         buf: &mut Buffer,
@@ -352,22 +393,14 @@ impl ArticleContentViewData {
             return;
         };
 
-        let [header_chunk, summary_chunk] = Layout::default()
-            .direction(Direction::Vertical)
-            .flex(ratatui::layout::Flex::Start)
-            .constraints([
-                config.thumbnail_height.as_constraint(),
-                config
-                    .thumbnail_height
-                    .as_complementary_constraint(inner_area.width.saturating_sub(3)),
-            ])
-            .horizontal_margin(2)
-            .vertical_margin(1)
-            .spacing(1)
-            .areas::<2>(inner_area);
-
         self.scrollbar_state = ScrollbarState::default();
-        self.render_header(model_data, config, header_chunk, buf);
+
+        let (header_area, summary_chunk) =
+            Self::article_layout(inner_area, distraction_free, config);
+
+        if let Some(header_area) = header_area {
+            self.render_header(model_data, config, header_area, buf);
+        }
 
         let mut summary = article.summary.clone().unwrap_or("".into());
         summary = ArticleContentModelData::clean_string(&summary);
@@ -439,42 +472,14 @@ impl ArticleContentViewData {
         inner_area: Rect,
         buf: &mut Buffer,
     ) {
-        let show_header = !distraction_free || config.zen_mode_show_header;
-
         let vertical_scroll = self.vertical_scroll;
 
-        let [summary_area, content_area] = Layout::default()
-            .direction(Direction::Vertical)
-            .flex(Flex::Start)
-            .constraints([
-                Constraint::Length(if show_header { 5 } else { 0 }),
-                Constraint::Fill(1),
-            ])
-            .horizontal_margin(2)
-            .vertical_margin(1)
-            .spacing(1)
-            .areas::<2>(inner_area);
+        let (header_area, paragraph_area) =
+            Self::article_layout(inner_area, distraction_free, config);
 
-        let text_constraint = if distraction_free {
-            Constraint::Max(config.text_max_width)
-        } else {
-            Constraint::Percentage(100)
-        };
-
-        if show_header {
-            let [header_area] = Layout::default()
-                .direction(Direction::Horizontal)
-                .flex(ratatui::layout::Flex::Center)
-                .constraints([text_constraint])
-                .areas(summary_area);
+        if let Some(header_area) = header_area {
             self.render_header(model_data, config, header_area, buf);
         }
-
-        let [paragraph_area] = Layout::default()
-            .direction(Direction::Horizontal)
-            .flex(ratatui::layout::Flex::Center)
-            .constraints([text_constraint])
-            .areas(content_area);
 
         // prefer filtered content
         let markdown = model_data
@@ -520,10 +525,11 @@ impl ArticleContentViewData {
             image_rows,
         );
 
+        let picker = self.picker.as_ref().unwrap_or(&self.fallback_picker);
         self.max_scroll = (image_store.total_rows() as u16).saturating_sub(paragraph_area.height);
         self.vertical_scroll = vertical_scroll.min(self.max_scroll);
-        let image_max_width = u32::from(self.picker.font_size().width * paragraph_area.width);
-        let image_rows = u32::from(self.picker.font_size().height * image_rows);
+        let image_max_width = u32::from(picker.font_size().width * paragraph_area.width);
+        let image_rows = u32::from(picker.font_size().height * image_rows);
         if self.load_visible_images || config.article_images_auto_load {
             // find visible or nearly visible images which are not yet downloaded
             for url in image_store.start_visible(
@@ -539,9 +545,9 @@ impl ArticleContentViewData {
                     &url,
                     image_max_width,
                     image_rows,
-                    to_corner_radius(config, &self.picker),
+                    to_corner_radius(config, picker),
                     config.theme.color_palette().image_drop_shadow,
-                    to_drop_shadow_width(config, &self.picker),
+                    to_drop_shadow_width(config, picker),
                 );
             }
             self.load_visible_images = false;
@@ -553,9 +559,9 @@ impl ArticleContentViewData {
                 &url,
                 image_max_width,
                 image_rows,
-                to_corner_radius(config, &self.picker),
+                to_corner_radius(config, picker),
                 config.theme.color_palette().image_drop_shadow,
-                to_drop_shadow_width(config, &self.picker),
+                to_drop_shadow_width(config, picker),
             );
         }
 
@@ -573,7 +579,7 @@ impl ArticleContentViewData {
     }
 
     pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> color_eyre::Result<()> {
-        self.picker = picker.to_owned();
+        self.picker = Some(picker.to_owned());
         self.create_image_store(config);
         self.placeholder_image = Self::prepare_placeholder_image(picker, config);
 
@@ -649,8 +655,13 @@ impl Widget for &mut ArticleContent {
                 buf,
             );
         } else if self.model_data.article().is_some() {
-            self.view_data
-                .render_summary(&self.model_data, &self.config, inner_area, buf);
+            self.view_data.render_summary(
+                &self.model_data,
+                self.is_distraction_free,
+                &self.config,
+                inner_area,
+                buf,
+            );
         }
     }
 }

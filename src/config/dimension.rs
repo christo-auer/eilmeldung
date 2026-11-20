@@ -40,7 +40,7 @@ impl FromStr for Dimension {
         })?;
 
         let dimension = match lexer.next() {
-            Some(Ok(T::UnitLength)) => Ok(Dimension::Length(number)),
+            Some(Ok(T::UnitLength)) | None => Ok(Dimension::Length(number)),
             Some(Ok(T::UnitPercent)) => {
                 if number.clamp(0, 100) != number {
                     Err(ConfigError::DimensionParseError(
@@ -113,13 +113,33 @@ impl Dimension {
         }
     }
 
+    pub fn clamp(self, max: u16) -> Dimension {
+        use Dimension as D;
+
+        match self {
+            D::Length(length) => D::Length(length.clamp(0, max)),
+            D::Percentage(percent) => D::Percentage(percent.clamp(0, 100)),
+        }
+    }
+
     pub fn subtract(self, other: Dimension, max: u16) -> Dimension {
         use Dimension as D;
         match self {
-            D::Length(length) => Dimension::Length(length - other.into_length(max).raw_value()),
-            D::Percentage(percent) => {
-                Dimension::Percentage((percent - other.into_percent(max).raw_value()).clamp(0, 100))
+            D::Length(length) => {
+                Dimension::Length(length.saturating_sub(other.into_length(max).raw_value()))
             }
+            D::Percentage(percent) => Dimension::Percentage(
+                percent
+                    .saturating_sub(other.into_percent(max).raw_value())
+                    .clamp(0, 100),
+            ),
+        }
+    }
+
+    pub fn invert(self, max: u16) -> Dimension {
+        match self {
+            Self::Length(length) => Self::Length(max.saturating_sub(length)),
+            Self::Percentage(percentage) => Self::Percentage(100u16.saturating_sub(percentage)),
         }
     }
 }
@@ -170,6 +190,8 @@ mod tests {
 
     dimension_tests! {
 
+        no_unit: "10" => Ok(Dimension::Length(10)),
+        no_unit_with_spaces: "   10   \t" => Ok(Dimension::Length(10)),
         no_space_length: "10length" => Ok(Dimension::Length(10)),
         space_length: "4 length" => Ok(Dimension::Length(4)),
         space_units: "4 units" => Ok(Dimension::Length(4)),

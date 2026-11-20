@@ -60,6 +60,7 @@ When creating custom key bindings, understand the difference between:
 - [Example Commands](#example-commands)
 - [Application Commands](#application-commands)
 - [Panel Management](#panel-management)
+  - [Resize](#resize)
 - [Feed List Management](#feed-list-management)
 - [Article List](#article-list)
 - [Article Actions](#article-actions)
@@ -127,16 +128,44 @@ Here are some common command examples to get you started:
 
 ## Panel Management
 
-| Command | Syntax | Context | Description |
-|---------|--------|---------|-------------|
-| `focus` | `focus <panel>` | All | Focus a specific panel: `feeds`, `articles`, or `content`. Examples: `:focus feeds`, `:focus articles` |
-| `next` | `next` | All | Focus next panel (stops at article content) |
-| `prev` | `prev` | All | Focus previous panel (stops at feed list) |
-| `nextc` | `nextc` | All | Focus next panel (cycles back to feed list) |
-| `prevc` | `prevc` | All | Focus previous panel (cycles back to content) |
-| `zen` | `zen` | Article Content | Toggle distraction-free mode (hides all panels except article content) |
+| Command   | Syntax                  | Context         | Description                                                                                            |
+| --------- | --------                | ---------       | -------------                                                                                          |
+| `focus`   | `focus <panel>`         | All             | Focus a specific panel: `feeds`, `articles`, or `content`. Examples: `:focus feeds`, `:focus articles` |
+| `next`    | `next`                  | All             | Focus next panel (stops at article content)                                                            |
+| `prev`    | `prev`                  | All             | Focus previous panel (stops at feed list)                                                              |
+| `nextc`   | `nextc`                 | All             | Focus next panel (cycles back to feed list)                                                            |
+| `prevc`   | `prevc`                 | All             | Focus previous panel (cycles back to content)                                                          |
+| `resize`  | `resize [<resize-arg>]` | All             | resizes the panel relatively or absolutely (see below)                                                 |
+| `zen`     | `zen`                   | Article Content | Toggle distraction-free mode (hides all panels except article content)                                 |
 
+### Resize
 
+`resize` resizes the current panel along its *main axis*
+
+- feed list/tree: horizontally
+- article list/conent: vertically
+
+`resize` accepts the following arguments:
+
+```
+resize 10               # sets the size of the current panel to 10 units
+resize +10              # increases the size of the current panel by 10 units
+resize -10              # decreases the size of the current panel by 10 units
+resize 30%              # sets the size of the current panel to 30% of the available space
+resize +5%              # increases the size of the current panel by 5% of the available space
+resize -5%              # decreases the size of the current panel by 5% of the available space
+resize                  # no argument restores the default size
+```
+
+`resize` itself resizes the *current panel*. If you want to resize a particular panel, use the `in` meta command:
+
+```
+in articles resize 10            # sets the height of the articel panel to 10 rows
+in feeds resize +5%              # increases the size of the feeds panel by 5%
+in content resize 100%           # makes the content panel use the full height 
+```
+
+There are already many key bindings defined for resizing (check out [key bindings](keybindings.md)). You can also resize the panels by clicking and dragging the border between them.
 
 ## Feed List Management
 
@@ -201,11 +230,10 @@ These commands support a **scope parameter** to target specific articles:
 | `tag`           | `tag <tag name> [<scope>]`                   | Article List                  | Add tag to articles. Examples: `:tag important` (current), `:tag tech unread` (all unread), `:tag news %` (all articles)                                                                                            |
 | `untag`         | `untag <tag name> [<scope>]`                 | Article List                  | Remove tag from articles. Examples: `:untag important` (current), `:untag tech marked` (all marked)                                                                                                                 |
 | `share`         | `share <target>`                             | Article List, Article Content | Share article title and URL. Built-in targets: `clipboard`, `reddit`, `mastodon`, `telegram`, `instapaper`. Custom targets (URL and commands) can be defined in the configuration file. Example: `:share clipboard` |
-| `scrape`        | `scrape [<scope>]`                           | Article List, Article Content | Scrape full content of articles and save content into local database.                                                                                                                                               |
 | `hintfollow`    | `hintfollow <hint>`                          | Article Content               | Open the hint in the web browser. Example: `hintfollow f` opens the URL with hint `f`                                                                                                                               |
 | `hintshare`     | `hintshare <target> <hint>`                  | Article Content               | Shares the URL to which the hint points with the given target, e.g., `hintshare clipboard h` copies the URL with hint `h` to the clipboard                                                                          |
 | `pipe`          | `pipe <in> <out> <command>`                  | Article Content               | Pipes the content of the article (type defined by `in`) through the given shell command and displays the output (type defined by `out`); see also [here](pipe.md)                                                   |
-| `imageload`     | `imageload hint <hint>`, `imageload visible` | Article Content               | Loads the image of the given URL hint or all currently visible images (`visible`)                                                                                                                                   |
+| `imageload`     | `imageload hint <hint>`, `imageload visible` | Article Content                | Loads the image of the given URL hint or all currently visible images (`visible`)                                                                                                                                   |
 
 
 **Note:** By default, the commands `show`, `read` and `unread` are executed in the currently focused panel (feeds or articles). If you want to execute the command in a specific panel, use the `in` meta command, e.g., `in articles read %`, `in feeds show all`, etc.
