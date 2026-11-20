@@ -614,7 +614,7 @@ impl App {
                 self.panel_areas.articles_list.height + self.panel_areas.article_content.height
             }
         }
-        .saturating_sub(2);
+        .saturating_sub(1);
 
         let resize_arg = if matches!(panel, Panel::ArticleContent) {
             resize_arg
