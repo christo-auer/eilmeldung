@@ -516,6 +516,17 @@ impl ArticlesList {
 
         Ok(())
     }
+
+    fn on_scrape_articles(&mut self, action_scope: &ActionScope) -> color_eyre::Result<()> {
+        let article_ids = self.get_article_ids_by_action_scope(action_scope)?;
+        tooltip(
+            &self.message_sender,
+            format!("scraping {} articles", article_ids.len()).as_str(),
+            TooltipFlavor::Info,
+        )?;
+
+        self.model_data.scrape_articles(article_ids)
+    }
 }
 
 impl crate::messages::MessageReceiver for ArticlesList {
@@ -644,6 +655,11 @@ impl crate::messages::MessageReceiver for ArticlesList {
                     view_needs_update = true;
                 }
 
+                C::ActionScrape(action_scope) if handle_command => {
+                    self.on_scrape_articles(&action_scope)?;
+                    view_needs_update = true;
+                }
+
                 C::InputSearch if handle_command => {
                     self.message_sender
                         .send(Message::Command(C::CommandLineOpen(Some(
@@ -757,6 +773,26 @@ impl crate::messages::MessageReceiver for ArticlesList {
                 ConfigReloaded(config) => {
                     self.config = Arc::clone(config);
                     view_needs_update = true;
+                }
+
+                AsyncScrapeArticlesFinished(article_list) => {
+                    tooltip(
+                        &self.message_sender,
+                        format!("succesfully scraped {} articles", article_list.len()).as_str(),
+                        TooltipFlavor::Info,
+                    )?;
+
+                    if article_list.iter().any(|article_id| {
+                        self.get_current_article()
+                            .map(|article| &article.article_id == article_id)
+                            .unwrap_or(false)
+                    }) {
+                        // forward scrape to content panel which then fetches the cached scraped article
+                        self.message_sender.send(Message::Command(Command::In(
+                            Panel::ArticleContent,
+                            Box::new(Command::ActionScrape(ActionScope::Current)),
+                        )))?;
+                    }
                 }
 
                 event if event.caused_model_update() => model_needs_update = true,

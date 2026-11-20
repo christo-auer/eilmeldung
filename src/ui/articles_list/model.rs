@@ -261,4 +261,9 @@ impl ArticleListModelData {
 
         Ok(count)
     }
+
+    pub(crate) fn scrape_articles(&self, article_ids: Vec<ArticleID>) -> color_eyre::Result<()> {
+        self.news_flash_utils.scrape_articles(article_ids);
+        Ok(())
+    }
 }

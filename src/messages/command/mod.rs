@@ -391,10 +391,10 @@ pub enum Command {
 
     #[strum(
         serialize = "scrape",
-        message = "scrape",
-        detailed_message = "scrape the current article (article list, article content)"
+        message = "scrape <article scope>",
+        detailed_message = "scrape articles (article list, article content)"
     )]
-    ArticleCurrentScrape,
+    ActionScrape(ActionScope),
 
     // article list searching
     #[strum(
@@ -708,7 +708,7 @@ impl Display for Command {
                 write!(f, "pipe {in_target} to {out_target} using {command}")
             }
 
-            ArticleCurrentScrape => write!(f, "scrape content"),
+            ActionScrape(action_scope) => write!(f, "scrape {action_scope}"),
 
             ImportOpml(path) => write!(f, "import OPML file from {path}"),
             ExportOpml(path) => write!(f, "export OPML file to {path}"),

@@ -60,6 +60,7 @@ When creating custom key bindings, understand the difference between:
 - [Example Commands](#example-commands)
 - [Application Commands](#application-commands)
 - [Panel Management](#panel-management)
+  - [Resize](#resize)
 - [Feed List Management](#feed-list-management)
 - [Article List](#article-list)
 - [Article Actions](#article-actions)
@@ -127,16 +128,44 @@ Here are some common command examples to get you started:
 
 ## Panel Management
 
-| Command | Syntax | Context | Description |
-|---------|--------|---------|-------------|
-| `focus` | `focus <panel>` | All | Focus a specific panel: `feeds`, `articles`, or `content`. Examples: `:focus feeds`, `:focus articles` |
-| `next` | `next` | All | Focus next panel (stops at article content) |
-| `prev` | `prev` | All | Focus previous panel (stops at feed list) |
-| `nextc` | `nextc` | All | Focus next panel (cycles back to feed list) |
-| `prevc` | `prevc` | All | Focus previous panel (cycles back to content) |
-| `zen` | `zen` | Article Content | Toggle distraction-free mode (hides all panels except article content) |
+| Command   | Syntax                  | Context         | Description                                                                                            |
+| --------- | --------                | ---------       | -------------                                                                                          |
+| `focus`   | `focus <panel>`         | All             | Focus a specific panel: `feeds`, `articles`, or `content`. Examples: `:focus feeds`, `:focus articles` |
+| `next`    | `next`                  | All             | Focus next panel (stops at article content)                                                            |
+| `prev`    | `prev`                  | All             | Focus previous panel (stops at feed list)                                                              |
+| `nextc`   | `nextc`                 | All             | Focus next panel (cycles back to feed list)                                                            |
+| `prevc`   | `prevc`                 | All             | Focus previous panel (cycles back to content)                                                          |
+| `resize`  | `resize [<resize-arg>]` | All             | resizes the panel relatively or absolutely (see below)                                                 |
+| `zen`     | `zen`                   | Article Content | Toggle distraction-free mode (hides all panels except article content)                                 |
 
+### Resize
 
+`resize` resizes the current panel along its *main axis*
+
+- feed list/tree: horizontally
+- article list/conent: vertically
+
+`resize` accepts the following arguments:
+
+```
+resize 10               # sets the size of the current panel to 10 units
+resize +10              # increases the size of the current panel by 10 units
+resize -10              # decreases the size of the current panel by 10 units
+resize 30%              # sets the size of the current panel to 30% of the available space
+resize +5%              # increases the size of the current panel by 5% of the available space
+resize -5%              # decreases the size of the current panel by 5% of the available space
+resize                  # no argument restores the default size
+```
+
+`resize` itself resizes the *current panel*. If you want to resize a particular panel, use the `in` meta command:
+
+```
+in articles resize 10            # sets the height of the articel panel to 10 rows
+in feeds resize +5%              # increases the size of the feeds panel by 5%
+in content resize 100%           # makes the content panel use the full height 
+```
+
+There are already many key bindings defined for resizing (check out [key bindings](keybindings.md)). You can also resize the panels by clicking and dragging the border between them.
 
 ## Feed List Management
 
@@ -176,7 +205,6 @@ Here are some common command examples to get you started:
 | `sort` | `sort <sort order>` | Article List | Sort the article list by the specified sort order. Examples: `:sort date`, `:sort >date`, `:sort feed title`, `:sort <feed >date author` |
 | `sortreverse` | `sortreverse` | Article List | Reverse the current sort order (newest <-> oldest, A-Z <-> Z-A). Toggle between ascending and descending |
 | `sortclear` | `sortclear` | Article List | Clear the current sort order and restore the default sort order |
-| `scrape` | `scrape` | Article List, Article Content | Scrape the full article content from the web (for articles with truncated content) |
 
 ## Article Actions
 

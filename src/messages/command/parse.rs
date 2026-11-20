@@ -195,9 +195,7 @@ impl Command {
             }
 
             C::PanelResize(_) => {
-                let resize_arg =
-                    expect_from_next_word::<ResizeArg>(&mut args, "expecting resiz arg")?;
-                expect_nothing(args)?;
+                let resize_arg = expect_from_rest::<ResizeArg>(&mut args)?;
                 C::PanelResize(resize_arg)
             }
 
@@ -236,6 +234,9 @@ impl Command {
             }
             C::ActionFlagInvert(..) => {
                 C::ActionFlagInvert(ActionScope::from_option_string(args.as_deref())?)
+            }
+            C::ActionScrape(..) => {
+                C::ActionScrape(ActionScope::from_option_string(args.as_deref())?)
             }
             tag_command @ (C::ActionTagArticles(..) | C::ActionUntagArticles(..)) => {
                 let tag =

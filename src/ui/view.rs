@@ -126,21 +126,16 @@ impl App {
     fn render_panels(&mut self, area: Rect, buf: &mut Buffer) {
         if self.state == AppState::ArticleContentDistractionFree {
             self.article_content.render(area, buf);
-            *self.mouse_input_handler.panel_areas_mut().feed_list_mut() = Rect::default(); // 0 0 0 0
-            *self
-                .mouse_input_handler
-                .panel_areas_mut()
-                .articles_list_mut() = Rect::default(); // 0 0 0 0
-            *self
-                .mouse_input_handler
-                .panel_areas_mut()
-                .article_content_mut() = area;
+            self.panel_areas = PanelAreas {
+                article_content: area,
+                ..Default::default()
+            };
             return;
         }
 
         let (feeds_constraint_width, articles_constraint_width) = {
             if let Some(feeds_override_width) = self.feeds_override_width {
-                (feeds_override_width.as_constraint(), Constraint::Min(0))
+                (feeds_override_width.as_constraint(), Constraint::Min(1))
             } else {
                 match self.state {
                     AppState::FeedSelection => (
@@ -161,7 +156,7 @@ impl App {
 
         let (articles_constraint_height, article_content_constraint_height) = {
             if let Some(articles_height_override) = self.articles_height_override {
-                (articles_height_override.as_constraint(), Constraint::Min(0))
+                (articles_height_override.as_constraint(), Constraint::Min(1))
             } else {
                 match self.state {
                     AppState::FeedSelection | AppState::ArticleSelection => (
@@ -193,16 +188,11 @@ impl App {
             ])
             .areas::<2>(articles_chunk);
 
-        // store areas for mouse hit-testing
-        *self.mouse_input_handler.panel_areas_mut().feed_list_mut() = feeds_list_chunk;
-        *self
-            .mouse_input_handler
-            .panel_areas_mut()
-            .articles_list_mut() = articles_list_chunk;
-        *self
-            .mouse_input_handler
-            .panel_areas_mut()
-            .article_content_mut() = article_content_chunk;
+        self.panel_areas = PanelAreas {
+            feed_list: feeds_list_chunk,
+            articles_list: articles_list_chunk,
+            article_content: article_content_chunk,
+        };
 
         if !self.feed_list.is_focused() && feeds_list_chunk.area() > 0 {
             self.feed_list.render(feeds_list_chunk, buf);

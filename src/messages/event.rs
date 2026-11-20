@@ -45,6 +45,9 @@ pub enum Event {
     AsyncArticleFatFetch,
     AsyncArticleFatFetchFinished(FatArticle),
 
+    AsyncScrapeArticles,
+    AsyncScrapeArticlesFinished(Vec<ArticleID>),
+
     AsyncPipeArticle,
     AsyncPipeArticleFinished(ArticleID, ExitStatus, Option<String>, Option<String>),
 
@@ -141,6 +144,9 @@ pub enum Event {
     // application
     ApplicationStarted,
     ApplicationStateChanged(AppState),
+
+    // panel areas changed
+    PanelAreasChanged(PanelAreas),
 
     // mouse click on article list at row offset from top of inner area
     MouseArticleSelect(u16),

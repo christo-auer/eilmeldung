@@ -228,13 +228,27 @@ impl NewsFlashUtils {
         operation: let fat_article = {
             // Temporarily redirect stderr to suppress libxml xpath errors that would mess up the TUI
             let _stderr_redirect = crate::utils::prelude::StderrRedirect::new();
+
             
-            news_flash
-                .scrap_content_article(&article_id, &client)
-                .await?
+            news_flash.get_fat_article(&article_id).await.or(
+                news_flash
+                    .scrap_content_article(&article_id, &client)
+                    .await)?
         },
         success_event: Event::AsyncArticleFatFetchFinished(fat_article),
     }
+
+    gen_async_call! {
+        method_name: scrape_articles,
+        params: (article_ids: Vec<ArticleID>),
+        news_flash_var: news_flash,
+        client_var: client,
+        undo_stack_var: _undo_stack,
+        start_event: Event::AsyncScrapeArticles,
+        operation: news_flash.scrap_content_articles(article_ids.to_owned(), &client).await?,
+        success_event: Event::AsyncScrapeArticlesFinished(article_ids),
+    }
+    
 
     gen_async_call! {
         method_name: set_article_status,
