@@ -144,7 +144,12 @@ pub fn apply_image_enhancements(
     picker: &ratatui_image::picker::Picker,
     config: &Config,
 ) -> DynamicImage {
-    if config.article_images_drop_shadow || config.article_images_rounded_corners {
+    if !matches!(
+        picker.protocol_type(),
+        ratatui_image::picker::ProtocolType::Halfblocks,
+    ) || config.article_images_drop_shadow
+        || config.article_images_rounded_corners
+    {
         add_drop_shadow(
             &img,
             config.theme.color_palette().image_drop_shadow,
@@ -157,7 +162,11 @@ pub fn apply_image_enhancements(
 }
 
 pub fn to_drop_shadow_width(config: &Config, picker: &ratatui_image::picker::Picker) -> u32 {
-    if config.article_images_drop_shadow {
+    if !matches!(
+        picker.protocol_type(),
+        ratatui_image::picker::ProtocolType::Halfblocks
+    ) && config.article_images_drop_shadow
+    {
         (picker.font_size().width / 3) as u32
     } else {
         0
