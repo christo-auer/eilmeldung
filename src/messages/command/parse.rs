@@ -220,6 +220,9 @@ impl Command {
             C::ActionOpenInBrowser(..) => {
                 C::ActionOpenInBrowser(ActionScope::from_option_string(args.as_deref())?)
             }
+            C::ActionOpenCommentsInBrowser(..) => {
+                C::ActionOpenCommentsInBrowser(ActionScope::from_option_string(args.as_deref())?)
+            }
             C::ActionSetMarked(..) => {
                 C::ActionSetMarked(ActionScope::from_option_string(args.as_deref())?)
             }
