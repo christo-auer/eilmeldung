@@ -2,11 +2,23 @@
 
 { lib
 , rustPlatform
+, pkg-config
+, aws-lc
+, sqlite
 }:
 
 rustPlatform.buildRustPackage {
   pname = "eilmeldung";
   inherit version src;
+
+  nativeBuildInputs = [
+    pkg-config
+  ];
+
+  buildInputs = [
+    aws-lc
+    sqlite
+  ];
 
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
