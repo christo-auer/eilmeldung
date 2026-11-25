@@ -4,8 +4,8 @@ use std::{
     sync::Arc,
 };
 
-use chrono::{DateTime, Utc};
 use getset::{Getters, MutGetters};
+use jiff::Timestamp;
 use log::info;
 use news_flash::models::{Article, ArticleID, Category, Feed, FeedID, Marked, Tag, TagID};
 
@@ -18,7 +18,7 @@ pub struct ArticleListModelData {
     parent_category_for_feed_id: HashMap<FeedID, Category>,
     tags_for_article_id: HashMap<ArticleID, Vec<TagID>>,
     tag_for_tag_id: HashMap<TagID, Tag>,
-    last_sync: DateTime<Utc>,
+    last_sync: Timestamp,
 
     #[get_mut = "pub(super)"]
     flagged_articles: HashSet<ArticleID>,

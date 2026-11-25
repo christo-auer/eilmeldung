@@ -11,6 +11,7 @@ use std::{io::Cursor, sync::Arc};
 
 use getset::{Getters, MutGetters};
 use image::{DynamicImage, ImageReader};
+use jiff::tz::TimeZone;
 use limner::{RenderResult, render_image::ImageStore};
 use news_flash::models::{ArticleID, Enclosure, Thumbnail};
 use ratatui::layout::Flex;
@@ -326,8 +327,8 @@ impl ArticleContentViewData {
         let date_string: String = loaded_article
             .article()
             .date
-            .with_timezone(&chrono::Local)
-            .format(&config.date_format)
+            .to_zoned_datetime(TimeZone::system())
+            .strftime(&config.date_format)
             .to_string();
 
         let mut title_line = Line::from(vec![

@@ -11,6 +11,7 @@ use std::{
 use getset::Getters;
 use html_to_markdown_rs::ConversionOptions;
 use itertools::Itertools;
+use jiff::tz::TimeZone;
 use news_flash::models::{Article, ArticleID, Enclosure, FatArticle, Thumbnail};
 
 #[derive(Getters)]
@@ -299,8 +300,8 @@ impl ArticleContentModelData {
                 "{date}",
                 &article
                     .date
-                    .with_timezone(&chrono::Local)
-                    .format(&config.date_format)
+                    .to_zoned_datetime(TimeZone::system())
+                    .strftime(&config.date_format)
                     .to_string(),
             )
             .replace("{title}", article.title.as_deref().unwrap_or_default())

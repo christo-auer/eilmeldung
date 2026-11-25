@@ -5,7 +5,6 @@ use crate::{
     query::{QueryAtom, QueryClause},
 };
 
-use chrono::DateTime;
 use log::trace;
 use logos::Logos;
 use news_flash::models::{ArticleBound, ArticleFilter, Marked, Read};
@@ -418,11 +417,7 @@ fn parse_query(
                     time_key = T::KeyNewer;
 
                     let zoned = parse_datetime("1 day ago").unwrap();
-                    DateTime::from_timestamp(
-                        zoned.timestamp().as_second(),
-                        zoned.timestamp().subsec_nanosecond() as u32,
-                    )
-                    .unwrap()
+                    zoned.as_zoned().unwrap().timestamp()
                 } else {
                     match query_lexer.next() {
                         Some(Ok(T::QuotedString)) => {
@@ -434,11 +429,7 @@ fn parse_query(
                                     query_lexer.slice().to_owned(),
                                 )
                             })?;
-                            DateTime::from_timestamp(
-                                zoned.timestamp().as_second(),
-                                zoned.timestamp().subsec_nanosecond() as u32,
-                            )
-                            .unwrap()
+                            zoned.as_zoned().unwrap().timestamp()
                         }
 
                         _ => {
