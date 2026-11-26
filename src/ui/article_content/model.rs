@@ -1,17 +1,17 @@
-use crate::prelude::*;
+use crate::{
+    prelude::*,
+    ui::article_content::state::{ArticleBody, LoadedArticle, ThumbnailState},
+};
 
 use std::{
-    io::Cursor,
-    process::Stdio,
     sync::Arc,
     time::{Duration, Instant},
 };
 
 use getset::Getters;
 use html_to_markdown_rs::ConversionOptions;
-use image::ImageReader;
-use news_flash::models::{Article, ArticleID, Enclosure, FatArticle, Feed, Tag, Thumbnail};
-use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
+use itertools::Itertools;
+use news_flash::models::{Article, ArticleID, Enclosure, FatArticle, Thumbnail};
 
 #[derive(Getters)]
 #[getset(get = "pub(super)")]
@@ -20,22 +20,7 @@ pub struct ArticleContentModelData {
     news_flash_utils: Arc<NewsFlashUtils>,
 
     // Core article data
-    article: Option<Article>,
-    feed: Option<Feed>,
-    tags: Option<Vec<Tag>>,
-    fat_article: Option<FatArticle>,
-    enclosures: Option<Vec<Enclosure>>,
-
-    // Processed content
-    markdown_content: Option<String>,
-
-    // Filtered content
-    filtered_markdown_content: Option<String>,
-
-    // Thumbnail data and state
-    thumbnail_fetch_successful: Option<bool>,
-    thumbnail_fetch_running: bool,
-    thumbnail: Option<Thumbnail>,
+    loaded_article: Option<LoadedArticle>,
 
     // Timing for debouncing fetches
     instant_since_article_selected: Option<Instant>,
@@ -46,197 +31,193 @@ impl ArticleContentModelData {
     pub(super) fn new(news_flash_utils: Arc<NewsFlashUtils>) -> Self {
         Self {
             news_flash_utils,
-
-            article: None,
-            feed: None,
-            tags: None,
-            fat_article: None,
-            markdown_content: None,
-            filtered_markdown_content: None,
-            thumbnail_fetch_successful: None,
-            thumbnail_fetch_running: false,
-            thumbnail: None,
+            loaded_article: Default::default(),
             instant_since_article_selected: None,
             duration_since_last_article_change: None,
-            enclosures: None,
         }
+    }
+
+    // pub(super) fn has_article(&self) -> bool {
+    //     self.loaded_article.is_some()
+    // }
+
+    pub(super) fn on_no_article_selected(&mut self) -> ModelState {
+        self.loaded_article = None;
+        ModelState::Dirty
     }
 
     pub(super) async fn on_article_selected(
         &mut self,
-        article_id: Option<&ArticleID>,
-    ) -> color_eyre::Result<bool> {
-        if self.article.as_ref().map(|article| &article.article_id) == article_id {
-            return Ok(false);
+        article_id: &ArticleID,
+    ) -> color_eyre::Result<ModelState> {
+        log::debug!("article selected: {article_id:?}");
+
+        if self
+            .loaded_article
+            .as_ref()
+            .map(|content| &content.article().article_id == article_id)
+            .unwrap_or(false)
+        {
+            log::debug!("article id has not changed");
+            return Ok(ModelState::Clean);
         }
 
+        self.thumbnail_fetch_debounce_reset();
+
+        let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+
+        let Ok(article) = news_flash.get_article(article_id).await else {
+            return Ok(ModelState::Dirty);
+        };
+
+        let feed = news_flash
+            .get_feeds()
+            .await?
+            .0
+            .into_iter()
+            .find(|feed| feed.feed_id == article.feed_id)
+            .ok_or(color_eyre::eyre::eyre!(
+                "unable to find article for article id"
+            ))?;
+
+        let enclosures = news_flash.get_enclosures(article_id).await?;
+        let tags = news_flash.get_tags_of_article(article_id).await?;
+
+        let mut article_content = LoadedArticle {
+            article,
+            feed,
+            tags,
+            enclosures,
+            thumbnail_state: ThumbnailState::None,
+            body: Default::default(),
+        };
+
+        if let Ok(fat_article) = news_flash.get_fat_article(article_id).await
+            && let Some(markdown_content) = Self::fat_article_to_markdown(&fat_article)
+        {
+            article_content.body = ArticleBody::Fat {
+                fat_article: Box::new(fat_article),
+                markdown_content,
+            };
+        }
+
+        self.loaded_article = Some(article_content);
+
+        Ok(ModelState::Dirty)
+    }
+
+    fn fat_article_to_markdown(fat_article: &FatArticle) -> Option<String> {
+        let html = fat_article.scraped_content.as_deref()?;
+
+        html_to_markdown_rs::convert(html, ConversionOptions::default())
+            .ok()
+            .and_then(|result| result.content)
+    }
+
+    pub(super) async fn update_article_tags(&mut self) -> color_eyre::Result<ModelState> {
+        if let Some(LoadedArticle {
+            article: Article { article_id, .. },
+            tags,
+            ..
+        }) = self.loaded_article.as_mut()
+        {
+            let news_flash = self.news_flash_utils.news_flash_lock.read().await;
+            *tags = news_flash.get_tags_of_article(article_id).await?;
+            return Ok(ModelState::Dirty);
+        }
+        Ok(ModelState::Clean)
+    }
+
+    pub(super) fn scrape_article(&mut self) -> color_eyre::Result<ModelState> {
+        let Some(loaded_article) = self.loaded_article.as_ref() else {
+            return Ok(ModelState::Clean);
+        };
+
+        self.news_flash_utils
+            .fetch_fat_article(loaded_article.article_id().to_owned());
+
+        Ok(ModelState::Clean)
+    }
+
+    pub(super) fn on_fat_article(&mut self, fat_article: FatArticle) -> ModelState {
+        if let Some(loaded_article) = self.loaded_article.as_ref()
+            && !loaded_article.is(&fat_article.article_id)
+        {
+            log::debug!(
+                "set_fat_article: article id {:?} does not match fat article id {:?}",
+                loaded_article.article_id(),
+                fat_article.article_id
+            );
+            return ModelState::Clean;
+        }
+
+        match self.loaded_article.as_mut() {
+            None => {
+                log::debug!("received fat article but there is no article loaded");
+                ModelState::Clean
+            }
+
+            Some(LoadedArticle { body, .. }) => match body {
+                ArticleBody::Summary => {
+                    if let Some(markdown_content) = Self::fat_article_to_markdown(&fat_article) {
+                        *body = ArticleBody::Fat {
+                            fat_article: Box::new(fat_article),
+                            markdown_content,
+                        };
+                        ModelState::Dirty
+                    } else {
+                        log::debug!("fat article does not contain scraped data");
+                        ModelState::Clean
+                    }
+                }
+                _ => {
+                    log::debug!(
+                        "received fat article again => ignoring {fat_article:?} vs {body:?}"
+                    );
+                    ModelState::Clean
+                }
+            },
+        }
+    }
+
+    pub(super) fn on_update_thumbnail_state(&mut self, config: &Config) -> ModelState {
+        if !config.thumbnail_show {
+            return ModelState::Clean; // don't deal with thumbnails at all
+        }
+
+        use ThumbnailState as S;
+        let debounce_check = self.thumbnail_fetch_debounce_check(config);
+
+        let Some(loaded_article) = self.loaded_article.as_mut() else {
+            return ModelState::Clean;
+        };
+
+        if !debounce_check {
+            return ModelState::Clean;
+        }
+
+        if matches!(loaded_article.thumbnail_state, S::None) {
+            self.news_flash_utils
+                .fetch_thumbnail(loaded_article.article_id().to_owned());
+            loaded_article.thumbnail_state = S::Fetching;
+            return ModelState::Dirty;
+        }
+
+        ModelState::Clean
+    }
+
+    fn thumbnail_fetch_debounce_reset(&mut self) {
         let current_instant = Instant::now();
+
         if let Some(last_article_selected) = self.instant_since_article_selected {
             self.duration_since_last_article_change =
                 Some(current_instant.duration_since(last_article_selected));
         }
+
         self.instant_since_article_selected = Some(current_instant);
-        self.thumbnail_fetch_successful = None;
-        self.thumbnail = None;
-        self.fat_article = None;
-        self.markdown_content = None;
-        self.filtered_markdown_content = None;
-        self.feed = None;
-        self.tags = None;
-
-        match article_id {
-            Some(article_id) => {
-                let news_flash = self.news_flash_utils.news_flash_lock.read().await;
-
-                self.article = match news_flash.get_article(article_id).await {
-                    Ok(article) => {
-                        self.feed = news_flash
-                            .get_feeds()
-                            .await?
-                            .0
-                            .into_iter()
-                            .find(|feed| feed.feed_id == article.feed_id);
-                        self.enclosures = Some(news_flash.get_enclosures(article_id).await?);
-
-                        Some(article)
-                    }
-                    Err(error) => {
-                        log::error!("unable to retrieve article: {error}");
-                        None
-                    }
-                }
-            }
-            None => {
-                self.article = None;
-            }
-        }
-        self.update_article_tags().await?;
-
-        Ok(true)
     }
 
-    pub(super) async fn update_article_tags(&mut self) -> color_eyre::Result<()> {
-        if let Some(article_id) = self.article.as_ref().map(|article| &article.article_id) {
-            let news_flash = self.news_flash_utils.news_flash_lock.read().await;
-            self.tags = Some(news_flash.get_tags_of_article(article_id).await?);
-        }
-        Ok(())
-    }
-
-    pub(super) fn prepare_thumbnail(
-        &mut self,
-        thumbnail: &Thumbnail,
-        picker: &Picker,
-        config: &Config,
-    ) -> color_eyre::Result<Option<StatefulProtocol>> {
-        if let Some(article) = self.article.as_ref()
-            && article.article_id == thumbnail.article_id
-            && let Some(data) = thumbnail.data.as_ref()
-        {
-            self.thumbnail = Some(thumbnail.to_owned());
-            Ok(Some(Self::gen_stateful_protocol(data, picker, config)?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub(super) fn update_thumbnail(
-        &self,
-        picker: &Picker,
-        config: &Config,
-    ) -> color_eyre::Result<Option<StatefulProtocol>> {
-        if let Some(thumbnail) = self.thumbnail.as_ref()
-            && let Some(data) = thumbnail.data.as_ref()
-        {
-            Ok(Some(Self::gen_stateful_protocol(data, picker, config)?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn gen_stateful_protocol(
-        data: &[u8],
-        picker: &Picker,
-        config: &Config,
-    ) -> color_eyre::Result<StatefulProtocol> {
-        let cursor = Cursor::new(data);
-        let mut image = ImageReader::new(cursor).with_guessed_format()?.decode()?;
-
-        image = apply_image_enhancements(image, picker, config);
-
-        Ok(picker.new_resize_protocol(image))
-    }
-
-    pub(super) fn scrape_article(&mut self) -> color_eyre::Result<()> {
-        let Some(article) = self.article.as_ref() else {
-            return Ok(());
-        };
-
-        if self.fat_article.is_none() {
-            let article_id = article.article_id.clone();
-            self.news_flash_utils.fetch_fat_article(article_id);
-        }
-
-        Ok(())
-    }
-
-    pub(super) fn set_fat_article(&mut self, fat_article: FatArticle) {
-        let article_id = self.article.as_ref().map(|a| &a.article_id);
-        let fat_article_id = Some(&fat_article.article_id);
-        if article_id == fat_article_id {
-            self.fat_article = Some(fat_article);
-            self.markdown_content = None; // Reset processed content
-        } else {
-            log::debug!(
-                "set_fat_article: article id {:?} does not match fat article id {:?}",
-                article_id,
-                fat_article_id
-            );
-        }
-    }
-
-    pub(super) fn get_or_create_markdown_content(
-        &mut self,
-        config: &Config,
-    ) -> color_eyre::Result<()> {
-        if self.markdown_content.is_none()
-            && config.content_preferred_type == ArticleContentType::Markdown
-            && let Some(fat_article) = self.fat_article.as_ref()
-            && let Some(html) = fat_article.scraped_content.as_deref()
-        {
-            // create html to markdown converter
-            // let options = htmd::options::Options {
-            //     preformatted_code: true,
-            //
-            //     ..Default::default()
-            // };
-            // let html2markdown = HtmlToMarkdown::builder().options(options).build();
-            let markdown =
-                html_to_markdown_rs::convert(html, ConversionOptions::default()).unwrap();
-
-            self.markdown_content = Some(markdown.content.unwrap());
-        }
-        Ok(())
-    }
-
-    pub(super) fn update_should_fetch_thumbnail(&mut self, config: &Config) -> bool {
-        if !config.thumbnail_show || self.thumbnail_fetch_running {
-            return false;
-        }
-
-        let Some(article) = self.article.as_ref() else {
-            return false;
-        };
-
-        if article.thumbnail_url.is_none() {
-            self.thumbnail_fetch_successful = Some(false);
-            return false;
-        }
-
-        if !self.thumbnail_fetch_successful.unwrap_or(true) {
-            return false;
-        }
-
+    fn thumbnail_fetch_debounce_check(&mut self, config: &Config) -> bool {
         let current_instant = Instant::now();
         let long_enough_current_article = match self.instant_since_article_selected {
             Some(article_selected_instant) => {
@@ -255,84 +236,66 @@ impl ArticleContentModelData {
         }
     }
 
-    pub(super) fn start_fetch_thumbnail(&mut self) -> color_eyre::Result<()> {
-        let Some(article) = self.article.as_ref() else {
-            self.thumbnail_fetch_successful = Some(false);
-            return Ok(());
-        };
+    pub(super) fn on_thumbnail_fetch_finished(
+        &mut self,
+        thumbnail: Option<Thumbnail>,
+    ) -> ModelState {
+        if let Some(loaded_article) = self.loaded_article.as_mut() {
+            loaded_article.thumbnail_state = match thumbnail {
+                Some(thumbnail) => ThumbnailState::Fetched(Box::new(thumbnail)),
+                None => ThumbnailState::Failed,
+            };
 
-        if article.thumbnail_url.is_none() {
-            self.thumbnail_fetch_successful = Some(false);
-            return Ok(());
-        }
-
-        let article_id = article.article_id.clone();
-        self.news_flash_utils.fetch_thumbnail(article_id);
-        self.thumbnail_fetch_running = true;
-
-        Ok(())
-    }
-
-    pub(super) fn on_thumbnail_fetch_finished(&mut self, thumbnail: Option<&Thumbnail>) {
-        self.thumbnail_fetch_running = false;
-        match thumbnail {
-            Some(_) => {
-                self.thumbnail_fetch_successful = Some(true);
-            }
-            None => {
-                log::debug!("fetching thumbnail not successful");
-                self.thumbnail_fetch_successful = Some(false);
-            }
+            ModelState::Dirty
+        } else {
+            ModelState::Clean
         }
     }
 
-    pub(super) fn on_thumbnail_fetch_failed(&mut self) {
-        self.thumbnail_fetch_successful = Some(false);
-        self.thumbnail_fetch_running = false;
+    pub(super) fn on_thumbnail_fetch_failed(&mut self) -> ModelState {
+        if let Some(loaded_article) = self.loaded_article.as_mut() {
+            log::debug!("FAILED thumbnail");
+            loaded_article.thumbnail_state = ThumbnailState::Failed;
+            return ModelState::Dirty;
+        }
+        ModelState::Clean
     }
 
-    pub(super) fn clean_string(string: &str) -> String {
-        string.replace("\r", "").replace("\n", "")
-    }
-
-    pub(crate) async fn open_enclosure(
+    pub(super) fn get_matching_enclosure(
         &self,
-        config: &Config,
-        enclosure: &Enclosure,
-    ) -> color_eyre::Result<String> {
-        let command = match <EnclosureType>::from(enclosure) {
-            EnclosureType::Audio => config.audio_enclosure_command.as_ref(),
-            EnclosureType::Image => config.image_enclosure_command.as_ref(),
-            EnclosureType::Video => config.video_enclosure_command.as_ref(),
-        }
-        .unwrap_or(&config.enclosure_command)
-        .replace("{url}", enclosure.url.as_ref())
-        .replace("{type}", <EnclosureType>::from(enclosure).as_ref())
-        .replace("{mime}", enclosure.mime_type.as_deref().unwrap_or("*/*"));
+        enclosure_type: Option<EnclosureType>,
+    ) -> Option<&Enclosure> {
+        let LoadedArticle { enclosures, .. } = self.loaded_article.as_ref()?;
 
-        let (cmd, args) = prepare_command(&command)?;
+        let enclosures_matching_type = enclosures
+            .iter()
+            .filter(|enclosure| {
+                enclosure_type
+                    .map(|enclosure_type| enclosure_type == (*enclosure).into())
+                    .unwrap_or(true)
+            })
+            .collect::<Vec<&Enclosure>>();
 
-        let mut command = std::process::Command::new(&cmd);
-
-        command
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .args(args)
-            .spawn()?;
-
-        Ok(cmd.to_owned())
+        enclosures_matching_type
+            .into_iter()
+            .find_or_first(|enclosure| enclosure.is_default)
     }
 
-    pub(crate) fn pipe(
+    pub(crate) fn on_pipe(
         &self,
         config: &Config,
         in_target: PipeTarget,
         out_target: PipeTarget,
         command: &str,
-    ) -> color_eyre::Result<()> {
-        let Some(article) = self.article.as_ref() else {
-            return Err(color_eyre::eyre::eyre!("no article selected"));
+    ) -> ModelState {
+        let Some(LoadedArticle {
+            article,
+            feed,
+            body,
+            ..
+        }) = self.loaded_article.as_ref()
+        else {
+            return ModelState::Clean;
         };
 
         let command = command
@@ -347,23 +310,19 @@ impl ArticleContentModelData {
             .replace("{title}", article.title.as_deref().unwrap_or_default())
             .replace("{url}", article.url.as_deref().unwrap_or_default())
             .replace("{author}", article.author.as_deref().unwrap_or_default())
-            .replace(
-                "{feed}",
-                self.feed
-                    .as_ref()
-                    .map(|feed| &*feed.label)
-                    .unwrap_or_default(),
-            );
+            .replace("{feed}", &feed.label);
+
+        let fat_article = body.as_fat().map(|body| body.0.to_owned());
 
         self.news_flash_utils.pipe(
             article.to_owned(),
-            self.fat_article.to_owned(),
+            fat_article,
             in_target,
             out_target,
             command.to_string(),
         );
 
-        Ok(())
+        ModelState::Clean
     }
 
     pub(crate) fn on_pipe_finished(
@@ -372,16 +331,22 @@ impl ArticleContentModelData {
         exit_status: std::process::ExitStatus,
         markdown: &Option<String>,
         error: &Option<String>,
-    ) {
-        if self.article.as_ref().map(|article| &article.article_id) != Some(article_id) {
-            return;
+    ) -> ModelState {
+        let Some(loaded_article) = self.loaded_article.as_mut() else {
+            log::debug!("received pipe output but don't have article anymore");
+            return ModelState::Clean;
+        };
+
+        if !loaded_article.is(article_id) {
+            log::debug!("received pipe output for different article");
+            return ModelState::Clean;
         }
 
         if markdown.is_none()
             && exit_status.success()
             && error.as_ref().map(|error| error.is_empty()).unwrap_or(true)
         {
-            return;
+            return ModelState::Clean;
         }
 
         let mut markdown_content = markdown.as_deref().unwrap_or("").to_string();
@@ -412,6 +377,10 @@ Process returned with error ({})
             ));
         }
 
-        self.filtered_markdown_content.replace(markdown_content);
+        loaded_article.body = ArticleBody::Piped {
+            piped_content: markdown_content,
+        };
+
+        ModelState::Dirty
     }
 }

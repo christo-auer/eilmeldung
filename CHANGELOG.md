@@ -24,6 +24,9 @@
 - some more changes
   - dimensions now also allow the alias `units` or no suffix for `length`
   - changed to another html-to-markdown converter (`html-to-markdown-rs`)
+- the following settings are now deprecated
+  - `thumbnail_resize`: thumbnails are now always resized
+  - `content_preferred_type`: markdown is now the only option
 
 
 # 1.10.1 - 2026-11-11

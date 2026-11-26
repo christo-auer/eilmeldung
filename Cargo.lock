@@ -1788,6 +1788,7 @@ dependencies = [
  "color-eyre",
  "config",
  "directories",
+ "enum-as-inner",
  "futures",
  "fuzzy-matcher",
  "getset",
@@ -1868,6 +1869,18 @@ name = "entities"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5320ae4c3782150d900b79807611a59a99fc9a1d61d686faafc24b93fc8d7ca"
+
+[[package]]
+name = "enum-as-inner"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0359ee92f81184d7985519e474bda2a5738476334edd3746c9b1265c067afe70"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
 
 [[package]]
 name = "enumflags2"

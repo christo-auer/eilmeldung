@@ -3,6 +3,7 @@ mod articles_list;
 mod batch;
 mod command_confirm;
 mod command_input;
+mod update_state;
 mod feeds_list;
 mod help_popup;
 mod mouse;
@@ -20,6 +21,7 @@ pub mod prelude {
     pub use super::batch::BatchProcessor;
     pub use super::command_confirm::CommandConfirm;
     pub use super::command_input::CommandInput;
+    pub use super::update_state::ModelState;
     pub use super::feeds_list::prelude::*;
     pub use super::help_popup::HelpPopup;
     pub use super::mouse::MouseInputHandler;
@@ -311,7 +313,7 @@ impl App {
                     if let Some(message) = message {
 
                         // schedule redraw and clear
-                        redraw = redraw || matches!(message, Message::Command(Command::Redraw));
+                        redraw |= matches!(message, Message::Command(Command::Redraw));
                         clear_term = clear_term || matches!(message, Message::Command(Command::Clear));
 
 
