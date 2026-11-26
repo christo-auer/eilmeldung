@@ -3,7 +3,6 @@ mod articles_list;
 mod batch;
 mod command_confirm;
 mod command_input;
-mod update_state;
 mod feeds_list;
 mod help_popup;
 mod mouse;
@@ -12,6 +11,7 @@ mod popup_manager;
 mod selection_popup;
 mod state;
 mod tooltip;
+mod update_state;
 mod view;
 
 pub mod prelude {
@@ -21,7 +21,6 @@ pub mod prelude {
     pub use super::batch::BatchProcessor;
     pub use super::command_confirm::CommandConfirm;
     pub use super::command_input::CommandInput;
-    pub use super::update_state::ModelState;
     pub use super::feeds_list::prelude::*;
     pub use super::help_popup::HelpPopup;
     pub use super::mouse::MouseInputHandler;
@@ -30,6 +29,7 @@ pub mod prelude {
     pub use super::selection_popup::{SelectionPopup, SelectionPopupMapper};
     pub use super::state::AppState;
     pub use super::tooltip::{Tooltip, TooltipFlavor, tooltip};
+    pub use super::update_state::ModelState;
 }
 
 use crate::prelude::*;

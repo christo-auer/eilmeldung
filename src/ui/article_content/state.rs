@@ -47,8 +47,8 @@ impl LoadedArticle {
             B::Fat {
                 ref markdown_content,
                 ..
-            } => &*markdown_content,
-            B::Piped { ref piped_content } => &*piped_content,
+            } => markdown_content,
+            B::Piped { ref piped_content } => piped_content,
         }
     }
 }
