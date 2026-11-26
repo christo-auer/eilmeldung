@@ -171,9 +171,7 @@ impl ArticleContentModelData {
                     }
                 }
                 _ => {
-                    log::debug!(
-                        "received fat article again => ignoring {fat_article:?} vs {body:?}"
-                    );
+                    log::debug!("received fat article again => ignoring");
                     ModelState::Clean
                 }
             },
@@ -254,7 +252,6 @@ impl ArticleContentModelData {
 
     pub(super) fn on_thumbnail_fetch_failed(&mut self) -> ModelState {
         if let Some(loaded_article) = self.loaded_article.as_mut() {
-            log::debug!("FAILED thumbnail");
             loaded_article.thumbnail_state = ThumbnailState::Failed;
             return ModelState::Dirty;
         }

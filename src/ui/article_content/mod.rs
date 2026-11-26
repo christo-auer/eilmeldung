@@ -385,7 +385,7 @@ impl ArticleContent {
             }
 
             E::AsyncArticleThumbnailFetchFinished(thumbnail) => {
-                log::debug!("fetching thumbnail successful");
+                log::debug!("fetching thumbnail finished");
                 self.model_data
                     .on_thumbnail_fetch_finished(thumbnail.to_owned())
             }
