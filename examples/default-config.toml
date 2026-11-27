@@ -47,10 +47,10 @@ auto_scrape = true
 thumbnail_show = true
 thumbnail_width = "14 length"
 thumbnail_height = "5 length"
-thumbnail_resize = true
+# thumbnail_resize is deprecated
 thumbnail_fetch_debounce_millis = 500
 text_max_width = 66
-content_preferred_type = "markdown"
+# content_preferred_type is deprecated
 
 # Layout
 shadows = true

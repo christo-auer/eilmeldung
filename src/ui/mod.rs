@@ -11,6 +11,7 @@ mod popup_manager;
 mod selection_popup;
 mod state;
 mod tooltip;
+mod update_state;
 mod view;
 
 pub mod prelude {
@@ -28,6 +29,7 @@ pub mod prelude {
     pub use super::selection_popup::{SelectionPopup, SelectionPopupMapper};
     pub use super::state::AppState;
     pub use super::tooltip::{Tooltip, TooltipFlavor, tooltip};
+    pub use super::update_state::ModelState;
 }
 
 use crate::prelude::*;
@@ -311,7 +313,7 @@ impl App {
                     if let Some(message) = message {
 
                         // schedule redraw and clear
-                        redraw = redraw || matches!(message, Message::Command(Command::Redraw));
+                        redraw |= matches!(message, Message::Command(Command::Redraw));
                         clear_term = clear_term || matches!(message, Message::Command(Command::Clear));
 
 

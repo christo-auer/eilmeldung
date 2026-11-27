@@ -1,15 +1,21 @@
 use super::model::ArticleContentModelData;
-use crate::prelude::*;
+use crate::{
+    prelude::*,
+    ui::article_content::{
+        markdown_to_text::HintUrlMap,
+        state::{LoadedArticle, ThumbnailState},
+    },
+};
 
-use std::{collections::HashMap, io::Cursor, sync::Arc};
+use std::{io::Cursor, sync::Arc};
 
 use getset::{Getters, MutGetters};
 use image::{DynamicImage, ImageReader};
 use limner::{RenderResult, render_image::ImageStore};
-use news_flash::models::Enclosure;
+use news_flash::models::{ArticleID, Enclosure, Thumbnail};
 use ratatui::layout::Flex;
 use ratatui_image::{
-    FilterType, Resize, StatefulImage, picker::Picker, protocol::StatefulProtocol,
+    FilterType, Resize, ResizeEncodeRender, picker::Picker, protocol::StatefulProtocol,
 };
 
 use throbber_widgets_tui::{Throbber, ThrobberState, WhichUse};
@@ -32,35 +38,45 @@ impl HintTarget {
     }
 }
 
+#[derive(PartialEq, Eq, Debug)]
+struct RenderKey {
+    article_id: ArticleID,
+    width: u16,
+    content: String,
+}
+
+struct RenderCache {
+    render_key: RenderKey,
+    thumbnail_protocol: Option<StatefulProtocol>,
+    render_result: RenderResult,
+    image_store: ImageStore,
+    hint_url_map: HintUrlMap,
+}
+
 #[derive(Getters, MutGetters)]
 pub struct ArticleContentViewData {
     // Scroll state
-    #[getset(get = "pub(super)", get_mut = "pub(super)")]
     vertical_scroll: u16,
-    #[getset(get = "pub(super)")]
     max_scroll: u16,
 
-    #[getset(get = "pub(super), get_mut = "pub(super))]
     scrollbar_state: ScrollbarState,
 
     // Image rendering state
-    image: Option<StatefulProtocol>,
     placeholder_image: StatefulProtocol,
-    pub(super) picker: Option<Picker>,
-    pub fallback_picker: Picker,
 
-    // article images
-    pub(super) markdown_rendering: Option<RenderResult>,
-    pub(super) markdown_rendering_width: Option<u16>,
-    pub(super) image_store: Option<ImageStore>,
+    // picker
+    picker: Option<Picker>,
+    fallback_picker: Picker,
+
+    // renderer cache
+    render_cache: Option<RenderCache>,
+
     load_visible_images: bool,
     load_image_hint: Option<String>,
 
     // Throbber state for loading animations
     thumbnail_fetching_throbber: ThrobberState,
 
-    #[getset(get = "pub(super)", get_mut = "pub(super)")]
-    pub(super) url_for_hint: HashMap<String, HintTarget>,
     // needed to fetch article images
     news_flash_utils: Arc<NewsFlashUtils>,
 }
@@ -70,62 +86,16 @@ impl ArticleContentViewData {
         Self {
             vertical_scroll: 0,
             max_scroll: 0,
-            image: None,
             placeholder_image: Self::prepare_placeholder_image(&Picker::halfblocks(), config),
             picker: None,
             fallback_picker: Picker::halfblocks(),
             thumbnail_fetching_throbber: ThrobberState::default(),
             scrollbar_state: ScrollbarState::default(),
-            url_for_hint: Default::default(),
-            image_store: None,
+            render_cache: None,
             load_visible_images: false,
             load_image_hint: None,
-            markdown_rendering: None,
-            markdown_rendering_width: None,
             news_flash_utils,
         }
-    }
-
-    pub(super) fn update(&mut self, model_data: &ArticleContentModelData, _config: Arc<Config>) {
-        if model_data.article().is_some() && self.vertical_scroll > self.max_scroll {
-            self.vertical_scroll = 0;
-        }
-    }
-
-    pub(super) fn set_image(&mut self, image: Option<StatefulProtocol>) {
-        self.image = image;
-    }
-
-    pub(super) fn clear_image(&mut self) {
-        self.image = None;
-    }
-
-    pub(super) fn clear(&mut self, config: &Config) {
-        self.image = None;
-        if let Some(image_store) = self.image_store.as_mut() {
-            image_store.clear();
-        }
-        self.placeholder_image = Self::prepare_placeholder_image(self.picker(), config);
-        self.vertical_scroll = 0;
-        self.markdown_rendering = None;
-        self.markdown_rendering_width = None;
-    }
-
-    pub(super) fn reset_thumbnail_throbber(&mut self) {
-        self.thumbnail_fetching_throbber.calc_next();
-    }
-
-    // Public accessors for private fields
-    pub(super) fn picker(&self) -> &Picker {
-        self.picker.as_ref().unwrap_or(&self.fallback_picker)
-    }
-
-    pub(super) fn image(&self) -> &Option<StatefulProtocol> {
-        &self.image
-    }
-
-    pub(super) fn tick_throbbers(&mut self) {
-        self.thumbnail_fetching_throbber.calc_next();
     }
 
     pub(super) fn scroll_up(&mut self, amount: u16) {
@@ -152,19 +122,71 @@ impl ArticleContentViewData {
         self.vertical_scroll = self.max_scroll;
     }
 
-    pub(super) fn on_image_fetch_finished(&mut self, url: &str, image: DynamicImage) {
-        if let Some(image_store) = self.image_store.as_mut() {
+    pub(super) fn on_image_fetch_finished(&mut self, url: &str, image: DynamicImage) -> ModelState {
+        if let Some(RenderCache { image_store, .. }) = self.render_cache.as_mut() {
             image_store.finish(url, Some(image));
+            ModelState::Dirty
+        } else {
+            log::debug!("got an image but don't have an article to render");
+            ModelState::Clean
         }
     }
 
-    pub(super) fn on_image_fetch_failed(&mut self, url: &str) {
-        if let Some(image_store) = self.image_store.as_mut() {
+    pub(super) fn on_image_fetch_failed(&mut self, url: &str) -> ModelState {
+        if let Some(RenderCache { image_store, .. }) = self.render_cache.as_mut() {
             image_store.finish(url, None);
+            ModelState::Dirty
+        } else {
+            log::debug!("got a failed image but don't have an article to render");
+            ModelState::Clean
         }
     }
 
-    pub(super) fn render_block(
+    fn update_render_cache(
+        &mut self,
+        model_data: &ArticleContentModelData,
+        width: u16,
+        config: &Config,
+    ) -> ModelState {
+        let new_render_key = model_data
+            .loaded_article()
+            .as_ref()
+            .map(|loaded_article| RenderKey {
+                article_id: loaded_article.article_id().to_owned(),
+                width,
+                content: loaded_article.content().to_owned(),
+            });
+
+        if self
+            .render_cache
+            .as_ref()
+            .map(|RenderCache { render_key, .. }| render_key)
+            == new_render_key.as_ref()
+        {
+            log::debug!("render key has not changed: {new_render_key:?}");
+            return ModelState::Clean;
+        }
+
+        let Some(render_key) = new_render_key else {
+            self.render_cache = None;
+            return ModelState::Dirty;
+        };
+
+        let (render_result, image_store, hint_url_map) =
+            self.generate_content_render_cache(&render_key.content, width, config);
+
+        self.render_cache = Some(RenderCache {
+            render_key,
+            render_result,
+            hint_url_map,
+            image_store,
+            thumbnail_protocol: None,
+        });
+
+        ModelState::Dirty
+    }
+
+    fn render_block(
         &mut self,
         area: Rect,
         buf: &mut Buffer,
@@ -218,24 +240,26 @@ impl ArticleContentViewData {
         inner_area
     }
 
-    pub(super) fn generate_header<'a>(
+    fn generate_header<'a>(
         &'a self,
         model_data: &'a ArticleContentModelData,
         config: &'a Config,
     ) -> Vec<Line<'a>> {
-        let Some(article) = model_data.article() else {
+        let Some(loaded_article) = model_data.loaded_article().as_ref() else {
             return vec![];
         };
 
-        let title = html_sanitize(article.title.as_deref().unwrap_or("unknown title"));
-        let feed_label: String = if let Some(feed) = model_data.feed() {
-            html_sanitize(&feed.label)
-        } else {
-            article.feed_id.as_str().into()
-        };
+        let title = html_sanitize(
+            loaded_article
+                .article
+                .title
+                .as_deref()
+                .unwrap_or("unknown title"),
+        );
+        let feed_label = &loaded_article.feed().label;
 
-        let tags = model_data.tags().as_deref().unwrap_or_default();
-        let mut tags_and_enclosures = tags
+        let mut tags_and_enclosures = loaded_article
+            .tags()
             .iter()
             .flat_map(|tag| {
                 let mut line = NewsFlashUtils::tag_to_line(tag, config, None);
@@ -244,31 +268,30 @@ impl ArticleContentViewData {
             })
             .collect::<Vec<Span>>();
 
-        let enclosures = model_data.enclosures().clone().unwrap_or_default();
-
         tags_and_enclosures.append(&mut to_enclosure_bubble(
             config,
-            &enclosures,
+            loaded_article.enclosures(),
             |enclosure| enclosure.is_video(),
             config.icon_set.enclosure_video_icon(),
         ));
 
         tags_and_enclosures.append(&mut to_enclosure_bubble(
             config,
-            &enclosures,
+            loaded_article.enclosures(),
             |enclosure| enclosure.is_image(),
             config.icon_set.enclosure_image_icon(),
         ));
 
         tags_and_enclosures.append(&mut to_enclosure_bubble(
             config,
-            &enclosures,
+            loaded_article.enclosures(),
             |enclosure| enclosure.is_audio(),
             config.icon_set.enclosure_audio_icon(),
         ));
 
         let author = html_sanitize(
-            article
+            loaded_article
+                .article()
                 .author
                 .as_deref()
                 .map(|author| format!(" by {author}"))
@@ -276,7 +299,8 @@ impl ArticleContentViewData {
                 .unwrap_or(""),
         );
 
-        let date_string: String = article
+        let date_string: String = loaded_article
+            .article()
             .date
             .with_timezone(&chrono::Local)
             .format(&config.date_format)
@@ -288,7 +312,7 @@ impl ArticleContentViewData {
             Span::from(feed_label).style(config.theme.header()),
         ]);
 
-        if model_data.filtered_markdown_content().is_some() {
+        if loaded_article.body().is_piped() {
             title_line.spans.push(" ".into());
             title_line.spans.append(
                 &mut to_bubble(
@@ -381,36 +405,6 @@ impl ArticleContentViewData {
         )
     }
 
-    pub(super) fn render_summary(
-        &mut self,
-        model_data: &ArticleContentModelData,
-        distraction_free: bool,
-        config: &Config,
-        inner_area: Rect,
-        buf: &mut Buffer,
-    ) {
-        let Some(article) = model_data.article() else {
-            return;
-        };
-
-        self.scrollbar_state = ScrollbarState::default();
-
-        let (header_area, summary_chunk) =
-            Self::article_layout(inner_area, distraction_free, config);
-
-        if let Some(header_area) = header_area {
-            self.render_header(model_data, config, header_area, buf);
-        }
-
-        let mut summary = article.summary.clone().unwrap_or("".into());
-        summary = ArticleContentModelData::clean_string(&summary);
-        let summary_paragraph = Paragraph::new(Line::from(
-            Span::from(summary).style(config.theme.paragraph()),
-        ))
-        .wrap(Wrap { trim: true });
-        summary_paragraph.render(summary_chunk, buf);
-    }
-
     pub(super) fn render_thumbnail(
         &mut self,
         model_data: &ArticleContentModelData,
@@ -418,53 +412,90 @@ impl ArticleContentViewData {
         thumbnail_chunk: Rect,
         buf: &mut Buffer,
     ) {
-        let centered_layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .flex(Flex::Center);
+        let picker = self.picker().to_owned();
+        let Some(render_cache) = self.render_cache.as_mut() else {
+            return;
+        };
 
-        match &mut self.image {
-            Some(image) => {
-                let mut stateful_image = StatefulImage::new();
-                if config.thumbnail_resize {
-                    stateful_image =
-                        stateful_image.resize(Resize::Scale(Some(FilterType::Lanczos3)));
-                }
-                let [centered_chunk] = centered_layout
-                    .constraints([Constraint::Fill(1)])
-                    .areas(thumbnail_chunk);
-                stateful_image.render(centered_chunk, buf, image);
+        let Some(LoadedArticle {
+            thumbnail_state, ..
+        }) = model_data.loaded_article().as_ref()
+        else {
+            return;
+        };
+
+        let [centered_chunk] = Layout::default()
+            .direction(Direction::Horizontal)
+            .flex(Flex::Center)
+            .constraints([Constraint::Fill(1)])
+            .areas::<1>(thumbnail_chunk);
+
+        match thumbnail_state {
+            ThumbnailState::Failed => {
+                self.placeholder_image.resize_encode_render(
+                    &Resize::Fit(Some(FilterType::Lanczos3)),
+                    centered_chunk,
+                    buf,
+                );
             }
-            None if *model_data.thumbnail_fetch_running()
-                || model_data.thumbnail_fetch_successful().is_none() =>
-            {
+            ThumbnailState::None | ThumbnailState::Fetching => {
+                let [_, throbber_chunk, _] = Layout::horizontal([
+                    Constraint::Min(1),
+                    Constraint::Length(1),
+                    Constraint::Min(1),
+                ])
+                .vertical_margin(1)
+                .areas::<3>(centered_chunk);
                 let throbber = Throbber::default()
                     .throbber_style(config.theme.header())
                     .throbber_set(throbber_widgets_tui::BRAILLE_EIGHT_DOUBLE)
                     .use_type(WhichUse::Spin);
-                let [centered_chunk] = centered_layout
-                    .constraints([Constraint::Length(1)])
-                    .areas(thumbnail_chunk);
                 StatefulWidget::render(
                     throbber,
-                    centered_chunk,
+                    throbber_chunk,
                     buf,
                     &mut self.thumbnail_fetching_throbber,
                 );
             }
-            _ => {
-                let mut stateful_image = StatefulImage::new();
-                if config.thumbnail_resize {
-                    stateful_image = stateful_image.resize(Resize::Fit(Some(FilterType::Lanczos3)))
+            ThumbnailState::Fetched(thumbnail) => {
+                if render_cache.thumbnail_protocol.is_none() {
+                    let mut thumbnail = Self::load_thumbnail(&picker, thumbnail, config);
+                    thumbnail = Some(
+                        thumbnail
+                            .unwrap_or_else(|| Self::prepare_placeholder_image(&picker, config)),
+                    );
+                    render_cache.thumbnail_protocol = thumbnail;
                 }
-                let [centered_chunk] = centered_layout
-                    .constraints([Constraint::Fill(1)])
-                    .areas(thumbnail_chunk);
-                stateful_image.render(centered_chunk, buf, &mut self.placeholder_image);
+
+                if let Some(thumbnail_protocol) = render_cache.thumbnail_protocol.as_mut() {
+                    thumbnail_protocol.resize_encode_render(
+                        &Resize::Fit(Some(FilterType::Lanczos3)),
+                        centered_chunk,
+                        buf,
+                    );
+                }
             }
         }
     }
 
-    pub(super) fn render_fat_article(
+    fn load_thumbnail(
+        picker: &Picker,
+        thumbnail: &Thumbnail,
+        config: &Config,
+    ) -> Option<StatefulProtocol> {
+        let data = thumbnail.data.as_ref()?;
+
+        let cursor = Cursor::new(data);
+
+        let mut image = ImageReader::new(cursor)
+            .with_guessed_format()
+            .ok()
+            .and_then(|image_reader| image_reader.decode().ok())?;
+        image = apply_image_enhancements(image, picker, config);
+        Some(picker.new_resize_protocol(image))
+    }
+
+    pub(super) fn render_article(
         &mut self,
         model_data: &ArticleContentModelData,
         distraction_free: bool,
@@ -473,66 +504,52 @@ impl ArticleContentViewData {
         buf: &mut Buffer,
     ) {
         let vertical_scroll = self.vertical_scroll;
+        let picker = self.picker().to_owned();
 
         let (header_area, paragraph_area) =
             Self::article_layout(inner_area, distraction_free, config);
+
+        let markdown_rendering_width = paragraph_area.width;
+
+        let model_state = self.update_render_cache(model_data, markdown_rendering_width, config);
+
+        // reset scroll if render cache has updated
+        if model_state.is_dirty() {
+            self.vertical_scroll = 0;
+        }
 
         if let Some(header_area) = header_area {
             self.render_header(model_data, config, header_area, buf);
         }
 
-        // prefer filtered content
-        let markdown = model_data
-            .filtered_markdown_content()
-            .as_deref()
-            .or(model_data.markdown_content().as_deref())
-            .unwrap_or_default();
+        let Some(render_cache) = self.render_cache.as_mut() else {
+            log::trace!("no render cache");
+            return;
+        };
 
-        let mut markdown_rendering_width = self
-            .markdown_rendering_width
-            .take()
-            .unwrap_or(paragraph_area.width);
-
-        if markdown_rendering_width != paragraph_area.width {
-            self.markdown_rendering.take();
-            self.markdown_rendering_width.replace(paragraph_area.width);
-            markdown_rendering_width = paragraph_area.width;
-            if let Some(image_store) = self.image_store.as_mut() {
-                image_store.clear();
-            }
-        }
-
-        let markdown_rendering = self
-            .markdown_rendering
-            .take()
-            .unwrap_or_else(|| self.markdown_to_text(markdown, markdown_rendering_width, config));
-
-        let mut lines = markdown_rendering.lines.clone();
+        let mut lines = render_cache.render_result.lines.to_owned();
 
         let image_rows = config
             .article_images_height
             .into_length(inner_area.height)
             .raw_value();
 
-        let Some(image_store) = self.image_store.as_mut() else {
-            unreachable!();
-        };
-
-        let render_positions = image_store.prepare(
+        let render_positions = render_cache.image_store.prepare(
             &mut lines,
-            &markdown_rendering.images,
+            &render_cache.render_result.images,
             markdown_rendering_width,
             image_rows,
         );
 
-        let picker = self.picker.as_ref().unwrap_or(&self.fallback_picker);
-        self.max_scroll = (image_store.total_rows() as u16).saturating_sub(paragraph_area.height);
+        log::trace!("rendering article");
+        self.max_scroll =
+            (render_cache.image_store.total_rows() as u16).saturating_sub(paragraph_area.height);
         self.vertical_scroll = vertical_scroll.min(self.max_scroll);
         let image_max_width = u32::from(picker.font_size().width * paragraph_area.width);
         let image_rows = u32::from(picker.font_size().height * image_rows);
         if self.load_visible_images || config.article_images_auto_load {
             // find visible or nearly visible images which are not yet downloaded
-            for url in image_store.start_visible(
+            for url in render_cache.image_store.start_visible(
                 self.vertical_scroll,
                 paragraph_area.height,
                 if config.article_images_auto_load {
@@ -545,9 +562,9 @@ impl ArticleContentViewData {
                     &url,
                     image_max_width,
                     image_rows,
-                    to_corner_radius(config, picker),
+                    to_corner_radius(config, &picker),
                     config.theme.color_palette().image_drop_shadow,
-                    to_drop_shadow_width(config, picker),
+                    to_drop_shadow_width(config, &picker),
                 );
             }
             self.load_visible_images = false;
@@ -559,9 +576,9 @@ impl ArticleContentViewData {
                 &url,
                 image_max_width,
                 image_rows,
-                to_corner_radius(config, picker),
+                to_corner_radius(config, &picker),
                 config.theme.color_palette().image_drop_shadow,
-                to_drop_shadow_width(config, picker),
+                to_drop_shadow_width(config, &picker),
             );
         }
 
@@ -571,19 +588,39 @@ impl ArticleContentViewData {
 
         content.render(paragraph_area, buf);
 
-        image_store.render(buf, paragraph_area, &render_positions, self.vertical_scroll);
-
-        self.markdown_rendering_width
-            .replace(markdown_rendering_width);
-        self.markdown_rendering.replace(markdown_rendering);
+        render_cache.image_store.render(
+            buf,
+            paragraph_area,
+            &render_positions,
+            self.vertical_scroll,
+        );
     }
 
-    pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> color_eyre::Result<()> {
-        self.picker = Some(picker.to_owned());
-        self.create_image_store(config);
-        self.placeholder_image = Self::prepare_placeholder_image(picker, config);
+    pub(super) fn resolve_hint(&self, hint: &str) -> Option<&HintTarget> {
+        self.render_cache
+            .as_ref()
+            .and_then(|render_cache| render_cache.hint_url_map.get(hint))
+    }
 
-        Ok(())
+    pub(super) fn picker(&self) -> &Picker {
+        self.picker.as_ref().unwrap_or(&self.fallback_picker)
+    }
+
+    pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> ModelState {
+        self.picker = Some(picker.to_owned());
+
+        if let Some(RenderCache {
+            image_store,
+            thumbnail_protocol,
+            ..
+        }) = self.render_cache.as_mut()
+        {
+            image_store.clear();
+            *thumbnail_protocol = None;
+        };
+
+        self.placeholder_image = Self::prepare_placeholder_image(picker, config);
+        ModelState::Dirty
     }
 
     fn prepare_placeholder_image(picker: &Picker, config: &Config) -> StatefulProtocol {
@@ -604,12 +641,26 @@ impl ArticleContentViewData {
         picker.new_resize_protocol(image)
     }
 
-    pub(crate) fn load_image(&mut self, url: &str) {
+    pub(super) fn load_image(&mut self, url: &str) {
         self.load_image_hint = Some(url.to_owned());
     }
 
-    pub(crate) fn load_visible_images(&mut self) {
+    pub(super) fn load_visible_images(&mut self) {
         self.load_visible_images = true;
+    }
+
+    pub(super) fn tick(&mut self, model_data: &ArticleContentModelData) -> ModelState {
+        if model_data
+            .loaded_article()
+            .as_ref()
+            .map(|loaded_article| loaded_article.thumbnail_state.is_fetching())
+            .unwrap_or(false)
+        {
+            self.thumbnail_fetching_throbber.calc_next();
+            ModelState::Dirty
+        } else {
+            ModelState::Clean
+        }
     }
 }
 
@@ -640,28 +691,12 @@ impl Widget for &mut ArticleContent {
             .view_data
             .render_block(area, buf, &self.config, self.is_focused);
 
-        if !self.model_data.article().is_some() {
-            return;
-        }
-
-        if self.model_data.fat_article().is_some()
-            || self.model_data.filtered_markdown_content().is_some()
-        {
-            self.view_data.render_fat_article(
-                &self.model_data,
-                self.is_distraction_free,
-                &self.config,
-                inner_area,
-                buf,
-            );
-        } else if self.model_data.article().is_some() {
-            self.view_data.render_summary(
-                &self.model_data,
-                self.is_distraction_free,
-                &self.config,
-                inner_area,
-                buf,
-            );
-        }
+        self.view_data.render_article(
+            &self.model_data,
+            self.is_distraction_free,
+            &self.config,
+            inner_area,
+            buf,
+        );
     }
 }

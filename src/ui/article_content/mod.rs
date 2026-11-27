@@ -1,5 +1,6 @@
 mod markdown_to_text;
 mod model;
+mod state;
 mod view;
 
 pub mod prelude {
@@ -11,10 +12,13 @@ use tokio::sync::mpsc::UnboundedSender;
 use url::Url;
 use view::ArticleContentViewData;
 
-use crate::{prelude::*, ui::article_content::view::HintTarget};
-use std::sync::Arc;
+use crate::{
+    prelude::*,
+    ui::article_content::{state::LoadedArticle, view::HintTarget},
+};
+use std::{process::Stdio, sync::Arc};
 
-use news_flash::models::{ArticleID, Enclosure, Thumbnail};
+use news_flash::models::{ArticleID, Enclosure};
 
 #[derive(getset::CopyGetters)]
 pub struct ArticleContent {
@@ -49,54 +53,12 @@ impl ArticleContent {
     async fn on_article_selected(
         &mut self,
         article_id: Option<&ArticleID>,
-    ) -> color_eyre::Result<bool> {
-        let article_changed = self.model_data.on_article_selected(article_id).await?;
-
-        if article_changed {
-            self.view_data.clear(&self.config);
-            self.view_data.update(&self.model_data, self.config.clone());
-            self.update_thumbnail_fetching_state()?;
-        }
-
-        Ok(article_changed)
-    }
-
-    fn prepare_thumbnail(&mut self, thumbnail: &Thumbnail) -> color_eyre::Result<()> {
-        let image =
-            self.model_data
-                .prepare_thumbnail(thumbnail, self.view_data.picker(), &self.config)?;
-        self.view_data.set_image(image);
-        Ok(())
-    }
-
-    fn update_thumbnail(&mut self) -> color_eyre::Result<()> {
-        let image = self
-            .model_data
-            .update_thumbnail(self.view_data.picker(), &self.config)?;
-        self.view_data.set_image(image);
-        Ok(())
-    }
-
-    fn scrape_article(&mut self) -> color_eyre::Result<()> {
-        self.model_data.scrape_article()?;
-        Ok(())
-    }
-
-    fn update_thumbnail_fetching_state(&mut self) -> color_eyre::Result<bool> {
-        self.view_data.tick_throbbers();
-        if self.model_data.update_should_fetch_thumbnail(&self.config) {
-            self.fetch_thumbnail()?;
-        }
-
-        Ok(*self.model_data.thumbnail_fetch_running())
-    }
-
-    fn fetch_thumbnail(&mut self) -> color_eyre::Result<()> {
-        if self.view_data.image().is_none() {
-            self.model_data.start_fetch_thumbnail()?;
-            self.view_data.reset_thumbnail_throbber();
-        }
-        Ok(())
+    ) -> color_eyre::Result<ModelState> {
+        Ok(if let Some(article_id) = article_id {
+            self.model_data.on_article_selected(article_id).await?
+        } else {
+            self.model_data.on_no_article_selected()
+        })
     }
 
     fn share_url(&self, target_str: &str, title: &str, url: &str) -> color_eyre::Result<()> {
@@ -131,7 +93,7 @@ impl ArticleContent {
     }
 
     fn share_article(&self, target_str: &str) -> color_eyre::Result<()> {
-        let Some(article) = self.model_data.article() else {
+        let Some(LoadedArticle { article, .. }) = self.model_data.loaded_article().as_ref() else {
             tooltip(
                 &self.message_sender,
                 "no article loaded",
@@ -161,18 +123,10 @@ impl ArticleContent {
         in_target: PipeTarget,
         out_target: PipeTarget,
         command: &str,
-    ) -> color_eyre::Result<()> {
-        if let Err(error) = self
+    ) -> color_eyre::Result<ModelState> {
+        let dirty = self
             .model_data
-            .pipe(&self.config, in_target, out_target, command)
-        {
-            tooltip(
-                &self.message_sender,
-                &*error.to_string(),
-                TooltipFlavor::Error,
-            )?;
-            return Ok(());
-        };
+            .on_pipe(&self.config, in_target, out_target, command);
 
         tooltip(
             &self.message_sender,
@@ -180,7 +134,7 @@ impl ArticleContent {
             TooltipFlavor::Info,
         )?;
 
-        Ok(())
+        Ok(dirty)
     }
 
     fn on_pipe_finished(
@@ -189,40 +143,18 @@ impl ArticleContent {
         exit_status: std::process::ExitStatus,
         markdown: &Option<String>,
         error: &Option<String>,
-    ) -> color_eyre::Result<()> {
-        self.model_data
-            .on_pipe_finished(article_id, exit_status, markdown, error);
-        Ok(())
+    ) -> color_eyre::Result<ModelState> {
+        Ok(self
+            .model_data
+            .on_pipe_finished(article_id, exit_status, markdown, error))
     }
 
     async fn open_enclosure(
         &self,
         enclosure_type: Option<EnclosureType>,
     ) -> color_eyre::Result<()> {
-        let Some(enclosures) = self.model_data.enclosures() else {
-            tooltip(
-                &self.message_sender,
-                "no enclosures available",
-                TooltipFlavor::Warning,
-            )?;
-            return Ok(());
-        };
-
-        let enclosures_matching_type = enclosures
-            .iter()
-            .filter(|enclosure| {
-                enclosure_type
-                    .map(|enclosure_type| enclosure_type == (*enclosure).into())
-                    .unwrap_or(true)
-            })
-            .collect::<Vec<&Enclosure>>();
-
-        let matching_enclosure = enclosures_matching_type
-            .iter()
-            .find(|enclosure| enclosure.is_default)
-            .or_else(|| enclosures_matching_type.first());
-
-        let Some(matching_enclosure) = matching_enclosure else {
+        let Some(matching_enclosure) = self.model_data.get_matching_enclosure(enclosure_type)
+        else {
             tooltip(
                 &self.message_sender,
                 "no matching enclosure found",
@@ -231,11 +163,7 @@ impl ArticleContent {
             return Ok(());
         };
 
-        match self
-            .model_data
-            .open_enclosure(&self.config, matching_enclosure)
-            .await
-        {
+        match self.execute_enclosure_command(&self.config, matching_enclosure) {
             Ok(cmd) => tooltip(
                 &self.message_sender,
                 &*format!("openend enclosure with {cmd}"),
@@ -253,6 +181,35 @@ impl ArticleContent {
         Ok(())
     }
 
+    fn execute_enclosure_command(
+        &self,
+        config: &Config,
+        enclosure: &Enclosure,
+    ) -> color_eyre::Result<String> {
+        let command = match <EnclosureType>::from(enclosure) {
+            EnclosureType::Audio => config.audio_enclosure_command.as_ref(),
+            EnclosureType::Image => config.image_enclosure_command.as_ref(),
+            EnclosureType::Video => config.video_enclosure_command.as_ref(),
+        }
+        .unwrap_or(&config.enclosure_command)
+        .replace("{url}", enclosure.url.as_ref())
+        .replace("{type}", <EnclosureType>::from(enclosure).as_ref())
+        .replace("{mime}", enclosure.mime_type.as_deref().unwrap_or("*/*"));
+
+        let (cmd, args) = prepare_command(&command)?;
+
+        let mut command = std::process::Command::new(&cmd);
+
+        command
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .args(args)
+            .spawn()?;
+
+        Ok(cmd.to_owned())
+    }
+
     fn open_hint(&mut self, command: &Command) -> color_eyre::Result<()> {
         let hint = match command {
             Command::ContentFollowHint(hint) => &hint.to_owned(),
@@ -261,12 +218,7 @@ impl ArticleContent {
             _ => unreachable!(),
         };
 
-        let Some(hint_target) = self
-            .view_data
-            .url_for_hint()
-            .get(&hint.to_uppercase())
-            .cloned()
-        else {
+        let Some(hint_target) = self.view_data.resolve_hint(&hint.to_uppercase()).cloned() else {
             tooltip(&self.message_sender, "unknown hint", TooltipFlavor::Error)?;
             return Ok(());
         };
@@ -285,9 +237,9 @@ impl ArticleContent {
 
         let title = self
             .model_data
-            .article()
+            .loaded_article()
             .as_ref()
-            .and_then(|article| article.title.as_ref())
+            .and_then(|loaded_article| loaded_article.article.title.as_ref())
             .map(|title| format!("Link from {title}"))
             .unwrap_or("".to_owned());
 
@@ -320,206 +272,202 @@ impl ArticleContent {
 
         Ok(())
     }
+
+    async fn on_command(&mut self, command: &Command) -> color_eyre::Result<ModelState> {
+        use Command as C;
+        use ModelState as S;
+        let mut handle_command = false;
+
+        let Some(command) = (match command {
+            C::In(Panel::ArticleContent, command) => {
+                handle_command = true;
+                Some(*command.to_owned())
+            }
+            C::In(..) => None,
+            command => {
+                handle_command = self.is_focused;
+                Some(command.to_owned())
+            }
+        }) else {
+            return Ok(ModelState::Clean);
+        };
+
+        Ok(match command {
+            C::NavigateDown(amount) if handle_command => {
+                self.view_data.scroll_down(amount.unwrap_or(1));
+                S::Clean
+            }
+            C::NavigateUp(amount) if handle_command => {
+                self.view_data.scroll_up(amount.unwrap_or(1));
+                S::Clean
+            }
+            C::NavigatePageUp if handle_command => {
+                self.view_data
+                    .scroll_page_up(self.config.input_config.scroll_amount as u16);
+                S::Clean
+            }
+            C::NavigatePageDown if handle_command => {
+                self.view_data
+                    .scroll_page_down(self.config.input_config.scroll_amount as u16);
+                S::Clean
+            }
+            C::NavigateFirst if handle_command => {
+                self.view_data.scroll_to_top();
+                S::Clean
+            }
+            C::NavigateLast if handle_command => {
+                self.view_data.scroll_to_bottom();
+                S::Clean
+            }
+
+            C::ActionScrape(ActionScope::Current) if handle_command => {
+                self.model_data.scrape_article()?
+            }
+
+            C::ArticleShare(target) => {
+                self.share_article(&target)?;
+                S::Clean
+            }
+
+            C::Pipe(in_target, out_target, command) => {
+                self.pipe(in_target, out_target, &command)?
+            }
+
+            C::Refresh => S::Dirty,
+
+            C::ArticleOpenEnclosure(enclosure_type) => {
+                self.open_enclosure(enclosure_type).await?;
+                S::Clean
+            }
+
+            hint_command @ (C::ContentFollowHint(..)
+            | C::ContentShareHint(..)
+            | C::ContentImageLoad(ImageLoadArg::Hint(_))) => {
+                self.open_hint(&hint_command)?;
+                S::Clean
+            }
+
+            C::ContentImageLoad(ImageLoadArg::Visible) => {
+                self.view_data.load_visible_images();
+                S::Clean
+            }
+
+            // C::Clear => {
+            //     TODO
+            //     self.view_data.clear(&self.config);
+            // }
+            set_read_command @ C::ActionSetRead(_) if handle_command => {
+                // don't know what to do with this -> re-route to article list
+                self.message_sender.send(Message::Command(C::In(
+                    Panel::ArticleList,
+                    Box::new(set_read_command),
+                )))?;
+                S::Clean
+            }
+
+            _ => S::Clean,
+        })
+    }
+
+    async fn on_event(&mut self, event: &Event) -> color_eyre::Result<ModelState> {
+        use Event as E;
+        use ModelState as S;
+        Ok(match event {
+            E::ArticleSelected(article_id) => {
+                let model_state = self.on_article_selected(article_id.as_ref()).await?;
+                if model_state.is_dirty() && self.is_focused && self.config.auto_scrape {
+                    log::debug!("auto-scraping article");
+                    model_state.and_then(self.model_data.scrape_article()?)
+                } else {
+                    log::debug!("not auto-scraping article");
+                    model_state
+                }
+            }
+
+            E::AsyncArticleThumbnailFetchFinished(thumbnail) => {
+                log::debug!("fetching thumbnail finished");
+                self.model_data
+                    .on_thumbnail_fetch_finished(thumbnail.to_owned())
+            }
+
+            E::AsyncImageFetchFailed(url, async_operation_error) => {
+                log::error!("{async_operation_error}");
+                self.view_data.on_image_fetch_failed(url)
+            }
+
+            E::AsyncImageFetchFinished(url, image) => self
+                .view_data
+                .on_image_fetch_finished(url, image.to_owned()),
+
+            E::AsyncOperationFailed(err, reason) => {
+                if let Event::AsyncArticleThumbnailFetch = *reason.as_ref() {
+                    log::debug!("fetching thumbnail not successful: {err}");
+                    self.model_data.on_thumbnail_fetch_failed()
+                } else {
+                    S::Clean
+                }
+            }
+
+            E::AsyncPipeArticleFinished(article_id, exit_status, markdown, error) => {
+                self.on_pipe_finished(article_id, *exit_status, markdown, error)?
+            }
+
+            E::AsyncArticleFatFetchFinished(fat_article) => {
+                self.model_data.on_fat_article(fat_article.clone())
+            }
+
+            E::ApplicationStateChanged(state) => {
+                self.is_focused = *state == AppState::ArticleContent
+                    || *state == AppState::ArticleContentDistractionFree;
+
+                self.is_distraction_free = *state == AppState::ArticleContentDistractionFree;
+
+                if self.is_focused && self.config.auto_scrape {
+                    self.model_data.scrape_article()?;
+                }
+                S::Dirty
+            }
+
+            E::AsyncArticleTagFinished | E::AsyncArticleUntagFinished => {
+                self.model_data.update_article_tags().await?
+            }
+
+            E::Tick => self
+                .view_data
+                .tick(&self.model_data)
+                .and_then(self.model_data.on_update_thumbnail_state(&self.config)),
+
+            E::ImageProtocolPickerUpdated(picker) => {
+                log::trace!("image protocol picker updated");
+                self.view_data.picker_updated(picker, &self.config)
+            }
+
+            E::ConfigReloaded(config) => {
+                self.config = Arc::clone(config);
+                // self.view_data.clear(&self.config); TODO
+                S::Dirty
+            }
+
+            _ => {
+                if event.caused_model_update() {
+                    S::Dirty
+                } else {
+                    S::Clean
+                }
+            }
+        })
+    }
 }
 
 impl crate::messages::MessageReceiver for ArticleContent {
     async fn process_message(&mut self, message: &Message) -> color_eyre::Result<()> {
-        let mut view_needs_update = false;
+        let model_state = match message {
+            Message::Command(command) => self.on_command(command).await?,
+            Message::Event(event) => self.on_event(event).await?,
+            _ => ModelState::Clean,
+        };
 
-        if let Message::Command(command) = message {
-            use Command as C;
-            view_needs_update = true;
-            let mut handle_command = false;
-
-            let Some(command) = (match command {
-                C::In(Panel::ArticleContent, command) => {
-                    handle_command = true;
-                    Some(*command.to_owned())
-                }
-                C::In(..) => None,
-                command => {
-                    handle_command = self.is_focused;
-                    Some(command.to_owned())
-                }
-            }) else {
-                return Ok(());
-            };
-
-            match command {
-                C::NavigateDown(amount) if handle_command => {
-                    self.view_data.scroll_down(amount.unwrap_or(1));
-                }
-                C::NavigateUp(amount) if handle_command => {
-                    self.view_data.scroll_up(amount.unwrap_or(1));
-                }
-                C::NavigatePageUp if handle_command => {
-                    self.view_data
-                        .scroll_page_up(self.config.input_config.scroll_amount as u16);
-                }
-                C::NavigatePageDown if handle_command => {
-                    self.view_data
-                        .scroll_page_down(self.config.input_config.scroll_amount as u16);
-                }
-                C::NavigateFirst if handle_command => {
-                    self.view_data.scroll_to_top();
-                }
-                C::NavigateLast if handle_command => {
-                    self.view_data.scroll_to_bottom();
-                }
-
-                C::ActionScrape(ActionScope::Current) if handle_command => {
-                    self.scrape_article()?;
-                }
-
-                C::ArticleShare(target) => {
-                    self.share_article(&target)?;
-                }
-
-                C::Pipe(in_target, out_target, command) => {
-                    self.pipe(in_target, out_target, &command)?
-                }
-
-                C::Refresh => {
-                    view_needs_update = true;
-                }
-
-                C::ArticleOpenEnclosure(enclosure_type) => {
-                    self.open_enclosure(enclosure_type).await?;
-                }
-
-                hint_command @ (C::ContentFollowHint(..)
-                | C::ContentShareHint(..)
-                | C::ContentImageLoad(ImageLoadArg::Hint(_))) => {
-                    self.open_hint(&hint_command)?;
-                }
-
-                C::ContentImageLoad(ImageLoadArg::Visible) => {
-                    self.view_data.load_visible_images();
-                }
-
-                C::Clear => {
-                    self.view_data.clear(&self.config);
-                }
-
-                set_read_command @ C::ActionSetRead(_) if handle_command => {
-                    // don't know what to do with this -> re-route to article list
-                    self.message_sender.send(Message::Command(C::In(
-                        Panel::ArticleList,
-                        Box::new(set_read_command),
-                    )))?;
-                }
-
-                _ => {
-                    view_needs_update = false;
-                }
-            }
-        }
-
-        if let Message::Event(event) = message {
-            use Event::*;
-            match event {
-                ArticleSelected(article_id) => {
-                    let article_changed = self.on_article_selected(article_id.as_ref()).await?;
-                    if article_changed && self.is_focused && self.config.auto_scrape {
-                        self.scrape_article()?;
-                    }
-                    view_needs_update = article_changed;
-                }
-
-                AsyncArticleThumbnailFetchFinished(thumbnail) => {
-                    self.model_data
-                        .on_thumbnail_fetch_finished(thumbnail.as_ref());
-                    match thumbnail {
-                        Some(thumbnail) => {
-                            self.prepare_thumbnail(thumbnail)?;
-                        }
-                        None => {
-                            log::debug!("fetching thumbnail not successful");
-                            self.view_data.clear_image();
-                            self.model_data.on_thumbnail_fetch_failed();
-                        }
-                    }
-                    view_needs_update = true;
-                }
-
-                AsyncImageFetchFailed(url, async_operation_error) => {
-                    self.view_data.on_image_fetch_failed(url);
-                    log::error!("{async_operation_error}");
-                    view_needs_update = true;
-                }
-
-                AsyncImageFetchFinished(url, image) => {
-                    self.view_data
-                        .on_image_fetch_finished(url, image.to_owned());
-                    view_needs_update = true;
-                }
-
-                AsyncOperationFailed(err, reason) => {
-                    if let Event::AsyncArticleThumbnailFetch = *reason.as_ref() {
-                        log::debug!("fetching thumbnail not successful: {err}");
-                        self.view_data.clear_image();
-                        self.model_data.on_thumbnail_fetch_failed();
-                        view_needs_update = true;
-                    }
-                }
-
-                AsyncPipeArticleFinished(article_id, exit_status, markdown, error) => {
-                    self.on_pipe_finished(article_id, *exit_status, markdown, error)?;
-                    view_needs_update = true;
-                }
-
-                AsyncArticleFatFetchFinished(fat_article) => {
-                    self.model_data.set_fat_article(fat_article.clone());
-                    // Process markdown content if needed
-                    self.model_data
-                        .get_or_create_markdown_content(&self.config)?;
-                    view_needs_update = true;
-                }
-
-                ApplicationStateChanged(state) => {
-                    self.is_focused = *state == AppState::ArticleContent
-                        || *state == AppState::ArticleContentDistractionFree;
-
-                    self.is_distraction_free = *state == AppState::ArticleContentDistractionFree;
-
-                    if self.is_focused && self.config.auto_scrape {
-                        self.scrape_article()?;
-                    }
-
-                    view_needs_update = true;
-                }
-
-                AsyncArticleTagFinished | AsyncArticleUntagFinished => {
-                    self.model_data.update_article_tags().await?;
-                    view_needs_update = true;
-                }
-
-                Tick => {
-                    view_needs_update = self.update_thumbnail_fetching_state()?;
-                }
-
-                ImageProtocolPickerUpdated(picker) => {
-                    log::trace!("image protocol picker updated");
-                    self.view_data.picker_updated(picker, &self.config)?;
-                    self.update_thumbnail()?;
-                }
-
-                ConfigReloaded(config) => {
-                    self.config = Arc::clone(config);
-                    self.view_data.clear(&self.config);
-                    view_needs_update = true;
-                }
-
-                event if event.caused_model_update() => {
-                    view_needs_update = true;
-                }
-
-                _ => view_needs_update = event.caused_model_update(),
-            }
-        }
-
-        if view_needs_update {
-            self.view_data.update(&self.model_data, self.config.clone());
+        if model_state.is_dirty() {
             self.message_sender
                 .send(Message::Command(Command::Redraw))?;
         }

@@ -5,6 +5,12 @@ Here you can find migration guides for breaking changes.
 
 **IMPORTANT**: Don't copy `example/default-config.toml`. Start with an **empty** `config.toml` and just add the settings you want to be **different** from the `default-config.toml`! `default-config.toml` is for **reference purposes** only and is prone to break if used directly.
 
+## With 2.0.0
+
+- the following options are depcrecated
+  - `thumbnail_resize`
+  - `content_preferred_type`
+
 ## With 1.10.0
 
 - *eilmeldung* now has no external dependencies anymore, i.e., it can be compiled with the standard rust toolchain without `libxml`, `sqlite3`, `openssl` dependencies or any build dependencies like `llvm` or `perl`

@@ -9,6 +9,8 @@ use limner::{
 };
 use std::sync::Mutex;
 
+pub(super) type HintUrlMap = HashMap<String, HintTarget>;
+
 impl ArticleContentViewData {
     #[allow(clippy::too_many_arguments)]
     fn format_link(
@@ -31,13 +33,13 @@ impl ArticleContentViewData {
         spans
     }
 
-    pub(super) fn markdown_to_text(
+    pub(super) fn generate_content_render_cache(
         &mut self,
         markdown: &str,
         width: u16,
         config: &Config,
-    ) -> RenderResult {
-        let url_for_hint = Arc::new(Mutex::new(HashMap::<String, HintTarget>::new()));
+    ) -> (RenderResult, ImageStore, HintUrlMap) {
+        let url_for_hint = Arc::new(Mutex::new(HintUrlMap::new()));
         let iterator = config.hint_type.iter();
         let hint_iterator = Arc::new(Mutex::new(iterator));
         let show_url = config.content_show_urls;
@@ -113,23 +115,19 @@ impl ArticleContentViewData {
             ..Default::default()
         };
 
-        let rendered = render_markdown(markdown, &style, width);
+        let render_result = render_markdown(markdown, &style, width);
 
-        self.url_for_hint = url_for_hint.lock().unwrap().to_owned();
-        self.create_image_store(config);
+        let url_for_hint = url_for_hint.lock().unwrap().to_owned();
+        let image_store = self.create_image_store(&url_for_hint, config);
 
-        rendered
+        (render_result, image_store, url_for_hint)
     }
 
-    pub(super) fn create_image_store(
-        &mut self,
-        config: &Config,
-        // url_for_hint: &HashMap<String, String>,
-    ) {
+    fn create_image_store(&mut self, url_for_hint: &HintUrlMap, config: &Config) -> ImageStore {
         let loading_icon = config.icon_set.loading_icon();
         let failed_icon = config.icon_set.image_failed_icon();
         let hint_for_url_loading = Arc::new(
-            self.url_for_hint
+            url_for_hint
                 .iter()
                 .map(|(hint, url)| (url.to_owned(), hint.to_owned()))
                 .collect::<HashMap<HintTarget, String>>(),
@@ -140,43 +138,40 @@ impl ArticleContentViewData {
         let hint_style = config.theme.link_hint_style();
         let show_url = config.content_show_urls;
 
-        self.image_store = Some(
-            ImageStore::new(self.picker().clone())
-                .with_loading_line(move |pending_image| {
-                    let hint = hint_for_url_loading
-                        .get(&HintTarget::Image(pending_image.info.url.to_owned()))
-                        .map(String::as_str)
-                        .unwrap_or_default();
-                    Self::format_link(
-                        loading_icon,
-                        hint,
-                        &pending_image.info.alt,
-                        &pending_image.info.url,
-                        hint_style,
-                        alt_style,
-                        url_style,
-                        show_url,
-                    )
-                    .into()
-                })
-                .with_failed_line(move |pending_image| {
-                    let hint = hint_for_url_failed
-                        .get(&HintTarget::Image(pending_image.info.url.to_owned()))
-                        .map(String::as_str)
-                        .unwrap_or_default();
-                    Self::format_link(
-                        failed_icon,
-                        hint,
-                        &pending_image.info.alt,
-                        &pending_image.info.url,
-                        hint_style,
-                        alt_style,
-                        url_style,
-                        show_url,
-                    )
-                    .into()
-                })
-                .keep_placeholders(),
-        );
+        ImageStore::new(self.picker().clone())
+            .with_loading_line(move |pending_image| {
+                let hint = hint_for_url_loading
+                    .get(&HintTarget::Image(pending_image.info.url.to_owned()))
+                    .map(String::as_str)
+                    .unwrap_or_default();
+                Self::format_link(
+                    loading_icon,
+                    hint,
+                    &pending_image.info.alt,
+                    &pending_image.info.url,
+                    hint_style,
+                    alt_style,
+                    url_style,
+                    show_url,
+                )
+                .into()
+            })
+            .with_failed_line(move |pending_image| {
+                let hint = hint_for_url_failed
+                    .get(&HintTarget::Image(pending_image.info.url.to_owned()))
+                    .map(String::as_str)
+                    .unwrap_or_default();
+                Self::format_link(
+                    failed_icon,
+                    hint,
+                    &pending_image.info.alt,
+                    &pending_image.info.url,
+                    hint_style,
+                    alt_style,
+                    url_style,
+                    show_url,
+                )
+                .into()
+            })
     }
 }

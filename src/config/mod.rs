@@ -45,7 +45,7 @@ pub mod prelude {
     pub use super::share_target::ShareTarget;
     pub use super::sync_stats::SyncStatsOutputFormat;
     pub use super::theme::Theme;
-    pub use super::{ArticleContentType, ArticleScope, Config, ConfigError};
+    pub use super::{ArticleScope, Config, ConfigError};
 }
 
 static HINT_CHARS: LazyLock<Vec<char>> = LazyLock::new(|| vec!['F', 'J', 'G', 'H', 'D', 'K']);
@@ -198,10 +198,10 @@ pub struct Config {
     pub thumbnail_show: bool,
     pub thumbnail_width: Dimension,
     pub thumbnail_height: Dimension,
-    pub thumbnail_resize: bool,
+    pub thumbnail_resize: Option<bool>,
     pub thumbnail_fetch_debounce_millis: u64,
     pub text_max_width: u16,
-    pub content_preferred_type: ArticleContentType,
+    pub content_preferred_type: Option<ArticleContentType>,
     pub hide_default_sort_order: bool,
     pub default_sort_order: SortOrder,
     pub zen_mode_show_header: bool,
@@ -261,6 +261,8 @@ impl Config {
         self.input_config.validate().await?;
 
         deprecated!(self.mouse_support);
+        deprecated!(self.content_preferred_type);
+        deprecated!(self.thumbnail_resize);
 
         Ok(())
     }
@@ -316,10 +318,10 @@ impl Default for Config {
             thumbnail_show: true,
             thumbnail_width: Dimension::Length(14),
             thumbnail_height: Dimension::Length(5),
-            thumbnail_resize: true,
+            thumbnail_resize: None,
             thumbnail_fetch_debounce_millis: 500,
             text_max_width: 66,
-            content_preferred_type: ArticleContentType::Markdown,
+            content_preferred_type: None,
             zen_mode_show_header: false,
             content_show_urls: false,
             hint_type: HintType::Letters,

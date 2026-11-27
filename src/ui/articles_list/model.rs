@@ -66,6 +66,9 @@ impl ArticleListModelData {
         let (tags, tag_for_tag_id) = NewsFlashUtils::get_tags(&news_flash).await?;
         self.tag_for_tag_id = tag_for_tag_id;
 
+        drop(news_flash);
+
+        // sort the tags
         let position_for_tag = tags
             .iter()
             .enumerate()
@@ -83,21 +86,8 @@ impl ArticleListModelData {
                 })
             });
 
-        drop(news_flash);
-
         // apply the current filter
         self.filter_articles(config, filter_state).await?;
-
-        // get tags for articles
-        self.tags_for_article_id = NewsFlashUtils::get_tags_for_article(
-            &*self.news_flash_utils.news_flash_lock.read().await,
-            &self
-                .articles
-                .iter()
-                .map(|article| article.article_id.to_owned())
-                .collect::<Vec<ArticleID>>(),
-        )
-        .await?;
 
         Ok(())
     }
@@ -133,6 +123,17 @@ impl ArticleListModelData {
         article_filter.order = news_flash::models::ArticleOrder::NewestFirst;
 
         self.articles = news_flash.get_articles(article_filter.clone()).await?;
+
+        // get tags for articles
+        self.tags_for_article_id = NewsFlashUtils::get_tags_for_article(
+            &*self.news_flash_utils.news_flash_lock.read().await,
+            &self
+                .articles
+                .iter()
+                .map(|article| article.article_id.to_owned())
+                .collect::<Vec<ArticleID>>(),
+        )
+        .await?;
 
         if augmented_article_filter.is_augmented() {
             self.articles = self.get_queried_articles(&augmented_article_filter.article_query);

@@ -229,11 +229,14 @@ impl NewsFlashUtils {
             // Temporarily redirect stderr to suppress libxml xpath errors that would mess up the TUI
             let _stderr_redirect = crate::utils::prelude::StderrRedirect::new();
 
-            
-            news_flash.get_fat_article(&article_id).await.or(
+            if let Ok(fat_article) = news_flash.get_fat_article(&article_id).await
+                && fat_article.scraped_content.is_some() {
+                    fat_article
+            } else {
                 news_flash
                     .scrap_content_article(&article_id, &client)
-                    .await)?
+                    .await?
+            }
         },
         success_event: Event::AsyncArticleFatFetchFinished(fat_article),
     }
@@ -619,7 +622,7 @@ impl NewsFlashUtils {
     }
 
 
-    pub fn pipe(&self, article: news_flash::models::Article, fat_article: Option<news_flash::models::FatArticle>, in_target: PipeTarget, out_target: PipeTarget, command: String)  {
+    pub fn pipe(&self, article: news_flash::models::Article, fat_article: Option<Box<news_flash::models::FatArticle>>, in_target: PipeTarget, out_target: PipeTarget, command: String)  {
         let news_flash_lock = self.news_flash_lock.clone();
         let client_lock = self.client_lock.clone();
         let message_sender = self.message_sender.clone();
@@ -642,7 +645,7 @@ impl NewsFlashUtils {
                                  None => {
                                      let news_flash = news_flash_lock.read().await;
                                      let _stderr_redirect = crate::utils::prelude::StderrRedirect::new();
-                                     news_flash.scrap_content_article(&article.article_id, &client).await?
+                                     Box::new(news_flash.scrap_content_article(&article.article_id, &client).await?)
                                  }
 
                              };
