@@ -1,3 +1,4 @@
+#[must_use]
 pub enum ModelState {
     Clean,
     Dirty,

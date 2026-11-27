@@ -210,7 +210,7 @@ impl ArticleContent {
         Ok(cmd.to_owned())
     }
 
-    fn open_hint(&mut self, command: &Command) -> color_eyre::Result<()> {
+    fn open_hint(&mut self, command: &Command) -> color_eyre::Result<ModelState> {
         let hint = match command {
             Command::ContentFollowHint(hint) => &hint.to_owned(),
             Command::ContentShareHint(_, hint) => &hint.to_owned(),
@@ -220,7 +220,7 @@ impl ArticleContent {
 
         let Some(hint_target) = self.view_data.resolve_hint(&hint.to_uppercase()).cloned() else {
             tooltip(&self.message_sender, "unknown hint", TooltipFlavor::Error)?;
-            return Ok(());
+            return Ok(ModelState::Clean);
         };
 
         let url = hint_target.url();
@@ -232,7 +232,7 @@ impl ArticleContent {
                 &*format!("cannot open invalid URL: {}", url_result.unwrap_err()),
                 TooltipFlavor::Error,
             )?;
-            return Ok(());
+            return Ok(ModelState::Clean);
         };
 
         let title = self
@@ -243,7 +243,7 @@ impl ArticleContent {
             .map(|title| format!("Link from {title}"))
             .unwrap_or("".to_owned());
 
-        match command {
+        Ok(match command {
             Command::ContentFollowHint(..) => {
                 if let Err(err) = webbrowser::open(url) {
                     tooltip(
@@ -252,9 +252,11 @@ impl ArticleContent {
                         TooltipFlavor::Error,
                     )?;
                 }
+                ModelState::Clean
             }
             Command::ContentShareHint(target_str, ..) => {
                 self.share_url(target_str, &title, url)?;
+                ModelState::Clean
             }
             Command::ContentImageLoad(..) => {
                 if !matches!(hint_target, HintTarget::Image(..)) {
@@ -263,14 +265,14 @@ impl ArticleContent {
                         "this hint does not point to an image",
                         TooltipFlavor::Error,
                     )?;
+                    ModelState::Clean
                 } else {
-                    self.view_data.load_image(url);
+                    self.view_data.load_image(url)
                 }
             }
-            _ => {}
-        }
 
-        Ok(())
+            _ => ModelState::Clean,
+        })
     }
 
     async fn on_command(&mut self, command: &Command) -> color_eyre::Result<ModelState> {
@@ -342,18 +344,14 @@ impl ArticleContent {
 
             hint_command @ (C::ContentFollowHint(..)
             | C::ContentShareHint(..)
-            | C::ContentImageLoad(ImageLoadArg::Hint(_))) => {
-                self.open_hint(&hint_command)?;
-                S::Clean
-            }
+            | C::ContentImageLoad(ImageLoadArg::Hint(_))) => self.open_hint(&hint_command)?,
 
             C::ContentImageLoad(ImageLoadArg::Visible) => self.view_data.load_visible_images(),
 
-            C::Clear => {
-                self.view_data.force_update_render_cache();
-                self.view_data.clean_image_data(&self.config);
-                S::Dirty
-            }
+            C::Clear => self
+                .view_data
+                .force_update_render_cache()
+                .and_then(self.view_data.clean_image_data(&self.config)),
 
             set_read_command @ C::ActionSetRead(_) if handle_command => {
                 // don't know what to do with this -> re-route to article list
@@ -422,7 +420,7 @@ impl ArticleContent {
                 self.is_distraction_free = *state == AppState::ArticleContentDistractionFree;
 
                 if self.is_focused && self.config.auto_scrape {
-                    self.model_data.scrape_article()?;
+                    let _ = self.model_data.scrape_article()?;
                 }
                 S::Dirty
             }
