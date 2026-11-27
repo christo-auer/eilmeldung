@@ -352,10 +352,11 @@ impl ArticleContent {
                 S::Clean
             }
 
-            // C::Clear => {
-            //     TODO
-            //     self.view_data.clear(&self.config);
-            // }
+            C::Clear => {
+                self.view_data.force_update_render_cache();
+                S::Dirty
+            }
+
             set_read_command @ C::ActionSetRead(_) if handle_command => {
                 // don't know what to do with this -> re-route to article list
                 self.message_sender.send(Message::Command(C::In(
@@ -384,10 +385,10 @@ impl ArticleContent {
                 }
             }
 
-            E::AsyncArticleThumbnailFetchFinished(thumbnail) => {
+            E::AsyncArticleThumbnailFetchFinished(article_id, thumbnail) => {
                 log::debug!("fetching thumbnail finished");
                 self.model_data
-                    .on_thumbnail_fetch_finished(thumbnail.to_owned())
+                    .on_thumbnail_fetch_finished(article_id, thumbnail.to_owned())
             }
 
             E::AsyncImageFetchFailed(url, async_operation_error) => {
@@ -400,9 +401,9 @@ impl ArticleContent {
                 .on_image_fetch_finished(url, image.to_owned()),
 
             E::AsyncOperationFailed(err, reason) => {
-                if let Event::AsyncArticleThumbnailFetch = *reason.as_ref() {
+                if let Event::AsyncArticleThumbnailFetch(ref article_id) = *reason.as_ref() {
                     log::debug!("fetching thumbnail not successful: {err}");
-                    self.model_data.on_thumbnail_fetch_failed()
+                    self.model_data.on_thumbnail_fetch_failed(article_id)
                 } else {
                     S::Clean
                 }
@@ -444,7 +445,7 @@ impl ArticleContent {
 
             E::ConfigReloaded(config) => {
                 self.config = Arc::clone(config);
-                // self.view_data.clear(&self.config); TODO
+                self.view_data.force_update_render_cache();
                 S::Dirty
             }
 

@@ -3,7 +3,7 @@ use crate::{
     prelude::*,
     ui::article_content::{
         markdown_to_text::HintUrlMap,
-        state::{LoadedArticle, ThumbnailState},
+        state::{ArticleBody, LoadedArticle, ThumbnailState},
     },
 };
 
@@ -142,6 +142,11 @@ impl ArticleContentViewData {
         }
     }
 
+    pub(super) fn force_update_render_cache(&mut self) -> ModelState {
+        self.render_cache = None;
+        ModelState::Dirty
+    }
+
     fn update_render_cache(
         &mut self,
         model_data: &ArticleContentModelData,
@@ -172,8 +177,12 @@ impl ArticleContentViewData {
             return ModelState::Dirty;
         };
 
-        let (render_result, image_store, hint_url_map) =
-            self.generate_content_render_cache(&render_key.content, width, config);
+        let (render_result, image_store, hint_url_map) = Self::generate_content_render_cache(
+            self.picker().to_owned(),
+            &render_key.content,
+            width,
+            config,
+        );
 
         self.render_cache = Some(RenderCache {
             render_key,
@@ -312,7 +321,7 @@ impl ArticleContentViewData {
             Span::from(feed_label).style(config.theme.header()),
         ]);
 
-        if loaded_article.body().is_piped() {
+        if matches!(loaded_article.body(), ArticleBody::Piped { .. }) {
             title_line.spans.push(" ".into());
             title_line.spans.append(
                 &mut to_bubble(
@@ -653,7 +662,9 @@ impl ArticleContentViewData {
         if model_data
             .loaded_article()
             .as_ref()
-            .map(|loaded_article| loaded_article.thumbnail_state.is_fetching())
+            .map(|loaded_article| {
+                matches!(loaded_article.thumbnail_state, ThumbnailState::Fetching)
+            })
             .unwrap_or(false)
         {
             self.thumbnail_fetching_throbber.calc_next();

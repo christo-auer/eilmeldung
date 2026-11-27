@@ -213,9 +213,9 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         undo_stack_var: _undo_stack,
-        start_event: Event::AsyncArticleThumbnailFetch,
+        start_event: Event::AsyncArticleThumbnailFetch(article_id.to_owned()),
         operation: let thumbnail = news_flash.get_article_thumbnail(&article_id, None, &client).await?,
-        success_event: Event::AsyncArticleThumbnailFetchFinished(thumbnail),
+        success_event: Event::AsyncArticleThumbnailFetchFinished(article_id.to_owned(), thumbnail),
     }
 
     gen_async_call! {

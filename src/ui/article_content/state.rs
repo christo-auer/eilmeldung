@@ -11,7 +11,7 @@ pub(super) struct LoadedArticle {
     pub(super) body: ArticleBody,
 }
 
-#[derive(enum_as_inner::EnumAsInner, Default, Debug)]
+#[derive(Default, Debug)]
 pub(super) enum ArticleBody {
     #[default]
     Summary,
@@ -24,7 +24,16 @@ pub(super) enum ArticleBody {
     },
 }
 
-#[derive(enum_as_inner::EnumAsInner)]
+impl ArticleBody {
+    pub(super) fn fat_article(&self) -> Option<&Box<FatArticle>> {
+        if let ArticleBody::Fat { fat_article, .. } = self {
+            Some(fat_article)
+        } else {
+            None
+        }
+    }
+}
+
 pub enum ThumbnailState {
     None,
     Fetching,

@@ -37,10 +37,6 @@ impl ArticleContentModelData {
         }
     }
 
-    // pub(super) fn has_article(&self) -> bool {
-    //     self.loaded_article.is_some()
-    // }
-
     pub(super) fn on_no_article_selected(&mut self) -> ModelState {
         self.loaded_article = None;
         ModelState::Dirty
@@ -55,8 +51,8 @@ impl ArticleContentModelData {
         if self
             .loaded_article
             .as_ref()
-            .map(|content| &content.article().article_id == article_id)
-            .unwrap_or(false)
+            .map(|content| &content.article().article_id)
+            == Some(article_id)
         {
             log::debug!("article id has not changed");
             return Ok(ModelState::Clean);
@@ -77,7 +73,7 @@ impl ArticleContentModelData {
             .into_iter()
             .find(|feed| feed.feed_id == article.feed_id)
             .ok_or(color_eyre::eyre::eyre!(
-                "unable to find article for article id"
+                "unable to find feed for article id"
             ))?;
 
         let enclosures = news_flash.get_enclosures(article_id).await?;
@@ -140,9 +136,12 @@ impl ArticleContentModelData {
     }
 
     pub(super) fn on_fat_article(&mut self, fat_article: FatArticle) -> ModelState {
-        if let Some(loaded_article) = self.loaded_article.as_ref()
-            && !loaded_article.is(&fat_article.article_id)
-        {
+        let Some(loaded_article) = self.loaded_article.as_mut() else {
+            log::debug!("received fat article but there is no article loaded");
+            return ModelState::Clean;
+        };
+
+        if loaded_article.article_id() != &fat_article.article_id {
             log::debug!(
                 "set_fat_article: article id {:?} does not match fat article id {:?}",
                 loaded_article.article_id(),
@@ -151,30 +150,26 @@ impl ArticleContentModelData {
             return ModelState::Clean;
         }
 
-        match self.loaded_article.as_mut() {
-            None => {
-                log::debug!("received fat article but there is no article loaded");
-                ModelState::Clean
-            }
-
-            Some(LoadedArticle { body, .. }) => match body {
-                ArticleBody::Summary => {
-                    if let Some(markdown_content) = Self::fat_article_to_markdown(&fat_article) {
-                        *body = ArticleBody::Fat {
-                            fat_article: Box::new(fat_article),
-                            markdown_content,
-                        };
-                        ModelState::Dirty
-                    } else {
-                        log::debug!("fat article does not contain scraped data");
-                        ModelState::Clean
-                    }
-                }
-                _ => {
-                    log::debug!("received fat article again => ignoring");
+        match loaded_article.body {
+            ArticleBody::Summary => {
+                if let Some(markdown_content) = Self::fat_article_to_markdown(&fat_article) {
+                    loaded_article.body = ArticleBody::Fat {
+                        fat_article: Box::new(fat_article),
+                        markdown_content,
+                    };
+                    ModelState::Dirty
+                } else {
+                    log::debug!("fat article does not contain scraped data");
                     ModelState::Clean
                 }
-            },
+            }
+            _ => {
+                log::debug!(
+                    "received fat article again => ignoring {fat_article:?} vs {:?}",
+                    loaded_article.body
+                );
+                ModelState::Clean
+            }
         }
     }
 
@@ -208,19 +203,17 @@ impl ArticleContentModelData {
         let current_instant = Instant::now();
 
         if let Some(last_article_selected) = self.instant_since_article_selected {
-            self.duration_since_last_article_change =
-                Some(current_instant.duration_since(last_article_selected));
+            self.duration_since_last_article_change = Some(last_article_selected.elapsed());
         }
 
         self.instant_since_article_selected = Some(current_instant);
     }
 
     fn thumbnail_fetch_debounce_check(&mut self, config: &Config) -> bool {
-        let current_instant = Instant::now();
         let long_enough_current_article = match self.instant_since_article_selected {
             Some(article_selected_instant) => {
-                let duration = current_instant.duration_since(article_selected_instant);
-                duration >= Duration::from_millis(config.thumbnail_fetch_debounce_millis)
+                article_selected_instant.elapsed()
+                    >= Duration::from_millis(config.thumbnail_fetch_debounce_millis)
             }
             None => true,
         };
@@ -236,9 +229,12 @@ impl ArticleContentModelData {
 
     pub(super) fn on_thumbnail_fetch_finished(
         &mut self,
+        article_id: &ArticleID,
         thumbnail: Option<Thumbnail>,
     ) -> ModelState {
-        if let Some(loaded_article) = self.loaded_article.as_mut() {
+        if let Some(loaded_article) = self.loaded_article.as_mut()
+            && loaded_article.article_id() == article_id
+        {
             loaded_article.thumbnail_state = match thumbnail {
                 Some(thumbnail) => ThumbnailState::Fetched(Box::new(thumbnail)),
                 None => ThumbnailState::Failed,
@@ -250,12 +246,15 @@ impl ArticleContentModelData {
         }
     }
 
-    pub(super) fn on_thumbnail_fetch_failed(&mut self) -> ModelState {
-        if let Some(loaded_article) = self.loaded_article.as_mut() {
+    pub(super) fn on_thumbnail_fetch_failed(&mut self, article_id: &ArticleID) -> ModelState {
+        if let Some(loaded_article) = self.loaded_article.as_mut()
+            && loaded_article.article_id() == article_id
+        {
             loaded_article.thumbnail_state = ThumbnailState::Failed;
-            return ModelState::Dirty;
+            ModelState::Dirty
+        } else {
+            ModelState::Clean
         }
-        ModelState::Clean
     }
 
     pub(super) fn get_matching_enclosure(
@@ -309,7 +308,7 @@ impl ArticleContentModelData {
             .replace("{author}", article.author.as_deref().unwrap_or_default())
             .replace("{feed}", &feed.label);
 
-        let fat_article = body.as_fat().map(|body| body.0.to_owned());
+        let fat_article = body.fat_article().cloned();
 
         self.news_flash_utils.pipe(
             article.to_owned(),
