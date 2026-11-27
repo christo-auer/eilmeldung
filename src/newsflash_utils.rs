@@ -213,9 +213,9 @@ impl NewsFlashUtils {
         news_flash_var: news_flash,
         client_var: client,
         undo_stack_var: _undo_stack,
-        start_event: Event::AsyncArticleThumbnailFetch,
+        start_event: Event::AsyncArticleThumbnailFetch(article_id.to_owned()),
         operation: let thumbnail = news_flash.get_article_thumbnail(&article_id, None, &client).await?,
-        success_event: Event::AsyncArticleThumbnailFetchFinished(thumbnail),
+        success_event: Event::AsyncArticleThumbnailFetchFinished(article_id.to_owned(), thumbnail),
     }
 
     gen_async_call! {
@@ -622,7 +622,7 @@ impl NewsFlashUtils {
     }
 
 
-    pub fn pipe(&self, article: news_flash::models::Article, fat_article: Option<Box<news_flash::models::FatArticle>>, in_target: PipeTarget, out_target: PipeTarget, command: String)  {
+    pub fn pipe(&self, article: news_flash::models::Article, fat_article: Option<news_flash::models::FatArticle>, in_target: PipeTarget, out_target: PipeTarget, command: String)  {
         let news_flash_lock = self.news_flash_lock.clone();
         let client_lock = self.client_lock.clone();
         let message_sender = self.message_sender.clone();
@@ -645,7 +645,7 @@ impl NewsFlashUtils {
                                  None => {
                                      let news_flash = news_flash_lock.read().await;
                                      let _stderr_redirect = crate::utils::prelude::StderrRedirect::new();
-                                     Box::new(news_flash.scrap_content_article(&article.article_id, &client).await?)
+                                     news_flash.scrap_content_article(&article.article_id, &client).await?
                                  }
 
                              };

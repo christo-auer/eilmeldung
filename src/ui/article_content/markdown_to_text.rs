@@ -5,7 +5,9 @@ use crate::{
     ui::article_content::view::{ArticleContentViewData, HintTarget},
 };
 use limner::{
-    MarkdownStyle, RenderResult, SpanFormatter, render_image::ImageStore, render_markdown,
+    MarkdownStyle, RenderResult, SpanFormatter,
+    render_image::{ImageStore, Picker},
+    render_markdown,
 };
 use std::sync::Mutex;
 
@@ -34,7 +36,7 @@ impl ArticleContentViewData {
     }
 
     pub(super) fn generate_content_render_cache(
-        &mut self,
+        picker: Picker,
         markdown: &str,
         width: u16,
         config: &Config,
@@ -118,12 +120,16 @@ impl ArticleContentViewData {
         let render_result = render_markdown(markdown, &style, width);
 
         let url_for_hint = url_for_hint.lock().unwrap().to_owned();
-        let image_store = self.create_image_store(&url_for_hint, config);
+        let image_store = Self::create_image_store(picker, &url_for_hint, config);
 
         (render_result, image_store, url_for_hint)
     }
 
-    fn create_image_store(&mut self, url_for_hint: &HintUrlMap, config: &Config) -> ImageStore {
+    fn create_image_store(
+        picker: Picker,
+        url_for_hint: &HintUrlMap,
+        config: &Config,
+    ) -> ImageStore {
         let loading_icon = config.icon_set.loading_icon();
         let failed_icon = config.icon_set.image_failed_icon();
         let hint_for_url_loading = Arc::new(
@@ -138,7 +144,7 @@ impl ArticleContentViewData {
         let hint_style = config.theme.link_hint_style();
         let show_url = config.content_show_urls;
 
-        ImageStore::new(self.picker().clone())
+        ImageStore::new(picker)
             .with_loading_line(move |pending_image| {
                 let hint = hint_for_url_loading
                     .get(&HintTarget::Image(pending_image.info.url.to_owned()))

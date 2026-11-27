@@ -36,8 +36,8 @@ pub enum Event {
     AsyncSyncUnread,
     AsyncSyncUnreadFinished(HashMap<FeedID, Vec<ArticleID>>),
 
-    AsyncArticleThumbnailFetch,
-    AsyncArticleThumbnailFetchFinished(Option<Thumbnail>),
+    AsyncArticleThumbnailFetch(ArticleID),
+    AsyncArticleThumbnailFetchFinished(ArticleID, Option<Thumbnail>),
 
     AsyncImageFetchFinished(String, DynamicImage),
     AsyncImageFetchFailed(String, AsyncOperationError),

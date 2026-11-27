@@ -1,4 +1,4 @@
-#[derive(enum_as_inner::EnumAsInner)]
+#[must_use]
 pub enum ModelState {
     Clean,
     Dirty,
@@ -10,5 +10,9 @@ impl ModelState {
             ModelState::Dirty => ModelState::Dirty,
             _ => self,
         }
+    }
+
+    pub fn is_dirty(&self) -> bool {
+        matches!(self, Self::Dirty)
     }
 }

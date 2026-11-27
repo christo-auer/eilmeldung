@@ -3,7 +3,7 @@ use crate::{
     prelude::*,
     ui::article_content::{
         markdown_to_text::HintUrlMap,
-        state::{LoadedArticle, ThumbnailState},
+        state::{ArticleBody, LoadedArticle, ThumbnailState},
     },
 };
 
@@ -142,6 +142,11 @@ impl ArticleContentViewData {
         }
     }
 
+    pub(super) fn force_update_render_cache(&mut self) -> ModelState {
+        self.render_cache = None;
+        ModelState::Dirty
+    }
+
     fn update_render_cache(
         &mut self,
         model_data: &ArticleContentModelData,
@@ -172,8 +177,12 @@ impl ArticleContentViewData {
             return ModelState::Dirty;
         };
 
-        let (render_result, image_store, hint_url_map) =
-            self.generate_content_render_cache(&render_key.content, width, config);
+        let (render_result, image_store, hint_url_map) = Self::generate_content_render_cache(
+            self.picker().to_owned(),
+            &render_key.content,
+            width,
+            config,
+        );
 
         self.render_cache = Some(RenderCache {
             render_key,
@@ -327,7 +336,7 @@ impl ArticleContentViewData {
             Span::from(feed_label).style(config.theme.header()),
         ]);
 
-        if loaded_article.body().is_piped() {
+        if matches!(loaded_article.body(), ArticleBody::Piped { .. }) {
             title_line.spans.push(" ".into());
             title_line.spans.append(
                 &mut to_bubble(
@@ -448,7 +457,7 @@ impl ArticleContentViewData {
         match thumbnail_state {
             ThumbnailState::Failed => {
                 self.placeholder_image.resize_encode_render(
-                    &Resize::Fit(Some(FilterType::Lanczos3)),
+                    &Resize::Scale(Some(FilterType::Lanczos3)),
                     centered_chunk,
                     buf,
                 );
@@ -484,7 +493,7 @@ impl ArticleContentViewData {
 
                 if let Some(thumbnail_protocol) = render_cache.thumbnail_protocol.as_mut() {
                     thumbnail_protocol.resize_encode_render(
-                        &Resize::Fit(Some(FilterType::Lanczos3)),
+                        &Resize::Scale(Some(FilterType::Lanczos3)),
                         centered_chunk,
                         buf,
                     );
@@ -498,7 +507,7 @@ impl ArticleContentViewData {
         thumbnail: &Thumbnail,
         config: &Config,
     ) -> Option<StatefulProtocol> {
-        let data = thumbnail.data.as_ref()?;
+        let data = thumbnail.data.as_ref().or(thumbnail.placeholder.as_ref())?;
 
         let cursor = Cursor::new(data);
 
@@ -621,9 +630,7 @@ impl ArticleContentViewData {
         self.picker.as_ref().unwrap_or(&self.fallback_picker)
     }
 
-    pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> ModelState {
-        self.picker = Some(picker.to_owned());
-
+    pub(super) fn clean_image_data(&mut self, config: &Config) -> ModelState {
         if let Some(RenderCache {
             image_store,
             thumbnail_protocol,
@@ -634,8 +641,13 @@ impl ArticleContentViewData {
             *thumbnail_protocol = None;
         };
 
-        self.placeholder_image = Self::prepare_placeholder_image(picker, config);
+        self.placeholder_image = Self::prepare_placeholder_image(self.picker(), config);
         ModelState::Dirty
+    }
+
+    pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> ModelState {
+        self.picker = Some(picker.to_owned());
+        self.clean_image_data(config)
     }
 
     fn prepare_placeholder_image(picker: &Picker, config: &Config) -> StatefulProtocol {
@@ -656,19 +668,23 @@ impl ArticleContentViewData {
         picker.new_resize_protocol(image)
     }
 
-    pub(super) fn load_image(&mut self, url: &str) {
+    pub(super) fn load_image(&mut self, url: &str) -> ModelState {
         self.load_image_hint = Some(url.to_owned());
+        ModelState::Dirty
     }
 
-    pub(super) fn load_visible_images(&mut self) {
+    pub(super) fn load_visible_images(&mut self) -> ModelState {
         self.load_visible_images = true;
+        ModelState::Dirty
     }
 
     pub(super) fn tick(&mut self, model_data: &ArticleContentModelData) -> ModelState {
         if model_data
             .loaded_article()
             .as_ref()
-            .map(|loaded_article| loaded_article.thumbnail_state.is_fetching())
+            .map(|loaded_article| {
+                matches!(loaded_article.thumbnail_state, ThumbnailState::Fetching)
+            })
             .unwrap_or(false)
         {
             self.thumbnail_fetching_throbber.calc_next();
