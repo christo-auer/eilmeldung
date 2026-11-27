@@ -92,7 +92,7 @@ impl ArticleContentModelData {
             && let Some(markdown_content) = Self::fat_article_to_markdown(&fat_article)
         {
             article_content.body = ArticleBody::Fat {
-                fat_article: Box::new(fat_article),
+                fat_article,
                 markdown_content,
             };
         }
@@ -154,7 +154,7 @@ impl ArticleContentModelData {
             ArticleBody::Summary => {
                 if let Some(markdown_content) = Self::fat_article_to_markdown(&fat_article) {
                     loaded_article.body = ArticleBody::Fat {
-                        fat_article: Box::new(fat_article),
+                        fat_article,
                         markdown_content,
                     };
                     ModelState::Dirty
@@ -236,7 +236,7 @@ impl ArticleContentModelData {
             && loaded_article.article_id() == article_id
         {
             loaded_article.thumbnail_state = match thumbnail {
-                Some(thumbnail) => ThumbnailState::Fetched(Box::new(thumbnail)),
+                Some(thumbnail) => ThumbnailState::Fetched(thumbnail),
                 None => ThumbnailState::Failed,
             };
 

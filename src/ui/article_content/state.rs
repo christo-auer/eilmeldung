@@ -12,11 +12,12 @@ pub(super) struct LoadedArticle {
 }
 
 #[derive(Default, Debug)]
+#[allow(clippy::large_enum_variant)]
 pub(super) enum ArticleBody {
     #[default]
     Summary,
     Fat {
-        fat_article: Box<FatArticle>,
+        fat_article: FatArticle,
         markdown_content: String,
     },
     Piped {
@@ -25,7 +26,7 @@ pub(super) enum ArticleBody {
 }
 
 impl ArticleBody {
-    pub(super) fn fat_article(&self) -> Option<&Box<FatArticle>> {
+    pub(super) fn fat_article(&self) -> Option<&FatArticle> {
         if let ArticleBody::Fat { fat_article, .. } = self {
             Some(fat_article)
         } else {
@@ -34,10 +35,11 @@ impl ArticleBody {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum ThumbnailState {
     None,
     Fetching,
-    Fetched(Box<Thumbnail>),
+    Fetched(Thumbnail),
     Failed,
 }
 
