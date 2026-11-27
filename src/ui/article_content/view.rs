@@ -442,7 +442,7 @@ impl ArticleContentViewData {
         match thumbnail_state {
             ThumbnailState::Failed => {
                 self.placeholder_image.resize_encode_render(
-                    &Resize::Fit(Some(FilterType::Lanczos3)),
+                    &Resize::Scale(Some(FilterType::Lanczos3)),
                     centered_chunk,
                     buf,
                 );
@@ -478,7 +478,7 @@ impl ArticleContentViewData {
 
                 if let Some(thumbnail_protocol) = render_cache.thumbnail_protocol.as_mut() {
                     thumbnail_protocol.resize_encode_render(
-                        &Resize::Fit(Some(FilterType::Lanczos3)),
+                        &Resize::Scale(Some(FilterType::Lanczos3)),
                         centered_chunk,
                         buf,
                     );
@@ -492,7 +492,7 @@ impl ArticleContentViewData {
         thumbnail: &Thumbnail,
         config: &Config,
     ) -> Option<StatefulProtocol> {
-        let data = thumbnail.data.as_ref()?;
+        let data = thumbnail.data.as_ref().or(thumbnail.placeholder.as_ref())?;
 
         let cursor = Cursor::new(data);
 
@@ -615,9 +615,7 @@ impl ArticleContentViewData {
         self.picker.as_ref().unwrap_or(&self.fallback_picker)
     }
 
-    pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> ModelState {
-        self.picker = Some(picker.to_owned());
-
+    pub(super) fn clean_image_data(&mut self, config: &Config) -> ModelState {
         if let Some(RenderCache {
             image_store,
             thumbnail_protocol,
@@ -628,8 +626,13 @@ impl ArticleContentViewData {
             *thumbnail_protocol = None;
         };
 
-        self.placeholder_image = Self::prepare_placeholder_image(picker, config);
+        self.placeholder_image = Self::prepare_placeholder_image(self.picker(), config);
         ModelState::Dirty
+    }
+
+    pub fn picker_updated(&mut self, picker: &Picker, config: &Config) -> ModelState {
+        self.picker = Some(picker.to_owned());
+        self.clean_image_data(config)
     }
 
     fn prepare_placeholder_image(picker: &Picker, config: &Config) -> StatefulProtocol {

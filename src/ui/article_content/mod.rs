@@ -354,6 +354,7 @@ impl ArticleContent {
 
             C::Clear => {
                 self.view_data.force_update_render_cache();
+                self.view_data.clean_image_data(&self.config);
                 S::Dirty
             }
 
