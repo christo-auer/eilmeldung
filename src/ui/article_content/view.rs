@@ -653,12 +653,14 @@ impl ArticleContentViewData {
         picker.new_resize_protocol(image)
     }
 
-    pub(super) fn load_image(&mut self, url: &str) {
+    pub(super) fn load_image(&mut self, url: &str) -> ModelState {
         self.load_image_hint = Some(url.to_owned());
+        ModelState::Dirty
     }
 
-    pub(super) fn load_visible_images(&mut self) {
+    pub(super) fn load_visible_images(&mut self) -> ModelState {
         self.load_visible_images = true;
+        ModelState::Dirty
     }
 
     pub(super) fn tick(&mut self, model_data: &ArticleContentModelData) -> ModelState {

@@ -347,10 +347,7 @@ impl ArticleContent {
                 S::Clean
             }
 
-            C::ContentImageLoad(ImageLoadArg::Visible) => {
-                self.view_data.load_visible_images();
-                S::Clean
-            }
+            C::ContentImageLoad(ImageLoadArg::Visible) => self.view_data.load_visible_images(),
 
             C::Clear => {
                 self.view_data.force_update_render_cache();
@@ -446,8 +443,9 @@ impl ArticleContent {
 
             E::ConfigReloaded(config) => {
                 self.config = Arc::clone(config);
-                self.view_data.force_update_render_cache();
-                S::Dirty
+                self.view_data
+                    .force_update_render_cache()
+                    .and_then(self.view_data.clean_image_data(config))
             }
 
             _ => {
