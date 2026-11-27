@@ -347,6 +347,13 @@ pub enum Command {
     ActionOpenInBrowser(ActionScope),
 
     #[strum(
+        serialize = "opencomments",
+        message = "opencomments",
+        detailed_message = "opens all comments matching the scope in the webbrowser (article list)"
+    )]
+    ActionOpenCommentsInBrowser(ActionScope),
+
+    #[strum(
         serialize = "tag",
         message = "tag <tag name> [<scope>]",
         detailed_message = "adds the tag to all articles matching the scope (article list)"
@@ -765,6 +772,9 @@ impl Display for Command {
             ActionSetUnflagged(action_scope) => write!(f, "unflag {}", action_scope),
             ActionFlagInvert(action_scope) => write!(f, "invert flags {}", action_scope),
             ActionOpenInBrowser(action_scope) => write!(f, "open {} in browser", action_scope),
+            ActionOpenCommentsInBrowser(action_scope) => {
+                write!(f, "open comments {} in browser", action_scope)
+            }
             ActionTagArticles(action_scope, tag) => {
                 write!(f, "add #{} to {}", tag, action_scope)
             }

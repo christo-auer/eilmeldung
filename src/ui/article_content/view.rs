@@ -268,6 +268,21 @@ impl ArticleContentViewData {
             })
             .collect::<Vec<Span>>();
 
+        if model_data
+            .loaded_article()
+            .as_ref()
+            .is_some_and(|a| a.article.comments_url.is_some())
+        {
+            tags_and_enclosures.extend(to_bubble(
+                Span::styled(
+                    config.icon_set.comments_icon().to_string(),
+                    config.theme.paragraph(),
+                ),
+                config,
+            ));
+            tags_and_enclosures.push(Span::from(" "));
+        }
+
         tags_and_enclosures.append(&mut to_enclosure_bubble(
             config,
             loaded_article.enclosures(),
