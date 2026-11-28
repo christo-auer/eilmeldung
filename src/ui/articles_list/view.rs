@@ -495,3 +495,64 @@ fn format_timespan(tz: TimeZone, from: Timestamp, to: Timestamp) -> String {
         format!("{:>2}s", count_unit(Unit::Second))
     }
 }
+
+#[cfg(test)]
+mod article_list_view_tests {
+    use super::*;
+    use jiff::civil::DateTime;
+    use jiff::civil::datetime;
+    use jiff::tz::TimeZone;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(
+        "Europe/Berlin",
+        datetime(1963, 8, 26, 0, 0, 0, 0),
+        datetime(2018, 5, 12, 0, 0, 0, 0),
+        "2854w"
+    )]
+    #[case(
+        "Australia/Adelaide",
+        datetime(2012, 2, 28, 0, 0, 0, 0),
+        datetime(2012, 3, 1, 0, 0, 0, 0),
+        " 2d"
+    )]
+    #[case(
+        "Europe/Berlin",
+        datetime(2019, 3, 31, 2, 0, 0, 0),
+        datetime(2019, 3, 31, 3, 0, 0, 0),
+        " 0s"
+    )]
+    #[case(
+        "America/Santiago",
+        datetime(2019, 3, 31, 2, 0, 0, 0),
+        datetime(2019, 3, 31, 3, 0, 0, 0),
+        " 1h"
+    )]
+    #[case(
+        "Indian/Antananarivo",
+        datetime(2026, 11, 26, 2, 55, 0, 0),
+        datetime(2026, 11, 26, 3, 54, 0, 0),
+        "59m"
+    )]
+    #[case(
+        "Asia/Bangkok",
+        datetime(1967, 8, 9, 0, 0, 0, 0),
+        datetime(1967, 8, 16, 0, 0, 0, 0),
+        " 1w"
+    )]
+    fn format_timespan_test(
+        #[case] tz: &str,
+        #[case] from: DateTime,
+        #[case] to: DateTime,
+        #[case] expected: &str,
+    ) {
+        let tz = TimeZone::get(tz).unwrap();
+        let from = from.to_zoned_datetime(tz.clone()).unwrap();
+        let to = to.to_zoned_datetime(tz.clone()).unwrap();
+        assert_eq!(
+            format_timespan(tz, from.timestamp(), to.timestamp()),
+            expected
+        );
+    }
+}
