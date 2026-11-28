@@ -34,7 +34,7 @@ pub mod prelude {
 
 use crate::prelude::*;
 
-use chrono::TimeDelta;
+use jiff::SignedDuration;
 use log::{debug, error, info, trace, warn};
 use news_flash::error::{FeedApiError, NewsFlashError};
 use news_flash::models::ArticleID;
@@ -175,7 +175,9 @@ impl App {
             .set_keep_articles_duration(if self.config.keep_articles_days == 0 {
                 None
             } else {
-                Some(TimeDelta::days(self.config.keep_articles_days as i64))
+                Some(SignedDuration::from_hours(
+                    24 * i64::from(self.config.keep_articles_days),
+                ))
             })
             .await?;
 

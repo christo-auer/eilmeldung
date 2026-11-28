@@ -12,8 +12,8 @@ pub mod prelude {
 use crate::prelude::*;
 use std::collections::{HashMap, HashSet};
 
-use chrono::{DateTime, Utc};
 use getset::Getters;
+use jiff::Timestamp;
 use news_flash::models::{
     Article, ArticleFilter, ArticleID, Category, Feed, FeedID, Marked, Read, Tag, TagID,
 };
@@ -35,10 +35,10 @@ pub(super) enum QueryAtom {
     Tagged,
     Flagged,
     LastSync,
-    Newer(DateTime<Utc>),
-    Older(DateTime<Utc>),
-    SyncedBefore(DateTime<Utc>),
-    SyncedAfter(DateTime<Utc>),
+    Newer(Timestamp),
+    Older(Timestamp),
+    SyncedBefore(Timestamp),
+    SyncedAfter(Timestamp),
 }
 
 #[derive(Clone, Debug)]
@@ -55,7 +55,7 @@ impl QueryClause {
         feed: Option<&Feed>,
         category: Option<&Category>,
         tags: Option<&HashSet<String>>,
-        last_sync: &DateTime<Utc>,
+        last_sync: &Timestamp,
         flagged_articles: &HashSet<ArticleID>,
     ) -> bool {
         match self {
@@ -82,7 +82,7 @@ pub struct ArticleQueryContext<'a> {
     pub parent_category_for_feed_id: &'a HashMap<FeedID, Category>,
     pub tags_for_article_id: &'a HashMap<ArticleID, Vec<TagID>>,
     pub tag_for_tag_id: &'a HashMap<TagID, Tag>,
-    pub last_sync: &'a DateTime<Utc>,
+    pub last_sync: &'a Timestamp,
     pub flagged: &'a HashSet<ArticleID>,
 }
 
@@ -138,7 +138,7 @@ impl QueryAtom {
         feed: Option<&Feed>,
         category: Option<&Category>,
         tags: Option<&HashSet<String>>,
-        last_sync: &DateTime<Utc>,
+        last_sync: &Timestamp,
         flagged_articles: &HashSet<ArticleID>,
     ) -> bool {
         use QueryAtom as A;

@@ -2,6 +2,9 @@ use crate::prelude::*;
 use crate::ui::articles_list::model::ArticleListModelData;
 
 use getset::{Getters, MutGetters};
+use jiff::Timestamp;
+use jiff::Unit;
+use jiff::tz::TimeZone;
 use news_flash::models::{ArticleFilter, Marked, Read};
 use ratatui::layout::Constraint;
 use ratatui::layout::Rect;
@@ -317,33 +320,14 @@ impl<'a> ArticleListViewData<'a> {
                         .into(),
                         "{date}" => article
                             .date
-                            .with_timezone(&chrono::Local)
-                            .format(&config.date_format)
+                            .to_zoned_datetime(TimeZone::system())
+                            .strftime(&config.date_format)
                             .to_string()
                             .into(),
                         "{age}" => {
-                            let now = chrono::Utc::now();
-                            let duration = now.signed_duration_since(article.date);
-
-                            let weeks = duration.num_weeks();
-                            let days = duration.num_days();
-                            let hours = duration.num_hours();
-                            let minutes = duration.num_minutes();
-                            let seconds = duration.num_seconds();
-
-                            if weeks > 0 {
-                                format!("{:>2}w", weeks)
-                            } else if days > 0 {
-                                format!("{:>2}d", days)
-                            } else if hours > 0 {
-                                format!("{:>2}h  ", hours)
-                            } else if minutes > 0 {
-                                format!("{:>2}m", minutes)
-                            } else {
-                                format!("{:>2}s", seconds)
-                            }
+                            format_timespan(TimeZone::system(), article.date, Timestamp::now())
+                                .into()
                         }
-                        .into(),
                         "{read}" => if article.unread == Read::Read {
                             read_icon.to_string()
                         } else {
@@ -483,5 +467,92 @@ impl<'a> ArticleListViewData<'a> {
 
     pub(super) fn get_table_state(&self) -> &TableState {
         &self.table_state
+    }
+}
+
+fn format_timespan(tz: TimeZone, from: Timestamp, to: Timestamp) -> String {
+    let span = from.until(to).unwrap();
+    let local = from.to_zoned_datetime(tz);
+    let count_unit = |unit| span.total((unit, &local)).unwrap().floor() as i32;
+
+    if let weeks = count_unit(Unit::Week)
+        && weeks > 0
+    {
+        format!("{:>2}w", weeks)
+    } else if let days = count_unit(Unit::Day)
+        && days > 0
+    {
+        format!("{:>2}d", days)
+    } else if let hours = count_unit(Unit::Hour)
+        && hours > 0
+    {
+        format!("{:>2}h", hours)
+    } else if let minutes = count_unit(Unit::Minute)
+        && minutes > 0
+    {
+        format!("{:>2}m", minutes)
+    } else {
+        format!("{:>2}s", count_unit(Unit::Second))
+    }
+}
+
+#[cfg(test)]
+mod article_list_view_tests {
+    use super::*;
+    use jiff::civil::DateTime;
+    use jiff::civil::datetime;
+    use jiff::tz::TimeZone;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(
+        "Europe/Berlin",
+        datetime(1963, 8, 26, 0, 0, 0, 0),
+        datetime(2018, 5, 12, 0, 0, 0, 0),
+        "2854w"
+    )]
+    #[case(
+        "Australia/Adelaide",
+        datetime(2012, 2, 28, 0, 0, 0, 0),
+        datetime(2012, 3, 1, 0, 0, 0, 0),
+        " 2d"
+    )]
+    #[case(
+        "Europe/Berlin",
+        datetime(2019, 3, 31, 2, 0, 0, 0),
+        datetime(2019, 3, 31, 3, 0, 0, 0),
+        " 0s"
+    )]
+    #[case(
+        "America/Santiago",
+        datetime(2019, 3, 31, 2, 0, 0, 0),
+        datetime(2019, 3, 31, 3, 0, 0, 0),
+        " 1h"
+    )]
+    #[case(
+        "Indian/Antananarivo",
+        datetime(2026, 11, 26, 2, 55, 0, 0),
+        datetime(2026, 11, 26, 3, 54, 0, 0),
+        "59m"
+    )]
+    #[case(
+        "Asia/Bangkok",
+        datetime(1967, 8, 9, 0, 0, 0, 0),
+        datetime(1967, 8, 16, 0, 0, 0, 0),
+        " 1w"
+    )]
+    fn format_timespan_test(
+        #[case] tz: &str,
+        #[case] from: DateTime,
+        #[case] to: DateTime,
+        #[case] expected: &str,
+    ) {
+        let tz = TimeZone::get(tz).unwrap();
+        let from = from.to_zoned_datetime(tz.clone()).unwrap();
+        let to = to.to_zoned_datetime(tz.clone()).unwrap();
+        assert_eq!(
+            format_timespan(tz, from.timestamp(), to.timestamp()),
+            expected
+        );
     }
 }

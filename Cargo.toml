@@ -17,7 +17,6 @@ strip = true
 
 [dependencies]
 arboard = { version = "3.7.0", default-features = false, features = ["wayland-data-control" ] }
-chrono = "0.4.45"
 clap = { version = "4.6.7", features = ["derive"] }
 color-eyre = "0.6.5"
 config = "0.15.27"
@@ -34,10 +33,10 @@ itertools = "0.14.0"
 libc = "0.2"
 log = "0.4.34"
 logos = "0.16.1"
-news-flash = { version = "4.0.1", features = ["image-downloader"] }
+news-flash = { version = "5.0.0", features = ["image-downloader"] }
 notify-rust = "4.18.2"
 paste = "1.0.15"
-parse_datetime = "0.14.0"
+parse_datetime = "0.18.0"
 percent-encoding = "2.3.2"
 ratatui = { version = "0.30.2", features = ["all-widgets", "palette", "serde"] }
 ratatui-image = { version = "11.1.0", default-features = false, features = ["serde", "tokio"] }
@@ -67,6 +66,7 @@ bytes = "1.12.1"
 bytesize = { version = "2.7.0", features = ["serde"] }
 html-to-markdown-rs = "3.19.1"
 mini-moka = "0.10.3"
+jiff = "1.0.3"
 
 [dev-dependencies]
 claims = "0.8.0"
